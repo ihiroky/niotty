@@ -1,0 +1,27 @@
+apply plugin: 'java'
+apply plugin: 'idea'
+
+defaultTasks 'clean', 'assemble'
+
+version = '1.0'
+project.ext['rootPackage'] = 'net.ihiroky.niotty'
+def jdkVersion = 1.7
+def encoding = 'UTF-8'
+
+jar.baseName = 'niotty'
+sourceCompatibility = jdkVersion
+targetCompatibility = jdkVersion
+[compileJava, compileTestJava].each {
+    it.options.encoding = encoding
+}
+compileJava.options.compilerArgs = ['-Xlint:all']
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile 'org.slf4j:slf4j-api:1.+'
+    runtime 'ch.qos.logback:logback-classic:1.+'
+    testCompile 'junit:junit:4.+'
+}
