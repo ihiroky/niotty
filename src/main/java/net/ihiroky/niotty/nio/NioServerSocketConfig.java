@@ -34,7 +34,7 @@ public class NioServerSocketConfig extends TransportConfig {
         childReadBufferSize = 8192;
         direct = false;
         numberOfAcceptThread = 1;
-        numberOfMessageIOThread = Math.min(Runtime.getRuntime().availableProcessors() / 2, 2);
+        numberOfMessageIOThread = Math.max(Runtime.getRuntime().availableProcessors() / 2, 2);
         reuseAddress = true;
     }
 

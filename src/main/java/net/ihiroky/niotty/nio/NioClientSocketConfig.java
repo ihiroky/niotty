@@ -16,7 +16,7 @@ public class NioClientSocketConfig extends TransportConfig {
 
     public NioClientSocketConfig() {
         numberOfConnectThread = 1;
-        numberOfMessageIOThread = Runtime.getRuntime().availableProcessors() / 2;
+        numberOfMessageIOThread = Math.max(Runtime.getRuntime().availableProcessors() / 2, 2);
     }
 
     void applySocketOptions(Socket s) {
