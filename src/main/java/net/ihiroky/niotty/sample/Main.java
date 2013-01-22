@@ -1,6 +1,6 @@
 package net.ihiroky.niotty.sample;
 
-import net.ihiroky.niotty.CoreProcessor;
+import net.ihiroky.niotty.Processor;
 import net.ihiroky.niotty.Transport;
 import net.ihiroky.niotty.nio.NioClientSocketBusInterface;
 import net.ihiroky.niotty.nio.NioClientSocketConfig;
@@ -18,11 +18,11 @@ public class Main {
 
     public static void main(String[] args) {
 
-        CoreProcessor<NioServerSocketConfig> server = CoreProcessor.newCoreProcessor(
+        Processor<NioServerSocketConfig> server = Processor.newProcessor(
                 new NioServerSocketBusInterface(),
                 new ServerLoadPipeLineFactory(),
                 new ServerStorePipeLineFactory());
-        CoreProcessor<NioClientSocketConfig> client = CoreProcessor.newCoreProcessor(
+        Processor<NioClientSocketConfig> client = Processor.newProcessor(
                 new NioClientSocketBusInterface(),
                 new ClientLoadPipeLineFactory(),
                 new ClientStorePipeLineFactory());

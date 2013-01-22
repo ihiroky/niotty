@@ -3,5 +3,5 @@ package net.ihiroky.niotty;
 /**
  * @author Hiroki Itoh
  */
-public class CoreProcessorTest {
+public class ProcessorTest {
 }

@@ -7,13 +7,13 @@ import java.util.Objects;
  *
  * @author Hiroki Itoh
  */
-public class CoreProcessor<C extends TransportConfig> {
+public class Processor<C extends TransportConfig> {
 
     private BusInterface<C> busInterface;
 
-    CoreProcessor(BusInterface<C> busInterface,
-                         PipeLineFactory loadPipeLineFactory,
-                         PipeLineFactory storePipeLineFactory) {
+    Processor(BusInterface<C> busInterface,
+              PipeLineFactory loadPipeLineFactory,
+              PipeLineFactory storePipeLineFactory) {
         Objects.requireNonNull(busInterface, "busInterface");
         Objects.requireNonNull(loadPipeLineFactory, "loadPipeLineFactory");
         Objects.requireNonNull(storePipeLineFactory, "storePipeLineFactory");
@@ -24,9 +24,9 @@ public class CoreProcessor<C extends TransportConfig> {
         config.setStorePipeLineFactory(storePipeLineFactory);
     }
 
-    public static <C extends TransportConfig> CoreProcessor<C> newCoreProcessor(
+    public static <C extends TransportConfig> Processor<C> newProcessor(
             BusInterface<C> busInterface, PipeLineFactory loadPipeLineFactory, PipeLineFactory storePipeLineFactory) {
-        return new CoreProcessor<C>(busInterface, loadPipeLineFactory, storePipeLineFactory);
+        return new Processor<C>(busInterface, loadPipeLineFactory, storePipeLineFactory);
     }
 
     public C getConfig() {
