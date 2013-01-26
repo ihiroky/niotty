@@ -13,5 +13,4 @@ public interface Transport {
     void connect(SocketAddress remoteAddress);
     void close();
     void write(Object message);
-    Transport getParent();
 }

@@ -38,11 +38,6 @@ public class Main {
             clientTransport.connect(new InetSocketAddress("localhost", 10000));
 
             Thread.sleep(500);
-            System.out.println("type enter to broadcast from server.");
-            System.in.read();
-            serverTransport.write("broadcast from server.");
-
-            Thread.sleep(500);
             System.out.println("type enter to finish.");
             System.in.read();
             System.out.println("end.");

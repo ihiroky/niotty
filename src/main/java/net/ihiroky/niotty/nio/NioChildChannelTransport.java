@@ -1,7 +1,6 @@
 package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.EventLoop;
-import net.ihiroky.niotty.Transport;
 import net.ihiroky.niotty.event.MessageEvent;
 import net.ihiroky.niotty.event.TransportState;
 import net.ihiroky.niotty.event.TransportStateEvent;
@@ -22,11 +21,9 @@ import java.util.Queue;
  */
 public class NioChildChannelTransport<S extends AbstractSelector<S>> extends NioSocketTransport<S> {
 
-    private Transport parent;
     private Queue<ByteBuffer> notWrittenBufferQueue; // TODO use ByteBuffer to handle pending bytes.
 
-    NioChildChannelTransport(Transport parent) {
-        this.parent = parent;
+    NioChildChannelTransport() {
         this.notWrittenBufferQueue = new LinkedList<ByteBuffer>();
     }
 
@@ -62,11 +59,6 @@ public class NioChildChannelTransport<S extends AbstractSelector<S>> extends Nio
         if (selector != null) { // TODO Null Object
             selector.storeEvent(event);
         }
-    }
-
-    @Override
-    public Transport getParent() {
-        return parent;
     }
 
     void readyToWrite(ByteBuffer byteBuffer) {
