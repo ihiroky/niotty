@@ -16,13 +16,14 @@ import java.util.concurrent.ThreadFactory;
 public abstract class EventLoopGroup<L extends EventLoop<L>> {
 
     private Collection<L> eventLoops = nullValue();
+    private ContextTransportAggregate contextTransportAggregate;
     private Logger logger = LoggerFactory.getLogger(EventLoopGroup.class);
 
     public synchronized void open(ThreadFactory threadFactory, int numberOfWorker) {
         if (!isInitialized(eventLoops())) {
             L[] loops = newArray(numberOfWorker);
             for (int i = 0; i < numberOfWorker; i++) {
-                L loop = createEventLoop();
+                L loop = newEventLoop();
                 loop.openWith(threadFactory, null, null);
                 loops[i] = loop;
                 logger.info("start event loop {}", loop);
@@ -33,20 +34,23 @@ public abstract class EventLoopGroup<L extends EventLoop<L>> {
 
     public synchronized void open(ThreadFactory threadFactory,
                                   int numberOfWorker,
-                                  PipeLineFactory loadPipeLineFactory,
-                                  PipeLineFactory storePipeLineFactory,
+                                  PipeLineFactory pipeLineFactory,
                                   StageContextListener<?> storeListener){
         if (!isInitialized(eventLoops())) {
             L[] loops = newArray(numberOfWorker);
+            pipeLineFactory.createStorePipeLine();
+            ContextTransportAggregate transportAggregate =
+                    new ContextTransportAggregate(pipeLineFactory.createStorePipeLine());
             for (int i = 0; i < numberOfWorker; i++) {
-                PipeLine loadPipeLine = loadPipeLineFactory.createPipeLine();
-                PipeLine storePipeLine = storePipeLineFactory.createPipeLine();
+                PipeLine loadPipeLine = pipeLineFactory.createLoadPipeLine(transportAggregate);
+                PipeLine storePipeLine = pipeLineFactory.createStorePipeLine();
                 storePipeLine.getLastContext().addListener(storeListener);
-                L loop = createEventLoop();
+                L loop = newEventLoop();
                 loop.openWith(threadFactory, loadPipeLine, storePipeLine);
                 loops[i] = loop;
                 logger.info("start event loop {}.", loop);
             }
+            contextTransportAggregate = transportAggregate;
             eventLoops = Collections.unmodifiableCollection(new CopyOnWriteArrayList<L>(loops));
         }
     }
@@ -71,7 +75,7 @@ public abstract class EventLoopGroup<L extends EventLoop<L>> {
         return eventLoops;
     }
 
-    protected abstract L createEventLoop();
+    abstract protected L newEventLoop();
 
     private static Collection<EventLoop<?>> NULL = Collections.emptyList();
 
@@ -87,5 +91,9 @@ public abstract class EventLoopGroup<L extends EventLoop<L>> {
     @SuppressWarnings("unchecked")
     private static <L extends EventLoop<L>> L[] newArray(int size) {
         return (L[]) new EventLoop<?>[size];
+    }
+
+    public ContextTransportAggregate getContextTransportAggregate() {
+        return contextTransportAggregate;
     }
 }

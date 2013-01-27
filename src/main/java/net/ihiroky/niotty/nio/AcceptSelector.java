@@ -32,7 +32,7 @@ public class AcceptSelector extends AbstractSelector<AcceptSelector> {
             childChannel.configureBlocking(false);
 
             NioServerSocketTransport parent = (NioServerSocketTransport) key.attachment();
-            NioChildChannelTransport<MessageIOSelector> child = parent.registerLater(childChannel, SelectionKey.OP_READ);
+            NioChildChannelTransport child = parent.registerLater(childChannel, SelectionKey.OP_READ);
             child.loadEventLater(
                     new TransportStateEvent(child, TransportState.ACCEPTED, childChannel.getRemoteAddress()));
         }

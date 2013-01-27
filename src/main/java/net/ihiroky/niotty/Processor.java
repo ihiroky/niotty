@@ -11,22 +11,13 @@ public class Processor<C extends TransportConfig> {
 
     private BusInterface<C> busInterface;
 
-    Processor(BusInterface<C> busInterface,
-              PipeLineFactory loadPipeLineFactory,
-              PipeLineFactory storePipeLineFactory) {
+    Processor(BusInterface<C> busInterface, PipeLineFactory pipeLineFactory) {
         Objects.requireNonNull(busInterface, "busInterface");
-        Objects.requireNonNull(loadPipeLineFactory, "loadPipeLineFactory");
-        Objects.requireNonNull(storePipeLineFactory, "storePipeLineFactory");
+        Objects.requireNonNull(pipeLineFactory, "pipeLineFactory");
 
         this.busInterface = busInterface;
         TransportConfig config = busInterface.getConfig();
-        config.setLoadPipeLineFactory(loadPipeLineFactory);
-        config.setStorePipeLineFactory(storePipeLineFactory);
-    }
-
-    public static <C extends TransportConfig> Processor<C> newProcessor(
-            BusInterface<C> busInterface, PipeLineFactory loadPipeLineFactory, PipeLineFactory storePipeLineFactory) {
-        return new Processor<C>(busInterface, loadPipeLineFactory, storePipeLineFactory);
+        config.setPipeLineFactory(pipeLineFactory);
     }
 
     public C getConfig() {

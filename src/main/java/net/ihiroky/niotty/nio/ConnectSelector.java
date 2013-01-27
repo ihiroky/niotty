@@ -33,7 +33,7 @@ public class ConnectSelector extends AbstractSelector<ConnectSelector> {
                 NioClientSocketTransport parent = (NioClientSocketTransport) key.attachment();
                 key.interestOps(0);
 
-                NioChildChannelTransport<MessageIOSelector> child = parent.registerLater(channel, SelectionKey.OP_READ);
+                NioChildChannelTransport child = parent.registerLater(channel, SelectionKey.OP_READ);
                 child.loadEventLater(
                         new TransportStateEvent(child, TransportState.CONNECTED, channel.getRemoteAddress()));
             }

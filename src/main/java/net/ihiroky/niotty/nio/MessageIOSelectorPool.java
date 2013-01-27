@@ -27,7 +27,7 @@ public class MessageIOSelectorPool extends AbstractSelectorPool<MessageIOSelecto
     }
 
     @Override
-    protected MessageIOSelector createEventLoop() {
+    protected MessageIOSelector newEventLoop() {
         return new MessageIOSelector(readBufferSize, direct);
     }
 }

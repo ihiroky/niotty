@@ -40,8 +40,7 @@ public class NioServerSocketBusInterface implements BusInterface<NioServerSocket
         messageIOSelectorPool.setDirect(config.isDirect());
         messageIOSelectorPool.open(new NameCountThreadFactory(config.getBaseName() + "-MessageIO"),
                 config.getNumberOfMessageIOThread(),
-                config.getLoadPipeLineFactory(),
-                config.getStorePipeLineFactory(),
+                config.getPipeLineFactory(),
                 MessageIOSelector.STORE_CONTEXT_LISTENER);
         acceptSelectorPool.open(new NameCountThreadFactory(config.getBaseName() + "-Accept"),
                 config.getNumberOfAcceptThread());

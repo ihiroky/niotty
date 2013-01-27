@@ -7,7 +7,7 @@ package net.ihiroky.niotty.nio;
  */
 public class ConnectSelectorPool extends AbstractSelectorPool<ConnectSelector> {
     @Override
-    protected ConnectSelector createEventLoop() {
+    protected ConnectSelector newEventLoop() {
         return new ConnectSelector();
     }
 }

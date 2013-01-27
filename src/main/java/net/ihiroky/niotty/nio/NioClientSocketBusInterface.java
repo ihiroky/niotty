@@ -36,8 +36,7 @@ public class NioClientSocketBusInterface implements BusInterface<NioClientSocket
     public void start() {
         messageIOSelectorPool.open(new NameCountThreadFactory(config.getBaseName() + "-MessageIO"),
                 config.getNumberOfMessageIOThread(),
-                config.getLoadPipeLineFactory(),
-                config.getStorePipeLineFactory(),
+                config.getPipeLineFactory(),
                 MessageIOSelector.STORE_CONTEXT_LISTENER);
         connectSelectorPool.open(new NameCountThreadFactory(config.getBaseName() + "-Connect"),
                 config.getNumberOfConnectThread());

@@ -1,7 +1,7 @@
 package net.ihiroky.niotty.nio;
 
+import net.ihiroky.niotty.AbstractTransport;
 import net.ihiroky.niotty.EventLoop;
-import net.ihiroky.niotty.Transport;
 
 import java.io.IOException;
 import java.nio.channels.SelectableChannel;
@@ -13,19 +13,13 @@ import java.util.Objects;
  *
  * @author Hiroki Itoh
  */
-public abstract class NioSocketTransport<S extends AbstractSelector<S>> implements Transport {
+public abstract class NioSocketTransport<S extends AbstractSelector<S>> extends AbstractTransport<S> {
 
-    private AbstractSelector<S> selector;
     private SelectionKey key;
 
     @Override
     public String toString() {
         return (key != null) ? key.channel().toString() : "unregistered";
-    }
-
-    void setSelector(AbstractSelector<S> selector) {
-        Objects.requireNonNull(selector, "selector");
-        this.selector = selector;
     }
 
     void setSelectionKey(SelectionKey key) {
@@ -34,6 +28,7 @@ public abstract class NioSocketTransport<S extends AbstractSelector<S>> implemen
     }
 
     void unregisterLater() {
+        S selector = getEventLoop();
         if (selector != null) {
             selector.offerTask(new EventLoop.Task<S>() {
                 @Override
@@ -46,6 +41,7 @@ public abstract class NioSocketTransport<S extends AbstractSelector<S>> implemen
     }
 
     void closeLater() {
+        S selector = getEventLoop();
         if (selector != null) {
             selector.close(this);
         }
@@ -60,10 +56,6 @@ public abstract class NioSocketTransport<S extends AbstractSelector<S>> implemen
             } catch (IOException ignored) {
             }
         }
-    }
-
-    protected final AbstractSelector<S> getSelector() {
-        return selector;
     }
 
     protected final SelectionKey getSelectionKey() {

@@ -10,8 +10,7 @@ import java.util.Objects;
 public class TransportConfig {
 
     private volatile String baseName;
-    private volatile PipeLineFactory loadPipeLineFactory;
-    private volatile PipeLineFactory storePipeLineFactory;
+    private volatile PipeLineFactory pipeLineFactory;
 
     public TransportConfig() {
     }
@@ -25,19 +24,11 @@ public class TransportConfig {
         baseName = n;
     }
 
-    public PipeLineFactory getLoadPipeLineFactory() {
-        return loadPipeLineFactory;
+    public PipeLineFactory getPipeLineFactory() {
+        return pipeLineFactory;
     }
 
-    void setLoadPipeLineFactory(PipeLineFactory factory) {
-        loadPipeLineFactory = factory;
-    }
-
-    public PipeLineFactory getStorePipeLineFactory() {
-        return storePipeLineFactory;
-    }
-
-    void setStorePipeLineFactory(PipeLineFactory factory) {
-        storePipeLineFactory = factory;
+    void setPipeLineFactory(PipeLineFactory factory) {
+        pipeLineFactory = factory;
     }
 }

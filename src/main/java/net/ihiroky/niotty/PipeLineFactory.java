@@ -5,15 +5,8 @@ package net.ihiroky.niotty;
  *
  * @author Hiroki Itoh
  */
-public abstract class PipeLineFactory {
+public interface PipeLineFactory {
 
-    public abstract PipeLine createPipeLine();
-
-    protected static PipeLine newPipeLine(Stage<?>...stages) {
-        DefaultPipeLine pipeLine = new DefaultPipeLine();
-        for (Stage<?> stage : stages) {
-            pipeLine.add(stage);
-        }
-        return pipeLine;
-    }
+    PipeLine createLoadPipeLine(TransportAggregate transportAggregate);
+    PipeLine createStorePipeLine();
 }

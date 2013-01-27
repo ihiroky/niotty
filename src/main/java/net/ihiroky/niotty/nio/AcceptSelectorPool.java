@@ -11,7 +11,7 @@ public class AcceptSelectorPool extends AbstractSelectorPool<AcceptSelector> {
     }
 
     @Override
-    protected AcceptSelector createEventLoop() {
+    protected AcceptSelector newEventLoop() {
         return new AcceptSelector();
     }
 }

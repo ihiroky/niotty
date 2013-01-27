@@ -1,7 +1,12 @@
 package net.ihiroky.niotty.nio;
 
+import net.ihiroky.niotty.ContextTransportAggregate;
+
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
 import java.net.SocketAddress;
+import java.nio.ByteBuffer;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
@@ -28,6 +33,7 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
             cfg.applySocketOptions(serverChannel.socket());
             acceptSelectorPool = acceptPool;
             messageIOSelectorPool = messageIOPool;
+            getTransportListener().onOpen(this);
         } catch (IOException ioe) {
             if (serverChannel != null) {
                 try {
@@ -42,13 +48,15 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
 
     @Override
     public void write(final Object message) {
-        throw new UnsupportedOperationException("write");
+        ContextTransportAggregate aggregate = messageIOSelectorPool.getContextTransportAggregate();
+        aggregate.write(message);
     }
 
     @Override
     public void bind(SocketAddress socketAddress) {
         try {
             serverChannel.bind(socketAddress, config.getBacklog());
+            getTransportListener().onBind(this, socketAddress);
             acceptSelectorPool.register(this, serverChannel, SelectionKey.OP_ACCEPT);
         } catch (IOException e) {
             throw new RuntimeException("failed to bind server socket:" + socketAddress, e);
@@ -62,12 +70,23 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
 
     @Override
     public void close() {
-        closeLater();
+        if (getEventLoop() != null) {
+            closeLater();
+        }
     }
 
-    NioChildChannelTransport<MessageIOSelector> registerLater(SelectableChannel channel, int ops) {
-        NioChildChannelTransport<MessageIOSelector> child = new NioChildChannelTransport<MessageIOSelector>();
+    @Override
+    public void join(InetAddress group, NetworkInterface networkInterface, InetAddress source) {
+        throw new UnsupportedOperationException("join");
+    }
+
+    NioChildChannelTransport registerLater(SelectableChannel channel, int ops) {
+        NioChildChannelTransport child = new NioChildChannelTransport();
         messageIOSelectorPool.register(child, channel, ops);
         return child;
+    }
+
+    @Override
+    protected void writeDirect(ByteBuffer byteBuffer) {
     }
 }

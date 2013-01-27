@@ -32,10 +32,9 @@ public class MessageIOSelector extends AbstractSelector<MessageIOSelector> {
         @Override
         public void onProceed(PipeLine pipeLine, StageContext context, MessageEvent<ByteBuffer> event) {
             @SuppressWarnings("unchecked")
-            NioChildChannelTransport<MessageIOSelector> transport =
-                    (NioChildChannelTransport<MessageIOSelector>) event.getTransport();
+            NioChildChannelTransport transport = (NioChildChannelTransport) event.getTransport();
             transport.readyToWrite(event.getMessage());
-            transport.getSelector().offerTask(new FlushTask(transport));
+            transport.getEventLoop().offerTask(new FlushTask(transport));
         }
 
         @Override
@@ -100,7 +99,7 @@ public class MessageIOSelector extends AbstractSelector<MessageIOSelector> {
             localByteBuffer.flip();
 
             // use wildcard to suppress unchecked warning, Actually, ? is MessageIOSelector
-            NioChildChannelTransport<?> transport = (NioChildChannelTransport<?>) key.attachment();
+            NioChildChannelTransport transport = (NioChildChannelTransport) key.attachment();
             while (localByteBuffer.hasRemaining()) {
                 loadEvent(new MessageEvent<ByteBuffer>(transport, localByteBuffer));
             }
@@ -112,11 +111,15 @@ public class MessageIOSelector extends AbstractSelector<MessageIOSelector> {
         }
     }
 
-    private static class FlushTask implements Task<MessageIOSelector> {
+    public void flushLater(NioChildChannelTransport transport) {
+        offerTask(new FlushTask(transport));
+    }
 
-        NioChildChannelTransport<MessageIOSelector> transport;
+    static class FlushTask implements Task<MessageIOSelector> {
 
-        FlushTask(NioChildChannelTransport<MessageIOSelector> transport) {
+        NioChildChannelTransport transport;
+
+        FlushTask(NioChildChannelTransport transport) {
             this.transport = transport;
         }
 
@@ -127,27 +130,6 @@ public class MessageIOSelector extends AbstractSelector<MessageIOSelector> {
             } catch (IOException ioe) {
                 transport.closeSelectableChannel();
             }
-            return true;
-        }
-    }
-
-    static class BroadcastTask implements Task<MessageIOSelector> {
-
-        ByteBuffer byteBuffer;
-
-        BroadcastTask(ByteBuffer byteBuffer) {
-            this.byteBuffer = byteBuffer;
-        }
-
-        @Override
-        public boolean execute(MessageIOSelector selector) {
-            for (SelectionKey key : selector.keys()) {
-                @SuppressWarnings("unchecked")
-                NioChildChannelTransport<MessageIOSelector> transport =
-                        (NioChildChannelTransport<MessageIOSelector>) key.attachment();
-                transport.readyToWrite(byteBuffer.duplicate());
-            }
-            selector.offerTask(flushAllTask);
             return true;
         }
     }

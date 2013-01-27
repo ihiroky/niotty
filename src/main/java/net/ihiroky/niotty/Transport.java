@@ -1,5 +1,7 @@
 package net.ihiroky.niotty;
 
+import java.net.InetAddress;
+import java.net.NetworkInterface;
 import java.net.SocketAddress;
 
 /**
@@ -9,8 +11,11 @@ import java.net.SocketAddress;
  */
 public interface Transport {
 
-    void bind(SocketAddress localAddress);
-    void connect(SocketAddress remoteAddress);
+    void bind(SocketAddress local);
+    void connect(SocketAddress remote);
     void close();
+    void join(InetAddress group, NetworkInterface networkInterface, InetAddress source);
     void write(Object message);
+    void addListener(TransportListener listener);
+    void removeListener(TransportListener listener);
 }

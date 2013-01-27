@@ -14,6 +14,7 @@ public class DefaultPipeLine implements PipeLine {
 
     private StageContext headContext;
     private StageContext tailContext;
+    private TransportAggregate broadcastTransportAggregate;
     private Logger logger = LoggerFactory.getLogger(DefaultPipeLine.class);
 
     private static final StageContext NULL = new StageContext(null, new Stage<Object>() {
@@ -27,21 +28,26 @@ public class DefaultPipeLine implements PipeLine {
         public String toString() {
             return "null stage";
         }
-    });
+    }, null);
 
     protected DefaultPipeLine() {
+        this(null);
+    }
+
+    protected DefaultPipeLine(TransportAggregate broadcastTransportAggregate) {
         this.headContext = NULL;
         this.tailContext = NULL;
+        this.broadcastTransportAggregate = broadcastTransportAggregate;
     }
 
     @Override
     public DefaultPipeLine add(Stage<?> stage) {
         if (headContext == NULL) {
-            headContext = tailContext = new StageContext(this, stage);
+            headContext = tailContext = new StageContext(this, stage, broadcastTransportAggregate);
             return this;
         }
 
-        StageContext context = new StageContext(this, stage);
+        StageContext context = new StageContext(this, stage, broadcastTransportAggregate);
         tailContext.setNext(context);
         tailContext = context;
         return this;
@@ -73,6 +79,11 @@ public class DefaultPipeLine implements PipeLine {
     }
 
     @Override
+    public void setContextTransportAggregate(ContextTransportAggregate aggregate) {
+        broadcastTransportAggregate = aggregate;
+    }
+
+    @Override
     public void fire(MessageEvent<?> event) {
         headContext.fire(event);
     }
@@ -80,5 +91,9 @@ public class DefaultPipeLine implements PipeLine {
     @Override
     public void fire(TransportStateEvent event) {
         headContext.fire(event);
+    }
+
+    TransportAggregate getBroadcastTransportAggregate() {
+        return broadcastTransportAggregate;
     }
 }

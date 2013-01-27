@@ -37,16 +37,17 @@ public abstract class EventLoop<L extends EventLoop<L>> implements Runnable {
         onOpen();
         loadPipeLine = lpl;
         storePipeLine = spl;
-        thread = tf.newThread(this);
-        thread.start();
+        if (thread == null) {
+            thread = tf.newThread(this);
+            thread.start();
+        }
     }
 
-    public void close() {
-        synchronized (this) {
-            if (thread != null) {
-                thread.interrupt();
-                thread = null;
-            }
+    public synchronized void close() {
+        Thread t = thread;
+        thread = null;
+        if (t != null) {
+            t.interrupt();
         }
     }
 
@@ -83,7 +84,9 @@ public abstract class EventLoop<L extends EventLoop<L>> implements Runnable {
                 try {
                     process(timeout);
                 } catch (Exception e) {
-                    logger.warn("[run]", e);
+                    if (thread != null) {
+                        logger.warn("[run] process failed.", e);
+                    }
                 }
                 timeout = processTasks(taskQueue, taskBuffer);
             }
@@ -104,7 +107,9 @@ public abstract class EventLoop<L extends EventLoop<L>> implements Runnable {
                     buffer.offer(task);
                 }
             } catch (Exception e) {
-                logger.warn("failed to execute task : " + task, e);
+                if (thread != null) {
+                    logger.warn("failed to execute task : " + task, e);
+                }
             }
         }
         int timeout = buffer.isEmpty() ? 0 : TIMEOUT;
@@ -115,7 +120,7 @@ public abstract class EventLoop<L extends EventLoop<L>> implements Runnable {
 
     @Override
     public String toString() {
-        return (thread != null) ? thread.getName() : "not working";
+        return (thread != null) ? thread.getName() : "[NOT WORKING]";
     }
 
     protected abstract void onOpen();

@@ -1,7 +1,12 @@
 package net.ihiroky.niotty.nio;
 
+import net.ihiroky.niotty.EventLoop;
+
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
 import java.net.SocketAddress;
+import java.nio.ByteBuffer;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
@@ -17,7 +22,7 @@ public class NioClientSocketTransport extends NioSocketTransport<ConnectSelector
     private NioClientSocketConfig config;
     private ConnectSelectorPool connectSelectorPool;
     private MessageIOSelectorPool messageIOSelectorPool;
-    private NioChildChannelTransport<MessageIOSelector> childTransport;
+    private NioChildChannelTransport childTransport;
 
     public NioClientSocketTransport(NioClientSocketConfig cfg,
                                     ConnectSelectorPool connectPool, MessageIOSelectorPool messageIOPool) {
@@ -28,40 +33,48 @@ public class NioClientSocketTransport extends NioSocketTransport<ConnectSelector
             connectSelectorPool = connectPool;
             messageIOSelectorPool = messageIOPool;
             cfg.applySocketOptions(clientChannel.socket());
+            getTransportListener().onOpen(this);
         } catch (Exception e) {
             throw new RuntimeException("failed to open client socket channel.", e);
         }
     }
 
     @Override
-    public void bind(SocketAddress localAddress) {
+    public void bind(SocketAddress local) {
         try {
-            clientChannel.bind(localAddress);
+            clientChannel.bind(local);
+            getTransportListener().onBind(this, local);
         } catch (IOException ioe) {
-            throw new RuntimeException("failed to bind " + clientChannel + " to " + localAddress, ioe);
+            throw new RuntimeException("failed to bind " + clientChannel + " to " + local, ioe);
         }
     }
 
     @Override
-    public void connect(SocketAddress remoteAddress) {
+    public void connect(SocketAddress remote) {
         try {
-            clientChannel.connect(remoteAddress);
+            clientChannel.connect(remote);
             connectSelectorPool.register(this, clientChannel, SelectionKey.OP_CONNECT);
         } catch (IOException ioe) {
-            throw new RuntimeException("failed to connect " + clientChannel + " to " + remoteAddress, ioe);
+            throw new RuntimeException("failed to connect " + clientChannel + " to " + remote, ioe);
         }
     }
 
     @Override
     public void close() {
-        if (getSelector() != null) {
+        if (getEventLoop() != null) {
             closeLater();
         } else {
             closeSelectableChannel();
         }
         if (childTransport != null) {
+            // onClose() is called by childTransport.
             childTransport.closeLater();
         }
+    }
+
+    @Override
+    public void join(InetAddress group, NetworkInterface networkInterface, InetAddress source) {
+        throw new UnsupportedOperationException("join");
     }
 
     @Override
@@ -69,10 +82,25 @@ public class NioClientSocketTransport extends NioSocketTransport<ConnectSelector
 
     }
 
-    NioChildChannelTransport<MessageIOSelector> registerLater(SelectableChannel channel, int ops) {
-        NioChildChannelTransport<MessageIOSelector> child = new NioChildChannelTransport<MessageIOSelector>();
+    NioChildChannelTransport registerLater(SelectableChannel channel, int ops) {
+        try {
+            getTransportListener().onConnect(this, clientChannel.getRemoteAddress());
+        } catch (IOException ignored) {
+        }
+        NioChildChannelTransport child = new NioChildChannelTransport();
         this.childTransport = child;
         messageIOSelectorPool.register(child, channel, ops);
         return childTransport;
+    }
+
+    @Override
+    protected void writeDirect(final ByteBuffer byteBuffer) {
+        getEventLoop().offerTask(new EventLoop.Task<ConnectSelector>() {
+            @Override
+            public boolean execute(ConnectSelector eventLoop) {
+                childTransport.readyToWrite(byteBuffer);
+                return true;
+            }
+        });
     }
 }
