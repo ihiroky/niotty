@@ -16,6 +16,7 @@ public interface Transport {
     void close();
     void join(InetAddress group, NetworkInterface networkInterface, InetAddress source);
     void write(Object message);
+    void write(Object message, SocketAddress remote);
     void addListener(TransportListener listener);
     void removeListener(TransportListener listener);
 }

@@ -36,6 +36,11 @@ public class NioChildChannelTransport extends NioSocketTransport<MessageIOSelect
     }
 
     @Override
+    public void write(Object message, SocketAddress remote) {
+        throw new UnsupportedOperationException("write");
+    }
+
+    @Override
     public void bind(SocketAddress socketAddress) {
         throw new UnsupportedOperationException("bind");
     }

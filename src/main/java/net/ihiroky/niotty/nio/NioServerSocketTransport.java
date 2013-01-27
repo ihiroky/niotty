@@ -53,6 +53,11 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
     }
 
     @Override
+    public void write(Object message, SocketAddress remote) {
+        throw new UnsupportedOperationException("write");
+    }
+
+    @Override
     public void bind(SocketAddress socketAddress) {
         try {
             serverChannel.bind(socketAddress, config.getBacklog());

@@ -82,6 +82,11 @@ public class NioClientSocketTransport extends NioSocketTransport<ConnectSelector
 
     }
 
+    @Override
+    public void write(Object message, SocketAddress remote) {
+        throw new UnsupportedOperationException("write");
+    }
+
     NioChildChannelTransport registerLater(SelectableChannel channel, int ops) {
         try {
             getTransportListener().onConnect(this, clientChannel.getRemoteAddress());
