@@ -1,8 +1,10 @@
 package net.ihiroky.niotty.nio;
 
+import net.ihiroky.niotty.PipeLineFactory;
 import net.ihiroky.niotty.TransportConfig;
 
 import java.net.Socket;
+import java.util.Objects;
 
 /**
  * Created on 13/01/17, 18:01
@@ -14,7 +16,10 @@ public class NioClientSocketConfig extends TransportConfig {
     private int numberOfConnectThread;
     private int numberOfMessageIOThread;
 
-    public NioClientSocketConfig() {
+    public NioClientSocketConfig(PipeLineFactory pipeLineFactory) {
+        Objects.requireNonNull(pipeLineFactory, "pipeLineFactory");
+
+        setPipeLineFactory(pipeLineFactory);
         numberOfConnectThread = 1;
         numberOfMessageIOThread = Math.max(Runtime.getRuntime().availableProcessors() / 2, 2);
     }

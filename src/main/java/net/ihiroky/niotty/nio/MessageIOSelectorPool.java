@@ -1,5 +1,7 @@
 package net.ihiroky.niotty.nio;
 
+import net.ihiroky.niotty.StageContextListener;
+
 /**
  * Created on 13/01/15, 17:07
  *
@@ -8,6 +10,7 @@ package net.ihiroky.niotty.nio;
 public class MessageIOSelectorPool extends AbstractSelectorPool<MessageIOSelector> {
 
     private int readBufferSize;
+    private int writeBufferSize; // write buffer size, different from buffer queue.
     private boolean direct;
 
     public MessageIOSelectorPool() {
@@ -29,5 +32,10 @@ public class MessageIOSelectorPool extends AbstractSelectorPool<MessageIOSelecto
     @Override
     protected MessageIOSelector newEventLoop() {
         return new MessageIOSelector(readBufferSize, direct);
+    }
+
+    @Override
+    protected StageContextListener<?> newStoreStageContextListener() {
+        return MessageIOSelector.MESSAGE_IO_STORE_CONTEXT_LISTENER;
     }
 }

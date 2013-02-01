@@ -7,6 +7,6 @@ package net.ihiroky.niotty;
  */
 public interface PipeLineFactory {
 
-    PipeLine createLoadPipeLine(TransportAggregate transportAggregate);
+    PipeLine createLoadPipeLine();
     PipeLine createStorePipeLine();
 }

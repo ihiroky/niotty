@@ -9,7 +9,6 @@ import java.net.SocketAddress;
  */
 public interface TransportListener {
 
-    void onOpen(Transport transport);
     void onBind(Transport transport, SocketAddress localAddress);
     void onConnect(Transport transport, SocketAddress remoteAddress);
     void onJoin(Transport transport, InetAddress group, NetworkInterface networkInterface, InetAddress source);

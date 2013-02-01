@@ -28,10 +28,9 @@ public class MessageIOSelector extends AbstractSelector<MessageIOSelector> {
 
     private static final int MIN_BUFFER_SIZE = 256;
 
-    static final StageContextListener<ByteBuffer> STORE_CONTEXT_LISTENER = new StageContextAdapter<ByteBuffer>() {
+    static final StageContextListener<ByteBuffer> MESSAGE_IO_STORE_CONTEXT_LISTENER = new StageContextAdapter<ByteBuffer>() {
         @Override
         public void onProceed(PipeLine pipeLine, StageContext context, MessageEvent<ByteBuffer> event) {
-            @SuppressWarnings("unchecked")
             NioChildChannelTransport transport = (NioChildChannelTransport) event.getTransport();
             transport.readyToWrite(event.getMessage());
             transport.getEventLoop().offerTask(new FlushTask(transport));
@@ -39,20 +38,7 @@ public class MessageIOSelector extends AbstractSelector<MessageIOSelector> {
 
         @Override
         public void onProceed(PipeLine pipeLine, StageContext context, TransportStateEvent event) {
-            NioChildChannelTransport transport = (NioChildChannelTransport) event.getTransport();
-            switch (event.getState()) {
-                case CONNECTED:
-                    if (Boolean.FALSE.equals(event.getValue())) {
-                        transport.closeSelectableChannel();
-                    }
-                    break;
-                case BOUND:
-                    if (Boolean.FALSE.equals(event.getValue())) {
-                        transport.closeSelectableChannel();
-                    }
-                    break;
-            }
-
+            AbstractSelector.SELECTOR_STORE_CONTEXT_LISTENER.onProceed(pipeLine, context, event);
         }
     };
 
@@ -101,7 +87,7 @@ public class MessageIOSelector extends AbstractSelector<MessageIOSelector> {
             // use wildcard to suppress unchecked warning, Actually, ? is MessageIOSelector
             NioChildChannelTransport transport = (NioChildChannelTransport) key.attachment();
             while (localByteBuffer.hasRemaining()) {
-                loadEvent(new MessageEvent<ByteBuffer>(transport, localByteBuffer));
+                transport.loadEvent(new MessageEvent<>(transport, localByteBuffer));
             }
             localByteBuffer.clear();
             if (read == -1) {

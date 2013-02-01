@@ -1,6 +1,11 @@
 package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.EventLoop;
+import net.ihiroky.niotty.PipeLine;
+import net.ihiroky.niotty.StageContext;
+import net.ihiroky.niotty.StageContextAdapter;
+import net.ihiroky.niotty.StageContextListener;
+import net.ihiroky.niotty.event.TransportStateEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,6 +27,27 @@ public abstract class AbstractSelector<S extends AbstractSelector<S>> extends Ev
     private AtomicInteger registeredCount;
 
     private Logger logger = LoggerFactory.getLogger(AbstractSelector.class);
+
+    static final StageContextListener<?> SELECTOR_STORE_CONTEXT_LISTENER = new StageContextAdapter<Object>() {
+        @Override
+        public void onProceed(PipeLine pipeLine, StageContext context, TransportStateEvent event) {
+            NioServerSocketTransport transport = (NioServerSocketTransport) event.getTransport();
+            Object value = event.getValue();
+            switch (event.getState()) {
+                case ACCEPTED:
+                    // fall through
+                case CONNECTED:
+                    // fall through
+                case BOUND:
+                    if (value == null || Boolean.FALSE.equals(value)) {
+                        transport.closeSelectableChannel();
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+    };
 
     AbstractSelector() {
         registeredCount = new AtomicInteger();

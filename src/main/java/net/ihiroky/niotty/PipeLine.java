@@ -15,7 +15,6 @@ public interface PipeLine {
     StageContext getLastContext();
     StageContext searchContextFor(Class<? extends Stage<?>> c);
     <S extends Stage<?>> S searchStageFor(Class<? extends Stage<?>> c);
-    void setContextTransportAggregate(ContextTransportAggregate contextTransportAggregate);
     void fire(MessageEvent<?> event);
     void fire(TransportStateEvent event);
 }

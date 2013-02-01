@@ -1,5 +1,7 @@
 package net.ihiroky.niotty.nio;
 
+import net.ihiroky.niotty.PipeLine;
+import net.ihiroky.niotty.PipeLineFactory;
 import net.ihiroky.niotty.TransportConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,16 +28,20 @@ public class NioServerSocketConfig extends TransportConfig {
     private int receiveBufferSize;
     private boolean reuseAddress;
     private int soTimeout;
+    private PipeLine contextPipeLine;
 
     private Logger logger = LoggerFactory.getLogger(NioServerSocketTransport.class);
 
-    NioServerSocketConfig() {
+    public NioServerSocketConfig(PipeLineFactory pipeLineFactory) {
+        Objects.requireNonNull(pipeLineFactory, "pipeLineFactory");
+
         backlog = 50;
         childReadBufferSize = 8192;
         direct = false;
         numberOfAcceptThread = 1;
         numberOfMessageIOThread = Math.max(Runtime.getRuntime().availableProcessors() / 2, 2);
         reuseAddress = true;
+        setPipeLineFactory(pipeLineFactory);
     }
 
     void applySocketOptions(ServerSocket s) {
@@ -145,5 +151,13 @@ public class NioServerSocketConfig extends TransportConfig {
 
     public boolean isDirect() {
         return direct;
+    }
+
+    public void setContextPipeLine(PipeLine pipeLine) {
+        contextPipeLine = pipeLine;
+    }
+
+    public PipeLine getContextPipeLine() {
+        return contextPipeLine;
     }
 }

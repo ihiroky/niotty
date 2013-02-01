@@ -6,6 +6,7 @@ import java.nio.ByteBuffer;
 import java.util.Objects;
 
 /**
+ * TODO proper name
  * @author Hiroki Itoh
  */
 public class ContextTransportAggregate extends DefaultTransportAggregate {

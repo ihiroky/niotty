@@ -22,7 +22,7 @@ public class NioClientSocketTransport extends NioSocketTransport<ConnectSelector
     private NioClientSocketConfig config;
     private ConnectSelectorPool connectSelectorPool;
     private MessageIOSelectorPool messageIOSelectorPool;
-    private NioChildChannelTransport childTransport;
+    private volatile NioChildChannelTransport childTransport;
 
     public NioClientSocketTransport(NioClientSocketConfig cfg,
                                     ConnectSelectorPool connectPool, MessageIOSelectorPool messageIOPool) {
@@ -33,7 +33,6 @@ public class NioClientSocketTransport extends NioSocketTransport<ConnectSelector
             connectSelectorPool = connectPool;
             messageIOSelectorPool = messageIOPool;
             cfg.applySocketOptions(clientChannel.socket());
-            getTransportListener().onOpen(this);
         } catch (Exception e) {
             throw new RuntimeException("failed to open client socket channel.", e);
         }
@@ -79,7 +78,11 @@ public class NioClientSocketTransport extends NioSocketTransport<ConnectSelector
 
     @Override
     public void write(final Object message) {
-
+        NioChildChannelTransport transport = childTransport;
+        if (transport == null) {
+            throw new IllegalStateException("not connected.");
+        }
+        transport.write(message);
     }
 
     @Override
@@ -92,7 +95,7 @@ public class NioClientSocketTransport extends NioSocketTransport<ConnectSelector
             getTransportListener().onConnect(this, clientChannel.getRemoteAddress());
         } catch (IOException ignored) {
         }
-        NioChildChannelTransport child = new NioChildChannelTransport();
+        NioChildChannelTransport child = new NioChildChannelTransport(config);
         this.childTransport = child;
         messageIOSelectorPool.register(child, channel, ops);
         return childTransport;

@@ -12,10 +12,31 @@ import java.util.concurrent.CopyOnWriteArrayList;
  */
 abstract public class AbstractTransport<L extends EventLoop<L>> implements Transport {
 
+    private PipeLine loadPipeLine;
+    private PipeLine storePipeLine;
     private TransportListener transportListener  = NULL_LISTENER;
     private L loop;
 
     static final TransportListener NULL_LISTENER = new NullListener();
+
+    protected AbstractTransport() {
+    }
+
+    protected final void setLoadPipeLine(PipeLine pipeLine) {
+        loadPipeLine = pipeLine;
+    }
+
+    protected PipeLine getLoadPipeLine() {
+        return loadPipeLine;
+    }
+
+    protected final void setStorePipeLine(PipeLine pipeLine) {
+        storePipeLine = pipeLine;
+    }
+
+    protected PipeLine getStorePipeLine() {
+        return storePipeLine;
+    }
 
     public final void setEventLoop(L loop) {
         Objects.requireNonNull(loop, "loop");
@@ -76,14 +97,10 @@ abstract public class AbstractTransport<L extends EventLoop<L>> implements Trans
         }
     }
 
+
     abstract protected void writeDirect(ByteBuffer byteBuffer);
 
     private static class NullListener implements TransportListener {
-
-        @Override
-        public void onOpen(Transport transport) {
-        }
-
         @Override
         public void onBind(Transport transport, SocketAddress local) {
         }
@@ -104,13 +121,6 @@ abstract public class AbstractTransport<L extends EventLoop<L>> implements Trans
     private static class ListenerList implements TransportListener {
 
         CopyOnWriteArrayList<TransportListener> list = new CopyOnWriteArrayList<>();
-
-        @Override
-        public void onOpen(Transport transport) {
-            for (TransportListener listener : list) {
-                listener.onOpen(transport);
-            }
-        }
 
         @Override
         public void onBind(Transport transport, SocketAddress local) {

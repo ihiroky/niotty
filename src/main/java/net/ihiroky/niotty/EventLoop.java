@@ -1,7 +1,5 @@
 package net.ihiroky.niotty;
 
-import net.ihiroky.niotty.event.MessageEvent;
-import net.ihiroky.niotty.event.TransportStateEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,8 +17,6 @@ import java.util.concurrent.ThreadFactory;
 public abstract class EventLoop<L extends EventLoop<L>> implements Runnable {
 
     private Queue<Task<L>> taskQueue;
-    private PipeLine loadPipeLine;
-    private PipeLine storePipeLine;
     private volatile Thread thread;
 
     private Logger logger = LoggerFactory.getLogger(EventLoop.class);
@@ -31,12 +27,10 @@ public abstract class EventLoop<L extends EventLoop<L>> implements Runnable {
         taskQueue = new ConcurrentLinkedQueue<Task<L>>();
     }
 
-    synchronized void openWith(ThreadFactory tf, PipeLine lpl, PipeLine spl) {
+    synchronized void openWith(ThreadFactory tf) {
         Objects.requireNonNull(tf, "tf");
 
         onOpen();
-        loadPipeLine = lpl;
-        storePipeLine = spl;
         if (thread == null) {
             thread = tf.newThread(this);
             thread.start();
@@ -49,26 +43,6 @@ public abstract class EventLoop<L extends EventLoop<L>> implements Runnable {
         if (t != null) {
             t.interrupt();
         }
-    }
-
-    public void storeEvent(MessageEvent<?> event) {
-        logger.debug("store event {} to {}", event, storePipeLine);
-        storePipeLine.fire(event);
-    }
-
-    public void storeEvent(TransportStateEvent event) {
-        logger.debug("store event {} to {}", event, storePipeLine);
-        storePipeLine.fire(event);
-    }
-
-    public void loadEvent(MessageEvent<?> event) {
-        logger.debug("load event {} to {}", event, loadPipeLine);
-        loadPipeLine.fire(event);
-    }
-
-    public void loadEvent(TransportStateEvent event) {
-        logger.debug("load event {} to {}", event, loadPipeLine);
-        loadPipeLine.fire(event);
     }
 
     public void offerTask(Task<L> task) {

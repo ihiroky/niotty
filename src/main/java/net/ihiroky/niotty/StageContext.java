@@ -5,9 +5,7 @@ import net.ihiroky.niotty.event.TransportStateEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -21,8 +19,6 @@ public class StageContext {
     private Stage<Object> stage;
     private StageContext next;
     private StageContextListener<Object> listener;
-    private TransportAggregate contextTransportAggregate;
-    private Map<String, TransportAggregate> transportAggregateMap;
     private PipeLine pipeLine;
 
     private Logger logger = LoggerFactory.getLogger(StageContext.class);
@@ -40,18 +36,16 @@ public class StageContext {
             return "Null Stage";
         }
     };
-    private static final StageContext TERMINAL = new StageContext(null, NULL_STAGE, null);
+    private static final StageContext TERMINAL = new StageContext(null, NULL_STAGE);
 
     @SuppressWarnings("unchecked")
-    StageContext(PipeLine pipeLine, Stage<?> stage, TransportAggregate contextTransportAggregate) {
+    StageContext(PipeLine pipeLine, Stage<?> stage) {
         Objects.requireNonNull(stage, "stage");
 
         this.stage = (Stage<Object>) stage;
         this.next = TERMINAL;
         this.listener = NULL_LISTENER;
         this.pipeLine = pipeLine;
-        this.contextTransportAggregate = contextTransportAggregate;
-        transportAggregateMap = new HashMap<String, TransportAggregate>();
     }
 
 
@@ -114,19 +108,6 @@ public class StageContext {
 
     public Stage<?> getStage() {
         return stage;
-    }
-
-    public TransportAggregate getContextTransportAggregate() {
-        return contextTransportAggregate;
-    }
-
-    public TransportAggregate getTransportAggregate(String name) {
-        TransportAggregate aggregate = transportAggregateMap.get(name);
-        if (aggregate == null) {
-            aggregate = new DefaultTransportAggregate();
-            transportAggregateMap.put(name, aggregate);
-        }
-        return aggregate;
     }
 
     @Override

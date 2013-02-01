@@ -1,6 +1,8 @@
 package net.ihiroky.niotty.nio;
 
-import net.ihiroky.niotty.ContextTransportAggregate;
+import net.ihiroky.niotty.Niotty;
+import net.ihiroky.niotty.PipeLine;
+import net.ihiroky.niotty.TransportAggregate;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -22,6 +24,7 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
     private AcceptSelectorPool acceptSelectorPool;
     private MessageIOSelectorPool messageIOSelectorPool;
     private NioServerSocketConfig config;
+    private TransportAggregate childTransportAggregate;
 
     NioServerSocketTransport(NioServerSocketConfig cfg,
                              AcceptSelectorPool acceptPool,
@@ -31,9 +34,12 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
             serverChannel = ServerSocketChannel.open();
             serverChannel.configureBlocking(false);
             cfg.applySocketOptions(serverChannel.socket());
+
             acceptSelectorPool = acceptPool;
             messageIOSelectorPool = messageIOPool;
-            getTransportListener().onOpen(this);
+            PipeLine childPipeLine = cfg.getContextPipeLine();
+            childTransportAggregate = (childPipeLine == null)
+                    ? Niotty.newTransportAggregate() : Niotty.newContextTransportAggregate(childPipeLine);
         } catch (IOException ioe) {
             if (serverChannel != null) {
                 try {
@@ -48,8 +54,7 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
 
     @Override
     public void write(final Object message) {
-        ContextTransportAggregate aggregate = messageIOSelectorPool.getContextTransportAggregate();
-        aggregate.write(message);
+        childTransportAggregate.write(message);
     }
 
     @Override
@@ -86,7 +91,8 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
     }
 
     NioChildChannelTransport registerLater(SelectableChannel channel, int ops) {
-        NioChildChannelTransport child = new NioChildChannelTransport();
+        NioChildChannelTransport child = new NioChildChannelTransport(config); // TODO check socket options
+        childTransportAggregate.add(child);
         messageIOSelectorPool.register(child, channel, ops);
         return child;
     }

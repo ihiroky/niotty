@@ -25,6 +25,5 @@ public class EchoStage implements Stage<String> {
     @Override
     public void process(StageContext context, TransportStateEvent event) {
         logger.info(event.toString());
-        context.getContextTransportAggregate().add(event.getTransport());
     }
 }

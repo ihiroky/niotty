@@ -45,10 +45,6 @@ public class DefaultTransportAggregate implements TransportAggregate, TransportL
     }
 
     @Override
-    public void onOpen(Transport transport) {
-    }
-
-    @Override
     public void onBind(Transport transport, SocketAddress localAddress) {
     }
 
