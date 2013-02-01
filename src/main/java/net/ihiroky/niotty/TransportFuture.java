@@ -13,8 +13,8 @@ public interface TransportFuture {
     boolean isCancelled();
     boolean isDone();
     Throwable getThrowable();
-    void await() throws InterruptedException;
-    void await(long timeout, TimeUnit unit) throws InterruptedException;
-    void addListener();
-    void removeListener();
+    TransportFuture waitForCompletion() throws InterruptedException;
+    TransportFuture waitForCompletion(long timeout, TimeUnit unit) throws InterruptedException;
+    TransportFuture waitForCompletionUninterruptibly();
+    TransportFuture waitForCompletionUninterruptibly(long timeout, TimeUnit unit);
 }
