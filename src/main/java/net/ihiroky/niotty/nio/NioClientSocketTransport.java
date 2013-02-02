@@ -1,12 +1,12 @@
 package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.EventLoop;
+import net.ihiroky.niotty.buffer.BufferSink;
 
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
@@ -102,11 +102,11 @@ public class NioClientSocketTransport extends NioSocketTransport<ConnectSelector
     }
 
     @Override
-    protected void writeDirect(final ByteBuffer byteBuffer) {
+    protected void writeDirect(final BufferSink buffer) {
         getEventLoop().offerTask(new EventLoop.Task<ConnectSelector>() {
             @Override
             public boolean execute(ConnectSelector eventLoop) {
-                childTransport.readyToWrite(byteBuffer);
+                childTransport.readyToWrite(buffer);
                 return true;
             }
         });

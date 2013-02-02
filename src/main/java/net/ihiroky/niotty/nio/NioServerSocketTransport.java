@@ -3,12 +3,12 @@ package net.ihiroky.niotty.nio;
 import net.ihiroky.niotty.Niotty;
 import net.ihiroky.niotty.PipeLine;
 import net.ihiroky.niotty.TransportAggregate;
+import net.ihiroky.niotty.buffer.BufferSink;
 
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
@@ -98,6 +98,7 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
     }
 
     @Override
-    protected void writeDirect(ByteBuffer byteBuffer) {
+    protected void writeDirect(BufferSink buffer) {
+        throw new UnsupportedOperationException();
     }
 }

@@ -4,6 +4,8 @@ import net.ihiroky.niotty.EventLoop;
 import net.ihiroky.niotty.PipeLine;
 import net.ihiroky.niotty.PipeLineFactory;
 import net.ihiroky.niotty.TransportConfig;
+import net.ihiroky.niotty.buffer.BufferSink;
+import net.ihiroky.niotty.buffer.EncodeBuffer;
 import net.ihiroky.niotty.event.MessageEvent;
 import net.ihiroky.niotty.event.TransportState;
 import net.ihiroky.niotty.event.TransportStateEvent;
@@ -72,13 +74,13 @@ public class NioChildChannelTransport extends NioSocketTransport<MessageIOSelect
     }
 
     @Override
-    protected void writeDirect(final ByteBuffer byteBuffer) {
+    protected void writeDirect(final BufferSink buffer) {
         EventLoop<MessageIOSelector> loop = getEventLoop();
         if (loop != null) {
             loop.offerTask(new EventLoop.Task<MessageIOSelector>() {
                 @Override
                 public boolean execute(MessageIOSelector eventLoop) {
-                    readyToWrite(byteBuffer);
+                    readyToWrite(buffer);
                     eventLoop.flushLater(NioChildChannelTransport.this);
                     return true;
                 }
@@ -86,18 +88,13 @@ public class NioChildChannelTransport extends NioSocketTransport<MessageIOSelect
         }
     }
 
-    private void fire(MessageEvent<?> event) {
-        getStorePipeLine().fire(event);
+    void readyToWrite(BufferSink buffer) {
+        if (buffer.needsDirectTransfer()) {
+            // TODO FileChannel transfer
+        }
+        // TODO ByteBuffer transfer
+        buffer.transferTo(notWrittenBufferQueue);
     }
-
-    private void fire(TransportStateEvent event) {
-        getStorePipeLine().fire(event);
-    }
-
-    void readyToWrite(ByteBuffer byteBuffer) {
-        notWrittenBufferQueue.offer(byteBuffer);
-    }
-
 
     boolean flush() throws IOException {
         Queue<ByteBuffer> queue = notWrittenBufferQueue;
@@ -113,6 +110,14 @@ public class NioChildChannelTransport extends NioSocketTransport<MessageIOSelect
             }
         }
         return true;
+    }
+
+    private void fire(MessageEvent<?> event) {
+        getStorePipeLine().fire(event);
+    }
+
+    private void fire(TransportStateEvent event) {
+        getStorePipeLine().fire(event);
     }
 
     void loadEvent(MessageEvent<?> event) {

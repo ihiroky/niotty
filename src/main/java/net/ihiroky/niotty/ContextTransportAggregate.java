@@ -1,8 +1,8 @@
 package net.ihiroky.niotty;
 
+import net.ihiroky.niotty.buffer.BufferSink;
 import net.ihiroky.niotty.event.MessageEvent;
 
-import java.nio.ByteBuffer;
 import java.util.Objects;
 
 /**
@@ -15,14 +15,14 @@ public class ContextTransportAggregate extends DefaultTransportAggregate {
 
     ContextTransportAggregate(PipeLine storePipeLine) {
         Objects.requireNonNull(storePipeLine, "storePipeLine");
-        storePipeLine.getLastContext().addListener(new StageContextAdapter<ByteBuffer>() {
+        storePipeLine.getLastContext().addListener(new StageContextAdapter<BufferSink>() {
             @Override
-            public void onProceed(PipeLine pipeLine, StageContext context, MessageEvent<ByteBuffer> event) {
-                final ByteBuffer byteBuffer = event.getMessage();
+            public void onProceed(PipeLine pipeLine, StageContext context, MessageEvent<BufferSink> event) {
+                final BufferSink buffer = event.getMessage();
                 for (Transport t : transportMap.keySet()) {
                     @SuppressWarnings("unchecked")
                     AbstractTransport<?> transport = (AbstractTransport<?>) t;
-                    transport.writeDirect(byteBuffer);
+                    transport.writeDirect(buffer);
                 }
             }
         });

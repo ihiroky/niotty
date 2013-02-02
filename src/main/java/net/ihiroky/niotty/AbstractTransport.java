@@ -1,9 +1,10 @@
 package net.ihiroky.niotty;
 
+import net.ihiroky.niotty.buffer.BufferSink;
+
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketAddress;
-import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -98,7 +99,7 @@ abstract public class AbstractTransport<L extends EventLoop<L>> implements Trans
     }
 
 
-    abstract protected void writeDirect(ByteBuffer byteBuffer);
+    abstract protected void writeDirect(BufferSink buffer);
 
     private static class NullListener implements TransportListener {
         @Override

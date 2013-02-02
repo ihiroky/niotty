@@ -4,6 +4,7 @@ import net.ihiroky.niotty.PipeLine;
 import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.StageContextAdapter;
 import net.ihiroky.niotty.StageContextListener;
+import net.ihiroky.niotty.buffer.BufferSink;
 import net.ihiroky.niotty.event.MessageEvent;
 import net.ihiroky.niotty.event.TransportStateEvent;
 import org.slf4j.Logger;
@@ -28,19 +29,20 @@ public class MessageIOSelector extends AbstractSelector<MessageIOSelector> {
 
     private static final int MIN_BUFFER_SIZE = 256;
 
-    static final StageContextListener<ByteBuffer> MESSAGE_IO_STORE_CONTEXT_LISTENER = new StageContextAdapter<ByteBuffer>() {
-        @Override
-        public void onProceed(PipeLine pipeLine, StageContext context, MessageEvent<ByteBuffer> event) {
-            NioChildChannelTransport transport = (NioChildChannelTransport) event.getTransport();
-            transport.readyToWrite(event.getMessage());
-            transport.getEventLoop().offerTask(new FlushTask(transport));
-        }
+    static final StageContextListener<BufferSink> MESSAGE_IO_STORE_CONTEXT_LISTENER =
+            new StageContextAdapter<BufferSink>() {
+                @Override
+                public void onProceed(PipeLine pipeLine, StageContext context, MessageEvent<BufferSink> event) {
+                    NioChildChannelTransport transport = (NioChildChannelTransport) event.getTransport();
+                    transport.readyToWrite(event.getMessage());
+                    transport.getEventLoop().offerTask(new FlushTask(transport));
+                }
 
-        @Override
-        public void onProceed(PipeLine pipeLine, StageContext context, TransportStateEvent event) {
-            AbstractSelector.SELECTOR_STORE_CONTEXT_LISTENER.onProceed(pipeLine, context, event);
-        }
-    };
+                @Override
+                public void onProceed(PipeLine pipeLine, StageContext context, TransportStateEvent event) {
+                    AbstractSelector.SELECTOR_STORE_CONTEXT_LISTENER.onProceed(pipeLine, context, event);
+                }
+            };
 
     static final Task<MessageIOSelector> flushAllTask = new Task<MessageIOSelector>() {
         @Override
