@@ -8,20 +8,20 @@ import net.ihiroky.niotty.event.TransportStateEvent;
  *
  * @author Hiroki Itoh
  */
-public class StageContextAdapter<E> implements StageContextListener<E> {
+public class StageContextAdapter<I, O> implements StageContextListener<I, O> {
     @Override
-    public void onFire(PipeLine pipeLine, StageContext context, MessageEvent<E> event) {
+    public void onFire(PipeLine pipeLine, StageContext<I, O> context, MessageEvent<I> event) {
     }
 
     @Override
-    public void onFire(PipeLine pipeLine, StageContext context, TransportStateEvent event) {
+    public void onFire(PipeLine pipeLine, StageContext<I, O> context, TransportStateEvent event) {
     }
 
     @Override
-    public void onProceed(PipeLine pipeLine, StageContext context, MessageEvent<E> event) {
+    public void onProceed(PipeLine pipeLine, StageContext<I, O> context, MessageEvent<O> event) {
     }
 
     @Override
-    public void onProceed(PipeLine pipeLine, StageContext context, TransportStateEvent event) {
+    public void onProceed(PipeLine pipeLine, StageContext<I, O> context, TransportStateEvent event) {
     }
 }

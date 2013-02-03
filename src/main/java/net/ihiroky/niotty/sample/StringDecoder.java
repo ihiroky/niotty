@@ -18,7 +18,7 @@ import java.nio.charset.CodingErrorAction;
  *
  * @author Hiroki Itoh
  */
-public class StringDecoder implements Stage<DecodeBuffer> {
+public class StringDecoder implements Stage<DecodeBuffer, String> {
 
     private Logger logger = LoggerFactory.getLogger(StringDecoder.class);
 
@@ -29,7 +29,7 @@ public class StringDecoder implements Stage<DecodeBuffer> {
             .onUnmappableCharacter(CodingErrorAction.IGNORE);
 
     @Override
-    public void process(StageContext context, MessageEvent<DecodeBuffer> event) {
+    public void process(StageContext<DecodeBuffer, String> context, MessageEvent<DecodeBuffer> event) {
         DecodeBuffer message = event.getMessage();
         try {
             String s = decoder.decode(message.toByteBuffer()).toString();
@@ -40,7 +40,7 @@ public class StringDecoder implements Stage<DecodeBuffer> {
     }
 
     @Override
-    public void process(StageContext context, TransportStateEvent event) {
+    public void process(StageContext<DecodeBuffer, String> context, TransportStateEvent event) {
         logger.info(event.toString());
         context.proceed(event);
     }

@@ -52,7 +52,6 @@ public abstract class EventLoopGroup<L extends EventLoop<L>> {
     }
 
     abstract protected L newEventLoop();
-    abstract protected StageContextListener<?> newStoreStageContextListener();
 
     private static Collection<EventLoop<?>> NULL = Collections.emptyList();
 

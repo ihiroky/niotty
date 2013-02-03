@@ -11,11 +11,12 @@ public final class Niotty {
         throw new AssertionError();
     }
 
-    public static PipeLine newPipeLine(Stage<?> ...stages) {
-        PipeLine pipeLine = new DefaultPipeLine();
-        for (Stage<?> stage : stages) {
+    public static PipeLine newPipeLine(String name, Stage<?, ?> ...stages) {
+        DefaultPipeLine pipeLine = new DefaultPipeLine(name);
+        for (Stage<?, ?> stage : stages) {
             pipeLine.add(stage);
         }
+        pipeLine.verifyStageContextType();
         return pipeLine;
     }
 

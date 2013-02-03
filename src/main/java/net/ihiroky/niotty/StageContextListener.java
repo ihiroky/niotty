@@ -8,10 +8,10 @@ import net.ihiroky.niotty.event.TransportStateEvent;
  *
  * @author Hiroki Itoh
  */
-public interface StageContextListener<E> {
+public interface StageContextListener<I, O> {
 
-    void onFire(PipeLine pipeLine, StageContext context, MessageEvent<E> event);
-    void onFire(PipeLine pipeLine, StageContext context, TransportStateEvent event);
-    void onProceed(PipeLine pipeLine, StageContext context, MessageEvent<E> event);
-    void onProceed(PipeLine pipeLine, StageContext context, TransportStateEvent event);
+    void onFire(PipeLine pipeLine, StageContext<I, O> context, MessageEvent<I> event);
+    void onFire(PipeLine pipeLine, StageContext<I, O> context, TransportStateEvent event);
+    void onProceed(PipeLine pipeLine, StageContext<I, O> context, MessageEvent<O> event);
+    void onProceed(PipeLine pipeLine, StageContext<I, O> context, TransportStateEvent event);
 }

@@ -3,6 +3,7 @@ package net.ihiroky.niotty.nio;
 import net.ihiroky.niotty.EventLoop;
 import net.ihiroky.niotty.PipeLine;
 import net.ihiroky.niotty.PipeLineFactory;
+import net.ihiroky.niotty.StageContextListener;
 import net.ihiroky.niotty.TransportConfig;
 import net.ihiroky.niotty.buffer.BufferSink;
 import net.ihiroky.niotty.event.MessageEvent;
@@ -111,7 +112,7 @@ public class NioChildChannelTransport extends NioSocketTransport<MessageIOSelect
         return true;
     }
 
-    private void fire(MessageEvent<?> event) {
+    private void fire(MessageEvent<Object> event) {
         getStorePipeLine().fire(event);
     }
 
@@ -119,7 +120,7 @@ public class NioChildChannelTransport extends NioSocketTransport<MessageIOSelect
         getStorePipeLine().fire(event);
     }
 
-    void loadEvent(MessageEvent<?> event) {
+    void loadEvent(MessageEvent<Object> event) {
         getLoadPipeLine().fire(event);
     }
 

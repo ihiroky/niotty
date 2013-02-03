@@ -30,17 +30,19 @@ public class MessageIOSelector extends AbstractSelector<MessageIOSelector> {
 
     private static final int MIN_BUFFER_SIZE = 256;
 
-    static final StageContextListener<BufferSink> MESSAGE_IO_STORE_CONTEXT_LISTENER =
-            new StageContextAdapter<BufferSink>() {
+    static final StageContextListener<Object, BufferSink> MESSAGE_IO_STORE_CONTEXT_LISTENER =
+            new StageContextAdapter<Object, BufferSink>() {
                 @Override
-                public void onProceed(PipeLine pipeLine, StageContext context, MessageEvent<BufferSink> event) {
+                public void onProceed(
+                        PipeLine pipeLine, StageContext<Object, BufferSink> context, MessageEvent<BufferSink> event) {
                     NioChildChannelTransport transport = (NioChildChannelTransport) event.getTransport();
                     transport.readyToWrite(event.getMessage());
                     transport.getEventLoop().offerTask(new FlushTask(transport));
                 }
 
                 @Override
-                public void onProceed(PipeLine pipeLine, StageContext context, TransportStateEvent event) {
+                public void onProceed(
+                        PipeLine pipeLine, StageContext<Object, BufferSink> context, TransportStateEvent event) {
                     AbstractSelector.SELECTOR_STORE_CONTEXT_LISTENER.onProceed(pipeLine, context, event);
                 }
             };
@@ -88,7 +90,7 @@ public class MessageIOSelector extends AbstractSelector<MessageIOSelector> {
             localByteBuffer.flip();
 
             NioChildChannelTransport transport = (NioChildChannelTransport) key.attachment();
-            transport.loadEvent(new MessageEvent<>(transport, Buffers.createDecodeBuffer(localByteBuffer)));
+            transport.loadEvent(new MessageEvent<Object>(transport, Buffers.createDecodeBuffer(localByteBuffer)));
             localByteBuffer.clear();
             if (read == -1) {
                 // close current key and socket.

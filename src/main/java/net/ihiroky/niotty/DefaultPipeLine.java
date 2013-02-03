@@ -5,6 +5,9 @@ import net.ihiroky.niotty.event.TransportStateEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+
 /**
  * Created on 13/01/10, 17:21
  *
@@ -12,54 +15,61 @@ import org.slf4j.LoggerFactory;
  */
 public class DefaultPipeLine implements PipeLine {
 
-    private StageContext headContext;
-    private StageContext tailContext;
+    private String name;
+    private StageContext<Object, Object> headContext;
+    private StageContext<Object, Object> tailContext;
     private Logger logger = LoggerFactory.getLogger(DefaultPipeLine.class);
 
-    private static final StageContext NULL = new StageContext(null, new Stage<Object>() {
-        @Override
-        public void process(StageContext context, MessageEvent<Object> event) {
-        }
-        @Override
-        public void process(StageContext context, TransportStateEvent event) {
-        }
-        @Override
-        public String toString() {
-            return "null stage";
-        }
-    });
-
-    protected DefaultPipeLine() {
-        this.headContext = NULL;
-        this.tailContext = NULL;
+    protected DefaultPipeLine(String name) {
+        this.name = String.valueOf(name);
+        this.headContext = StageContext.TERMINAL;
+        this.tailContext = StageContext.TERMINAL;
     }
 
     @Override
-    public DefaultPipeLine add(Stage<?> stage) {
-        if (headContext == NULL) {
-            headContext = tailContext = new StageContext(this, stage);
+    public DefaultPipeLine add(Stage<?, ?> stage) {
+        @SuppressWarnings("unchecked")
+        Stage<Object, Object> s = (Stage<Object, Object>) stage;
+        if (headContext == StageContext.TERMINAL) {
+            headContext = tailContext = new StageContext<>(this, s);
             return this;
         }
 
-        StageContext context = new StageContext(this, stage);
+        StageContext<Object, Object> context = new StageContext<>(this, s);
         tailContext.setNext(context);
         tailContext = context;
         return this;
     }
 
+    public void verifyStageContextType() {
+        if (logger.isDebugEnabled()) {
+            int counter = 0;
+            for (StageContext<?, ?> ctx = headContext; ctx != StageContext.TERMINAL; ctx = ctx.getNext()) {
+                for (Type type : ctx.getStage().getClass().getGenericInterfaces()) {
+                    if (type instanceof ParameterizedType) {
+                        Type[] actualTypeArguments = ((ParameterizedType) type).getActualTypeArguments();
+                        logger.debug("[verifyStageContextType] {}:{} - I:{}, O:{}",
+                                name, counter++, actualTypeArguments[0], actualTypeArguments[1]);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
     @Override
-    public StageContext getFirstContext() {
+    public StageContext<?, ?> getFirstContext() {
         return headContext;
     }
 
     @Override
-    public StageContext getLastContext() {
+    public StageContext<?, ?> getLastContext() {
         return tailContext;
     }
 
     @Override
-    public StageContext searchContextFor(Class<? extends Stage<?>> c) {
-        for (StageContext context = headContext; context != tailContext; context = context.getNext()) {
+    public StageContext<?, ?> searchContextFor(Class<? extends Stage<?, ?>> c) {
+        for (StageContext<?, ?> context = headContext; context != tailContext; context = context.getNext()) {
             if (c.equals(context.getStage().getClass())) {
                 return context;
             }
@@ -68,12 +78,12 @@ public class DefaultPipeLine implements PipeLine {
     }
 
     @SuppressWarnings("unchecked")
-    public <S extends Stage<?>> S searchStageFor(Class<? extends Stage<?>> c) {
+    public <S extends Stage<?, ?>> S searchStageFor(Class<? extends Stage<?, ?>> c) {
         return (S) searchContextFor(c).getStage();
     }
 
     @Override
-    public void fire(MessageEvent<?> event) {
+    public void fire(MessageEvent<Object> event) {
         headContext.fire(event);
     }
 

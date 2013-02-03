@@ -10,11 +10,11 @@ import net.ihiroky.niotty.event.TransportStateEvent;
  */
 public interface PipeLine {
 
-    PipeLine add(Stage<?> stage);
-    StageContext getFirstContext();
-    StageContext getLastContext();
-    StageContext searchContextFor(Class<? extends Stage<?>> c);
-    <S extends Stage<?>> S searchStageFor(Class<? extends Stage<?>> c);
-    void fire(MessageEvent<?> event);
+    PipeLine add(Stage<?, ?> stage);
+    StageContext<?, ?> getFirstContext();
+    StageContext<?, ?> getLastContext();
+    StageContext<?, ?> searchContextFor(Class<? extends Stage<?, ?>> c);
+    <S extends Stage<?, ?>> S searchStageFor(Class<? extends Stage<?, ?>> c);
+    void fire(MessageEvent<Object> event);
     void fire(TransportStateEvent event);
 }

@@ -10,17 +10,17 @@ import org.slf4j.LoggerFactory;
 /**
  * @author Hiroki Itoh
  */
-public class HelloWorldStage implements Stage<Object> {
+public class HelloWorldStage implements Stage<String, Object> {
 
     private Logger logger = LoggerFactory.getLogger(HelloWorldStage.class);
 
     @Override
-    public void process(StageContext context, MessageEvent<Object> event) {
+    public void process(StageContext<String, Object> context, MessageEvent<String> event) {
         logger.info(event.toString());
     }
 
     @Override
-    public void process(StageContext context, TransportStateEvent event) {
+    public void process(StageContext<String, Object> context, TransportStateEvent event) {
         switch (event.getState()) {
             case CONNECTED:
                 if (event.getValue() != null) {

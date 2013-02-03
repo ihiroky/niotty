@@ -14,46 +14,33 @@ import java.util.concurrent.CopyOnWriteArrayList;
  *
  * @author Hiroki Itoh
  */
-public class StageContext {
+public class StageContext<I, O> {
 
-    private Stage<Object> stage;
-    private StageContext next;
-    private StageContextListener<Object> listener;
+    private Stage<I, O> stage;
+    private StageContext<O, ?> next;
+    private StageContextListener<I, O> listener;
     private PipeLine pipeLine;
 
     private Logger logger = LoggerFactory.getLogger(StageContext.class);
 
-    private static final StageContextListener<Object> NULL_LISTENER = new StageContextAdapter<Object>();
-    private static final Stage<Object> NULL_STAGE = new Stage<Object>() {
-        @Override
-        public void process(StageContext context, MessageEvent<Object> event) {
-        }
-        @Override
-        public void process(StageContext context, TransportStateEvent event) {
-        }
-        @Override
-        public String toString() {
-            return "Null Stage";
-        }
-    };
-    private static final StageContext TERMINAL = new StageContext(null, NULL_STAGE);
+    private static final StageContextListener<Object, Object> NULL_LISTENER = new StageContextAdapter<>();
+    static final StageContext<Object, Object> TERMINAL = new StageContext<>(null, Stage.NULL);
 
     @SuppressWarnings("unchecked")
-    StageContext(PipeLine pipeLine, Stage<?> stage) {
+    StageContext(PipeLine pipeLine, Stage<I, O> stage) {
         Objects.requireNonNull(stage, "stage");
 
-        this.stage = (Stage<Object>) stage;
-        this.next = TERMINAL;
-        this.listener = NULL_LISTENER;
+        this.stage = stage;
+        this.next = (StageContext<O, ?>) TERMINAL;
+        this.listener = (StageContextListener<I, O>) NULL_LISTENER;
         this.pipeLine = pipeLine;
     }
 
 
-    protected void fire(MessageEvent<?> event) {
+    protected void fire(MessageEvent<I> event) {
         logger.trace("execute {} with {}", stage, event);
-        @SuppressWarnings("unchecked") MessageEvent<Object> e = (MessageEvent<Object>)event;
-        listener.onFire(pipeLine, this, e);
-        stage.process(this, e);
+        listener.onFire(pipeLine, this, event);
+        stage.process(this, event);
     }
 
     protected void fire(TransportStateEvent event) {
@@ -62,9 +49,8 @@ public class StageContext {
         stage.process(this, event);
     }
 
-    public void proceed(MessageEvent<?> event) {
-        @SuppressWarnings("unchecked") MessageEvent<Object> e = (MessageEvent<Object>) event;
-        listener.onProceed(pipeLine, this, e);
+    public void proceed(MessageEvent<O> event) {
+        listener.onProceed(pipeLine, this, event);
         next.fire(event);
     }
 
@@ -73,40 +59,39 @@ public class StageContext {
         next.fire(event);
     }
 
-    protected void setNext(StageContext context) {
+    protected void setNext(StageContext<O, ?> context) {
         Objects.requireNonNull(context, "context");
         this.next = context;
     }
 
-    protected StageContext getNext() {
+    protected StageContext<O, ?> getNext() {
         return next;
     }
 
 
-    public void addListener(StageContextListener<?> contextListener) {
+    public void addListener(StageContextListener<?, ?> contextListener) {
         Objects.requireNonNull(contextListener, "contextListener");
 
+        StageContextListener<I, O> oldListener = listener;
         @SuppressWarnings("unchecked")
-        StageContextListener<Object> oldListener = listener;
-        @SuppressWarnings("unchecked")
-        StageContextListener<Object> newListener = (StageContextListener<Object>) contextListener;
+        StageContextListener<I, O> newListener = (StageContextListener<I, O>) contextListener;
 
         if (listener == NULL_LISTENER) {
             listener = newListener;
             return;
         }
         if (listener instanceof ListenerList) {
-            ((ListenerList<Object>)listener).list.add(newListener);
+            ((ListenerList<I, O>)listener).list.add(newListener);
             return;
         }
 
-        ListenerList<Object> listenerList = new ListenerList<Object>();
+        ListenerList<I, O> listenerList = new ListenerList<>();
         listenerList.list.add(oldListener);
         listenerList.list.add(newListener);
         listener = listenerList;
     }
 
-    public Stage<?> getStage() {
+    public Stage<I, O> getStage() {
         return stage;
     }
 
@@ -115,34 +100,34 @@ public class StageContext {
         return "stage:" + stage;
     }
 
-    private static class ListenerList<E> implements StageContextListener<E> {
+    private static class ListenerList<I, O> implements StageContextListener<I, O> {
 
-        List<StageContextListener<E>> list = new CopyOnWriteArrayList<StageContextListener<E>>();
+        List<StageContextListener<I, O>> list = new CopyOnWriteArrayList<>();
 
         @Override
-        public void onFire(PipeLine pipeLine, StageContext context, MessageEvent<E> event) {
-            for (StageContextListener<E> listener : list) {
+        public void onFire(PipeLine pipeLine, StageContext<I, O> context, MessageEvent<I> event) {
+            for (StageContextListener<I, O> listener : list) {
                 listener.onFire(pipeLine, context, event);
             }
         }
 
         @Override
-        public void onFire(PipeLine pipeLine, StageContext context, TransportStateEvent event) {
-            for (StageContextListener<E> listener : list) {
+        public void onFire(PipeLine pipeLine, StageContext<I, O> context, TransportStateEvent event) {
+            for (StageContextListener<I, O> listener : list) {
                 listener.onFire(pipeLine, context, event);
             }
         }
 
         @Override
-        public void onProceed(PipeLine pipeLine, StageContext context, MessageEvent<E> event) {
-            for (StageContextListener<E> listener : list) {
+        public void onProceed(PipeLine pipeLine, StageContext<I, O> context, MessageEvent<O> event) {
+            for (StageContextListener<I, O> listener : list) {
                 listener.onProceed(pipeLine, context, event);
             }
         }
 
         @Override
-        public void onProceed(PipeLine pipeLine, StageContext context, TransportStateEvent event) {
-            for (StageContextListener<E> listener : list) {
+        public void onProceed(PipeLine pipeLine, StageContext<I, O> context, TransportStateEvent event) {
+            for (StageContextListener<I, O> listener : list) {
                 listener.onProceed(pipeLine, context, event);
             }
         }

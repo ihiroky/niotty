@@ -15,9 +15,10 @@ public class ContextTransportAggregate extends DefaultTransportAggregate {
 
     ContextTransportAggregate(PipeLine storePipeLine) {
         Objects.requireNonNull(storePipeLine, "storePipeLine");
-        storePipeLine.getLastContext().addListener(new StageContextAdapter<BufferSink>() {
+        storePipeLine.getLastContext().addListener(new StageContextAdapter<Object, BufferSink>() {
             @Override
-            public void onProceed(PipeLine pipeLine, StageContext context, MessageEvent<BufferSink> event) {
+            public void onProceed(
+                    PipeLine pipeLine, StageContext<Object, BufferSink> context, MessageEvent<BufferSink> event) {
                 final BufferSink buffer = event.getMessage();
                 for (Transport t : transportMap.keySet()) {
                     @SuppressWarnings("unchecked")

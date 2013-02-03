@@ -2,6 +2,7 @@ package net.ihiroky.niotty.sample;
 
 import net.ihiroky.niotty.Stage;
 import net.ihiroky.niotty.StageContext;
+import net.ihiroky.niotty.buffer.BufferSink;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.event.MessageEvent;
 import net.ihiroky.niotty.event.TransportStateEvent;
@@ -15,21 +16,21 @@ import java.nio.charset.Charset;
  *
  * @author Hiroki Itoh
  */
-public class StringEncoder implements Stage<String> {
+public class StringEncoder implements Stage<String, BufferSink> {
 
     private Logger logger = LoggerFactory.getLogger(StringEncoder.class);
 
     static Charset CHARSET = Charset.forName("UTF-8");
 
     @Override
-    public void process(StageContext context, MessageEvent<String> event) {
+    public void process(StageContext<String, BufferSink> context, MessageEvent<String> event) {
         String message = event.getMessage();
         byte[] bytes = message.getBytes(CHARSET);
         context.proceed(new MessageEvent<>(event.getTransport(), Buffers.createBufferSink(bytes)));
     }
 
     @Override
-    public void process(StageContext context, TransportStateEvent event) {
+    public void process(StageContext<String, BufferSink> context, TransportStateEvent event) {
         logger.info(event.toString());
         context.proceed(event);
     }

@@ -12,11 +12,11 @@ import net.ihiroky.niotty.PipeLineFactory;
 public class ServerPipeLineFactory implements PipeLineFactory {
     @Override
     public PipeLine createLoadPipeLine() {
-        return Niotty.newPipeLine(new StringDecoder(), new EchoStage());
+        return Niotty.newPipeLine("ServerLoadPipeLine", new StringDecoder(), new EchoStage());
     }
 
     @Override
     public PipeLine createStorePipeLine() {
-        return Niotty.newPipeLine(new StringEncoder());
+        return Niotty.newPipeLine("ServerStorePipeLine", new StringEncoder());
     }
 }

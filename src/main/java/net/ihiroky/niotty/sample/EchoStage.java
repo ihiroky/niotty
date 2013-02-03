@@ -12,18 +12,18 @@ import org.slf4j.LoggerFactory;
  *
  * @author Hiroki Itoh
  */
-public class EchoStage implements Stage<String> {
+public class EchoStage implements Stage<String, Object> {
 
     private Logger logger = LoggerFactory.getLogger(EchoStage.class);
 
     @Override
-    public void process(StageContext context, MessageEvent<String> event) {
+    public void process(StageContext<String, Object> context, MessageEvent<String> event) {
         logger.info(event.toString());
         event.getTransport().write(event.getMessage());
     }
 
     @Override
-    public void process(StageContext context, TransportStateEvent event) {
+    public void process(StageContext<String, Object> context, TransportStateEvent event) {
         logger.info(event.toString());
     }
 }

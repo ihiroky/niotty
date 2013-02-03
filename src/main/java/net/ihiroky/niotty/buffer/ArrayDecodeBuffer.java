@@ -209,6 +209,10 @@ public class ArrayDecodeBuffer implements DecodeBuffer {
 
     @Override
     public ByteBuffer toByteBuffer() {
+        if (lastBankIndex == 0) {
+            return ByteBuffer.wrap(banks[0], 0, lastCountInBank);
+        }
+
         ByteBuffer byteBuffer = ByteBuffer.allocate(wholeBytes());
         for (int i = 0; i < lastBankIndex; i++) {
             byteBuffer.put(banks[i], 0, bankLength);
