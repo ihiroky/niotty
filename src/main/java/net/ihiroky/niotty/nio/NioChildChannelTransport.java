@@ -5,7 +5,6 @@ import net.ihiroky.niotty.PipeLine;
 import net.ihiroky.niotty.PipeLineFactory;
 import net.ihiroky.niotty.TransportConfig;
 import net.ihiroky.niotty.buffer.BufferSink;
-import net.ihiroky.niotty.buffer.EncodeBuffer;
 import net.ihiroky.niotty.event.MessageEvent;
 import net.ihiroky.niotty.event.TransportState;
 import net.ihiroky.niotty.event.TransportStateEvent;
@@ -90,7 +89,7 @@ public class NioChildChannelTransport extends NioSocketTransport<MessageIOSelect
 
     void readyToWrite(BufferSink buffer) {
         if (buffer.needsDirectTransfer()) {
-            // TODO FileChannel transfer
+            // TODO FileChannel transfer, protocol too.
         }
         // TODO ByteBuffer transfer
         buffer.transferTo(notWrittenBufferQueue);
@@ -100,7 +99,7 @@ public class NioChildChannelTransport extends NioSocketTransport<MessageIOSelect
         Queue<ByteBuffer> queue = notWrittenBufferQueue;
         WritableByteChannel channel = (WritableByteChannel) getSelectionKey().channel();
         int writeBytes;
-        for (ByteBuffer buffer = queue.peek(); buffer != null; buffer = queue.poll()) {
+        for (ByteBuffer buffer = queue.poll(); buffer != null; buffer = queue.poll()) {
             writeBytes = channel.write(buffer);
             if (writeBytes == -1) {
                 throw new EOFException();

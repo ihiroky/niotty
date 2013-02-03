@@ -19,6 +19,7 @@ public class ArrayEncodeBuffer implements EncodeBuffer, BufferSink {
     private final int bankLength;
 
     private static final int DEFAULT_BANK_LENGTH = 1024;
+    private static final int BANKS_PER_GROW = 8;
 
     public ArrayEncodeBuffer() {
         this(DEFAULT_BANK_LENGTH);
@@ -29,7 +30,7 @@ public class ArrayEncodeBuffer implements EncodeBuffer, BufferSink {
             throw new IllegalArgumentException("bankLength must be ge 16");
         }
 
-        byte[][] banks = new byte[1][];
+        byte[][] banks = new byte[BANKS_PER_GROW][];
         banks[0] = new byte[bankLength];
         this.banks = banks;
         this.bankLength = bankLength;
@@ -208,10 +209,18 @@ public class ArrayEncodeBuffer implements EncodeBuffer, BufferSink {
         if (bytes <= space) {
             return;
         }
+
+        byte[][] bs = banks;
         int requiredBytes = bytes - space;
         for (int currentBankIndex = bankIndex; requiredBytes > 0; requiredBytes -= bankLength) {
-            banks[++currentBankIndex] = new byte[bankLength];
+            if (bs.length == currentBankIndex) {
+                byte[][] t = new byte[currentBankIndex + BANKS_PER_GROW][];
+                System.arraycopy(bs, 0, t, 0, bs.length);
+                bs = t;
+            }
+            bs[++currentBankIndex] = new byte[bankLength];
         }
+        banks = bs;
     }
 
     @Override

@@ -24,5 +24,6 @@ public interface DecodeBuffer {
     int  wholeBytes();
     void clear();
     BufferSink toBufferSink();
+    ByteBuffer toByteBuffer();
     void transferFrom(ByteBuffer byteBuffer);
 }

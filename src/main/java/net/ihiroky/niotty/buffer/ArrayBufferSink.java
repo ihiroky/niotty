@@ -11,13 +11,16 @@ import java.util.Queue;
  */
 class ArrayBufferSink implements BufferSink {
 
-    private byte[] buffer;
+    private byte[][] buffers;
 
-    static final ArrayBufferSink EMPTY_ENCODING_BUFFER =
-            new ArrayBufferSink(new byte[0]);
+    static final ArrayBufferSink EMPTY_ENCODING_BUFFER = new ArrayBufferSink(new byte[0][0]);
 
     ArrayBufferSink(byte[] buffer) {
-        this.buffer = buffer;
+        this.buffers = new byte[][] {buffer};
+    }
+
+    ArrayBufferSink(byte[][] buffers) {
+        this.buffers = buffers;
     }
     @Override
     public boolean needsDirectTransfer() {
@@ -26,12 +29,16 @@ class ArrayBufferSink implements BufferSink {
 
     @Override
     public void transferTo(ByteBuffer writeBuffer) {
-        writeBuffer.put(buffer, 0, buffer.length);
+        for (byte[] buffer : buffers) {
+            writeBuffer.put(buffer, 0, buffer.length);
+        }
     }
 
     @Override
     public void transferTo(Queue<ByteBuffer> writeQueue) {
-        writeQueue.offer(ByteBuffer.wrap(buffer));
+        for (byte[] buffer : buffers) {
+            writeQueue.offer(ByteBuffer.wrap(buffer));
+        }
     }
 
     @Override

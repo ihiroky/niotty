@@ -1,5 +1,7 @@
 package net.ihiroky.niotty.buffer;
 
+import java.nio.ByteBuffer;
+
 /**
  * @author Hiroki Itoh
  */
@@ -20,5 +22,9 @@ public final class Buffers {
             s[i] = new ArrayBufferSink(byteArrays[i]);
         }
         return new CompositeBufferSink(s);
+    }
+
+    public static DecodeBuffer createDecodeBuffer(ByteBuffer byteBuffer) {
+        return new ByteBufferDecodeBuffer(byteBuffer);
     }
 }
