@@ -20,6 +20,6 @@ public interface EncodeBuffer {
 
     int  filledBytes();
     void clear();
-
+    BufferSink createBufferSink();
 
 }

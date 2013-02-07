@@ -21,24 +21,23 @@ import java.nio.channels.ServerSocketChannel;
 public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector> {
 
     private ServerSocketChannel serverChannel;
-    private AcceptSelectorPool acceptSelectorPool;
-    private MessageIOSelectorPool messageIOSelectorPool;
+    private NioServerSocketProcessor processor;
     private NioServerSocketConfig config;
     private TransportAggregate childTransportAggregate;
 
-    NioServerSocketTransport(NioServerSocketConfig cfg,
-                             AcceptSelectorPool acceptPool,
-                             MessageIOSelectorPool messageIOPool) {
+
+    NioServerSocketTransport(NioServerSocketConfig config, NioServerSocketProcessor processor) {
+        ServerSocketChannel serverChannel = null;
         try {
-            config = cfg;
             serverChannel = ServerSocketChannel.open();
             serverChannel.configureBlocking(false);
-            cfg.applySocketOptions(serverChannel.socket());
+            config.applySocketOptions(serverChannel);
 
-            acceptSelectorPool = acceptPool;
-            messageIOSelectorPool = messageIOPool;
-            PipeLine childPipeLine = cfg.getContextPipeLine();
-            childTransportAggregate = (childPipeLine == null)
+            this.config = config;
+            this.serverChannel = serverChannel;
+            this.processor = processor;
+            PipeLine childPipeLine = config.getContextPipeLine();
+            this.childTransportAggregate = (childPipeLine == null)
                     ? Niotty.newTransportAggregate() : Niotty.newContextTransportAggregate(childPipeLine);
         } catch (IOException ioe) {
             if (serverChannel != null) {
@@ -67,7 +66,7 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
         try {
             serverChannel.bind(socketAddress, config.getBacklog());
             getTransportListener().onBind(this, socketAddress);
-            acceptSelectorPool.register(this, serverChannel, SelectionKey.OP_ACCEPT);
+            processor.getAcceptSelectorPool().register(this, serverChannel, SelectionKey.OP_ACCEPT);
         } catch (IOException e) {
             throw new RuntimeException("failed to bind server socket:" + socketAddress, e);
         }
@@ -91,9 +90,10 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
     }
 
     NioChildChannelTransport registerLater(SelectableChannel channel, int ops) {
-        NioChildChannelTransport child = new NioChildChannelTransport(config); // TODO check socket options
+        NioChildChannelTransport child =
+                new NioChildChannelTransport(config, processor.getWriteBufferSize(), processor.isUseDirectBuffer());
         childTransportAggregate.add(child);
-        messageIOSelectorPool.register(child, channel, ops);
+        processor.getMessageIOSelectorPool().register(child, channel, ops);
         return child;
     }
 

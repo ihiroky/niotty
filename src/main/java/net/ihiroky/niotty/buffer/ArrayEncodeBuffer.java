@@ -1,9 +1,5 @@
 package net.ihiroky.niotty.buffer;
 
-import java.nio.ByteBuffer;
-import java.nio.channels.WritableByteChannel;
-import java.util.Queue;
-
 /**
  * A buffer to encode primitive and byte array values.
  * A byte array to store encoded bytes increase its capacity as needed.
@@ -11,7 +7,7 @@ import java.util.Queue;
  *
  * @author Hiroki Itoh
  */
-public class ArrayEncodeBuffer implements EncodeBuffer, BufferSink {
+public class ArrayEncodeBuffer implements EncodeBuffer {
 
     private byte[][] banks;
     private int bankIndex;
@@ -178,7 +174,7 @@ public class ArrayEncodeBuffer implements EncodeBuffer, BufferSink {
     public void writeLong(long value) {
         int cib = countInBank;
         int space = bankLength - cib;
-        if (space >= CodecUtil.INT_BYTES) {
+        if (space >= CodecUtil.LONG_BYTES) {
             byte[] bank = banks[bankIndex];
             bank[cib    ] = (byte) (value >>> CodecUtil.BYTE_SHIFT7);
             bank[cib + 1] = (byte) ((value >>> CodecUtil.BYTE_SHIFT6) & CodecUtil.BYTE_MASK);
@@ -226,7 +222,6 @@ public class ArrayEncodeBuffer implements EncodeBuffer, BufferSink {
     @Override
     public int filledBytes() {
         return bankIndex * bankLength + countInBank;
-
     }
 
     @Override
@@ -236,28 +231,7 @@ public class ArrayEncodeBuffer implements EncodeBuffer, BufferSink {
     }
 
     @Override
-    public boolean needsDirectTransfer() {
-        return false;
-    }
-
-    @Override
-    public void transferTo(ByteBuffer writeBuffer) {
-        byte[][] bs = banks;
-        int n = bs.length - 1;
-        for (int i = 0; i < n; i++) {
-            writeBuffer.put(bs[i]);
-        }
-        writeBuffer.put(bs[n], 0, countInBank);
-    }
-
-    @Override
-    public void transferTo(Queue<ByteBuffer> writeQueue) {
-        ByteBuffer byteBuffer = ByteBuffer.allocate(filledBytes());
-        transferTo(byteBuffer);
-        writeQueue.offer(byteBuffer);
-    }
-
-    @Override
-    public void transferTo(WritableByteChannel channel) {
+    public BufferSink createBufferSink() {
+        return new ArrayBufferSink(banks, bankIndex, countInBank);
     }
 }

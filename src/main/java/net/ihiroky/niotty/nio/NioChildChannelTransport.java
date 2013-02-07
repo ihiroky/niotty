@@ -3,14 +3,12 @@ package net.ihiroky.niotty.nio;
 import net.ihiroky.niotty.EventLoop;
 import net.ihiroky.niotty.PipeLine;
 import net.ihiroky.niotty.PipeLineFactory;
-import net.ihiroky.niotty.StageContextListener;
 import net.ihiroky.niotty.TransportConfig;
 import net.ihiroky.niotty.buffer.BufferSink;
 import net.ihiroky.niotty.event.MessageEvent;
 import net.ihiroky.niotty.event.TransportState;
 import net.ihiroky.niotty.event.TransportStateEvent;
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
@@ -28,18 +26,22 @@ import java.util.Queue;
  */
 public class NioChildChannelTransport extends NioSocketTransport<MessageIOSelector> {
 
-    // TODO use ByteBuffer to handle pending bytes. refer Nio*SocketProcessor#writeBufferSize
-    private Queue<ByteBuffer> notWrittenBufferQueue;
+    private boolean remainingPreviousData;
+    private ByteBuffer writeBuffer;
+    private Queue<BufferSink> pendingQueue;
 
-    NioChildChannelTransport(TransportConfig config) {
-        this.notWrittenBufferQueue = new LinkedList<>();
-
+    NioChildChannelTransport(TransportConfig config, int writeBufferSize, boolean directWriteBuffer) {
         PipeLineFactory factory = config.getPipeLineFactory();
         PipeLine loadPipeLine = factory.createLoadPipeLine();
         PipeLine storePipeLine = factory.createStorePipeLine();
         storePipeLine.getLastContext().addListener(MessageIOSelector.MESSAGE_IO_STORE_CONTEXT_LISTENER);
+        ByteBuffer writeBuffer = directWriteBuffer
+                ? ByteBuffer.allocateDirect(writeBufferSize) : ByteBuffer.allocate(writeBufferSize);
+
         setLoadPipeLine(loadPipeLine);
         setStorePipeLine(storePipeLine);
+        this.writeBuffer = writeBuffer;
+        this.pendingQueue = new LinkedList<>();
     }
 
     @Override
@@ -79,8 +81,8 @@ public class NioChildChannelTransport extends NioSocketTransport<MessageIOSelect
         if (loop != null) {
             loop.offerTask(new EventLoop.Task<MessageIOSelector>() {
                 @Override
-                public boolean execute(MessageIOSelector eventLoop) {
-                    readyToWrite(buffer);
+                public boolean execute(MessageIOSelector eventLoop) throws Exception {
+                    writeBufferSink(buffer);
                     eventLoop.flushLater(NioChildChannelTransport.this);
                     return true;
                 }
@@ -88,24 +90,49 @@ public class NioChildChannelTransport extends NioSocketTransport<MessageIOSelect
         }
     }
 
-    void readyToWrite(BufferSink buffer) {
-        if (buffer.needsDirectTransfer()) {
-            // TODO FileChannel transfer, protocol too.
+    void writeBufferSink(BufferSink buffer) throws IOException {
+        WritableByteChannel channel = (WritableByteChannel) getSelectionKey().channel();
+        ByteBuffer localWriteBuffer = writeBuffer;
+
+        if (remainingPreviousData) {
+            channel.write(localWriteBuffer);
+            if (localWriteBuffer.hasRemaining()) {
+                pendingQueue.offer(buffer);
+                return;
+            }
+            remainingPreviousData = false;
+            localWriteBuffer.clear();
         }
-        // TODO ByteBuffer transfer
-        buffer.transferTo(notWrittenBufferQueue);
+
+        if (pendingQueue.isEmpty()) {
+            if (buffer.transferTo(channel, localWriteBuffer)) {
+                localWriteBuffer.clear();
+            } else {
+                remainingPreviousData = true;
+                pendingQueue.offer(buffer);
+            }
+        }
     }
 
     boolean flush() throws IOException {
-        Queue<ByteBuffer> queue = notWrittenBufferQueue;
         WritableByteChannel channel = (WritableByteChannel) getSelectionKey().channel();
-        int writeBytes;
-        for (ByteBuffer buffer = queue.poll(); buffer != null; buffer = queue.poll()) {
-            writeBytes = channel.write(buffer);
-            if (writeBytes == -1) {
-                throw new EOFException();
+        ByteBuffer localWriteBuffer = writeBuffer;
+
+        if (remainingPreviousData) {
+            channel.write(localWriteBuffer);
+            if (localWriteBuffer.hasRemaining()) {
+                return false;
             }
-            if (buffer.hasRemaining()) {
+            remainingPreviousData = false;
+            localWriteBuffer.clear();
+        }
+
+        for (BufferSink pendingBuffer; (pendingBuffer = pendingQueue.peek()) != null; ) {
+            if (pendingBuffer.transferTo(channel, localWriteBuffer)) {
+                localWriteBuffer.clear();
+                pendingQueue.poll();
+            } else {
+                remainingPreviousData = true;
                 return false;
             }
         }

@@ -103,6 +103,6 @@ public abstract class EventLoop<L extends EventLoop<L>> implements Runnable {
     protected abstract void wakeUp();
 
     public interface Task<L extends EventLoop<L>> {
-        boolean execute(L eventLoop);
+        boolean execute(L eventLoop) throws Exception;
     }
 }

@@ -36,8 +36,12 @@ public class MessageIOSelector extends AbstractSelector<MessageIOSelector> {
                 public void onProceed(
                         PipeLine pipeLine, StageContext<Object, BufferSink> context, MessageEvent<BufferSink> event) {
                     NioChildChannelTransport transport = (NioChildChannelTransport) event.getTransport();
-                    transport.readyToWrite(event.getMessage());
-                    transport.getEventLoop().offerTask(new FlushTask(transport));
+                    try {
+                        transport.writeBufferSink(event.getMessage());
+                        transport.getEventLoop().offerTask(new FlushTask(transport));
+                    } catch (IOException ioe) {
+                        transport.closeSelectableChannel();
+                    }
                 }
 
                 @Override
@@ -73,7 +77,7 @@ public class MessageIOSelector extends AbstractSelector<MessageIOSelector> {
         if (bufferSize < MIN_BUFFER_SIZE) {
             bufferSize = MIN_BUFFER_SIZE;
         }
-        byteBuffer = direct ? ByteBuffer.allocateDirect(bufferSize) : ByteBuffer.allocateDirect(bufferSize);
+        byteBuffer = direct ? ByteBuffer.allocateDirect(bufferSize) : ByteBuffer.allocate(bufferSize);
     }
 
     @Override

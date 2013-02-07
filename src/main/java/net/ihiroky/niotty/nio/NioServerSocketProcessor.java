@@ -15,18 +15,19 @@ public class NioServerSocketProcessor implements Processor<NioServerSocketConfig
 
     private AcceptSelectorPool acceptSelectorPool;
     private MessageIOSelectorPool messageIOSelectorPool;
+    private int readBufferSize;
+    private int writeBufferSize;
+    private boolean useDirectBuffer;
 
     private String name;
     private int numberOfAcceptThread;
     private int numberOfMessageIOThread;
-    private int readBufferSize;
-    private boolean useDirectBuffer;
 
     private static final int DEFAULT_NUMBER_OF_ACCEPT_THREAD = 1;
     private static final int DEFAULT_NUMBER_OF_MESSAGE_IO_THREAD =
             Math.max(Runtime.getRuntime().availableProcessors() / 2, 2);
     private static final String DEFAULT_NAME = "NioServerSocket";
-    private static final int DEFAULT_READ_BUFFER_SIZE = 8192;
+    private static final int DEFAULT_BUFFER_SIZE = 8192;
     private static final boolean DEFAULT_DIRECT_BUFFER = true;
 
     public NioServerSocketProcessor() {
@@ -36,7 +37,8 @@ public class NioServerSocketProcessor implements Processor<NioServerSocketConfig
         numberOfAcceptThread = DEFAULT_NUMBER_OF_ACCEPT_THREAD;
         numberOfMessageIOThread = DEFAULT_NUMBER_OF_MESSAGE_IO_THREAD;
         name = DEFAULT_NAME;
-        readBufferSize = DEFAULT_READ_BUFFER_SIZE;
+        readBufferSize = DEFAULT_BUFFER_SIZE;
+        writeBufferSize = DEFAULT_BUFFER_SIZE;
         useDirectBuffer = DEFAULT_DIRECT_BUFFER;
     }
 
@@ -44,10 +46,8 @@ public class NioServerSocketProcessor implements Processor<NioServerSocketConfig
     public synchronized void start() {
         messageIOSelectorPool.setReadBufferSize(readBufferSize);
         messageIOSelectorPool.setDirect(useDirectBuffer);
-        messageIOSelectorPool.open(new NameCountThreadFactory(name.concat("-MessageIO")),
-                numberOfMessageIOThread);
-        acceptSelectorPool.open(new NameCountThreadFactory(name.concat("-Accept")),
-                numberOfAcceptThread);
+        messageIOSelectorPool.open(new NameCountThreadFactory(name.concat("-MessageIO")), numberOfMessageIOThread);
+        acceptSelectorPool.open(new NameCountThreadFactory(name.concat("-Accept")), numberOfAcceptThread);
     }
 
     @Override
@@ -58,7 +58,7 @@ public class NioServerSocketProcessor implements Processor<NioServerSocketConfig
 
     @Override
     public Transport createTransport(NioServerSocketConfig config) {
-        return new NioServerSocketTransport(config, acceptSelectorPool, messageIOSelectorPool);
+        return new NioServerSocketTransport(config, this);
     }
 
     public void setName(String name) {
@@ -87,7 +87,34 @@ public class NioServerSocketProcessor implements Processor<NioServerSocketConfig
         this.readBufferSize = readBufferSize;
     }
 
+    public void setWriteBufferSize(int writeBufferSize) {
+        if (writeBufferSize <= 0) {
+            throw new IllegalArgumentException("writeBufferSize must be positive.");
+        }
+        this.writeBufferSize = writeBufferSize;
+    }
+
     public void setUseDirectBuffer(boolean useDirectBuffer) {
         this.useDirectBuffer = useDirectBuffer;
+    }
+
+    AcceptSelectorPool getAcceptSelectorPool() {
+        return acceptSelectorPool;
+    }
+
+    MessageIOSelectorPool getMessageIOSelectorPool() {
+        return messageIOSelectorPool;
+    }
+
+    int getReadBufferSize() {
+        return readBufferSize;
+    }
+
+    int getWriteBufferSize() {
+        return writeBufferSize;
+    }
+
+    boolean isUseDirectBuffer() {
+        return useDirectBuffer;
     }
 }

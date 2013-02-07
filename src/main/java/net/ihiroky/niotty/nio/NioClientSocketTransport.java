@@ -20,19 +20,19 @@ public class NioClientSocketTransport extends NioSocketTransport<ConnectSelector
 
     private SocketChannel clientChannel;
     private NioClientSocketConfig config;
-    private ConnectSelectorPool connectSelectorPool;
-    private MessageIOSelectorPool messageIOSelectorPool;
+    private NioClientSocketProcessor processor;
     private volatile NioChildChannelTransport childTransport;
 
-    public NioClientSocketTransport(NioClientSocketConfig cfg,
-                                    ConnectSelectorPool connectPool, MessageIOSelectorPool messageIOPool) {
+    public NioClientSocketTransport(NioClientSocketConfig config, NioClientSocketProcessor processor) {
         try {
-            clientChannel = SocketChannel.open();
+
+            SocketChannel clientChannel = SocketChannel.open();
             clientChannel.configureBlocking(false);
-            config = cfg;
-            connectSelectorPool = connectPool;
-            messageIOSelectorPool = messageIOPool;
-            cfg.applySocketOptions(clientChannel.socket());
+            config.applySocketOptions(clientChannel);
+
+            this.clientChannel = clientChannel;
+            this.config = config;
+            this.processor = processor;
         } catch (Exception e) {
             throw new RuntimeException("failed to open client socket channel.", e);
         }
@@ -52,7 +52,7 @@ public class NioClientSocketTransport extends NioSocketTransport<ConnectSelector
     public void connect(SocketAddress remote) {
         try {
             clientChannel.connect(remote);
-            connectSelectorPool.register(this, clientChannel, SelectionKey.OP_CONNECT);
+            processor.getConnectSelectorPool().register(this, clientChannel, SelectionKey.OP_CONNECT);
         } catch (IOException ioe) {
             throw new RuntimeException("failed to connect " + clientChannel + " to " + remote, ioe);
         }
@@ -95,9 +95,10 @@ public class NioClientSocketTransport extends NioSocketTransport<ConnectSelector
             getTransportListener().onConnect(this, clientChannel.getRemoteAddress());
         } catch (IOException ignored) {
         }
-        NioChildChannelTransport child = new NioChildChannelTransport(config);
+        NioChildChannelTransport child =
+                new NioChildChannelTransport(config, processor.getWriteBufferSize(), processor.isUseDirectBuffer());
         this.childTransport = child;
-        messageIOSelectorPool.register(child, channel, ops);
+        processor.getMessageIOSelectorPool().register(child, channel, ops);
         return childTransport;
     }
 
@@ -105,8 +106,8 @@ public class NioClientSocketTransport extends NioSocketTransport<ConnectSelector
     protected void writeDirect(final BufferSink buffer) {
         getEventLoop().offerTask(new EventLoop.Task<ConnectSelector>() {
             @Override
-            public boolean execute(ConnectSelector eventLoop) {
-                childTransport.readyToWrite(buffer);
+            public boolean execute(ConnectSelector eventLoop) throws Exception {
+                childTransport.writeBufferSink(buffer);
                 return true;
             }
         });

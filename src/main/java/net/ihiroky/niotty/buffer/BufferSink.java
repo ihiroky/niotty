@@ -1,15 +1,13 @@
 package net.ihiroky.niotty.buffer;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
-import java.util.Queue;
 
 /**
+ * Add interface if new Transport is added and new data type is required.
  * @author Hiroki Itoh
  */
 public interface BufferSink {
-    boolean needsDirectTransfer();
-    void transferTo(ByteBuffer writeBuffer);
-    void transferTo(Queue<ByteBuffer> writeQueue);
-    void transferTo(WritableByteChannel channel);
+    boolean transferTo(WritableByteChannel channel, ByteBuffer writeBuffer) throws IOException;
 }
