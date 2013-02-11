@@ -1,237 +1,215 @@
 package net.ihiroky.niotty.buffer;
 
+import java.util.Arrays;
+
 /**
- * A buffer to encode primitive and byte array values.
- * A byte array to store encoded bytes increase its capacity as needed.
- * The byte order is little endian.
+ * Implementation of {@link net.ihiroky.niotty.buffer.EncodeBuffer} using {@code byte[]}.
  *
  * @author Hiroki Itoh
  */
 public class ArrayEncodeBuffer implements EncodeBuffer {
 
-    private byte[][] banks;
-    private int bankIndex;
-    private int countInBank;
-    private final int bankLength;
+    private byte[] buffer;
+    private int position;
 
-    private static final int DEFAULT_BANK_LENGTH = 1024;
-    private static final int BANKS_PER_GROW = 8;
+    private static final int DEFAULT_CAPACITY = 512;
+    private static final int MINIMUM_CAPACITY = 8;
 
-    public ArrayEncodeBuffer() {
-        this(DEFAULT_BANK_LENGTH);
+    ArrayEncodeBuffer() {
+        this(DEFAULT_CAPACITY);
     }
 
-    public ArrayEncodeBuffer(int bankLength) {
-        if (bankLength < 16) {
-            throw new IllegalArgumentException("bankLength must be ge 16");
+    ArrayEncodeBuffer(int initialCapacity) {
+        int capacity = initialCapacity;
+        if (capacity <= MINIMUM_CAPACITY) {
+            capacity = MINIMUM_CAPACITY;
         }
-
-        byte[][] banks = new byte[BANKS_PER_GROW][];
-        banks[0] = new byte[bankLength];
-        this.banks = banks;
-        this.bankLength = bankLength;
+        buffer = new byte[capacity];
     }
 
-    private void proceedBankIfInBankLast() {
-        if (countInBank == bankLength) {
-            bankIndex++;
-            countInBank = 0;
+    /**
+     * Ensures the backed byte array capacity. The new capacity is the large of the two, sum of the current capacity
+     * and {@code length} and twice the size of current capacity.
+     *
+     * @param length the size of byte to be written
+     */
+    private void ensureSpace(int length) {
+        int current = buffer.length;
+        int required = position + length;
+        if (required >= current) {
+            int twice = current * 2;
+            int newCapacity = (required >= twice) ? required : twice;
+            buffer = Arrays.copyOf(buffer, newCapacity);
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void writeByte(int value) {
         ensureSpace(1);
-        banks[bankIndex][countInBank++] = (byte) value;
-        proceedBankIfInBankLast();
+        buffer[position++] = (byte) value;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void writeBytes(byte[] bytes, int offset, int length) {
-        int bi = bankIndex;
-        int cib = countInBank;
-        int space = bankLength - cib;
-        if (space >= length) {
-            System.arraycopy(bytes, offset, banks[bi], cib, length);
-            countInBank += length;
-            proceedBankIfInBankLast();
-            return;
-        }
-
-        // write to current and next bank
         ensureSpace(length);
-        System.arraycopy(bytes, offset, banks[bi++], cib, space);
-        int leftOffset = offset + space;
-        int leftBytes = length - space;
-        space = bankLength;
-        while (leftBytes > space) {
-            System.arraycopy(bytes, leftOffset, banks[bi++], 0, space);
-            leftOffset += space;
-            leftBytes -= space;
-        }
-        System.arraycopy(bytes, leftOffset, banks[bi], 0, leftBytes);
-        bankIndex = bi;
-        countInBank = leftBytes;
+        System.arraycopy(bytes, offset, buffer, position, length);
+        position += length;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void writeBytes4(int bits, int bytes) {
-        writeBytes8(bits & 0xFFFFFFFFL, bytes);
+        if (bytes < 0 || bytes > CodecUtil.INT_BYTES) {
+            throw new IllegalArgumentException("bytes must be in int bytes.");
+        }
+        writeBytes8RangeUnchecked(bits, bytes);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void writeBytes8(long bits, int bytes) {
-        int cib = countInBank;
-        int space = bankLength - cib;
-        if (space >= bytes) {
-            byte[] bank = banks[bankIndex];
-            int bytesMinus1 = bytes - 1;
-            for (int i = 0; i < bytes; i++) {
-                bank[cib + i] = (byte) ((bits >>> (bytesMinus1 - i)) & CodecUtil.BYTE_MASK);
-            }
-            countInBank += bytes;
-            proceedBankIfInBankLast();
-            return;
+        if (bytes < 0 || bytes > CodecUtil.LONG_BYTES) {
+            throw new IllegalArgumentException("bytes must be in long bytes.");
         }
-        writeBytes8AcrossBanks(bits, bytes, space);
+        writeBytes8RangeUnchecked(bits, bytes);
     }
 
-    private void writeBytes8AcrossBanks(long bits, int bytes, int space) {
+    /**
+     * Implementation of wirteBytes8() without {@code byte} range check.
+     * @param bits the set of bit to be written
+     * @param bytes the byte size of {@code bits}
+     */
+    private void writeBytes8RangeUnchecked(long bits, int bytes) {
         ensureSpace(bytes);
-        int bi = bankIndex;
-        int cib = countInBank;
         int bytesMinus1 = bytes - 1;
-        byte[] bank = banks[bi];
-        int i = 0;
-        for (; i < space; i++) {
-            bank[cib + i] = (byte) ((bits >>> (bytesMinus1 - i)) & CodecUtil.BYTE_MASK);
+        int base = position;
+        byte[] b = buffer;
+        for (int i = 0; i < bytes; i++) {
+            b[base + i] = (byte) ((bits >>> (bytesMinus1 - i)) & CodecUtil.BYTE_MASK);
         }
-        bank = banks[++bi];
-        for (; i< bytes; i++) {
-            bank[i - space] = (byte) ((bits >>> (bytesMinus1 - i)) & CodecUtil.BYTE_MASK);
-        }
-        bankIndex = bi;
-        countInBank = bytes - space;
+        position = base + bytes;
     }
 
-    @Override
-    public void writeChar(char value) {
-        int bi = bankIndex;
-        int cib = countInBank;
-        int space = bankLength - cib;
-        if (space >= CodecUtil.SHORT_BYTES) {
-            byte[] bank = banks[bi];
-            bank[cib    ] = (byte) (value >>> CodecUtil.BYTE_SHIFT1);
-            bank[cib + 1] = (byte) (value & CodecUtil.BYTE_MASK);
-            proceedBankIfInBankLast();
-            return;
-        }
-
-        ensureSpace(CodecUtil.CHAR_BYTES);
-        banks[bi][cib] = (byte) (value >>> CodecUtil.BYTE_SHIFT1);
-        banks[bi + 1][0] = (byte) (value & CodecUtil.BYTE_MASK);
-        bankIndex = bi + 1;
-        countInBank = 1;
-    }
-
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void writeShort(short value) {
-        int bi = bankIndex;
-        int cib = countInBank;
-        int space = bankLength - cib;
-        if (space >= CodecUtil.SHORT_BYTES) {
-            byte[] bank = banks[bi];
-            bank[cib    ] = (byte) (value >>> CodecUtil.BYTE_SHIFT1);
-            bank[cib + 1] = (byte) (value & CodecUtil.BYTE_MASK);
-            proceedBankIfInBankLast();
-            return;
-        }
-
         ensureSpace(CodecUtil.SHORT_BYTES);
-        banks[bi][cib] = (byte) (value >>> CodecUtil.BYTE_SHIFT1);
-        banks[bi + 1][0] = (byte) (value & CodecUtil.BYTE_MASK);
-        bankIndex = bi + 1;
-        countInBank = 1;
+        int c = position;
+        buffer[c] = (byte) ((value >>> CodecUtil.BYTE_SHIFT1) & CodecUtil.BYTE_MASK);
+        buffer[c + 1] = (byte) (value & CodecUtil.BYTE_MASK);
+        position = c + CodecUtil.SHORT_BYTES;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void writeChar(char value) {
+        ensureSpace(CodecUtil.CHAR_BYTES);
+        int c = position;
+        buffer[c] = (byte) ((value >>> CodecUtil.BYTE_SHIFT1) & CodecUtil.BYTE_MASK);
+        buffer[c + 1] = (byte) (value & CodecUtil.BYTE_MASK);
+        position = c + CodecUtil.CHAR_BYTES;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void writeInt(int value) {
-        int cib = countInBank;
-        int space = bankLength - cib;
-        if (space >= CodecUtil.INT_BYTES) {
-            byte[] bank = banks[bankIndex];
-            bank[cib    ] = (byte) (value >>> CodecUtil.BYTE_SHIFT3);
-            bank[cib + 1] = (byte) ((value >>> CodecUtil.BYTE_SHIFT2) & CodecUtil.BYTE_MASK);
-            bank[cib + 2] = (byte) ((value >>> CodecUtil.BYTE_SHIFT1) & CodecUtil.BYTE_MASK);
-            bank[cib + 3] = (byte) (value & CodecUtil.BYTE_MASK);
-            proceedBankIfInBankLast();
-            return;
-        }
-        writeBytes8AcrossBanks(value & 0xFFFFFFFFL, CodecUtil.INT_BYTES, space);
+        ensureSpace(CodecUtil.INT_BYTES);
+        int c = position;
+        byte[] b = buffer;
+        b[c] = (byte) ((value >>> CodecUtil.BYTE_SHIFT3) & CodecUtil.BYTE_MASK);
+        b[c + 1] = (byte) ((value >>> CodecUtil.BYTE_SHIFT2) & CodecUtil.BYTE_MASK);
+        b[c + 2] = (byte) ((value >>> CodecUtil.BYTE_SHIFT1) & CodecUtil.BYTE_MASK);
+        b[c + 3] = (byte) (value & CodecUtil.BYTE_MASK);
+        position = c + CodecUtil.INT_BYTES;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void writeLong(long value) {
-        int cib = countInBank;
-        int space = bankLength - cib;
-        if (space >= CodecUtil.LONG_BYTES) {
-            byte[] bank = banks[bankIndex];
-            bank[cib    ] = (byte) (value >>> CodecUtil.BYTE_SHIFT7);
-            bank[cib + 1] = (byte) ((value >>> CodecUtil.BYTE_SHIFT6) & CodecUtil.BYTE_MASK);
-            bank[cib + 2] = (byte) ((value >>> CodecUtil.BYTE_SHIFT5) & CodecUtil.BYTE_MASK);
-            bank[cib + 3] = (byte) ((value >>> CodecUtil.BYTE_SHIFT4) & CodecUtil.BYTE_MASK);
-            bank[cib + 4] = (byte) ((value >>> CodecUtil.BYTE_SHIFT3) & CodecUtil.BYTE_MASK);
-            bank[cib + 5] = (byte) ((value >>> CodecUtil.BYTE_SHIFT2) & CodecUtil.BYTE_MASK);
-            bank[cib + 6] = (byte) ((value >>> CodecUtil.BYTE_SHIFT1) & CodecUtil.BYTE_MASK);
-            bank[cib + 7] = (byte) (value & CodecUtil.BYTE_MASK);
-            proceedBankIfInBankLast();
-            return;
-        }
-        writeBytes8AcrossBanks(value, CodecUtil.LONG_BYTES, space);
+        ensureSpace(CodecUtil.LONG_BYTES);
+        int c = position;
+        byte[] b = buffer;
+        b[c] = (byte) ((value >>> CodecUtil.BYTE_SHIFT7) & CodecUtil.BYTE_MASK);
+        b[c + 1] = (byte) ((value >>> CodecUtil.BYTE_SHIFT6) & CodecUtil.BYTE_MASK);
+        b[c + 2] = (byte) ((value >>> CodecUtil.BYTE_SHIFT5) & CodecUtil.BYTE_MASK);
+        b[c + 3] = (byte) ((value >>> CodecUtil.BYTE_SHIFT4) & CodecUtil.BYTE_MASK);
+        b[c + 4] = (byte) ((value >>> CodecUtil.BYTE_SHIFT3) & CodecUtil.BYTE_MASK);
+        b[c + 5] = (byte) ((value >>> CodecUtil.BYTE_SHIFT2) & CodecUtil.BYTE_MASK);
+        b[c + 6] = (byte) ((value >>> CodecUtil.BYTE_SHIFT1) & CodecUtil.BYTE_MASK);
+        b[c + 7] = (byte) (value & CodecUtil.BYTE_MASK);
+        position = c + CodecUtil.LONG_BYTES;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void writeFloat(float value) {
         writeInt(Float.floatToIntBits(value));
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void writeDouble(double value) {
         writeLong(Double.doubleToLongBits(value));
     }
 
-    private void ensureSpace(int bytes) {
-        int space = bankLength - countInBank;
-        if (bytes <= space) {
-            return;
-        }
-
-        byte[][] bs = banks;
-        int requiredBytes = bytes - space;
-        for (int currentBankIndex = bankIndex; requiredBytes > 0; requiredBytes -= bankLength) {
-            if (bs.length == currentBankIndex) {
-                byte[][] t = new byte[currentBankIndex + BANKS_PER_GROW][];
-                System.arraycopy(bs, 0, t, 0, bs.length);
-                bs = t;
-            }
-            bs[++currentBankIndex] = new byte[bankLength];
-        }
-        banks = bs;
-    }
-
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public int filledBytes() {
-        return bankIndex * bankLength + countInBank;
+        return position;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int capacityBytes() {
+        return buffer.length;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void clear() {
-        bankIndex = 0;
-        countInBank = 0;
+        position = 0;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public BufferSink createBufferSink() {
-        return new ArrayBufferSink(banks, bankIndex, countInBank);
+        return new ArrayBufferSink(buffer, 0, position);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    protected byte[] array() {
+        return buffer;
     }
 }

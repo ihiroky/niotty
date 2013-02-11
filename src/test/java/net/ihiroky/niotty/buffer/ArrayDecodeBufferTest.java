@@ -1,0 +1,381 @@
+package net.ihiroky.niotty.buffer;
+
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.experimental.runners.Enclosed;
+import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
+
+import java.util.Arrays;
+
+import static org.hamcrest.CoreMatchers.*;
+import static org.junit.Assert.*;
+
+/**
+ * @author Hiroki Itoh
+ */
+@RunWith(Enclosed.class)
+public class ArrayDecodeBufferTest {
+
+    public static class EmptyCase {
+
+        private ArrayDecodeBuffer sut;
+
+        @Rule
+        public ExpectedException expectedException = ExpectedException.none();
+
+        @Before
+        public void setUp() {
+            sut = new ArrayDecodeBuffer();
+            sut.drainFrom(ArrayDecodeBuffer.wrap(new byte[0], 0));
+        }
+
+        @Test
+        public void testReadByte() throws Exception {
+            expectedException.expect(IndexOutOfBoundsException.class);
+            sut.readByte();
+        }
+
+        @Test
+        public void testReadBytes() throws Exception {
+            expectedException.expect(IndexOutOfBoundsException.class);
+            sut.readBytes(new byte[1], 0, 1);
+        }
+
+        @Test
+        public void testReadBytes4() throws Exception {
+            expectedException.expect(IndexOutOfBoundsException.class);
+            sut.readBytes4(1);
+        }
+
+        @Test
+        public void testReadBytes8() throws Exception {
+            expectedException.expect(IndexOutOfBoundsException.class);
+            sut.readBytes8(1);
+        }
+
+        @Test
+        public void testReadChar() throws Exception {
+            expectedException.expect(IndexOutOfBoundsException.class);
+            sut.readChar();
+        }
+
+        @Test
+        public void testReadShort() throws Exception {
+            expectedException.expect(IndexOutOfBoundsException.class);
+            sut.readShort();
+        }
+
+        @Test
+        public void testReadInt() throws Exception {
+            expectedException.expect(IndexOutOfBoundsException.class);
+            sut.readInt();
+        }
+
+        @Test
+        public void testReadLong() throws Exception {
+            expectedException.expect(IndexOutOfBoundsException.class);
+            sut.readLong();
+        }
+
+        @Test
+        public void testReadFloat() throws Exception {
+            expectedException.expect(IndexOutOfBoundsException.class);
+            sut.readFloat();
+        }
+
+        @Test
+        public void testReadDouble() throws Exception {
+            expectedException.expect(IndexOutOfBoundsException.class);
+            sut.readDouble();
+        }
+
+        @Test
+        public void testRemainingBytes() throws Exception {
+            assertThat(sut.remainingBytes(), is(0));
+        }
+
+        @Test
+        public void testCapacityBytes() throws Exception {
+            assertThat(sut.capacityBytes(), is(0));
+        }
+    }
+
+    public static class NormalCase {
+
+        private ArrayDecodeBuffer sut;
+
+        @Rule
+        public ExpectedException expectedException = ExpectedException.none();
+
+        @Before
+        public void before() {
+            byte[] buffer = new byte[50];
+            for (int i = 0; i < 5; i++) {
+                for (int j = 0; j < 10; j ++) {
+                    buffer[i * 10 + j] = (byte) (j + '0');
+                }
+            }
+            sut = ArrayDecodeBuffer.wrap(buffer, buffer.length);
+        }
+
+        @Test
+        public void testReadByte() throws Exception {
+            for (int i = 0; i < 10; i++) {
+                assertThat(sut.readByte(), is(i + 0x30));
+            }
+        }
+
+        @Test
+        public void testReadByteOverflow() throws Exception {
+            for (int i = 0; i < 50; i++) {
+                sut.readByte();
+            }
+            expectedException.expect(IndexOutOfBoundsException.class);
+            sut.readByte();
+        }
+
+        @Test
+        public void testReadBytes4() throws Exception {
+            int byte0 = sut.readBytes4(0);
+            assertThat(byte0, is(0));
+
+            int byte1 = sut.readBytes4(1);
+            assertThat(byte1, is(0x30));
+
+            int byte2 = sut.readBytes4(2);
+            assertThat(byte2, is(0x3132));
+
+            int byte3 = sut.readBytes4(3);
+            assertThat(byte3, is(0x333435));
+
+            int byte4 = sut.readBytes4(4);
+            assertThat(byte4, is(0x36373839));
+        }
+
+        @Test
+        public void testReadBytes4Over4Bytes() throws Exception {
+            expectedException.expect(IllegalArgumentException.class);
+            expectedException.expectMessage("bytes must be in [0, 4].");
+            sut.readBytes4(5);
+        }
+
+        @Test
+        public void testReadBytes4Under4Bytes() throws Exception {
+            expectedException.expect(IllegalArgumentException.class);
+            expectedException.expectMessage("bytes must be in [0, 4].");
+            sut.readBytes4(-1);
+        }
+
+        @Test
+        public void testReadBytes4Underflow() throws Exception {
+            while (sut.remainingBytes() >= 4) {
+                sut.readBytes4(4);
+            }
+            expectedException.expect(IndexOutOfBoundsException.class);
+            sut.readBytes4(4);
+        }
+
+        @Test
+        public void testReadBytes8() throws Exception {
+            long b0 = sut.readBytes8(0);
+            assertThat(b0, is(0L));
+
+            long b1 = sut.readBytes8(1);
+            assertThat(b1, is(0x30L));
+
+            long b2 = sut.readBytes8(2);
+            assertThat(b2, is(0x3132L));
+
+            long b7 = sut.readBytes8(7);
+            assertThat(b7, is(0x33343536373839L));
+
+            long b8 = sut.readBytes8(8);
+            assertThat(b8, is(0x3031323334353637L));
+        }
+
+        @Test
+        public void testReadBytes8Over8Bytes() throws Exception {
+            expectedException.expect(IllegalArgumentException.class);
+            expectedException.expectMessage("bytes must be in [0, 8].");
+            sut.readBytes8(9);
+        }
+
+        @Test
+        public void testReadBytes8Under8Bytes() throws Exception {
+            expectedException.expect(IllegalArgumentException.class);
+            expectedException.expectMessage("bytes must be in [0, 8].");
+            sut.readBytes8(-1);
+        }
+
+        @Test
+        public void testReadBytes8Underflow() throws Exception {
+            while (sut.remainingBytes() >= 8) {
+                sut.readBytes8(8);
+            }
+            expectedException.expect(IndexOutOfBoundsException.class);
+            sut.readBytes8(8);
+        }
+
+        @Test
+        public void testReadBytes() throws Exception {
+            byte[] data = new byte[4];
+            sut.readBytes(data, 0, 0);
+            assertThat(data, is(new byte[]{0, 0, 0, 0}));
+
+            sut.readBytes(data, 3, 1);
+            assertThat(data, is(new byte[]{0, 0, 0, 0x30}));
+
+            sut.readBytes(data, 0, 4);
+            assertThat(data, is(new byte[]{0x31, 0x32, 0x33, 0x34}));
+        }
+
+        @Test
+        public void testReadBytesUnderflow() throws Exception {
+            int remaining = sut.remainingBytes();
+            byte[] data = new byte[remaining + 10];
+            expectedException.expect(IndexOutOfBoundsException.class);
+            sut.readBytes(data, 0, data.length);
+        }
+
+        @Test
+        public void testReadChar() throws Exception {
+            char c = sut.readChar();
+            assertThat(c, is((char) 0x3031));
+        }
+
+        @Test
+        public void testReadCharUnderflow() throws Exception {
+            int remaining = sut.remainingBytes();
+            sut.readBytes(new byte[remaining - 1], 0, remaining - 1);
+
+            expectedException.expect(IndexOutOfBoundsException.class);
+            sut.readChar();
+        }
+
+        @Test
+        public void testReadShort() throws Exception {
+            short s = sut.readShort();
+            assertThat(s, is((short) 0x3031));
+        }
+
+        @Test
+        public void testReadShortUnderflow() throws Exception {
+            int remaining = sut.remainingBytes();
+            sut.readBytes(new byte[remaining - 1], 0, remaining - 1);
+
+            expectedException.expect(IndexOutOfBoundsException.class);
+            sut.readShort();
+        }
+
+        @Test
+        public void testReadInt() throws Exception {
+            int i = sut.readInt();
+            assertThat(i, is(0x30313233));
+        }
+
+        @Test
+        public void testReadIntUnderflow() throws Exception {
+            int remaining = sut.remainingBytes();
+            sut.readBytes(new byte[remaining - 1], 0, remaining - 1);
+
+            expectedException.expect(IndexOutOfBoundsException.class);
+            sut.readInt();
+        }
+
+        @Test
+        public void testReadLong() throws Exception {
+            long i = sut.readLong();
+            assertThat(i, is(0x3031323334353637L));
+        }
+
+        @Test
+        public void testReadLongUnderflow() throws Exception {
+            int remaining = sut.remainingBytes();
+            sut.readBytes(new byte[remaining - 1], 0, remaining - 1);
+
+            expectedException.expect(IndexOutOfBoundsException.class);
+            sut.readLong();
+        }
+
+        @Test
+        public void testReadFloat() throws Exception {
+            float v = sut.readFloat();
+            assertThat(v, is(Float.intBitsToFloat(0x30313233)));
+        }
+
+        @Test
+        public void testReadFloatUnderflow() throws Exception {
+            int remaining = sut.remainingBytes();
+            sut.readBytes(new byte[remaining - 1], 0, remaining - 1);
+
+            expectedException.expect(IndexOutOfBoundsException.class);
+            sut.readFloat();
+        }
+
+        @Test
+        public void testReadDouble() throws Exception {
+            double v = sut.readDouble();
+            assertThat(v, is(Double.longBitsToDouble(0x3031323334353637L)));
+        }
+
+        @Test
+        public void testReadDoubleUnderflow() throws Exception {
+            int remaining = sut.remainingBytes();
+            sut.readBytes(new byte[remaining - 1], 0, remaining - 1);
+
+            expectedException.expect(IndexOutOfBoundsException.class);
+            sut.readDouble();
+        }
+
+        @Test
+        public void testRemainingBytes() throws Exception {
+            int r = sut.remainingBytes();
+            assertThat(r, is(50));
+
+            sut.readLong();
+            r = sut.remainingBytes();
+            assertThat(r, is(42));
+        }
+
+        @Test
+        public void testCapacityBytes() throws Exception {
+            assertThat(sut.capacityBytes(), is(50));
+        }
+
+        @Test
+        public void testReset() throws Exception {
+            sut.readBytes(new byte[50], 0, 50);
+            sut.reset();
+            assertThat(sut.remainingBytes(), is(0));
+        }
+
+        @Test
+        public void testDrainFrom() throws Exception {
+            byte[] a = new byte[40];
+            Arrays.fill(a, (byte) 'a');
+
+            sut.reset();
+            sut.drainFrom(ArrayDecodeBuffer.wrap(a, a.length));
+            assertThat(sut.remainingBytes(), is(40));
+            assertThat(sut.capacityBytes(), is(50));
+
+            byte[] b = new byte[20];
+            Arrays.fill(b, (byte) 'b');
+            sut.drainFrom(ArrayDecodeBuffer.wrap(b, b.length));
+            assertThat(sut.remainingBytes(), is(60));
+            assertThat(sut.capacityBytes(), is(100));
+
+            byte[] ea = new byte[40];
+            sut.readBytes(ea, 0, 40);
+            assertThat(ea, is(a));
+
+            byte[] eb = new byte[20];
+            sut.readBytes(eb, 0, 20);
+            assertThat(eb, is(b));
+
+            assertThat(sut.remainingBytes(), is(0));
+        }
+    }
+}

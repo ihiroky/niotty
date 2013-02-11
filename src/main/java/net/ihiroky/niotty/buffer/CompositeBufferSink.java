@@ -24,4 +24,13 @@ public class CompositeBufferSink implements BufferSink {
         }
         return true;
     }
+
+    @Override
+    public int remainingBytes() {
+        long sum = 0;
+        for (BufferSink bufferSink : bufferSinks) {
+            sum += bufferSink.remainingBytes();
+        }
+        return (sum <= Integer.MAX_VALUE) ? (int) sum : Integer.MAX_VALUE;
+    }
 }

@@ -20,8 +20,8 @@ public class ByteBufferBufferSink implements BufferSink {
     public boolean transferTo(WritableByteChannel channel, ByteBuffer writeBuffer) throws IOException {
         ByteBuffer localByteBuffer = byteBuffer;
         int remaining = localByteBuffer.remaining();
-        int limit = byteBuffer.limit();
         while (remaining > 0) {
+            int limit = byteBuffer.limit();
             int space = writeBuffer.remaining();
             int readyToWrite = (remaining <= space) ? remaining : space;
             localByteBuffer.limit(localByteBuffer.position() + readyToWrite);
@@ -32,14 +32,20 @@ public class ByteBufferBufferSink implements BufferSink {
                 localByteBuffer.limit(limit);
                 throw new EOFException();
             }
-            // Some bytes remains in writeBuffer. This round stops.
-            if (writeBytes != readyToWrite) {
+            // Some bytes remains in writeBuffer. Stop this round.
+            if (writeBytes < readyToWrite) {
                 localByteBuffer.limit(limit);
                 return false;
             }
-            // Write all bytes in writeBuffer. Prepare to left bytes to write.
+            // Write all bytes in writeBuffer.
             remaining -= writeBytes;
+            writeBuffer.clear();
         }
         return true;
+    }
+
+    @Override
+    public int remainingBytes() {
+        return byteBuffer.remaining();
     }
 }
