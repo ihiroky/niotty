@@ -87,6 +87,14 @@ public interface EncodeBuffer {
     void writeDouble(double value);
 
     /**
+     * Drains this buffer to a specified {@code encodeBuffer} instance. This buffer is read by
+     * {@code encodeBuffer} and gets empty.
+     *
+     * @param encodeBuffer buffer which is drained to.
+     */
+    void drainTo(EncodeBuffer encodeBuffer);
+
+    /**
      * Returns the size of written bytes into this buffer. This is equal to the current position.
      * @return the size of written bytes into this buffer
      */

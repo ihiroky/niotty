@@ -200,6 +200,17 @@ public class SegmentedArrayEncodeBuffer implements EncodeBuffer {
         writeLong(Double.doubleToLongBits(value));
     }
 
+    @Override
+    public void drainTo(EncodeBuffer encodeBuffer) {
+        int si1 = segmentIndex - 1;
+        for (int i = 0; i < si1; i++) {
+            encodeBuffer.writeBytes(segments[i], 0, segmentLength);
+        }
+        encodeBuffer.writeBytes(segments[segmentIndex], 0, countInSegment);
+        segmentIndex = 0;
+        countInSegment = 0;
+    }
+
     private void ensureSpace(int bytes) {
         int space = segmentLength - countInSegment;
         if (bytes <= space) {

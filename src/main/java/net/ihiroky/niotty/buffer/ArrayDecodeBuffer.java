@@ -49,6 +49,18 @@ public class ArrayDecodeBuffer implements DecodeBuffer {
      * {@inheritDoc}
      */
     @Override
+    public void readBytes(ByteBuffer byteBuffer) {
+        int space = byteBuffer.remaining();
+        int remaining = remainingBytes();
+        int read = (space <= remaining) ? space : remaining;
+        byteBuffer.put(buffer, position, read);
+        position += read;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public int readBytes4(int bytes) {
         if (bytes < 0 || bytes > CodecUtil.INT_BYTES) {
             throw new IllegalArgumentException("bytes must be in [0, 4].");
@@ -167,6 +179,20 @@ public class ArrayDecodeBuffer implements DecodeBuffer {
      * {@inheritDoc}
      */
     @Override
+    public int skipBytes(int bytes) {
+        int pos = position;
+        int n = end - pos; // remaining
+        if (bytes < n) {
+            n = (bytes < -pos) ? -pos : bytes;
+        }
+        position += n;
+        return n;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public int remainingBytes() {
         return end - position;
     }
@@ -209,12 +235,12 @@ public class ArrayDecodeBuffer implements DecodeBuffer {
      */
     @Override
     public void drainFrom(DecodeBuffer decodeBuffer) {
-        int current = buffer.length;
-        int space = current - end;
+        int capacity = buffer.length;
+        int space = capacity - end;
         int remaining = decodeBuffer.remainingBytes();
         if (space < remaining) {
-            int required = current + remaining;
-            int twice = current * 2;
+            int required = end + remaining;
+            int twice = capacity * 2;
             buffer = Arrays.copyOf(buffer, (required >= twice) ? required : twice);
         }
         decodeBuffer.readBytes(buffer, end, remaining);

@@ -7,6 +7,7 @@ import org.junit.experimental.runners.Enclosed;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 import static org.hamcrest.CoreMatchers.*;
@@ -41,6 +42,14 @@ public class ArrayDecodeBufferTest {
         public void testReadBytes() throws Exception {
             expectedException.expect(IndexOutOfBoundsException.class);
             sut.readBytes(new byte[1], 0, 1);
+        }
+
+        @Test
+        public void testReadBytesByteBuffer() throws Exception {
+            ByteBuffer bb = ByteBuffer.allocate(1);
+            sut.readBytes(bb);
+            assertThat(bb.remaining(), is(1));
+            assertThat(sut.remainingBytes(), is(0));
         }
 
         @Test
@@ -89,6 +98,27 @@ public class ArrayDecodeBufferTest {
         public void testReadDouble() throws Exception {
             expectedException.expect(IndexOutOfBoundsException.class);
             sut.readDouble();
+        }
+
+        @Test
+        public void testSkipBytes0() throws Exception {
+            int skipped = sut.skipBytes(0);
+            assertThat(skipped, is(0));
+            assertThat(sut.remainingBytes(), is(0));
+        }
+
+        @Test
+        public void testSkipBytesForward() throws Exception {
+            int skipped = sut.skipBytes(1);
+            assertThat(skipped, is(0));
+            assertThat(sut.remainingBytes(), is(0));
+        }
+
+        @Test
+        public void testSkipBytesBackward() throws Exception {
+            int skipped = sut.skipBytes(-1);
+            assertThat(skipped, is(0));
+            assertThat(sut.remainingBytes(), is(0));
         }
 
         @Test
@@ -240,6 +270,42 @@ public class ArrayDecodeBufferTest {
         }
 
         @Test
+        public void testReadBytesByteBufferPart() throws Exception {
+            ByteBuffer bb = ByteBuffer.allocate(4);
+            bb.limit(0);
+            sut.readBytes(bb);
+            assertThat(bb.array(), is(new byte[]{0, 0, 0, 0}));
+            assertThat(sut.remainingBytes(), is(50));
+
+            bb.limit(4).position(3);
+            sut.readBytes(bb);
+            assertThat(bb.array(), is(new byte[]{0, 0, 0, 0x30}));
+            assertThat(sut.remainingBytes(), is(49));
+
+            bb.clear();
+            sut.readBytes(bb);
+            assertThat(bb.array(), is(new byte[]{0x31, 0x32, 0x33, 0x34}));
+            assertThat(sut.remainingBytes(), is(45));
+        }
+
+        @Test
+        public void testReadBytesByteBufferWhole() throws Exception {
+            ByteBuffer bb = ByteBuffer.allocate(60);
+            sut.readBytes(bb);
+            bb.flip();
+
+            assertThat(sut.remainingBytes(), is(0));
+            assertThat(bb.remaining(), is(50));
+            for (int i = 0x30; i < 0x3a; i++) {
+                assertThat(bb.get(), is((byte) i));
+            }
+            bb.position(40);
+            for (int i = 0x30; i < 0x3a; i++) {
+                assertThat(bb.get(), is((byte) i));
+            }
+        }
+
+        @Test
         public void testReadChar() throws Exception {
             char c = sut.readChar();
             assertThat(c, is((char) 0x3031));
@@ -330,6 +396,35 @@ public class ArrayDecodeBufferTest {
         }
 
         @Test
+        public void testSkipBytesForward() throws Exception {
+            int skipped = sut.skipBytes(7);
+            assertThat(skipped, is(7));
+            assertThat(sut.remainingBytes(), is(43));
+        }
+
+        @Test
+        public void testSkipBytesForwardOver() throws Exception {
+            int skipped = sut.skipBytes(51);
+            assertThat(skipped, is(50));
+            assertThat(sut.remainingBytes(), is(0));
+        }
+
+        @Test
+        public void testSkipBytesBackward() throws Exception {
+            sut.skipBytes(50);
+            int skipped = sut.skipBytes(-7);
+            assertThat(skipped, is(-7));
+            assertThat(sut.remainingBytes(), is(7));
+        }
+
+        @Test
+        public void testSkipBytesBackwardUnder() throws Exception {
+            int skipped = sut.skipBytes(-10);
+            assertThat(skipped, is(0));
+            assertThat(sut.remainingBytes(), is(50));
+        }
+
+        @Test
         public void testRemainingBytes() throws Exception {
             int r = sut.remainingBytes();
             assertThat(r, is(50));
@@ -353,27 +448,40 @@ public class ArrayDecodeBufferTest {
 
         @Test
         public void testDrainFrom() throws Exception {
+            // drain 40 bytes
             byte[] a = new byte[40];
             Arrays.fill(a, (byte) 'a');
-
             sut.reset();
             sut.drainFrom(ArrayDecodeBuffer.wrap(a, a.length));
+
             assertThat(sut.remainingBytes(), is(40));
             assertThat(sut.capacityBytes(), is(50));
 
+            // drain 20 bytes
             byte[] b = new byte[20];
             Arrays.fill(b, (byte) 'b');
             sut.drainFrom(ArrayDecodeBuffer.wrap(b, b.length));
             assertThat(sut.remainingBytes(), is(60));
             assertThat(sut.capacityBytes(), is(100));
 
-            byte[] ea = new byte[40];
-            sut.readBytes(ea, 0, 40);
+            // drain 150 bytes
+            byte[] c = new byte[150];
+            Arrays.fill(c, (byte) 'c');
+            sut.drainFrom(ArrayDecodeBuffer.wrap(c, c.length));
+            assertThat(sut.remainingBytes(), is(210));
+            assertThat(sut.capacityBytes(), is(210));
+
+            byte[] ea = new byte[a.length];
+            sut.readBytes(ea, 0, ea.length);
             assertThat(ea, is(a));
 
-            byte[] eb = new byte[20];
-            sut.readBytes(eb, 0, 20);
+            byte[] eb = new byte[b.length];
+            sut.readBytes(eb, 0, eb.length);
             assertThat(eb, is(b));
+
+            byte[] ec = new byte[c.length];
+            sut.readBytes(ec, 0, ec.length);
+            assertThat(ec, is(c));
 
             assertThat(sut.remainingBytes(), is(0));
         }

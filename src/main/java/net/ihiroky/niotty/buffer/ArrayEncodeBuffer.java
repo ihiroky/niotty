@@ -174,6 +174,12 @@ public class ArrayEncodeBuffer implements EncodeBuffer {
         writeLong(Double.doubleToLongBits(value));
     }
 
+    @Override
+    public void drainTo(EncodeBuffer encodeBuffer) {
+        encodeBuffer.writeBytes(buffer, 0, position);
+        position = 0;
+    }
+
     /**
      * {@inheritDoc}
      */

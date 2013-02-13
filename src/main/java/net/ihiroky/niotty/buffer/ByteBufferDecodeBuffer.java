@@ -7,17 +7,16 @@ import java.nio.ByteBuffer;
  */
 public class ByteBufferDecodeBuffer implements DecodeBuffer {
 
-    private ByteBuffer byteBuffer;
-
-    private static final ByteBuffer EMPTY_BUFFER = ByteBuffer.allocate(0);
-    private static final int MINIMUM_GROWTH = 1024;
+    private ByteBuffer buffer;
 
     ByteBufferDecodeBuffer() {
-        this.byteBuffer = EMPTY_BUFFER;
+        ByteBuffer b = ByteBuffer.allocate(512);
+        b.limit(0);
+        this.buffer = b;
     }
 
-    private ByteBufferDecodeBuffer(ByteBuffer byteBuffer) {
-        this.byteBuffer = byteBuffer;
+    private ByteBufferDecodeBuffer(ByteBuffer buffer) {
+        this.buffer = buffer;
     }
 
     /**
@@ -25,7 +24,7 @@ public class ByteBufferDecodeBuffer implements DecodeBuffer {
      */
     @Override
     public int readByte() {
-        return byteBuffer.get() & CodecUtil.BYTE_MASK;
+        return buffer.get() & CodecUtil.BYTE_MASK;
     }
 
     /**
@@ -33,7 +32,24 @@ public class ByteBufferDecodeBuffer implements DecodeBuffer {
      */
     @Override
     public void readBytes(byte[] bytes, int offset, int length) {
-        byteBuffer.get(bytes, offset, length);
+        buffer.get(bytes, offset, length);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void readBytes(ByteBuffer byteBuffer) {
+        ByteBuffer myBuffer = buffer;
+        int space = byteBuffer.remaining();
+        if (space >= myBuffer.remaining()) {
+            byteBuffer.put(myBuffer);
+            return;
+        }
+        int limit = myBuffer.limit();
+        myBuffer.limit(myBuffer.position() + space);
+        byteBuffer.put(myBuffer);
+        myBuffer.limit(limit);
     }
 
     /**
@@ -44,7 +60,11 @@ public class ByteBufferDecodeBuffer implements DecodeBuffer {
         if (bytes < 0 || bytes > CodecUtil.INT_BYTES) {
             throw new IllegalArgumentException("bytes must be in [0, 4].");
         }
-        return (int) readBytes8(bytes);
+        int decoded = 0;
+        for (int i = 0; i < bytes; i++) {
+            decoded = (decoded << CodecUtil.BITS_PER_BYTE) | (buffer.get() & CodecUtil.BYTE_MASK);
+        }
+        return decoded;
     }
 
     /**
@@ -55,13 +75,9 @@ public class ByteBufferDecodeBuffer implements DecodeBuffer {
         if (bytes < 0 || bytes > CodecUtil.LONG_BYTES) {
             throw new IllegalArgumentException("bytes must be in [0, 8].");
         }
-        return readBytes8NoRangeCheck(bytes);
-    }
-
-    private long readBytes8NoRangeCheck(int bytes) {
         long decoded = 0L;
         for (int i = 0; i < bytes; i++) {
-            decoded = (decoded << CodecUtil.BITS_PER_BYTE) | (byteBuffer.get() & CodecUtil.BYTE_MASK);
+            decoded = (decoded << CodecUtil.BITS_PER_BYTE) | (buffer.get() & CodecUtil.BYTE_MASK);
         }
         return decoded;
     }
@@ -71,7 +87,7 @@ public class ByteBufferDecodeBuffer implements DecodeBuffer {
      */
     @Override
     public char readChar() {
-        return byteBuffer.getChar();
+        return buffer.getChar();
     }
 
     /**
@@ -79,7 +95,7 @@ public class ByteBufferDecodeBuffer implements DecodeBuffer {
      */
     @Override
     public short readShort() {
-        return byteBuffer.getShort();
+        return buffer.getShort();
     }
 
     /**
@@ -87,7 +103,7 @@ public class ByteBufferDecodeBuffer implements DecodeBuffer {
      */
     @Override
     public int readInt() {
-        return byteBuffer.getInt();
+        return buffer.getInt();
     }
 
     /**
@@ -95,7 +111,7 @@ public class ByteBufferDecodeBuffer implements DecodeBuffer {
      */
     @Override
     public long readLong() {
-        return byteBuffer.getLong();
+        return buffer.getLong();
     }
 
     /**
@@ -103,7 +119,7 @@ public class ByteBufferDecodeBuffer implements DecodeBuffer {
      */
     @Override
     public float readFloat() {
-        return Float.intBitsToFloat(byteBuffer.getInt());
+        return Float.intBitsToFloat(buffer.getInt());
     }
 
     /**
@@ -111,7 +127,21 @@ public class ByteBufferDecodeBuffer implements DecodeBuffer {
      */
     @Override
     public double readDouble() {
-        return Double.longBitsToDouble(byteBuffer.getLong());
+        return Double.longBitsToDouble(buffer.getLong());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int skipBytes(int bytes) {
+        ByteBuffer b = buffer;
+        int n = b.remaining();
+        if (bytes < n) {
+            n = (bytes < -b.position()) ? -b.position() : bytes;
+        }
+        b.position(b.position() + n);
+        return n;
     }
 
     /**
@@ -119,7 +149,7 @@ public class ByteBufferDecodeBuffer implements DecodeBuffer {
      */
     @Override
     public int remainingBytes() {
-        return byteBuffer.remaining();
+        return buffer.remaining();
     }
 
     /**
@@ -127,7 +157,7 @@ public class ByteBufferDecodeBuffer implements DecodeBuffer {
      */
     @Override
     public int capacityBytes() {
-        return byteBuffer.capacity();
+        return buffer.capacity();
     }
 
     /**
@@ -136,7 +166,7 @@ public class ByteBufferDecodeBuffer implements DecodeBuffer {
     @Override
     public void reset() {
         // ready to drainFrom()
-        byteBuffer.clear();
+        buffer.limit(buffer.position());
     }
 
     /**
@@ -144,7 +174,7 @@ public class ByteBufferDecodeBuffer implements DecodeBuffer {
      */
     @Override
     public BufferSink toBufferSink() {
-        return new ByteBufferBufferSink(byteBuffer);
+        return new ByteBufferBufferSink(buffer);
     }
 
     /**
@@ -152,7 +182,7 @@ public class ByteBufferDecodeBuffer implements DecodeBuffer {
      */
     @Override
     public ByteBuffer toByteBuffer() {
-        return byteBuffer.asReadOnlyBuffer();
+        return buffer;
     }
 
     /**
@@ -160,21 +190,21 @@ public class ByteBufferDecodeBuffer implements DecodeBuffer {
      */
     @Override
     public void drainFrom(DecodeBuffer decodeBuffer) {
-        ByteBuffer bb = byteBuffer;
-        ByteBuffer input = decodeBuffer.toByteBuffer();
+        ByteBuffer bb = buffer;
         int space = bb.capacity() - bb.limit();
-        int remaining = input.remaining();
+        int remaining = decodeBuffer.remainingBytes();
         if (space < remaining) {
-            int required = bb.capacity() + remaining;
-            ByteBuffer newBuffer = ByteBuffer.allocate((required >= MINIMUM_GROWTH) ? required : MINIMUM_GROWTH);
+            int required = bb.limit() + remaining;
+            int twice = bb.capacity() * 2;
+            ByteBuffer newBuffer = ByteBuffer.allocate((required >= twice) ? required : twice);
             newBuffer.put(bb).flip();
-            byteBuffer = newBuffer;
+            buffer = newBuffer;
             bb = newBuffer;
         }
         int limit = bb.limit();
         bb.limit(limit + remaining);
         bb.position(limit);
-        bb.put(input);
+        decodeBuffer.readBytes(bb);
         bb.position(0);
     }
 

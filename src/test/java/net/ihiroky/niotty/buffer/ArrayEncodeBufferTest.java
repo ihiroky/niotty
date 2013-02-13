@@ -5,6 +5,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.util.Arrays;
+
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
 
@@ -251,5 +253,19 @@ public class ArrayEncodeBufferTest {
         assertThat(b[6], is((byte) 0x00));
         assertThat(b[7], is((byte) 0x00));
         assertThat(sut.filledBytes(), is(8));
+    }
+
+    @Test
+    public void testDrainTo() throws Exception {
+        sut.writeInt(0x01020304);
+        sut.writeInt(0x05060708);
+        ArrayEncodeBuffer b = new ArrayEncodeBuffer(8);
+
+        sut.drainTo(b);
+
+        assertThat(sut.filledBytes(), is(0));
+        assertThat(b.filledBytes(), is(8));
+        assertThat(Arrays.copyOf(b.array(), 8), is(new byte[]{1, 2, 3, 4, 5, 6, 7, 8}));
+        assertThat(b.capacityBytes(), is(16));
     }
 }

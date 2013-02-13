@@ -25,7 +25,7 @@ public interface DecodeBuffer {
     int    readByte();
 
     /**
-     * Read bytes from the buffer into the specified {@code array}.
+     * Reads bytes from the buffer into the specified {@code array}.
      *
      * @param bytes a byte array into which is data is written
      * @param offset first index in {@code bytes} which is written from;
@@ -37,7 +37,16 @@ public interface DecodeBuffer {
     void   readBytes(byte[] bytes, int offset, int length);
 
     /**
-     * Read specified end of bytes. The result is stored in {@code int} with right aligned big endian.
+     * Reads bytes from the buffer.
+     * If the {@code byteBuffer} has enough space to read the whole buffer data, the {@code byteBuffer} gets
+     * all. If not, the {@code byteBuffer} is filled with the part of buffer data.
+     *
+     * @param byteBuffer a {@code ByteBuffer} into which is data is written
+     */
+    void   readBytes(ByteBuffer byteBuffer);
+
+    /**
+     * Reads specified end of bytes. The result is stored in {@code int} with right aligned big endian.
      * The buffer has {@code [0x30, 0x31, 0x32]} and call readBytes4(2), its result is 0x3031.
      * This method can return data up to 4 byte.
      *
@@ -49,7 +58,7 @@ public interface DecodeBuffer {
     int    readBytes4(int bytes);
 
     /**
-     * Read specified end of bytes. The result is stored in {@code int} with right aligned big endian.
+     * Reads specified end of bytes. The result is stored in {@code int} with right aligned big endian.
      * The buffer has {@code [0x30, 0x31, 0x32]} and call readBytes8(2), its result is 0x3031 of long.
      * This method can return data up to 8 byte.
      *
@@ -109,6 +118,18 @@ public interface DecodeBuffer {
     double readDouble();
 
     /**
+     * Skips specified bytes of the buffer.
+     *
+     * The actual number of {@code n} of bytes to be skipped is the smaller of {@code bytes} and
+     * {@link #remainingBytes()}, and {@code n - remainingBytes() >= 0}. The value {@code n} is added to the position
+     * and then {@code n} is returned.
+     *
+     * @param bytes the number of bytes to be skipped
+     * @return the actual number of bytes skipped
+     */
+    int skipBytes(int bytes);
+
+    /**
      * Returns size of remaining data by byte.
      * This is equals to difference between the capacity and the current position.
      * @return size of remaining data by byte
@@ -134,14 +155,17 @@ public interface DecodeBuffer {
 
     /**
      * Converts remaining buffer contents to {@code java.nio.ByteBuffer}.
+     * An internal storage in this buffer is shared with the result {@code ByteBuffer}. If some data is written into
+     * the {@code ByteBuffer}, then this buffer is also modified and vice versa.
      * @return {@code java.nio.ByteBuffer}
      */
     ByteBuffer toByteBuffer();
 
     /**
-     * Drains a specified {@code decodeBuffer}'s contents to this instance. The contents of {@code decodeBuffer} is
-     * read by this instance and gets empty.
-     * @param decodeBuffer data which is drained from.
+     * Drains a specified {@code decodeBuffer}'s contents to this instance. The {@code decodeBuffer} is read
+     * by this instance and gets empty.
+     *
+     * @param decodeBuffer buffer which is drained from.
      */
     void drainFrom(DecodeBuffer decodeBuffer);
 }

@@ -54,12 +54,71 @@ public class SegmentedArrayDecodeBuffer implements DecodeBuffer {
             return;
         }
 
-        int nbi = si + 1;
-        int nc = length - left;
         System.arraycopy(segments[si], cis, bytes, offset, left);
-        System.arraycopy(segments[nbi], 0, bytes, offset + left, nc);
-        segmentsIndex = nbi;
-        countInSegment = nc;
+        int nextLength = length - left;
+        int nextOffset = offset + left;
+        if (++si == lastSegmentIndex) {
+            readLastSegment(bytes, nextOffset, nextLength);
+            return;
+        }
+        while (nextLength >= segmentLength) {
+            System.arraycopy(segments[si], 0, bytes, nextOffset, segmentLength);
+            nextOffset += segmentLength;
+            nextLength -= segmentLength;
+            if (++si == lastSegmentIndex) {
+                readLastSegment(bytes, nextOffset, nextLength);
+                return;
+            }
+        }
+        System.arraycopy(segments[si], 0, bytes, nextOffset, nextLength);
+        segmentsIndex = si;
+        countInSegment = nextLength;
+    }
+
+    private void readLastSegment(byte[] bytes, int nextOffset, int nextLength) {
+        int read = (nextLength <= lastCountInSegment) ? nextLength : lastCountInSegment;
+        System.arraycopy(segments[lastSegmentIndex], 0, bytes, nextOffset, read);
+        segmentsIndex = lastSegmentIndex;
+        countInSegment = read;
+    }
+
+    @Override
+    public void readBytes(ByteBuffer byteBuffer) {
+        int si = segmentsIndex;
+        int cis = countInSegment;
+        int left = segmentLength - cis;
+        int space = byteBuffer.remaining();
+        if (space <= left) {
+            byteBuffer.put(segments[si], cis, space);
+            countInSegment += space;
+            proceedSegmentIfInBankLast();
+            return;
+        }
+
+        byteBuffer.put(segments[si], cis, left);
+        if (++si == lastSegmentIndex) {
+            readLastSegment(byteBuffer);
+            return;
+        }
+        while (byteBuffer.remaining() >= segmentLength && ++si < lastSegmentIndex) {
+            byteBuffer.put(segments[si], 0, segmentLength);
+            if (++si == lastSegmentIndex) {
+                readLastSegment(byteBuffer);
+                return;
+            }
+        }
+        space = byteBuffer.remaining();
+        byteBuffer.put(segments[si], 0, space);
+        segmentsIndex = si;
+        countInSegment = space;
+    }
+
+    private void readLastSegment(ByteBuffer byteBuffer) {
+        int space = byteBuffer.remaining();
+        int read = (space <= lastCountInSegment) ? space : lastCountInSegment;
+        byteBuffer.put(segments[lastSegmentIndex], 0, read);
+        segmentsIndex = lastSegmentIndex;
+        countInSegment = read;
     }
 
     @Override
@@ -189,6 +248,28 @@ public class SegmentedArrayDecodeBuffer implements DecodeBuffer {
     @Override
     public double readDouble() {
         return Double.longBitsToDouble(readLong());
+    }
+
+    @Override
+    public int skipBytes(int bytes) {
+        int n = remainingBytes();
+        int pos = segmentsIndex * segmentLength + countInSegment;
+        if (bytes < n) {
+            n = (bytes < -pos) ? -pos : bytes;
+        }
+        int si = segmentsIndex;
+        int cib = countInSegment + n;
+        while (cib >= segmentLength) {
+            si++;
+            cib -= segmentLength;
+        }
+        while (cib < 0) {
+            si--;
+            cib += segmentLength;
+        }
+        segmentsIndex = si;
+        countInSegment = cib;
+        return n;
     }
 
     @Override
