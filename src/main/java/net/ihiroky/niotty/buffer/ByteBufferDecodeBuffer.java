@@ -1,6 +1,9 @@
 package net.ihiroky.niotty.buffer;
 
 import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CoderResult;
 
 /**
  * @author Hiroki Itoh
@@ -128,6 +131,40 @@ public class ByteBufferDecodeBuffer implements DecodeBuffer {
     @Override
     public double readDouble() {
         return Double.longBitsToDouble(buffer.getLong());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String readString(CharsetDecoder charsetDecoder, int bytes) {
+        String cached = StringCache.getCachedValue(this, charsetDecoder, bytes);
+        if (cached != null) {
+            return cached;
+        }
+
+        float charsPerByte = charsetDecoder.maxCharsPerByte();
+        ByteBuffer input = buffer;
+        CharBuffer output = CharBuffer.allocate(Buffers.outputCharBufferSize(charsPerByte, bytes));
+        int limit = input.limit();
+        input.limit(input.position() + bytes);
+        for (;;) {
+            CoderResult cr = charsetDecoder.decode(input, output, true);
+            if (!cr.isError() && !cr.isOverflow()) {
+                input.limit(limit);
+                break;
+            }
+            if (cr.isOverflow()) {
+                output = Buffers.expand(output, charsPerByte, input.remaining());
+                continue;
+            }
+            if (cr.isError()) {
+                input.limit(limit);
+                Buffers.throwRuntimeException(cr);
+            }
+        }
+        output.flip();
+        return StringCache.toString(output, charsetDecoder);
     }
 
     /**

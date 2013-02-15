@@ -1,5 +1,10 @@
 package net.ihiroky.niotty.buffer;
 
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.CharsetEncoder;
+import java.nio.charset.CoderResult;
 import java.util.Arrays;
 
 /**
@@ -28,8 +33,8 @@ public class ArrayEncodeBuffer implements EncodeBuffer {
     }
 
     /**
-     * Ensures the backed byte array capacity. The new capacity is the large of the two, sum of the current capacity
-     * and {@code length} and twice the size of current capacity.
+     * Ensures the backed byte array capacity. The new capacity is the large of the two, sum of the current position
+     * and {@code length}, and twice the size of current capacity.
      *
      * @param length the size of byte to be written
      */
@@ -172,6 +177,45 @@ public class ArrayEncodeBuffer implements EncodeBuffer {
     @Override
     public void writeDouble(double value) {
         writeLong(Double.doubleToLongBits(value));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public void writeString(CharsetEncoder charsetEncoder, String s) {
+        if (s == null) {
+            throw new NullPointerException("s must not be null.");
+        }
+        int length = s.length();
+        if (length == 0) {
+            return;
+        }
+        if (length == 1 && StringCache.writeAsOneCharAscii(this, charsetEncoder, s)) {
+            return;
+        }
+        CharBuffer input = CharBuffer.wrap(s);
+        ByteBuffer output = ByteBuffer.wrap(buffer, position, buffer.length - position);
+        for (;;) {
+            CoderResult cr = charsetEncoder.encode(input, output, true);
+            if (!cr.isError() && !cr.isOverflow()) {
+                position = output.position();
+                break;
+            }
+            if (cr.isOverflow()) {
+                position = output.position();
+                ensureSpace((int) (charsetEncoder.averageBytesPerChar() * input.remaining() + 1));
+                output = ByteBuffer.wrap(buffer, position, buffer.length - position);
+                continue;
+            }
+            if (cr.isError()) {
+                position = output.position();
+                try {
+                    cr.throwException();
+                } catch (CharacterCodingException cce) {
+                    throw new RuntimeException(cce);
+                }
+            }
+        }
     }
 
     @Override

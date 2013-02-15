@@ -8,6 +8,8 @@ import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import static org.hamcrest.CoreMatchers.*;
@@ -393,6 +395,20 @@ public class ArrayDecodeBufferTest {
 
             expectedException.expect(IndexOutOfBoundsException.class);
             sut.readDouble();
+        }
+
+        @Test
+        public void testReadString() throws Exception {
+            CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder();
+            String s = sut.readString(decoder, 4);
+            assertThat(s, is("0123"));
+        }
+
+        @Test
+        public void testReadStringUnderflow() throws Exception {
+            CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder();
+            String s = sut.readString(decoder, 51);
+            assertThat(s, is("01234567890123456789012345678901234567890123456789"));
         }
 
         @Test

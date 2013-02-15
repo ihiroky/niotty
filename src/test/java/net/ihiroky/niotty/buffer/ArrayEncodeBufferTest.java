@@ -5,6 +5,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.nio.charset.CharsetEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import static org.hamcrest.CoreMatchers.*;
@@ -253,6 +255,26 @@ public class ArrayEncodeBufferTest {
         assertThat(b[6], is((byte) 0x00));
         assertThat(b[7], is((byte) 0x00));
         assertThat(sut.filledBytes(), is(8));
+    }
+
+    @Test
+    public void testWriteString() throws Exception {
+        CharsetEncoder encoder = StandardCharsets.UTF_8.newEncoder();
+        sut.writeString(encoder, "abc");
+        byte[] b = sut.array();
+        assertThat(b[0], is((byte) 'a'));
+        assertThat(b[1], is((byte) 'b'));
+        assertThat(b[2], is((byte) 'c'));
+    }
+
+    @Test
+    public void testWriteStringOverflow() throws Exception {
+        CharsetEncoder encoder = StandardCharsets.UTF_8.newEncoder();
+        sut.writeString(encoder, "0123456789");
+        byte[] b = sut.array();
+        for (int i = 0; i < 10; i++) {
+            assertThat(b[i], is((byte) (i + '0')));
+        }
     }
 
     @Test

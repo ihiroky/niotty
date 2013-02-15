@@ -1,5 +1,7 @@
 package net.ihiroky.niotty.buffer;
 
+import java.nio.charset.CharsetEncoder;
+
 /**
  * A buffer to encode primitive and byte array values.
  * A byte array to store encoded bytes increase its capacity as needed.
@@ -198,6 +200,11 @@ public class SegmentedArrayEncodeBuffer implements EncodeBuffer {
     @Override
     public void writeDouble(double value) {
         writeLong(Double.doubleToLongBits(value));
+    }
+
+    @Override
+    public void writeString(CharsetEncoder charsetEncoder, String s) {
+        throw new UnsupportedOperationException();
     }
 
     @Override

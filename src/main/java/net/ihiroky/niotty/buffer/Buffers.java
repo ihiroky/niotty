@@ -1,6 +1,10 @@
 package net.ihiroky.niotty.buffer;
 
 import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.CoderResult;
+import java.nio.charset.MalformedInputException;
+import java.nio.charset.UnmappableCharacterException;
 
 /**
  *
@@ -8,12 +12,32 @@ import java.nio.ByteBuffer;
  */
 public final class Buffers {
 
+        // TODO must be read only
+    private static final EncodeBuffer NULL_ENCODE_BUFFER = new ArrayEncodeBuffer(0);
+
     private Buffers() {
         throw new AssertionError();
     }
 
-    // TODO must be read only
-    private static final EncodeBuffer NULL_ENCODE_BUFFER = new ArrayEncodeBuffer(0);
+    static int outputCharBufferSize(float charsPerByte, int bytes) {
+        return (int) (charsPerByte * bytes) + 1;
+    }
+
+    static CharBuffer expand(CharBuffer original, float charsPerByte, int remainingBytes) {
+        CharBuffer t = CharBuffer.allocate(
+                original.capacity() + Buffers.outputCharBufferSize(charsPerByte, remainingBytes));
+        original.flip();
+        t.put(original);
+        return t;
+    }
+
+    static void throwRuntimeException(CoderResult coderResult) {
+        if (coderResult.isMalformed()) {
+            throw new RuntimeException(new MalformedInputException(coderResult.length()));
+        } else if (coderResult.isUnmappable()) {
+            throw new RuntimeException(new UnmappableCharacterException(coderResult.length()));
+        }
+    }
 
     public static EncodeBuffer emptyEncodeBuffer() {
         return NULL_ENCODE_BUFFER;

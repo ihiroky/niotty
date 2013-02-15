@@ -1,6 +1,7 @@
 package net.ihiroky.niotty.buffer;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.CharsetDecoder;
 
 /**
  * Created on 13/02/01, 15:22
@@ -248,6 +249,11 @@ public class SegmentedArrayDecodeBuffer implements DecodeBuffer {
     @Override
     public double readDouble() {
         return Double.longBitsToDouble(readLong());
+    }
+
+    @Override
+    public String readString(CharsetDecoder charsetDecoder, int bytes) {
+        throw new UnsupportedOperationException();
     }
 
     @Override

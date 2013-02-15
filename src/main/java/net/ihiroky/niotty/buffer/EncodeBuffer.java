@@ -1,5 +1,7 @@
 package net.ihiroky.niotty.buffer;
 
+import java.nio.charset.CharsetEncoder;
+
 /**
  * A buffer class for encoding byte array. Implementations of this class has position and capacity.
  * for internal storage. The position shows a current writing byte position in the storage.
@@ -85,6 +87,16 @@ public interface EncodeBuffer {
      * @param value the number of double type
      */
     void writeDouble(double value);
+
+    /**
+     * Write a specified string using a specified {@code charsetEncoder}.
+     * If an {@code java.nio.charset.CharacterCodingException} happens, this method throws
+     * {@code java.lang.RuntimeException} which has {@code CharacterCodingException} as its cause.
+     *
+     * @param charsetEncoder encoder to encode the given string {@code s}.
+     * @param s string to be written
+     */
+    void writeString(CharsetEncoder charsetEncoder, String s);
 
     /**
      * Drains this buffer to a specified {@code encodeBuffer} instance. This buffer is read by

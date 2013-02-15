@@ -1,6 +1,7 @@
 package net.ihiroky.niotty.buffer;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.CharsetDecoder;
 
 /**
  * A buffer class for decoding byte array. This interface exists for keeping symmetry against
@@ -116,6 +117,19 @@ public interface DecodeBuffer {
      * @throws java.lang.RuntimeException if the remaining data in the buffer is less than the size of double
      */
     double readDouble();
+
+    /**
+     * Read a string from the buffer using a specified {@code charsetDecoder}.
+     * The string length of byte format is given as {@code bytes}. If some
+     * {@code java.nio.charset.CharacterCodingException} happends, this method throws
+     * {@code java.lang.RuntimeException} which has {@code CharacterCodingException} as its cause.
+     *
+     * @param charsetDecoder decoder to decode byte data
+     * @param bytes length of byte data to be decoded by {@code charsetDecoder}
+     * @throws java.lang.RuntimeException if an error happens
+     * @return string value read from the buffer
+     */
+    String readString(CharsetDecoder charsetDecoder, int bytes);
 
     /**
      * Skips specified bytes of the buffer.
