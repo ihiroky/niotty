@@ -11,7 +11,7 @@ import java.util.Arrays;
  *
  * @author Hiroki Itoh
  */
-public class ArrayDecodeBuffer implements DecodeBuffer {
+public class ArrayDecodeBuffer extends AbstractDecodeBuffer implements DecodeBuffer {
 
     private byte[] buffer;
     private int position;

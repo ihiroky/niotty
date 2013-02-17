@@ -9,6 +9,9 @@ import java.nio.charset.CharsetDecoder;
  * for internal storage. The position shows a current reading byte position in the storage.
  * The capacity shows the end of the storage for valid operation.
  * <p></p>
+ * his class supports a signed integer encoding with variable length (Variable Byte Codes). See
+ * {@link net.ihiroky.niotty.buffer.EncodeBuffer} for detail.
+ * <p></p>
  * {@link net.ihiroky.niotty.buffer.BufferSink} created from this class initially contains the data remaining in this
  * class for read. That is, {@code BufferSInk} contains the data in the position (included) and the capacity
  * (not included).
@@ -119,7 +122,19 @@ public interface DecodeBuffer {
     double readDouble();
 
     /**
-     * Read a string from the buffer using a specified {@code charsetDecoder}.
+     * Reads {@code Integer or Long} value in signed VBC form from the buffer. The result may be null.
+     * @return {@code Integer or Long} value read from the buffer
+     */
+    Number readVariableByteNumber();
+
+    /**
+     * Reads {@code long} value in signed VBC form from the buffer. The null value is returned as (negative) zero.
+     * @return {@code long} value read from the buffer
+     */
+    long readVariableByte();
+
+    /**
+     * Reads a string from the buffer using a specified {@code charsetDecoder}.
      * The string length of byte format is given as {@code bytes}. If some
      * {@code java.nio.charset.CharacterCodingException} happends, this method throws
      * {@code java.lang.RuntimeException} which has {@code CharacterCodingException} as its cause.

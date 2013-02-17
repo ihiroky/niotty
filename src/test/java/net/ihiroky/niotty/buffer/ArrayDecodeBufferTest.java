@@ -407,8 +407,8 @@ public class ArrayDecodeBufferTest {
         @Test
         public void testReadStringUnderflow() throws Exception {
             CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder();
+            expectedException.expect(IndexOutOfBoundsException.class);
             String s = sut.readString(decoder, 51);
-            assertThat(s, is("01234567890123456789012345678901234567890123456789"));
         }
 
         @Test

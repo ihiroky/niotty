@@ -9,7 +9,7 @@ import java.nio.charset.CharsetEncoder;
  *
  * @author Hiroki Itoh
  */
-public class SegmentedArrayEncodeBuffer implements EncodeBuffer {
+public class SegmentedArrayEncodeBuffer extends AbstractEncodeBuffer implements EncodeBuffer {
 
     private byte[][] segments;
     private int segmentIndex;
@@ -218,7 +218,14 @@ public class SegmentedArrayEncodeBuffer implements EncodeBuffer {
         countInSegment = 0;
     }
 
-    private void ensureSpace(int bytes) {
+    @Override
+    void writeByteNoCheck(byte b) {
+        segments[segmentIndex][countInSegment++] = b;
+        proceedSegmentIfInBankLast();
+    }
+
+    @Override
+    void ensureSpace(int bytes) {
         int space = segmentLength - countInSegment;
         if (bytes <= space) {
             return;

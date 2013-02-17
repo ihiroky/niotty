@@ -9,6 +9,19 @@ import java.nio.charset.CharsetEncoder;
  * for valid operation. The storage is automatically expanded if the position exceeds the capacity for a writing
  * operation.
  * <p></p>
+ * This class supports a signed integer encoding with variable length, signed VBC (Variable Byte Codes). The encoding
+ * has an end bit, a sign bit and data bits. Each MSB per byte is the end bit. The end bit in last byte is 1,
+ * otherwise 0. The sign bit is second bit from MSB in the first byte. If a value to be encoded is positive or zero,
+ * then its sign bit is 0. If negative, then 1. The other bits are the data bits with little endian. The data bits
+ * in first byte is 6 bits, and in the other byte is 7 bits. The data in the data bits is its magnitude,
+ * not complement of two. This encoding support {@code null} value as negative zero; data bits show zero
+ * and the sign bit and the end bit is 1 in single byte. the example of encoding -229 as binary format is
+ * {@code 01100101 10000011}; the second bit from MSB in first byte is 1 for negative, the MSB the second byte is 1
+ * for its last byte, and The data bits in first byte shows 37 and in second byte shows 192 (128 + 64).
+ * <p></p>
+ * Unsigned integer encoding with variable length is known as Variable Byte Codes
+ * (<a href="http://nlp.stanford.edu/IR-book/html/htmledition/variable-byte-codes-1.html"></a>).
+ * <p></p>
  * {@link net.ihiroky.niotty.buffer.BufferSink} created from this class initially contains the data written into
  * this class.
  *
@@ -24,7 +37,7 @@ public interface EncodeBuffer {
     void writeByte(int value);
 
     /**
-     * Write a specified byte array.
+     * Writes a specified byte array.
      *
      * @param bytes the byte array to be written
      * @param offset first position in the {@code byte} to be written from;
@@ -35,7 +48,7 @@ public interface EncodeBuffer {
     void writeBytes(byte[] bytes, int offset, int length);
 
     /**
-     * Write a specified {@code bits}, which byte size is specified {@code bytes}. The {@code bits} is right-aligned.
+     * Writes a specified {@code bits}, which byte size is specified {@code bytes}. The {@code bits} is right-aligned.
      * The {@code bits} is written into this buffer with big endian.
      *
      * @param bits the set of bit to be written
@@ -44,7 +57,7 @@ public interface EncodeBuffer {
     void writeBytes4(int bits, int bytes);
 
     /**
-     * Write a specified {@code bits}, which byte size is specified {@code bytes}. The {@code bits} is right-aligned.
+     * Writes a specified {@code bits}, which byte size is specified {@code bytes}. The {@code bits} is right-aligned.
      * The {@code bits} is written into this buffer with big endian.
      *
      * @param bits the set of bit to be written
@@ -53,43 +66,66 @@ public interface EncodeBuffer {
     void writeBytes8(long bits, int bytes);
 
     /**
-     * Write a specified short {@code value}. The value si written into this buffer with two byte big endian.
+     * Writes a specified short {@code value}. The value si written into this buffer with two byte big endian.
      * @param value the number of short type
      */
     void writeShort(short value);
 
     /**
-     * Write a specified char {@code value}. The value si written into this buffer with two byte big endian.
+     * Writes a specified char {@code value}. The value si written into this buffer with two byte big endian.
      * @param value the number of char type
      */
     void writeChar(char value);
 
     /**
-     * Write a specified int {@code value}. The value si written into this buffer with four byte big endian.
+     * Writes a specified int {@code value}. The value si written into this buffer with four byte big endian.
      * @param value the number of int type
      */
     void writeInt(int value);
 
     /**
-     * Write a specified log {@code value}. The value si written into this buffer with eight byte big endian.
+     * Writes a specified long {@code value}. The value is written into this buffer with eight byte big endian.
      * @param value the number of long type
      */
     void writeLong(long value);
 
     /**
-     * Write a specified float {@code value}. The value si written into this buffer with four byte big endian.
+     * Writes a specified float {@code value}. The value is written into this buffer with four byte big endian.
      * @param value the number of float type
      */
     void writeFloat(float value);
 
     /**
-     * Write a specified double {@code value}. The value si written into this buffer with eight byte big endian.
+     * Writes a specified double {@code value}. The value is written into this buffer with eight byte big endian.
      * @param value the number of double type
      */
     void writeDouble(double value);
 
     /**
-     * Write a specified string using a specified {@code charsetEncoder}.
+     * Writes a specified long {@code value} with signed VBC.
+     * @param value the number of long type
+     */
+    void writeVariableByte(long value);
+
+    /**
+     * Writes null value with signed VBC.
+     */
+    void writeVariableByteNull();
+
+    /**
+     * Writes a specified {@code Integer value} with signed VBC.
+     * @param value the number of {@code Integer}
+     */
+    void writeVariableByteInteger(Integer value);
+
+    /**
+     * Writes a specified {@code Long value} with signed VBC.
+     * @param value the number of {@code Long}
+     */
+    void writeVariableByteLong(Long value);
+
+    /**
+     * Writes a specified string using a specified {@code charsetEncoder}.
      * If an {@code java.nio.charset.CharacterCodingException} happens, this method throws
      * {@code java.lang.RuntimeException} which has {@code CharacterCodingException} as its cause.
      *

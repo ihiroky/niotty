@@ -8,7 +8,7 @@ import java.nio.charset.CharsetDecoder;
  *
  * @author Hiroki Itoh
  */
-public class SegmentedArrayDecodeBuffer implements DecodeBuffer {
+public class SegmentedArrayDecodeBuffer extends AbstractDecodeBuffer implements DecodeBuffer {
 
     private byte[][] segments;
     private int segmentsIndex;

@@ -12,7 +12,7 @@ import java.util.Arrays;
  *
  * @author Hiroki Itoh
  */
-public class ArrayEncodeBuffer implements EncodeBuffer {
+public class ArrayEncodeBuffer extends AbstractEncodeBuffer implements EncodeBuffer {
 
     private byte[] buffer;
     private int position;
@@ -32,13 +32,18 @@ public class ArrayEncodeBuffer implements EncodeBuffer {
         buffer = new byte[capacity];
     }
 
+    @Override
+    void writeByteNoCheck(byte b) {
+        buffer[position++] = b;
+    }
+
     /**
      * Ensures the backed byte array capacity. The new capacity is the large of the two, sum of the current position
      * and {@code length}, and twice the size of current capacity.
      *
      * @param length the size of byte to be written
      */
-    private void ensureSpace(int length) {
+    void ensureSpace(int length) {
         int current = buffer.length;
         int required = position + length;
         if (required >= current) {

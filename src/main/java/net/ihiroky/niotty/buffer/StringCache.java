@@ -56,10 +56,7 @@ final class StringCache {
             case 0:
                 return StringCache.EMPTY;
             case 1:
-                if (CHARSET_INCLUDE_ASCII.contains(decoder.charset())) {
-                    return ASCII[b.readByte()];
-                }
-                // fall through
+                return (CHARSET_INCLUDE_ASCII.contains(decoder.charset())) ? ASCII[b.readByte()] : null;
             default:
                 return null;
         }

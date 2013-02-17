@@ -8,7 +8,7 @@ import java.nio.charset.CoderResult;
 /**
  * @author Hiroki Itoh
  */
-public class ByteBufferDecodeBuffer implements DecodeBuffer {
+public class ByteBufferDecodeBuffer extends AbstractDecodeBuffer implements DecodeBuffer {
 
     private ByteBuffer buffer;
 
