@@ -252,7 +252,7 @@ public class SegmentedArrayDecodeBuffer extends AbstractDecodeBuffer implements 
     }
 
     @Override
-    public String readString(CharsetDecoder charsetDecoder, int bytes) {
+    public String readString(CharsetDecoder charsetDecoder) {
         throw new UnsupportedOperationException();
     }
 

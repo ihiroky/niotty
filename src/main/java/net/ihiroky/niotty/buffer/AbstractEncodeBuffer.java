@@ -7,12 +7,6 @@ package net.ihiroky.niotty.buffer;
 public abstract class AbstractEncodeBuffer implements EncodeBuffer {
 
     /**
-     * Writes {@code b} to this buffer without capacity check.
-     * @param b byte data to be written
-     */
-    abstract void writeByteNoCheck(byte b);
-
-    /**
      * Ensures the backed store capacity. The new capacity is the large of the two, sum of the current position
      * and {@code length}, and twice the size of current capacity.
      *
@@ -24,33 +18,43 @@ public abstract class AbstractEncodeBuffer implements EncodeBuffer {
      * Writes {@code Long.MIN_VALUE} with signed VBC.
      */
     private void writeVBLongMinValue() {
-
-        ensureSpace(CodecUtil.VB_LONGEST_BYTE);
-
         // write sign bit and 0 on 6 bits
-        writeByteNoCheck((byte) CodecUtil.VB_SIGN_BIT);
+        writeByte(CodecUtil.VB_SIGN_BIT);
         // write 0 on 54 bits
         for (int i = 0; i < CodecUtil.LONG_BYTES; i++) {
-            writeByteNoCheck((byte) 0);
+            writeByte(0);
         }
         // write last bit with end bit and negative sign bit
-        writeByteNoCheck((byte) CodecUtil.VB_LONG_MIN_LAST);
+        writeByte(CodecUtil.VB_LONG_MIN_LAST);
+    }
+
+    /**
+     * Writes {@code Long.MIN_VALUE} with signed VBC.
+     */
+    private void writeVBIntMinValue() {
+        // write sign bit and 0 on 6 bits
+        writeByte(CodecUtil.VB_SIGN_BIT);
+        // write 0 on 21 bits
+        for (int i = 0; i < CodecUtil.INT_BYTES; i++) {
+            writeByte(0);
+        }
+        // write last bit with end bit and negative sign bit
+        writeByte(CodecUtil.VB_INT_MIN_LAST);
     }
 
     /**
      * {@inheritDoc}
      */
     public void writeVariableByteNull() {
-        ensureSpace(1);
-        writeByteNoCheck((byte) (CodecUtil.VB_END_BIT | CodecUtil.VB_SIGN_BIT));
+        writeByte(CodecUtil.VB_END_BIT | CodecUtil.VB_SIGN_BIT);
     }
 
     /**
      * {@inheritDoc}
      */
-    public void writeVariableByte(long value) {
+    public void writeVariableByteLong(long value) {
 
-        // Long.MIN_VALUE overflows if calculate ordinary logic.
+        // Long.MIN_VALUE overflows if calculate it using ordinary logic.
         if (value == Long.MIN_VALUE) {
             writeVBLongMinValue();
             return;
@@ -61,18 +65,43 @@ public abstract class AbstractEncodeBuffer implements EncodeBuffer {
 
         if (magnitude <= CodecUtil.VB_MASK_BIT6) { // end with one byte
             ensureSpace(1);
-            writeByteNoCheck((byte)
-                    (magnitude | (isPositiveOrZero ? 0 : CodecUtil.VB_SIGN_BIT) | CodecUtil.VB_END_BIT));
+            writeByte((int) magnitude | (isPositiveOrZero ? 0 : CodecUtil.VB_SIGN_BIT) | CodecUtil.VB_END_BIT);
             return;
         }
 
-        ensureSpace(CodecUtil.VB_LONGEST_BYTE);
-        writeByteNoCheck((byte) (magnitude & CodecUtil.VB_MASK_BIT6 | (isPositiveOrZero ? 0 : CodecUtil.VB_SIGN_BIT)));
+        ensureSpace(CodecUtil.VB_LONGEST_LONG_BYTE);
+        writeByte((int) magnitude & CodecUtil.VB_MASK_BIT6 | (isPositiveOrZero ? 0 : CodecUtil.VB_SIGN_BIT));
         magnitude >>>= CodecUtil.VB_BIT_IN_FIRST_BYTE;
         for ( ; magnitude > CodecUtil.VB_MASK_BIT7; magnitude >>>= CodecUtil.VB_BIT_IN_BYTE) {
-            writeByteNoCheck((byte) (magnitude & CodecUtil.VB_MASK_BIT7));
+            writeByte((int) magnitude & CodecUtil.VB_MASK_BIT7);
         }
-        writeByteNoCheck((byte) (magnitude | CodecUtil.VB_END_BIT));
+        writeByte((int) magnitude | CodecUtil.VB_END_BIT);
+    }
+
+    public void writeVariableByteInteger(int value) {
+
+        // Integer.MIN_VALUE overflows if calculate it using ordinary logic.
+        if (value == Integer.MIN_VALUE) {
+            writeVBIntMinValue();
+            return;
+        }
+
+        boolean isPositiveOrZero = (value >= 0);
+        int magnitude = isPositiveOrZero ? value : -value; // negative zero is null see #
+
+        if (magnitude <= CodecUtil.VB_MASK_BIT6) { // end with one byte
+            ensureSpace(1);
+            writeByte(magnitude | (isPositiveOrZero ? 0 : CodecUtil.VB_SIGN_BIT) | CodecUtil.VB_END_BIT);
+            return;
+        }
+
+        ensureSpace(CodecUtil.VB_LONGEST_INT_BYTE);
+        writeByte(magnitude & CodecUtil.VB_MASK_BIT6 | (isPositiveOrZero ? 0 : CodecUtil.VB_SIGN_BIT));
+        magnitude >>>= CodecUtil.VB_BIT_IN_FIRST_BYTE;
+        for ( ; magnitude > CodecUtil.VB_MASK_BIT7; magnitude >>>= CodecUtil.VB_BIT_IN_BYTE) {
+            writeByte(magnitude & CodecUtil.VB_MASK_BIT7);
+        }
+        writeByte(magnitude | CodecUtil.VB_END_BIT);
     }
 
     /**
@@ -83,7 +112,7 @@ public abstract class AbstractEncodeBuffer implements EncodeBuffer {
             writeVariableByteNull();
             return;
         }
-        writeVariableByte(value.longValue());
+        writeVariableByteInteger(value.intValue());
     }
 
     /**
@@ -94,6 +123,6 @@ public abstract class AbstractEncodeBuffer implements EncodeBuffer {
             writeVariableByteNull();
             return;
         }
-        writeVariableByte(value);
+        writeVariableByteLong(value);
     }
 }

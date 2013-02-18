@@ -137,7 +137,8 @@ public class ByteBufferDecodeBuffer extends AbstractDecodeBuffer implements Deco
      * {@inheritDoc}
      */
     @Override
-    public String readString(CharsetDecoder charsetDecoder, int bytes) {
+    public String readString(CharsetDecoder charsetDecoder) {
+        int bytes = readVariableByteInteger();
         String cached = StringCache.getCachedValue(this, charsetDecoder, bytes);
         if (cached != null) {
             return cached;

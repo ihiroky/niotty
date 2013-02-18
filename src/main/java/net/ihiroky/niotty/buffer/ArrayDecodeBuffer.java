@@ -181,14 +181,15 @@ public class ArrayDecodeBuffer extends AbstractDecodeBuffer implements DecodeBuf
     /**
      * {@inheritDoc}
      */
-    public String readString(CharsetDecoder charsetDecoder, int bytes) {
+    public String readString(CharsetDecoder charsetDecoder) {
+        int bytes = readVariableByteInteger();
         String cached = StringCache.getCachedValue(this, charsetDecoder, bytes);
         if (cached != null) {
             return cached;
         }
 
         float charsPerByte = charsetDecoder.averageCharsPerByte();
-        ByteBuffer input = ByteBuffer.wrap(buffer, position, position + bytes);
+        ByteBuffer input = ByteBuffer.wrap(buffer, position, bytes);
         CharBuffer output = CharBuffer.allocate(Buffers.outputCharBufferSize(charsPerByte, bytes));
         for (;;) {
             CoderResult cr = charsetDecoder.decode(input, output, true);

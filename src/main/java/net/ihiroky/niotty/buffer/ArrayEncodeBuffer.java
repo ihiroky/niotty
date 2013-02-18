@@ -32,11 +32,6 @@ public class ArrayEncodeBuffer extends AbstractEncodeBuffer implements EncodeBuf
         buffer = new byte[capacity];
     }
 
-    @Override
-    void writeByteNoCheck(byte b) {
-        buffer[position++] = b;
-    }
-
     /**
      * Ensures the backed byte array capacity. The new capacity is the large of the two, sum of the current position
      * and {@code length}, and twice the size of current capacity.
@@ -198,6 +193,11 @@ public class ArrayEncodeBuffer extends AbstractEncodeBuffer implements EncodeBuf
         if (length == 1 && StringCache.writeAsOneCharAscii(this, charsetEncoder, s)) {
             return;
         }
+        int expectedLengthBytes = CodecUtil.variableByteLength(
+                Buffers.outputByteBufferSize(charsetEncoder.averageBytesPerChar(), length));
+        ensureSpace(expectedLengthBytes);
+        position += expectedLengthBytes;
+        int startPosition = position;
         CharBuffer input = CharBuffer.wrap(s);
         ByteBuffer output = ByteBuffer.wrap(buffer, position, buffer.length - position);
         for (;;) {
@@ -221,6 +221,18 @@ public class ArrayEncodeBuffer extends AbstractEncodeBuffer implements EncodeBuf
                 }
             }
         }
+        int outputLength = position - startPosition;
+        int lengthBytes = CodecUtil.variableByteLength(outputLength);
+        if (lengthBytes != expectedLengthBytes) {
+            int delta = lengthBytes - expectedLengthBytes;
+            ensureSpace(delta);
+            System.arraycopy(buffer, startPosition, buffer, startPosition + delta, outputLength);
+            position += delta;
+        }
+        int tmp = position;
+        position = startPosition - expectedLengthBytes;
+        writeVariableByteInteger(outputLength);
+        position = tmp;
     }
 
     @Override

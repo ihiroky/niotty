@@ -105,7 +105,13 @@ public interface EncodeBuffer {
      * Writes a specified long {@code value} with signed VBC.
      * @param value the number of long type
      */
-    void writeVariableByte(long value);
+    void writeVariableByteLong(long value);
+
+    /**
+     * Writes a specified int {@code value} with signed VBC.
+     * @param value the number of int type
+     */
+    void writeVariableByteInteger(int value);
 
     /**
      * Writes null value with signed VBC.

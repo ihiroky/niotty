@@ -219,12 +219,6 @@ public class SegmentedArrayEncodeBuffer extends AbstractEncodeBuffer implements 
     }
 
     @Override
-    void writeByteNoCheck(byte b) {
-        segments[segmentIndex][countInSegment++] = b;
-        proceedSegmentIfInBankLast();
-    }
-
-    @Override
     void ensureSpace(int bytes) {
         int space = segmentLength - countInSegment;
         if (bytes <= space) {
