@@ -55,6 +55,10 @@ public final class Buffers {
         return new ArrayEncodeBuffer(initialCapacity);
     }
 
+    public static EncodeBuffer newEncodeBuffer(byte[] buffer, int offset, int length) {
+        return ArrayEncodeBuffer.wrap(buffer, offset, length);
+    }
+
     public static DecodeBuffer newDecodeBuffer(ByteBuffer byteBuffer) {
         return ByteBufferDecodeBuffer.wrap(byteBuffer);
     }

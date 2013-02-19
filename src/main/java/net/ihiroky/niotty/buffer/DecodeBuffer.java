@@ -5,15 +5,15 @@ import java.nio.charset.CharsetDecoder;
 
 /**
  * A buffer class for decoding byte array. This interface exists for keeping symmetry against
- * {@link net.ihiroky.niotty.buffer.EncodeBuffer}. Implementations of this class has position, capacity.
+ * {@link net.ihiroky.niotty.buffer.EncodeBuffer}. Implementations of this class has position, limit.
  * for internal storage. The position shows a current reading byte position in the storage.
- * The capacity shows the end of the storage for valid operation.
+ * The limit shows the end of the storage for valid operation.
  * <p></p>
  * his class supports a signed integer encoding with variable length (Variable Byte Codes). See
  * {@link net.ihiroky.niotty.buffer.EncodeBuffer} for detail.
  * <p></p>
  * {@link net.ihiroky.niotty.buffer.BufferSink} created from this class initially contains the data remaining in this
- * class for read. That is, {@code BufferSInk} contains the data in the position (included) and the capacity
+ * class for read. That is, {@code BufferSink} contains the data in the position (included) and the limit.
  * (not included).
  *
  * @author Hiroki Itoh
@@ -164,21 +164,21 @@ public interface DecodeBuffer {
 
     /**
      * Returns size of remaining data by byte.
-     * This is equals to difference between the capacity and the current position.
+     * This is equals to difference between the limit and the current position.
      * @return size of remaining data by byte
      */
     int remainingBytes();
 
     /**
-     * Returns size of capacity by byte.
-     * @return size of capacity by byte
+     * Returns size of the limit by byte.
+     * @return size of the limit by byte
      */
-    int capacityBytes();
+    int limitBytes();
 
     /**
-     * Resets this buffer. The current position is set to 0, and the end is set to the buffer capacity.
+     * Clears this buffer. The current position is set to 0.
      */
-    void reset();
+    void clear();
 
     /**
      * Creates {@link net.ihiroky.niotty.buffer.BufferSink} from this buffer contents.
@@ -193,6 +193,28 @@ public interface DecodeBuffer {
      * @return {@code java.nio.ByteBuffer}
      */
     ByteBuffer toByteBuffer();
+
+    /**
+     * Returns true if this buffer is backed by a byte array.
+     * @return true if this buffer is backed by a byte array
+     */
+    boolean hasArray();
+
+    /**
+     * Returns a byte array that backs this buffer.
+     * Modification to this buffer's content modifies the byte array, and vice versa.
+     * If {@link #hasArray()} returns false, this method throws {@code java.lang.UnsupportedOperationException}.
+     * @return a byte array that backs this buffer
+     */
+    byte[] toArray();
+
+    /**
+     * Returns an offset for a first byte in byte array that backs this buffer.
+     * If {@link #hasArray()} returns false, this method throws {@code java.lang.UnsupportedOperationException}.
+     * @return an offset for a first byte in byte array that backs this buffer
+     * @throws UnsupportedOperationException if this buffer is not backed by a byte array
+     */
+    int arrayOffset();
 
     /**
      * Drains a specified {@code decodeBuffer}'s contents to this instance. The {@code decodeBuffer} is read

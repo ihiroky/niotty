@@ -31,25 +31,25 @@ public class ArrayEncodeBufferTest {
     @Test
     public void testConstructorSizeUnder8() throws Exception {
         ArrayEncodeBuffer localSut = new ArrayEncodeBuffer(7);
-        assertThat(localSut.capacityBytes(), is(8));
+        assertThat(localSut.limitBytes(), is(8));
 
         localSut = new ArrayEncodeBuffer(8);
-        assertThat(localSut.capacityBytes(), is(8));
+        assertThat(localSut.limitBytes(), is(8));
     }
 
     @Test
     public void testConstructorDefault() throws Exception {
         ArrayEncodeBuffer localSut = new ArrayEncodeBuffer();
-        assertThat(localSut.capacityBytes(), is(512));
+        assertThat(localSut.limitBytes(), is(512));
     }
 
     @Test
     public void testWriteByte() throws Exception {
         sut.writeByte(10);
-        assertThat(sut.array()[0], is((byte) 10));
+        assertThat(sut.toArray()[0], is((byte) 10));
 
         sut.writeByte(20);
-        assertThat(sut.array()[1], is((byte) 20));
+        assertThat(sut.toArray()[1], is((byte) 20));
     }
 
     @Test
@@ -58,7 +58,7 @@ public class ArrayEncodeBufferTest {
             sut.writeByte(0);
         }
         assertThat(sut.filledBytes(), is(9));
-        assertThat(sut.capacityBytes(), is(16));
+        assertThat(sut.limitBytes(), is(16));
     }
 
     @Test
@@ -66,9 +66,9 @@ public class ArrayEncodeBufferTest {
         byte[] b = new byte[] {'0', '1', '2'};
         sut.writeBytes(b, 0, 3);
         assertThat(sut.filledBytes(), is(3));
-        assertThat(sut.array()[0], is((byte) 0x30));
-        assertThat(sut.array()[1], is((byte) 0x31));
-        assertThat(sut.array()[2], is((byte) 0x32));
+        assertThat(sut.toArray()[0], is((byte) 0x30));
+        assertThat(sut.toArray()[1], is((byte) 0x31));
+        assertThat(sut.toArray()[2], is((byte) 0x32));
     }
 
     @Test
@@ -76,10 +76,10 @@ public class ArrayEncodeBufferTest {
         byte[] b = new byte[] {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'};
         sut.writeBytes(b, 0, 10);
         assertThat(sut.filledBytes(), is(10));
-        assertThat(sut.array()[0], is((byte) 0x30));
-        assertThat(sut.array()[1], is((byte) 0x31));
-        assertThat(sut.array()[8], is((byte) 0x38));
-        assertThat(sut.array()[9], is((byte) 0x39));
+        assertThat(sut.toArray()[0], is((byte) 0x30));
+        assertThat(sut.toArray()[1], is((byte) 0x31));
+        assertThat(sut.toArray()[8], is((byte) 0x38));
+        assertThat(sut.toArray()[9], is((byte) 0x39));
     }
 
     @Test
@@ -87,8 +87,8 @@ public class ArrayEncodeBufferTest {
         byte[] b = new byte[] {'0', '1', '2'};
         sut.writeBytes(b, 0, 2);
         assertThat(sut.filledBytes(), is(2));
-        assertThat(sut.array()[0], is((byte) 0x30));
-        assertThat(sut.array()[1], is((byte) 0x31));
+        assertThat(sut.toArray()[0], is((byte) 0x30));
+        assertThat(sut.toArray()[1], is((byte) 0x31));
     }
 
     @Test
@@ -96,10 +96,10 @@ public class ArrayEncodeBufferTest {
         byte[] b = new byte[] {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'};
         sut.writeBytes(b, 0, 9);
         assertThat(sut.filledBytes(), is(9));
-        assertThat(sut.array()[0], is((byte) 0x30));
-        assertThat(sut.array()[1], is((byte) 0x31));
-        assertThat(sut.array()[7], is((byte) 0x37));
-        assertThat(sut.array()[8], is((byte) 0x38));
+        assertThat(sut.toArray()[0], is((byte) 0x30));
+        assertThat(sut.toArray()[1], is((byte) 0x31));
+        assertThat(sut.toArray()[7], is((byte) 0x37));
+        assertThat(sut.toArray()[8], is((byte) 0x38));
     }
 
     @Test
@@ -107,8 +107,8 @@ public class ArrayEncodeBufferTest {
         byte[] b = new byte[] {'0', '1', '2'};
         sut.writeBytes(b, 1, 2);
         assertThat(sut.filledBytes(), is(2));
-        assertThat(sut.array()[0], is((byte) 0x31));
-        assertThat(sut.array()[1], is((byte) 0x32));
+        assertThat(sut.toArray()[0], is((byte) 0x31));
+        assertThat(sut.toArray()[1], is((byte) 0x32));
     }
 
     @Test
@@ -116,10 +116,10 @@ public class ArrayEncodeBufferTest {
         byte[] b = new byte[] {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'};
         sut.writeBytes(b, 1, 9);
         assertThat(sut.filledBytes(), is(9));
-        assertThat(sut.array()[0], is((byte) 0x31));
-        assertThat(sut.array()[1], is((byte) 0x32));
-        assertThat(sut.array()[7], is((byte) 0x38));
-        assertThat(sut.array()[8], is((byte) 0x39));
+        assertThat(sut.toArray()[0], is((byte) 0x31));
+        assertThat(sut.toArray()[1], is((byte) 0x32));
+        assertThat(sut.toArray()[7], is((byte) 0x38));
+        assertThat(sut.toArray()[8], is((byte) 0x39));
     }
 
     @Test
@@ -127,9 +127,9 @@ public class ArrayEncodeBufferTest {
         ByteBuffer bb = ByteBuffer.wrap(new byte[]{'0', '1', '2'});
         sut.writeBytes(bb);
         assertThat(sut.filledBytes(), is(3));
-        assertThat(sut.array()[0], is((byte) 0x30));
-        assertThat(sut.array()[1], is((byte) 0x31));
-        assertThat(sut.array()[2], is((byte) 0x32));
+        assertThat(sut.toArray()[0], is((byte) 0x30));
+        assertThat(sut.toArray()[1], is((byte) 0x31));
+        assertThat(sut.toArray()[2], is((byte) 0x32));
     }
 
     @Test
@@ -137,10 +137,10 @@ public class ArrayEncodeBufferTest {
         ByteBuffer bb = ByteBuffer.wrap(new byte[] {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'});
         sut.writeBytes(bb);
         assertThat(sut.filledBytes(), is(10));
-        assertThat(sut.array()[0], is((byte) 0x30));
-        assertThat(sut.array()[1], is((byte) 0x31));
-        assertThat(sut.array()[8], is((byte) 0x38));
-        assertThat(sut.array()[9], is((byte) 0x39));
+        assertThat(sut.toArray()[0], is((byte) 0x30));
+        assertThat(sut.toArray()[1], is((byte) 0x31));
+        assertThat(sut.toArray()[8], is((byte) 0x38));
+        assertThat(sut.toArray()[9], is((byte) 0x39));
     }
 
     @Test
@@ -150,16 +150,16 @@ public class ArrayEncodeBufferTest {
 
         sut.writeBytes4(-1, 2);
         assertThat(sut.filledBytes(), is(2));
-        assertThat(sut.array()[0], is((byte) 0xFF));
-        assertThat(sut.array()[1], is((byte) 0xFF));
+        assertThat(sut.toArray()[0], is((byte) 0xFF));
+        assertThat(sut.toArray()[1], is((byte) 0xFF));
 
         sut.clear();
         sut.writeBytes4(-1, 4);
         assertThat(sut.filledBytes(), is(4));
-        assertThat(sut.array()[0], is((byte) 0xFF));
-        assertThat(sut.array()[1], is((byte) 0xFF));
-        assertThat(sut.array()[2], is((byte) 0xFF));
-        assertThat(sut.array()[3], is((byte) 0xFF));
+        assertThat(sut.toArray()[0], is((byte) 0xFF));
+        assertThat(sut.toArray()[1], is((byte) 0xFF));
+        assertThat(sut.toArray()[2], is((byte) 0xFF));
+        assertThat(sut.toArray()[3], is((byte) 0xFF));
     }
 
     @Test
@@ -181,20 +181,20 @@ public class ArrayEncodeBufferTest {
 
         sut.writeBytes8(-1, 2);
         assertThat(sut.filledBytes(), is(2));
-        assertThat(sut.array()[0], is((byte) 0xFF));
-        assertThat(sut.array()[1], is((byte) 0xFF));
+        assertThat(sut.toArray()[0], is((byte) 0xFF));
+        assertThat(sut.toArray()[1], is((byte) 0xFF));
 
         sut.clear();
         sut.writeBytes8(-1, 8);
         assertThat(sut.filledBytes(), is(8));
-        assertThat(sut.array()[0], is((byte) 0xFF));
-        assertThat(sut.array()[1], is((byte) 0xFF));
-        assertThat(sut.array()[2], is((byte) 0xFF));
-        assertThat(sut.array()[3], is((byte) 0xFF));
-        assertThat(sut.array()[4], is((byte) 0xFF));
-        assertThat(sut.array()[5], is((byte) 0xFF));
-        assertThat(sut.array()[6], is((byte) 0xFF));
-        assertThat(sut.array()[7], is((byte) 0xFF));
+        assertThat(sut.toArray()[0], is((byte) 0xFF));
+        assertThat(sut.toArray()[1], is((byte) 0xFF));
+        assertThat(sut.toArray()[2], is((byte) 0xFF));
+        assertThat(sut.toArray()[3], is((byte) 0xFF));
+        assertThat(sut.toArray()[4], is((byte) 0xFF));
+        assertThat(sut.toArray()[5], is((byte) 0xFF));
+        assertThat(sut.toArray()[6], is((byte) 0xFF));
+        assertThat(sut.toArray()[7], is((byte) 0xFF));
     }
 
     @Test
@@ -212,7 +212,7 @@ public class ArrayEncodeBufferTest {
     @Test
     public void testWriteShort() throws Exception {
         sut.writeShort(Short.MAX_VALUE);
-        byte[] b = sut.array();
+        byte[] b = sut.toArray();
         assertThat(b[0], is((byte) 0x7F));
         assertThat(b[1], is((byte) 0xFF));
         assertThat(sut.filledBytes(), is(2));
@@ -221,7 +221,7 @@ public class ArrayEncodeBufferTest {
     @Test
     public void testWriteChar() throws Exception {
         sut.writeChar(Character.MAX_VALUE);
-        byte[] b = sut.array();
+        byte[] b = sut.toArray();
         assertThat(b[0], is((byte) 0xFF));
         assertThat(b[1], is((byte) 0xFF));
         assertThat(sut.filledBytes(), is(2));
@@ -230,7 +230,7 @@ public class ArrayEncodeBufferTest {
     @Test
     public void testWriteInt() throws Exception {
         sut.writeInt(Integer.MIN_VALUE);
-        byte[] b = sut.array();
+        byte[] b = sut.toArray();
         assertThat(b[0], is((byte) 0x80));
         assertThat(b[1], is((byte) 0x00));
         assertThat(b[2], is((byte) 0x00));
@@ -241,7 +241,7 @@ public class ArrayEncodeBufferTest {
     @Test
     public void testWriteLong() throws Exception {
         sut.writeLong(1);
-        byte[] b = sut.array();
+        byte[] b = sut.toArray();
         assertThat(b[0], is((byte) 0x00));
         assertThat(b[1], is((byte) 0x00));
         assertThat(b[2], is((byte) 0x00));
@@ -256,7 +256,7 @@ public class ArrayEncodeBufferTest {
     @Test
     public void testWriteFloat() throws Exception {
         sut.writeFloat(1f);
-        byte[] b = sut.array();
+        byte[] b = sut.toArray();
         assertThat(b[0], is((byte) 0x3F));
         assertThat(b[1], is((byte) 0x80));
         assertThat(b[2], is((byte) 0x00));
@@ -267,7 +267,7 @@ public class ArrayEncodeBufferTest {
     @Test
     public void testWriteDouble() throws Exception {
         sut.writeDouble(1d);
-        byte[] b = sut.array();
+        byte[] b = sut.toArray();
         assertThat(b[0], is((byte) 0x3F));
         assertThat(b[1], is((byte) 0xF0));
         assertThat(b[2], is((byte) 0x00));
@@ -283,7 +283,7 @@ public class ArrayEncodeBufferTest {
     public void testWriteString() throws Exception {
         CharsetEncoder encoder = StandardCharsets.UTF_8.newEncoder();
         sut.writeString(encoder, "abc");
-        byte[] b = sut.array();
+        byte[] b = sut.toArray();
         assertThat(b[0], is((byte) (CodecUtil.VB_END_BIT | 3)));
         assertThat(b[1], is((byte) 'a'));
         assertThat(b[2], is((byte) 'b'));
@@ -299,7 +299,7 @@ public class ArrayEncodeBufferTest {
         // expand internal buffer and byte length estimation failure happen.
         sut.writeString(encoder, data);
 
-        byte[] b = sut.array();
+        byte[] b = sut.toArray();
         assertThat(Arrays.copyOf(b, 2), is(new byte[]{0x1F, (byte) 0x81})); // dataUTF8.length
         for (int i = 0; i < dataUTF8.length; i++) {
             assertThat("index:" + i, b[i + 2], is(dataUTF8[i]));
@@ -316,7 +316,19 @@ public class ArrayEncodeBufferTest {
 
         assertThat(sut.filledBytes(), is(0));
         assertThat(b.filledBytes(), is(8));
-        assertThat(Arrays.copyOf(b.array(), 8), is(new byte[]{1, 2, 3, 4, 5, 6, 7, 8}));
-        assertThat(b.capacityBytes(), is(16));
+        assertThat(Arrays.copyOf(b.toArray(), 8), is(new byte[]{1, 2, 3, 4, 5, 6, 7, 8}));
+        assertThat(b.limitBytes(), is(16));
+    }
+
+    @Test
+    public void testToArray() throws Exception {
+        assertThat(sut.hasArray(), is(true));
+        assertThat(sut.arrayOffset(), is(0));
+
+        byte[] b = sut.toArray();
+        assertThat(b[0], is((byte) 0));
+
+        sut.writeByte('a');
+        assertThat(b[0], is((byte) 'a'));
     }
 }

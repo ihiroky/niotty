@@ -194,17 +194,18 @@ public class ByteBufferDecodeBuffer extends AbstractDecodeBuffer implements Deco
      * {@inheritDoc}
      */
     @Override
-    public int capacityBytes() {
-        return buffer.capacity();
+    public int limitBytes() {
+        return buffer.limit();
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void reset() {
+    public void clear() {
         // ready to drainFrom()
-        buffer.limit(buffer.position());
+        buffer.position(0);
+        buffer.limit(0);
     }
 
     /**
@@ -221,6 +222,30 @@ public class ByteBufferDecodeBuffer extends AbstractDecodeBuffer implements Deco
     @Override
     public ByteBuffer toByteBuffer() {
         return buffer;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean hasArray() {
+        return buffer.hasArray();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public byte[] toArray() {
+        return buffer.array();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int arrayOffset() {
+        return buffer.arrayOffset();
     }
 
     /**

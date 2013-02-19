@@ -15,6 +15,7 @@ import java.util.Arrays;
 public class ArrayEncodeBuffer extends AbstractEncodeBuffer implements EncodeBuffer {
 
     private byte[] buffer;
+    private int offset;
     private int position;
 
     private static final int DEFAULT_CAPACITY = 512;
@@ -30,6 +31,17 @@ public class ArrayEncodeBuffer extends AbstractEncodeBuffer implements EncodeBuf
             capacity = MINIMUM_CAPACITY;
         }
         buffer = new byte[capacity];
+    }
+
+    private ArrayEncodeBuffer(byte[] buffer, int offset, int length) {
+        if (offset + length > buffer.length) {
+            throw new IndexOutOfBoundsException(
+                    "offset + length (" + (offset + length) + ") exceeds buffer capacity " + buffer.length);
+        }
+        this.buffer = buffer;
+        this.offset = offset;
+        this.position = offset + length;
+
     }
 
     /**
@@ -247,8 +259,8 @@ public class ArrayEncodeBuffer extends AbstractEncodeBuffer implements EncodeBuf
 
     @Override
     public void drainTo(EncodeBuffer encodeBuffer) {
-        encodeBuffer.writeBytes(buffer, 0, position);
-        position = 0;
+        encodeBuffer.writeBytes(buffer, offset, position);
+        position = offset;
     }
 
     /**
@@ -256,14 +268,14 @@ public class ArrayEncodeBuffer extends AbstractEncodeBuffer implements EncodeBuf
      */
     @Override
     public int filledBytes() {
-        return position;
+        return position - offset;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public int capacityBytes() {
+    public int limitBytes() {
         return buffer.length;
     }
 
@@ -273,6 +285,7 @@ public class ArrayEncodeBuffer extends AbstractEncodeBuffer implements EncodeBuf
     @Override
     public void clear() {
         position = 0;
+        offset = 0;
     }
 
     /**
@@ -280,13 +293,37 @@ public class ArrayEncodeBuffer extends AbstractEncodeBuffer implements EncodeBuf
      */
     @Override
     public BufferSink createBufferSink() {
-        return new ArrayBufferSink(buffer, 0, position);
+        return new ArrayBufferSink(buffer, offset, position);
     }
 
     /**
      * {@inheritDoc}
      */
-    protected byte[] array() {
+    public boolean hasArray() {
+        return true;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public byte[] toArray() {
         return buffer;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public int arrayOffset() {
+        return offset;
+    }
+    /**
+     * {@inheritDoc}
+     */
+    public ByteBuffer toByteBuffer() {
+        return ByteBuffer.wrap(buffer, offset, position);
+    }
+
+    public static ArrayEncodeBuffer wrap(byte[] buffer, int offset, int length) {
+        return new ArrayEncodeBuffer(buffer, offset, length);
     }
 }

@@ -14,6 +14,7 @@ import java.util.Arrays;
 public class ArrayDecodeBuffer extends AbstractDecodeBuffer implements DecodeBuffer {
 
     private byte[] buffer;
+    private int offset;
     private int position;
     private int end;
 
@@ -23,8 +24,13 @@ public class ArrayDecodeBuffer extends AbstractDecodeBuffer implements DecodeBuf
         buffer = EMPTY_BYTES;
     }
 
-    private ArrayDecodeBuffer(byte[] b, int offset, int length) {
+    ArrayDecodeBuffer(byte[] b, int offset, int length) {
+        if (offset + length > b.length) {
+            throw new IndexOutOfBoundsException(
+                    "offset + length (" + (offset + length) + ") exceeds buffer capacity " + b.length);
+        }
         buffer = b;
+        this.offset = offset;
         position = offset;
         end = offset + length;
     }
@@ -237,16 +243,17 @@ public class ArrayDecodeBuffer extends AbstractDecodeBuffer implements DecodeBuf
      * {@inheritDoc}
      */
     @Override
-    public int capacityBytes() {
-        return buffer.length;
+    public int limitBytes() {
+        return end;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void reset() {
+    public void clear() {
         position = 0;
+        offset = 0;
         end = 0;
     }
 
@@ -255,7 +262,7 @@ public class ArrayDecodeBuffer extends AbstractDecodeBuffer implements DecodeBuf
      */
     @Override
     public BufferSink toBufferSink() {
-        return new ArrayBufferSink(buffer, position, end);
+        return new ArrayBufferSink(buffer, offset, end);
     }
 
     /**
@@ -263,7 +270,30 @@ public class ArrayDecodeBuffer extends AbstractDecodeBuffer implements DecodeBuf
      */
     @Override
     public ByteBuffer toByteBuffer() {
-        return ByteBuffer.wrap(buffer, position, end);
+        return ByteBuffer.wrap(buffer, offset, end);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean hasArray() {
+        return true;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public byte[] toArray() {
+        return buffer;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public int arrayOffset() {
+        return offset;
     }
 
     /**

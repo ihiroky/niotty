@@ -4,10 +4,10 @@ import java.nio.ByteBuffer;
 import java.nio.charset.CharsetEncoder;
 
 /**
- * A buffer class for encoding byte array. Implementations of this class has position and capacity.
+ * A buffer class for encoding byte array. Implementations of this class has position and limit.
  * for internal storage. The position shows a current writing byte position in the storage.
- * The data written into this class exists between index 0 and position - 1. The capacity is the end of the storage
- * for valid operation. The storage is automatically expanded if the position exceeds the capacity for a writing
+ * The data written into this class exists between index 0 and position - 1. The limit is the end of the storage
+ * for valid operation. The storage is automatically expanded if the position exceeds the limit for a writing
  * operation.
  * <p></p>
  * This class supports a signed integer encoding with variable length, signed VBC (Variable Byte Codes). The encoding
@@ -163,10 +163,10 @@ public interface EncodeBuffer {
     int  filledBytes();
 
     /**
-     * Returns the capacity of this buffer.
-     * @return the capacity of this buffer
+     * Returns the limit of this buffer.
+     * @return the limit of this buffer
      */
-    int  capacityBytes();
+    int limitBytes();
 
     /**
      * Clears this buffer. The current position is set to 0, and
@@ -179,4 +179,35 @@ public interface EncodeBuffer {
      */
     BufferSink createBufferSink();
 
+    /**
+     * Returns true if this buffer is backed by a byte array.
+     * @return true if this buffer is backed by a byte array
+     */
+    boolean hasArray();
+
+    /**
+     * Returns a byte array that backs this buffer.
+     * Modification to this buffer's content modifies the byte array, and vice versa as long as this buffer does not
+     * expands its size. If {@link #hasArray()} returns false, this method throws
+     * {@code java.lang.UnsupportedOperationException}.
+     *
+     * @return a byte array that backs this buffer
+     * @throws UnsupportedOperationException if this buffer is not backed by a byte array
+     */
+    byte[] toArray();
+
+    /**
+     * Returns an offset for a first byte in byte array that backs this buffer.
+     * If {@link #hasArray()} returns false, this method throws {@code java.lang.UnsupportedOperationException}.
+     * @return an offset for a first byte in byte array that backs this buffer
+     * @throws UnsupportedOperationException if this buffer is not backed by a byte array
+     */
+    int arrayOffset();
+
+    /**
+     * Returns a {@code ByteBuffer} that backs this buffer.
+     * Modification to this buffer's content modifies the ByteBuffer, and vice versa.
+     * @return a ByteBuffer that backs this buffer
+     */
+    ByteBuffer toByteBuffer();
 }
