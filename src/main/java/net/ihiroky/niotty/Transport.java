@@ -19,4 +19,6 @@ public interface Transport {
     void write(Object message, SocketAddress remote);
     void addListener(TransportListener listener);
     void removeListener(TransportListener listener);
+    Object attach(Object attachment);
+    Object attachment();
 }

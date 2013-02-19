@@ -7,6 +7,7 @@ import java.net.NetworkInterface;
 import java.net.SocketAddress;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * @author Hiroki Itoh
@@ -15,12 +16,15 @@ abstract public class AbstractTransport<L extends EventLoop<L>> implements Trans
 
     private PipeLine loadPipeLine;
     private PipeLine storePipeLine;
-    private TransportListener transportListener  = NULL_LISTENER;
+    private AtomicReference<Object> attachmentReference;
+    private TransportListener transportListener;
     private L loop;
 
     static final TransportListener NULL_LISTENER = new NullListener();
 
     protected AbstractTransport() {
+        attachmentReference = new AtomicReference<>();
+        transportListener = NULL_LISTENER;
     }
 
     protected final void setLoadPipeLine(PipeLine pipeLine) {
@@ -96,6 +100,16 @@ abstract public class AbstractTransport<L extends EventLoop<L>> implements Trans
                 }
             }
         }
+    }
+
+    @Override
+    public Object attach(Object attachment) {
+        return attachmentReference.getAndSet(attachment);
+    }
+
+    @Override
+    public Object attachment() {
+        return attachmentReference.get();
     }
 
 
