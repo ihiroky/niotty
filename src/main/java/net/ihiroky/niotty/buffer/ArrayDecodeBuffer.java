@@ -185,11 +185,8 @@ public class ArrayDecodeBuffer extends AbstractDecodeBuffer implements DecodeBuf
         return Double.longBitsToDouble(readLong());
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    public String readString(CharsetDecoder charsetDecoder) {
-        int bytes = readVariableByteInteger();
+    @Override
+    public String readString(CharsetDecoder charsetDecoder, int bytes) {
         String cached = StringCache.getCachedValue(this, charsetDecoder, bytes);
         if (cached != null) {
             return cached;

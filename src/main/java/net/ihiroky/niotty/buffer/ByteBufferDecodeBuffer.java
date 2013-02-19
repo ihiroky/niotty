@@ -133,12 +133,8 @@ public class ByteBufferDecodeBuffer extends AbstractDecodeBuffer implements Deco
         return Double.longBitsToDouble(buffer.getLong());
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public String readString(CharsetDecoder charsetDecoder) {
-        int bytes = readVariableByteInteger();
+    public String readString(CharsetDecoder charsetDecoder, int bytes) {
         String cached = StringCache.getCachedValue(this, charsetDecoder, bytes);
         if (cached != null) {
             return cached;
@@ -166,6 +162,7 @@ public class ByteBufferDecodeBuffer extends AbstractDecodeBuffer implements Deco
         }
         output.flip();
         return StringCache.toString(output, charsetDecoder);
+
     }
 
     /**

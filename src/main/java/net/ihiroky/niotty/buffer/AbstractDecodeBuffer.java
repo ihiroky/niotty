@@ -1,5 +1,7 @@
 package net.ihiroky.niotty.buffer;
 
+import java.nio.charset.CharsetDecoder;
+
 /**
  * A skeletal implementation of {@link net.ihiroky.niotty.buffer.DecodeBuffer}.
  *
@@ -106,4 +108,13 @@ public abstract class AbstractDecodeBuffer implements DecodeBuffer {
         value |= (b & CodecUtil.VB_MASK_BIT7) << shift;
         return isPositiveOrZero ? value : -value;
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    public String readString(CharsetDecoder charsetDecoder) {
+        int bytes = readVariableByteInteger();
+        return readString(charsetDecoder, bytes);
+    }
+
 }

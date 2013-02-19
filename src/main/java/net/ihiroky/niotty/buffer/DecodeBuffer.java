@@ -151,6 +151,19 @@ public interface DecodeBuffer {
     String readString(CharsetDecoder charsetDecoder);
 
     /**
+     * Reads a string from the buffer using a specified {@code charsetDecoder}.
+     * The string length of byte format is given as {@code bytes}. If some
+     * {@code java.nio.charset.CharacterCodingException} happens, this method throws
+     * {@code java.lang.RuntimeException} which has {@code CharacterCodingException} as its cause.
+     *
+     * @param charsetDecoder decoder to decode byte data
+     * @param bytes length of byte data to be decoded by {@code charsetDecoder}
+     * @throws java.lang.RuntimeException if an error happens
+     * @return string value read from the buffer
+     */
+    String readString(CharsetDecoder charsetDecoder, int bytes);
+
+    /**
      * Skips specified bytes of the buffer.
      *
      * The actual number of {@code n} of bytes to be skipped is the smaller of {@code bytes} and
