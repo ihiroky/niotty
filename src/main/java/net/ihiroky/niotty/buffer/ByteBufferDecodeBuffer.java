@@ -18,7 +18,7 @@ public class ByteBufferDecodeBuffer extends AbstractDecodeBuffer implements Deco
         this.buffer = b;
     }
 
-    private ByteBufferDecodeBuffer(ByteBuffer buffer) {
+    ByteBufferDecodeBuffer(ByteBuffer buffer) {
         this.buffer = buffer;
     }
 
@@ -269,9 +269,5 @@ public class ByteBufferDecodeBuffer extends AbstractDecodeBuffer implements Deco
         bb.position(limit);
         decodeBuffer.readBytes(bb);
         bb.position(0);
-    }
-
-    public static ByteBufferDecodeBuffer wrap(ByteBuffer bb) {
-        return new ByteBufferDecodeBuffer(bb);
     }
 }

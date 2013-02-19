@@ -56,11 +56,38 @@ public final class Buffers {
     }
 
     public static EncodeBuffer newEncodeBuffer(byte[] buffer, int offset, int length) {
-        return ArrayEncodeBuffer.wrap(buffer, offset, length);
+        return new ArrayEncodeBuffer(buffer, offset, length);
     }
 
+    /**
+     * Wraps a specified byte array into {@code DecodeBuffer}.
+     *
+     * The new {@code DecodeBuffer} is backed by the specified byte array. If some data is written into the
+     * {@code DecodeBuffer}, then the backed byte array is also modified and vice versa. The new
+     * {@code DecodeBuffer}'s limit is {@code offset + length} and the position is {@code offset}.
+     *
+     * @param buffer the backed byte array
+     * @param offset the offset
+     * @param length the content length in {@code b} from {@code offset},
+     *               must be non-negative and less than or equal to {@code b.length - offset}
+     * @return the new {@code DecodeBuffer}
+     */
+    public static DecodeBuffer newDecodeBuffer(byte[] buffer, int offset, int length) {
+        return new ArrayDecodeBuffer(buffer, offset,  length);
+    }
+
+    /**
+     * Wraps a specified {@code ByteBuffer} into {@code DecodeBuffer}.
+     *
+     * The new {@code DecodeBuffer} is backed by the specified {@code ByteBuffer}. If some data is written into the
+     * {@code DecodeBuffer}, then the backed {@code ByteBuffer} is also modified and vice versa. The new
+     * {@code DecodeBuffer}'s limit is {@code offset + length} and the position is {@code offset}.
+     *
+     * @param byteBuffer the backed {@code ByteBuffer}
+     * @return the new {@code DecodeBuffer}
+     */
     public static DecodeBuffer newDecodeBuffer(ByteBuffer byteBuffer) {
-        return ByteBufferDecodeBuffer.wrap(byteBuffer);
+        return new ByteBufferDecodeBuffer(byteBuffer);
     }
 
     public static BufferSink createBufferSink(BufferSink header, BufferSink body) {

@@ -33,7 +33,7 @@ public class ArrayEncodeBuffer extends AbstractEncodeBuffer implements EncodeBuf
         buffer = new byte[capacity];
     }
 
-    private ArrayEncodeBuffer(byte[] buffer, int offset, int length) {
+    ArrayEncodeBuffer(byte[] buffer, int offset, int length) {
         if (offset + length > buffer.length) {
             throw new IndexOutOfBoundsException(
                     "offset + length (" + (offset + length) + ") exceeds buffer capacity " + buffer.length);
@@ -321,9 +321,5 @@ public class ArrayEncodeBuffer extends AbstractEncodeBuffer implements EncodeBuf
      */
     public ByteBuffer toByteBuffer() {
         return ByteBuffer.wrap(buffer, offset, position);
-    }
-
-    public static ArrayEncodeBuffer wrap(byte[] buffer, int offset, int length) {
-        return new ArrayEncodeBuffer(buffer, offset, length);
     }
 }

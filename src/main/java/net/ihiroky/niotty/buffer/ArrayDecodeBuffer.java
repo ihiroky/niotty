@@ -312,21 +312,4 @@ public class ArrayDecodeBuffer extends AbstractDecodeBuffer implements DecodeBuf
         decodeBuffer.readBytes(buffer, end, remaining);
         end += remaining;
     }
-
-    /**
-     * Wraps a specified byte array into {@code ArrayDecodeBuffer}.
-     *
-     * The new {@code ArrayDecodeBuffer} is backed by the specified byte array. If some data is written into the
-     * {@code ArrayDecodeBuffer}, then the backed byte array is also modified and vice versa. The new
-     * {@code ArrayDecodeBuffer}'s capacity and the end is {@code offset + length} and the position is {@code offset}.
-     *
-     * @param b the backed byte array
-     * @param offset the offset
-     * @param length the content length in {@code b} from {@code offset},
-     *               must be non-negative and less than or equal to {@code b.length - offset}
-     * @return the new {@code ArrayDecodeBuffer}
-     */
-    public static ArrayDecodeBuffer wrap(byte[] b, int offset, int length) {
-        return new ArrayDecodeBuffer(b, offset, length);
-    }
 }

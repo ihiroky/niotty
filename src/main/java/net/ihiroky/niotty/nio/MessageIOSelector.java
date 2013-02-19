@@ -5,7 +5,7 @@ import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.StageContextAdapter;
 import net.ihiroky.niotty.StageContextListener;
 import net.ihiroky.niotty.buffer.BufferSink;
-import net.ihiroky.niotty.buffer.ByteBufferDecodeBuffer;
+import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.event.MessageEvent;
 import net.ihiroky.niotty.event.TransportStateEvent;
 import org.slf4j.Logger;
@@ -94,7 +94,7 @@ public class MessageIOSelector extends AbstractSelector<MessageIOSelector> {
             localByteBuffer.flip();
 
             NioChildChannelTransport transport = (NioChildChannelTransport) key.attachment();
-            transport.loadEvent(new MessageEvent<Object>(transport, ByteBufferDecodeBuffer.wrap(localByteBuffer)));
+            transport.loadEvent(new MessageEvent<Object>(transport, Buffers.newDecodeBuffer(localByteBuffer)));
             localByteBuffer.clear();
             if (read == -1) {
                 // close current key and socket.

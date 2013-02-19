@@ -32,7 +32,7 @@ public class ArrayDecodeBufferTest {
         @Before
         public void setUp() {
             sut = new ArrayDecodeBuffer();
-            sut.drainFrom(ArrayDecodeBuffer.wrap(new byte[0], 0, 0));
+            sut.drainFrom(Buffers.newDecodeBuffer(new byte[0], 0, 0));
         }
 
         @Test
@@ -150,7 +150,7 @@ public class ArrayDecodeBufferTest {
                     buffer[i * 10 + j] = (byte) (j + '0');
                 }
             }
-            sut = ArrayDecodeBuffer.wrap(buffer, 0, buffer.length);
+            sut = new ArrayDecodeBuffer(buffer, 0, buffer.length);
         }
 
         @Test
@@ -404,7 +404,7 @@ public class ArrayDecodeBufferTest {
             CharsetEncoder encoder = StandardCharsets.UTF_8.newEncoder();
             ArrayEncodeBuffer buffer = new ArrayEncodeBuffer();
             buffer.writeString(encoder, "0123");
-            sut = ArrayDecodeBuffer.wrap(buffer.toArray(), 0, buffer.filledBytes());
+            sut = new ArrayDecodeBuffer(buffer.toArray(), 0, buffer.filledBytes());
 
             String s = sut.readString(decoder);
             assertThat(s, is("0123"));
@@ -466,7 +466,7 @@ public class ArrayDecodeBufferTest {
             byte[] a = new byte[40];
             Arrays.fill(a, (byte) 'a');
             sut.clear();
-            sut.drainFrom(ArrayDecodeBuffer.wrap(a, 0, a.length));
+            sut.drainFrom(new ArrayDecodeBuffer(a, 0, a.length));
 
             assertThat(sut.remainingBytes(), is(40));
             assertThat(sut.limitBytes(), is(40));
@@ -474,14 +474,14 @@ public class ArrayDecodeBufferTest {
             // drain 20 bytes
             byte[] b = new byte[20];
             Arrays.fill(b, (byte) 'b');
-            sut.drainFrom(ArrayDecodeBuffer.wrap(b, 0, b.length));
+            sut.drainFrom(new ArrayDecodeBuffer(b, 0, b.length));
             assertThat(sut.remainingBytes(), is(60));
             assertThat(sut.limitBytes(), is(60));
 
             // drain 150 bytes
             byte[] c = new byte[150];
             Arrays.fill(c, (byte) 'c');
-            sut.drainFrom(ArrayDecodeBuffer.wrap(c, 0, c.length));
+            sut.drainFrom(new ArrayDecodeBuffer(c, 0, c.length));
             assertThat(sut.remainingBytes(), is(210));
             assertThat(sut.limitBytes(), is(210));
 
@@ -516,7 +516,7 @@ public class ArrayDecodeBufferTest {
         @Test
         public void testArrayOffset() throws Exception {
             assertThat(sut.arrayOffset(), is(0));
-            assertThat(ArrayEncodeBuffer.wrap(new byte[1], 1, 0).arrayOffset(), is(1));
+            assertThat(new ArrayEncodeBuffer(new byte[1], 1, 0).arrayOffset(), is(1));
         }
     }
 }
