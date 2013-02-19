@@ -12,11 +12,15 @@ import java.nio.charset.UnmappableCharacterException;
  */
 public final class Buffers {
 
-        // TODO must be read only
+    // TODO must be read only
     private static final EncodeBuffer NULL_ENCODE_BUFFER = new ArrayEncodeBuffer(0);
 
     private Buffers() {
         throw new AssertionError();
+    }
+
+    static int outputByteBufferSize(float bytesPerChar, int chars) {
+        return (int) (bytesPerChar * chars) + 1;
     }
 
     static int outputCharBufferSize(float charsPerByte, int bytes) {
@@ -55,16 +59,7 @@ public final class Buffers {
         return ByteBufferDecodeBuffer.wrap(byteBuffer);
     }
 
-    public static BufferSink createBufferSink(byte[] byteArray) {
-        return new ArrayBufferSink(byteArray, 0, byteArray.length);
-    }
-
-    public static BufferSink createBufferSink(byte[] ...byteArrays) {
-        int length = byteArrays.length;
-        BufferSink[] s = new BufferSink[length];
-        for (int i = 0; i < length; i++) {
-            s[i] = new SegmentedArrayBufferSink(byteArrays[i]);
-        }
-        return new CompositeBufferSink(s);
+    public static BufferSink createBufferSink(BufferSink header, BufferSink body) {
+        return new CompositeBufferSink(header, body);
     }
 }

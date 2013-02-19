@@ -3,34 +3,31 @@ package net.ihiroky.niotty.buffer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
+import java.util.Objects;
+
 /**
  * @author Hiroki Itoh
  */
 public class CompositeBufferSink implements BufferSink {
 
-    private BufferSink[] bufferSinks;
-    private int sinkIndex;
+    private BufferSink car;
+    private BufferSink cdr;
 
-    CompositeBufferSink(BufferSink ...bufferSinks) {
-        this.bufferSinks = bufferSinks;
+    CompositeBufferSink(BufferSink car, BufferSink cdr) {
+        Objects.requireNonNull(car, "car");
+        Objects.requireNonNull(cdr, "cdr");
+        this.car = car;
+        this.cdr = cdr;
     }
 
     @Override
     public boolean transferTo(WritableByteChannel channel, ByteBuffer writeBuffer) throws IOException {
-        for (int i = 0; i < sinkIndex; i++) {
-            if (!bufferSinks[i].transferTo(channel, writeBuffer)) {
-                return false;
-            }
-        }
-        return true;
+        return car.transferTo(channel, writeBuffer) && cdr.transferTo(channel, writeBuffer);
     }
 
     @Override
     public int remainingBytes() {
-        long sum = 0;
-        for (BufferSink bufferSink : bufferSinks) {
-            sum += bufferSink.remainingBytes();
-        }
+        long sum = car.remainingBytes() + cdr.remainingBytes();
         return (sum <= Integer.MAX_VALUE) ? (int) sum : Integer.MAX_VALUE;
     }
 }

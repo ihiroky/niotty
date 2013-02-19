@@ -23,9 +23,10 @@ public class ArrayDecodeBuffer extends AbstractDecodeBuffer implements DecodeBuf
         buffer = EMPTY_BYTES;
     }
 
-    private ArrayDecodeBuffer(byte[] b, int length) {
+    private ArrayDecodeBuffer(byte[] b, int offset, int length) {
         buffer = b;
-        end = length;
+        position = offset;
+        end = offset + length;
     }
 
     /**
@@ -287,13 +288,15 @@ public class ArrayDecodeBuffer extends AbstractDecodeBuffer implements DecodeBuf
      *
      * The new {@code ArrayDecodeBuffer} is backed by the specified byte array. If some data is written into the
      * {@code ArrayDecodeBuffer}, then the backed byte array is also modified and vice versa. The new
-     * {@code ArrayDecodeBuffer}'s capacity and end is {@code length} and position is {@code 0}.
+     * {@code ArrayDecodeBuffer}'s capacity and the end is {@code offset + length} and the position is {@code offset}.
      *
      * @param b the backed byte array
-     * @param length the capacity and end, must be non-negative and less than or equal to {@code b.length}
+     * @param offset the offset
+     * @param length the content length in {@code b} from {@code offset},
+     *               must be non-negative and less than or equal to {@code b.length - offset}
      * @return the new {@code ArrayDecodeBuffer}
      */
-    public static ArrayDecodeBuffer wrap(byte[] b, int length) {
-        return new ArrayDecodeBuffer(b, length);
+    public static ArrayDecodeBuffer wrap(byte[] b, int offset, int length) {
+        return new ArrayDecodeBuffer(b, offset, length);
     }
 }

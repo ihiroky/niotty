@@ -70,6 +70,16 @@ public class ArrayEncodeBuffer extends AbstractEncodeBuffer implements EncodeBuf
     /**
      * {@inheritDoc}
      */
+    public void writeBytes(ByteBuffer byteBuffer) {
+        int remaining = byteBuffer.remaining();
+        ensureSpace(remaining);
+        byteBuffer.get(buffer, position, remaining);
+        position += remaining;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void writeBytes4(int bits, int bytes) {
         if (bytes < 0 || bytes > CodecUtil.INT_BYTES) {

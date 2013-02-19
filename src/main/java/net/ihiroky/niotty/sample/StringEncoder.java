@@ -4,6 +4,7 @@ import net.ihiroky.niotty.Stage;
 import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.buffer.BufferSink;
 import net.ihiroky.niotty.buffer.Buffers;
+import net.ihiroky.niotty.buffer.EncodeBuffer;
 import net.ihiroky.niotty.event.MessageEvent;
 import net.ihiroky.niotty.event.TransportStateEvent;
 import org.slf4j.Logger;
@@ -25,8 +26,11 @@ public class StringEncoder implements Stage<String, BufferSink> {
     @Override
     public void process(StageContext<String, BufferSink> context, MessageEvent<String> event) {
         String message = event.getMessage();
-        byte[] bytes = message.getBytes(CHARSET);
-        context.proceed(new MessageEvent<>(event.getTransport(), Buffers.createBufferSink(bytes)));
+        //byte[] bytes = message.getBytes(CHARSET);
+        //context.proceed(new MessageEvent<>(event.getTransport(), Buffers.createBufferSink(bytes)));
+        EncodeBuffer buffer = Buffers.newEncodeBuffer();
+        buffer.writeString(CHARSET.newEncoder(), message);
+        context.proceed(new MessageEvent<>(event.getTransport(), buffer.createBufferSink()));
     }
 
     @Override

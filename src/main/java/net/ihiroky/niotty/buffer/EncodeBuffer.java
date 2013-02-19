@@ -1,5 +1,6 @@
 package net.ihiroky.niotty.buffer;
 
+import java.nio.ByteBuffer;
 import java.nio.charset.CharsetEncoder;
 
 /**
@@ -46,6 +47,13 @@ public interface EncodeBuffer {
      *               must be non-negative and less than or equal to {@code bytes.length - offset}
      */
     void writeBytes(byte[] bytes, int offset, int length);
+
+    /**
+     * Writes a specified {@code java.nio.ByteBuffer}.
+     *
+     * @param byteBuffer the byte array to be written
+     */
+    void writeBytes(ByteBuffer byteBuffer);
 
     /**
      * Writes a specified {@code bits}, which byte size is specified {@code bytes}. The {@code bits} is right-aligned.

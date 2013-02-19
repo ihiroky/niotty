@@ -5,6 +5,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.nio.ByteBuffer;
 import java.nio.charset.CharsetEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -119,6 +120,27 @@ public class ArrayEncodeBufferTest {
         assertThat(sut.array()[1], is((byte) 0x32));
         assertThat(sut.array()[7], is((byte) 0x38));
         assertThat(sut.array()[8], is((byte) 0x39));
+    }
+
+    @Test
+    public void testWriteBytesByteBuffer() throws Exception {
+        ByteBuffer bb = ByteBuffer.wrap(new byte[]{'0', '1', '2'});
+        sut.writeBytes(bb);
+        assertThat(sut.filledBytes(), is(3));
+        assertThat(sut.array()[0], is((byte) 0x30));
+        assertThat(sut.array()[1], is((byte) 0x31));
+        assertThat(sut.array()[2], is((byte) 0x32));
+    }
+
+    @Test
+    public void testWriteBytesByteBufferExpand() throws Exception {
+        ByteBuffer bb = ByteBuffer.wrap(new byte[] {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'});
+        sut.writeBytes(bb);
+        assertThat(sut.filledBytes(), is(10));
+        assertThat(sut.array()[0], is((byte) 0x30));
+        assertThat(sut.array()[1], is((byte) 0x31));
+        assertThat(sut.array()[8], is((byte) 0x38));
+        assertThat(sut.array()[9], is((byte) 0x39));
     }
 
     @Test
@@ -262,18 +284,25 @@ public class ArrayEncodeBufferTest {
         CharsetEncoder encoder = StandardCharsets.UTF_8.newEncoder();
         sut.writeString(encoder, "abc");
         byte[] b = sut.array();
-        assertThat(b[0], is((byte) 'a'));
-        assertThat(b[1], is((byte) 'b'));
-        assertThat(b[2], is((byte) 'c'));
+        assertThat(b[0], is((byte) (CodecUtil.VB_END_BIT | 3)));
+        assertThat(b[1], is((byte) 'a'));
+        assertThat(b[2], is((byte) 'b'));
+        assertThat(b[3], is((byte) 'c'));
     }
 
     @Test
     public void testWriteStringOverflow() throws Exception {
         CharsetEncoder encoder = StandardCharsets.UTF_8.newEncoder();
-        sut.writeString(encoder, "0123456789");
+        String data = "01234567890123456789あいうえおかきくけこあいうえおかきくけこあいうえお";
+        byte[] dataUTF8 = data.getBytes(StandardCharsets.UTF_8);
+
+        // expand internal buffer and byte length estimation failure happen.
+        sut.writeString(encoder, data);
+
         byte[] b = sut.array();
-        for (int i = 0; i < 10; i++) {
-            assertThat(b[i], is((byte) (i + '0')));
+        assertThat(Arrays.copyOf(b, 2), is(new byte[]{0x1F, (byte) 0x81})); // dataUTF8.length
+        for (int i = 0; i < dataUTF8.length; i++) {
+            assertThat("index:" + i, b[i + 2], is(dataUTF8[i]));
         }
     }
 

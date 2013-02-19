@@ -1,5 +1,6 @@
 package net.ihiroky.niotty.buffer;
 
+import java.nio.ByteBuffer;
 import java.nio.charset.CharsetEncoder;
 
 /**
@@ -74,6 +75,11 @@ public class SegmentedArrayEncodeBuffer extends AbstractEncodeBuffer implements 
         System.arraycopy(bytes, leftOffset, segments[si], 0, leftBytes);
         segmentIndex = si;
         countInSegment = leftBytes;
+    }
+
+    @Override
+    public void writeBytes(ByteBuffer byteBuffer) {
+        throw new UnsupportedOperationException();
     }
 
     @Override

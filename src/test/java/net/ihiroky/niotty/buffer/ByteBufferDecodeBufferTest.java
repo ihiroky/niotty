@@ -9,6 +9,9 @@ import org.junit.runner.RunWith;
 
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CharsetEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import static org.hamcrest.CoreMatchers.*;
@@ -107,6 +110,11 @@ public class ByteBufferDecodeBufferTest {
             sut.readDouble();
         }
 
+        @Test(expected = BufferUnderflowException.class)
+        public void testReadString() throws Exception {
+            sut.readString(StandardCharsets.UTF_8.newDecoder());
+        }
+
         @Test
         public void testSkipBytes() throws Exception {
             int skipped = sut.skipBytes(0);
@@ -121,7 +129,7 @@ public class ByteBufferDecodeBufferTest {
 
         @Test
         public void testDrainFrom() throws Exception {
-            ArrayDecodeBuffer b = ArrayDecodeBuffer.wrap(new byte[]{1, 2, 3}, 3);
+            ArrayDecodeBuffer b = ArrayDecodeBuffer.wrap(new byte[]{1, 2, 3}, 0, 3);
             sut.drainFrom(b);
             assertThat(sut.remainingBytes(), is(3));
             assertThat(sut.capacityBytes(), is(3));
@@ -370,6 +378,18 @@ public class ByteBufferDecodeBufferTest {
         }
 
         @Test
+        public void testReadString() throws Exception {
+            CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder();
+            CharsetEncoder encoder = StandardCharsets.UTF_8.newEncoder();
+            ArrayEncodeBuffer buffer = new ArrayEncodeBuffer();
+            buffer.writeString(encoder, "0123");
+            sut = ByteBufferDecodeBuffer.wrap(ByteBuffer.wrap(buffer.array(), 0, buffer.filledBytes()));
+
+            String s = sut.readString(decoder);
+            assertThat(s, is("0123"));
+        }
+
+        @Test
         public void testSkipBytesForward() throws Exception {
             int skipped = sut.skipBytes(7);
             assertThat(skipped, is(7));
@@ -404,7 +424,7 @@ public class ByteBufferDecodeBufferTest {
             byte[] a = new byte[10];
             Arrays.fill(a, (byte) 'a');
             sut.reset();
-            sut.drainFrom(ArrayDecodeBuffer.wrap(a, a.length));
+            sut.drainFrom(ArrayDecodeBuffer.wrap(a, 0, a.length));
 
             assertThat(sut.remainingBytes(), is(10));
             assertThat(sut.capacityBytes(), is(16));
@@ -412,14 +432,14 @@ public class ByteBufferDecodeBufferTest {
             // drain 10 bytes
             byte[] b = new byte[10];
             Arrays.fill(b, (byte) 'b');
-            sut.drainFrom(ArrayDecodeBuffer.wrap(b, b.length));
+            sut.drainFrom(ArrayDecodeBuffer.wrap(b, 0, b.length));
             assertThat(sut.remainingBytes(), is(20));
             assertThat(sut.capacityBytes(), is(32));
 
             // drain 50 bytes
             byte[] c = new byte[50];
             Arrays.fill(c, (byte) 'c');
-            sut.drainFrom(ArrayDecodeBuffer.wrap(c, c.length));
+            sut.drainFrom(ArrayDecodeBuffer.wrap(c, 0, c.length));
             assertThat(sut.remainingBytes(), is(70));
             assertThat(sut.capacityBytes(), is(70));
 

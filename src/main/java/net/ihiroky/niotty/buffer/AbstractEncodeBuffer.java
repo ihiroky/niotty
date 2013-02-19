@@ -20,10 +20,17 @@ public abstract class AbstractEncodeBuffer implements EncodeBuffer {
     private void writeVBLongMinValue() {
         // write sign bit and 0 on 6 bits
         writeByte(CodecUtil.VB_SIGN_BIT);
+
         // write 0 on 54 bits
-        for (int i = 0; i < CodecUtil.LONG_BYTES; i++) {
-            writeByte(0);
-        }
+        writeByte(0);
+        writeByte(0);
+        writeByte(0);
+        writeByte(0);
+        writeByte(0);
+        writeByte(0);
+        writeByte(0);
+        writeByte(0);
+
         // write last bit with end bit and negative sign bit
         writeByte(CodecUtil.VB_LONG_MIN_LAST);
     }
@@ -34,10 +41,12 @@ public abstract class AbstractEncodeBuffer implements EncodeBuffer {
     private void writeVBIntMinValue() {
         // write sign bit and 0 on 6 bits
         writeByte(CodecUtil.VB_SIGN_BIT);
+
         // write 0 on 21 bits
-        for (int i = 0; i < CodecUtil.INT_BYTES; i++) {
-            writeByte(0);
-        }
+        writeByte(0);
+        writeByte(0);
+        writeByte(0);
+
         // write last bit with end bit and negative sign bit
         writeByte(CodecUtil.VB_INT_MIN_LAST);
     }
@@ -123,6 +132,6 @@ public abstract class AbstractEncodeBuffer implements EncodeBuffer {
             writeVariableByteNull();
             return;
         }
-        writeVariableByteLong(value);
+        writeVariableByteLong(value.longValue());
     }
 }
