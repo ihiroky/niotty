@@ -31,4 +31,12 @@ public class EncodeBufferGroup implements Iterable<EncodeBuffer> {
     public Iterator<EncodeBuffer> iterator() {
         return group.iterator();
     }
+
+    public int filledBytes() {
+        int sum = 0;
+        for (EncodeBuffer encodeBuffer : group) {
+            sum += encodeBuffer.filledBytes();
+        }
+        return sum;
+    }
 }
