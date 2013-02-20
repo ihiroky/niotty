@@ -110,7 +110,7 @@ public class ArrayDecodeBuffer extends AbstractDecodeBuffer implements DecodeBuf
      */
     @Override
     public char readChar() {
-        if (position + CodecUtil.CHAR_BYTES >= end) {
+        if (position + CodecUtil.CHAR_BYTES > end) {
             throw new IndexOutOfBoundsException("position exceeds the end of buffer if read char.");
         }
         return (char) (((buffer[position++] & CodecUtil.BYTE_MASK) << CodecUtil.BYTE_SHIFT1)
@@ -122,7 +122,7 @@ public class ArrayDecodeBuffer extends AbstractDecodeBuffer implements DecodeBuf
      */
     @Override
     public short readShort() {
-        if (position + CodecUtil.SHORT_BYTES >= end) {
+        if (position + CodecUtil.SHORT_BYTES > end) {
             throw new IndexOutOfBoundsException("position exceeds the end of buffer if read short.");
         }
         return (short) (((buffer[position++] & CodecUtil.BYTE_MASK) << CodecUtil.BYTE_SHIFT1)
@@ -136,7 +136,7 @@ public class ArrayDecodeBuffer extends AbstractDecodeBuffer implements DecodeBuf
     public int readInt() {
         byte[] b = buffer;
         int pos = position;
-        if (pos + CodecUtil.INT_BYTES >= end) {
+        if (pos + CodecUtil.INT_BYTES > end) {
             throw new IndexOutOfBoundsException("position exceeds the end of buffer if read int wide byte.");
         }
         int result = (((b[pos++] & CodecUtil.BYTE_MASK) << CodecUtil.BYTE_SHIFT3)
@@ -154,7 +154,7 @@ public class ArrayDecodeBuffer extends AbstractDecodeBuffer implements DecodeBuf
     public long readLong() {
         byte[] b = buffer;
         int pos = position;
-        if (pos + CodecUtil.LONG_BYTES >= end) {
+        if (pos + CodecUtil.LONG_BYTES > end) {
             throw new IndexOutOfBoundsException("position exceeds the end of buffer if read long wide byte.");
         }
         long result = ((((long) b[pos++] & CodecUtil.BYTE_MASK) << CodecUtil.BYTE_SHIFT7)
