@@ -11,9 +11,12 @@ import net.ihiroky.niotty.event.TransportStateEvent;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.SelectableChannel;
+import java.nio.channels.SocketChannel;
 import java.nio.channels.WritableByteChannel;
 import java.util.LinkedList;
 import java.util.Queue;
@@ -52,6 +55,31 @@ public class NioChildChannelTransport extends NioSocketTransport<MessageIOSelect
     @Override
     public void write(Object message, SocketAddress remote) {
         throw new UnsupportedOperationException("write");
+    }
+
+    @Override
+    public InetSocketAddress localAddress() {
+        SelectableChannel channel = getSelectionKey().channel();
+        try {
+            return (InetSocketAddress) ((SocketChannel) channel).getLocalAddress();
+        } catch (IOException ioe) {
+            throw new RuntimeException(ioe);
+        }
+    }
+
+    @Override
+    public InetSocketAddress remoteAddress() {
+        SelectableChannel channel = getSelectionKey().channel();
+        try {
+            return (InetSocketAddress) ((SocketChannel) channel).getRemoteAddress();
+        } catch (IOException ioe) {
+            throw new RuntimeException(ioe);
+        }
+    }
+
+    @Override
+    public boolean isOpen() {
+        return getSelectionKey().channel().isOpen();
     }
 
     @Override

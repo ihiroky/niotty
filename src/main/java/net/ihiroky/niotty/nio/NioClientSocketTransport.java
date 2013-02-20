@@ -5,6 +5,7 @@ import net.ihiroky.niotty.buffer.BufferSink;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
 import java.net.SocketAddress;
 import java.nio.channels.SelectableChannel;
@@ -88,6 +89,29 @@ public class NioClientSocketTransport extends NioSocketTransport<ConnectSelector
     @Override
     public void write(Object message, SocketAddress remote) {
         throw new UnsupportedOperationException("write");
+    }
+
+    @Override
+    public InetSocketAddress localAddress() {
+        try {
+            return (InetSocketAddress) clientChannel.getLocalAddress();
+        } catch (IOException ioe) {
+            throw new RuntimeException(ioe);
+        }
+    }
+
+    @Override
+    public SocketAddress remoteAddress() {
+        try {
+            return (InetSocketAddress) clientChannel.getRemoteAddress();
+        } catch (IOException ioe) {
+            throw new RuntimeException(ioe);
+        }
+    }
+
+    @Override
+    public boolean isOpen() {
+        return clientChannel.isOpen();
     }
 
     NioChildChannelTransport registerLater(SelectableChannel channel, int ops) {

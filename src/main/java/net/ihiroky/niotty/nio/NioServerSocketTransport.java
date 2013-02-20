@@ -2,12 +2,14 @@ package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.Niotty;
 import net.ihiroky.niotty.PipeLine;
+import net.ihiroky.niotty.Transport;
 import net.ihiroky.niotty.TransportAggregate;
 import net.ihiroky.niotty.TransportAggregateSupport;
 import net.ihiroky.niotty.buffer.BufferSink;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
 import java.net.SocketAddress;
 import java.nio.channels.SelectableChannel;
@@ -59,6 +61,25 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
     @Override
     public void write(Object message, SocketAddress remote) {
         throw new UnsupportedOperationException("write");
+    }
+
+    @Override
+    public InetSocketAddress localAddress() {
+        try {
+            return (InetSocketAddress) serverChannel.getLocalAddress();
+        } catch (IOException ioe) {
+            throw new RuntimeException(ioe);
+        }
+    }
+
+    @Override
+    public InetSocketAddress remoteAddress() {
+        return null;
+    }
+
+    @Override
+    public boolean isOpen() {
+        return serverChannel.isOpen();
     }
 
     @Override
