@@ -1,7 +1,5 @@
 package net.ihiroky.niotty.nio;
 
-import net.ihiroky.niotty.Niotty;
-import net.ihiroky.niotty.PipeLine;
 import net.ihiroky.niotty.Transport;
 import net.ihiroky.niotty.TransportAggregate;
 import net.ihiroky.niotty.TransportAggregateSupport;

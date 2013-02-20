@@ -10,7 +10,7 @@ import java.util.Objects;
  *
  * @author Hiroki Itoh
  */
-public class NioClientSocketProcessor implements Processor<NioClientSocketConfig> {
+public class NioClientSocketProcessor implements Processor<NioClientSocketTransport, NioClientSocketConfig> {
 
     private ConnectSelectorPool connectSelectorPool;
     private MessageIOSelectorPool messageIOSelectorPool;
@@ -24,9 +24,10 @@ public class NioClientSocketProcessor implements Processor<NioClientSocketConfig
     private static final int DEFAULT_NUMBER_OF_CONNECT_THREAD = 1;
     private static final int DEFAULT_NUMBER_OF_MESSAGE_IO_THREAD =
             Math.max(Runtime.getRuntime().availableProcessors() / 2, 2);
-    private static final String DEFAULT_NAME = "NioServerSocket";
     private static final int DEFAULT_BUFFER_SIZE = 8192;
     private static final boolean DEFAULT_DIRECT_BUFFER = true;
+
+    static final String DEFAULT_NAME = "NioServerSocket";
 
     public NioClientSocketProcessor() {
         connectSelectorPool = new ConnectSelectorPool();

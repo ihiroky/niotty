@@ -5,8 +5,8 @@ package net.ihiroky.niotty;
  *
  * @author Hiroki Itoh
  */
-public interface Processor<C extends TransportConfig> {
+public interface Processor<T extends Transport, C extends TransportConfig> {
     void start();
     void stop();
-    Transport createTransport(C config);
+    T createTransport(C config);
 }

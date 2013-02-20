@@ -1,6 +1,6 @@
 package net.ihiroky.niotty.nio;
 
-import net.ihiroky.niotty.PipeLineFactory;
+import net.ihiroky.niotty.Niotty;
 import net.ihiroky.niotty.TransportConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,7 +9,6 @@ import java.io.IOException;
 import java.net.SocketOption;
 import java.net.StandardSocketOptions;
 import java.nio.channels.SocketChannel;
-import java.util.Objects;
 
 /**
  * Created on 13/01/17, 18:01
@@ -27,10 +26,8 @@ public class NioClientSocketConfig extends TransportConfig {
 
     private Logger logger = LoggerFactory.getLogger(NioClientSocketConfig.class);
 
-    public NioClientSocketConfig(PipeLineFactory pipeLineFactory) {
-        Objects.requireNonNull(pipeLineFactory, "pipeLineFactory");
-
-        setPipeLineFactory(pipeLineFactory);
+    public NioClientSocketConfig() {
+        setPipeLineFactory(Niotty.newEmptyPipeLineFactory(NioClientSocketProcessor.DEFAULT_NAME));
     }
 
     private <T> void setOption(SocketChannel channel, SocketOption<T> option, T value) {

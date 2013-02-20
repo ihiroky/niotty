@@ -2,7 +2,6 @@ package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.NameCountThreadFactory;
 import net.ihiroky.niotty.Processor;
-import net.ihiroky.niotty.Transport;
 
 import java.util.Objects;
 
@@ -11,7 +10,7 @@ import java.util.Objects;
  *
  * @author Hiroki Itoh
  */
-public class NioServerSocketProcessor implements Processor<NioServerSocketConfig> {
+public class NioServerSocketProcessor implements Processor<NioServerSocketTransport, NioServerSocketConfig> {
 
     private AcceptSelectorPool acceptSelectorPool;
     private MessageIOSelectorPool messageIOSelectorPool;
@@ -26,9 +25,10 @@ public class NioServerSocketProcessor implements Processor<NioServerSocketConfig
     private static final int DEFAULT_NUMBER_OF_ACCEPT_THREAD = 1;
     private static final int DEFAULT_NUMBER_OF_MESSAGE_IO_THREAD =
             Math.max(Runtime.getRuntime().availableProcessors() / 2, 2);
-    private static final String DEFAULT_NAME = "NioServerSocket";
     private static final int DEFAULT_BUFFER_SIZE = 8192;
     private static final boolean DEFAULT_DIRECT_BUFFER = true;
+
+    static final String DEFAULT_NAME = "NioServerSocket";
 
     public NioServerSocketProcessor() {
         acceptSelectorPool = new AcceptSelectorPool();
@@ -57,7 +57,7 @@ public class NioServerSocketProcessor implements Processor<NioServerSocketConfig
     }
 
     @Override
-    public Transport createTransport(NioServerSocketConfig config) {
+    public NioServerSocketTransport createTransport(NioServerSocketConfig config) {
         return new NioServerSocketTransport(config, this);
     }
 

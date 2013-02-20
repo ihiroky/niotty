@@ -1,11 +1,10 @@
 package net.ihiroky.niotty.sample;
 
-import net.ihiroky.niotty.Processor;
 import net.ihiroky.niotty.Transport;
-import net.ihiroky.niotty.nio.NioClientSocketProcessor;
 import net.ihiroky.niotty.nio.NioClientSocketConfig;
-import net.ihiroky.niotty.nio.NioServerSocketProcessor;
+import net.ihiroky.niotty.nio.NioClientSocketProcessor;
 import net.ihiroky.niotty.nio.NioServerSocketConfig;
+import net.ihiroky.niotty.nio.NioServerSocketProcessor;
 
 import java.net.InetSocketAddress;
 
@@ -18,18 +17,20 @@ public class Main {
 
     public static void main(String[] args) {
 
-        Processor<NioServerSocketConfig> server = new NioServerSocketProcessor();
-        Processor<NioClientSocketConfig> client = new NioClientSocketProcessor();
+        NioServerSocketProcessor server = new NioServerSocketProcessor();
+        NioClientSocketProcessor client = new NioClientSocketProcessor();
         server.start();
         client.start();
         Transport serverTransport = null;
         Transport clientTransport = null;
         try {
-            NioServerSocketConfig serverConfig = new NioServerSocketConfig(new ServerPipeLineFactory());
+            NioServerSocketConfig serverConfig = new NioServerSocketConfig();
+            serverConfig.setPipeLineFactory(new ServerPipeLineFactory());
             serverTransport = server.createTransport(serverConfig);
             serverTransport.bind(new InetSocketAddress(10000));
 
-            NioClientSocketConfig clientConfig = new NioClientSocketConfig(new ClientPipeLineFactory());
+            NioClientSocketConfig clientConfig = new NioClientSocketConfig();
+            clientConfig.setPipeLineFactory(new ClientPipeLineFactory());
             clientTransport = client.createTransport(clientConfig);
             clientTransport.connect(new InetSocketAddress("localhost", 10000));
 

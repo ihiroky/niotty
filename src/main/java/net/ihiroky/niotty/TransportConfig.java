@@ -1,5 +1,7 @@
 package net.ihiroky.niotty;
 
+import java.util.Objects;
+
 /**
  * Created on 13/01/15, 18:27
  *
@@ -9,14 +11,12 @@ public class TransportConfig {
 
     private volatile PipeLineFactory pipeLineFactory;
 
-    public TransportConfig() {
-    }
-
     public PipeLineFactory getPipeLineFactory() {
         return pipeLineFactory;
     }
 
-    protected void setPipeLineFactory(PipeLineFactory factory) {
-        pipeLineFactory = factory;
+    public void setPipeLineFactory(PipeLineFactory pipeLineFactory) {
+        Objects.requireNonNull(pipeLineFactory, "pipeLineFactory");
+        this.pipeLineFactory = pipeLineFactory;
     }
 }

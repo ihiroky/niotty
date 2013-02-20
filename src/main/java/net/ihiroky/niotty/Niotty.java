@@ -1,11 +1,11 @@
 package net.ihiroky.niotty;
 
+import java.util.Objects;
+
 /**
  * @author Hiroki Itoh
  */
 public final class Niotty {
-
-    private static final TransportAggregate NULL_TRANSPORT_AGGREGATE = new NullTransportAggregate();
 
     private Niotty() {
         throw new AssertionError();
@@ -20,33 +20,30 @@ public final class Niotty {
         return pipeLine;
     }
 
-    public static TransportAggregate newTransportAggregate() {
-        return new DefaultTransportAggregate();
+    public static PipeLineFactory newEmptyPipeLineFactory(String name) {
+        Objects.requireNonNull(name, "name");
+        if (name.isEmpty()) {
+            throw new IllegalArgumentException("non empty name is required.");
+        }
+        return new EmptyPipeLineFactory(name);
     }
 
-    public static TransportAggregate newContextTransportAggregate(PipeLine pipeLine) {
-        return new ContextTransportAggregate(pipeLine);
-    }
+    private static class EmptyPipeLineFactory implements PipeLineFactory {
 
-    public static TransportAggregate getNullTransportAggregate() {
-        return NULL_TRANSPORT_AGGREGATE;
-    }
+        String name;
 
-    private static class NullTransportAggregate implements TransportAggregate {
-        @Override
-        public void write(Object message) {
+        EmptyPipeLineFactory(String name) {
+            this.name = name;
         }
 
         @Override
-        public void close() {
+        public PipeLine createLoadPipeLine() {
+            return newPipeLine(name.concat("-load"));
         }
 
         @Override
-        public void add(Transport transport) {
-        }
-
-        @Override
-        public void remove(Transport transport) {
+        public PipeLine createStorePipeLine() {
+            return newPipeLine(name.concat("-store"));
         }
     }
 }

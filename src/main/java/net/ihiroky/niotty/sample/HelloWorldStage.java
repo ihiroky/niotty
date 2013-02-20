@@ -17,6 +17,7 @@ public class HelloWorldStage implements Stage<String, Object> {
     @Override
     public void process(StageContext<String, Object> context, MessageEvent<String> event) {
         logger.info(event.toString());
+        System.out.println(event.toString());
     }
 
     @Override
