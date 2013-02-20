@@ -3,6 +3,7 @@ package net.ihiroky.niotty.nio;
 import net.ihiroky.niotty.Niotty;
 import net.ihiroky.niotty.PipeLine;
 import net.ihiroky.niotty.TransportAggregate;
+import net.ihiroky.niotty.TransportAggregateSupport;
 import net.ihiroky.niotty.buffer.BufferSink;
 
 import java.io.IOException;
@@ -12,18 +13,19 @@ import java.net.SocketAddress;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
+import java.util.Set;
 
 /**
  * Created on 13/01/10, 14:38
  *
  * @author Hiroki Itoh
  */
-public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector> {
+public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector> implements TransportAggregate {
 
     private ServerSocketChannel serverChannel;
     private NioServerSocketProcessor processor;
     private NioServerSocketConfig config;
-    private TransportAggregate childTransportAggregate;
+    private TransportAggregateSupport childAggregate;
 
 
     NioServerSocketTransport(NioServerSocketConfig config, NioServerSocketProcessor processor) {
@@ -36,9 +38,7 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
             this.config = config;
             this.serverChannel = serverChannel;
             this.processor = processor;
-            PipeLine childPipeLine = config.getContextPipeLine();
-            this.childTransportAggregate = (childPipeLine == null)
-                    ? Niotty.newTransportAggregate() : Niotty.newContextTransportAggregate(childPipeLine);
+            this.childAggregate = new TransportAggregateSupport();
         } catch (IOException ioe) {
             if (serverChannel != null) {
                 try {
@@ -53,7 +53,7 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
 
     @Override
     public void write(final Object message) {
-        childTransportAggregate.write(message);
+        childAggregate.write(message);
     }
 
     @Override
@@ -92,7 +92,7 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
     NioChildChannelTransport registerLater(SelectableChannel channel, int ops) {
         NioChildChannelTransport child =
                 new NioChildChannelTransport(config, processor.getWriteBufferSize(), processor.isUseDirectBuffer());
-        childTransportAggregate.add(child);
+        childAggregate.add(child);
         processor.getMessageIOSelectorPool().register(child, channel, ops);
         return child;
     }
@@ -100,5 +100,9 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
     @Override
     protected void writeDirect(BufferSink buffer) {
         throw new UnsupportedOperationException();
+    }
+
+    public Set<Transport> childSet() {
+        return childAggregate.childSet();
     }
 }

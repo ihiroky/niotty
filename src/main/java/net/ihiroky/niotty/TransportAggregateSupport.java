@@ -3,45 +3,58 @@ package net.ihiroky.niotty;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketAddress;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
  * @author Hiroki Itoh
  */
-public class DefaultTransportAggregate implements TransportAggregate, TransportListener {
+public class TransportAggregateSupport implements TransportAggregate, TransportListener {
 
-    protected final ConcurrentMap<Transport, Boolean> transportMap = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Transport, Boolean> transportMap;
+    private final boolean removeOnClose;
+    // TODO eviction by time if Transport is closed.
 
-    @Override
+    public TransportAggregateSupport() {
+        this(true);
+    }
+
+    public TransportAggregateSupport(boolean removeOnClose) {
+        this.transportMap = new ConcurrentHashMap<>();
+        this.removeOnClose = removeOnClose;
+    }
+
     public void write(Object message) {
         for (Transport transport : transportMap.keySet()) {
             transport.write(message);
         }
     }
 
-    @Override
     public void close() {
         for (Transport transport : transportMap.keySet()) {
             transport.close();
         }
     }
 
-    @Override
     public void add(Transport transport) {
         if (!(transport instanceof AbstractTransport)) {
             throw new IllegalArgumentException("transport must be an instance of AbstractTransport.");
         }
         AbstractTransport<?> abstractTransport = (AbstractTransport<?>) transport;
-        if (transportMap.putIfAbsent(abstractTransport, Boolean.FALSE) == null) {
+        if (transportMap.putIfAbsent(abstractTransport, Boolean.FALSE) == null && removeOnClose) {
             transport.addListener(this);
         }
         // log
     }
 
-    @Override
     public void remove(Transport transport) {
         transportMap.remove(transport);
+    }
+
+    @Override
+    public Set<Transport> childSet() {
+        return transportMap.keySet();
     }
 
     @Override
