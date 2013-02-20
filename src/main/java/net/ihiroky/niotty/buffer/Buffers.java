@@ -5,6 +5,7 @@ import java.nio.CharBuffer;
 import java.nio.charset.CoderResult;
 import java.nio.charset.MalformedInputException;
 import java.nio.charset.UnmappableCharacterException;
+import java.util.Collection;
 
 /**
  *
@@ -90,7 +91,7 @@ public final class Buffers {
         return new ByteBufferDecodeBuffer(byteBuffer);
     }
 
-    public static BufferSink createBufferSink(BufferSink header, BufferSink body) {
-        return new CompositeBufferSink(header, body);
+    public static BufferSink createBufferSink(Collection<EncodeBuffer> encodeBuffers) {
+        return new CompositeBufferSink(encodeBuffers);
     }
 }

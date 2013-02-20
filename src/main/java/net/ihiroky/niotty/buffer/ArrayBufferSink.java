@@ -14,12 +14,12 @@ public class ArrayBufferSink implements BufferSink {
 
     private byte[] buffer;
     private int offset;
-    private int length;
+    private int end;
 
     ArrayBufferSink(byte[] buffer, int offset, int length) {
         this.buffer = buffer;
         this.offset = offset;
-        this.length = length;
+        this.end = offset + length;
     }
 
     /**
@@ -27,7 +27,7 @@ public class ArrayBufferSink implements BufferSink {
      */
     @Override
     public boolean transferTo(WritableByteChannel channel, ByteBuffer writeBuffer) throws IOException {
-        int remaining = length - offset;
+        int remaining = end - offset;
         while (remaining > 0) {
             int space = writeBuffer.remaining();
             int readyToWrite = (remaining <= space) ? remaining : space;
@@ -41,12 +41,13 @@ public class ArrayBufferSink implements BufferSink {
             remaining -= writeBytes;
             // Some bytes remains in writeBuffer. Stop this round
             if (writeBytes < readyToWrite) {
-                offset = length - remaining;
+                // offset = end - remaining;
+                offset += readyToWrite;
                 return false;
             }
             writeBuffer.clear();
         }
-        offset = length;
+        offset = end;
         return true;
     }
 
@@ -55,6 +56,6 @@ public class ArrayBufferSink implements BufferSink {
      */
     @Override
     public int remainingBytes() {
-        return length - offset;
+        return end - offset;
     }
 }

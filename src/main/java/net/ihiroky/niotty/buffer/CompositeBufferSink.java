@@ -3,6 +3,7 @@ package net.ihiroky.niotty.buffer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
+import java.util.Collection;
 import java.util.Objects;
 
 /**
@@ -10,24 +11,38 @@ import java.util.Objects;
  */
 public class CompositeBufferSink implements BufferSink {
 
-    private BufferSink car;
-    private BufferSink cdr;
+    private BufferSink[] bufferSinks;
 
-    CompositeBufferSink(BufferSink car, BufferSink cdr) {
-        Objects.requireNonNull(car, "car");
-        Objects.requireNonNull(cdr, "cdr");
-        this.car = car;
-        this.cdr = cdr;
+    private static final BufferSink[] EMPTY = new BufferSink[0];
+
+    CompositeBufferSink(Collection<EncodeBuffer> encodeBuffers) {
+        Objects.requireNonNull(encodeBuffers, "encodeBuffers");
+
+        BufferSink[] bs = new BufferSink[encodeBuffers.size()];
+        int count = 0;
+        for (EncodeBuffer encodeBuffer : encodeBuffers) {
+            bs[count++] = encodeBuffer.createBufferSink();
+        }
+        bufferSinks = bs;
     }
 
     @Override
     public boolean transferTo(WritableByteChannel channel, ByteBuffer writeBuffer) throws IOException {
-        return car.transferTo(channel, writeBuffer) && cdr.transferTo(channel, writeBuffer);
+        for (BufferSink bufferSink : bufferSinks) {
+            if (!bufferSink.transferTo(channel, writeBuffer)) {
+                return false;
+            }
+        }
+        bufferSinks = EMPTY;
+        return true;
     }
 
     @Override
     public int remainingBytes() {
-        long sum = car.remainingBytes() + cdr.remainingBytes();
+        long sum = 0;
+        for (BufferSink bufferSink : bufferSinks) {
+            sum += bufferSink.remainingBytes();
+        }
         return (sum <= Integer.MAX_VALUE) ? (int) sum : Integer.MAX_VALUE;
     }
 }

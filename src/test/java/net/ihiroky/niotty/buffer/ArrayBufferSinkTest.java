@@ -98,7 +98,8 @@ public class ArrayBufferSinkTest {
         boolean result = sut.transferTo(channel, buffer);
 
         assertThat(result, is(false));
-        assertThat(sut.remainingBytes(), is(1));
+        assertThat(sut.remainingBytes(), is(0));
+        assertThat(buffer.remaining(), is(1));
         verify(channel, times(1)).write(buffer);
     }
 
