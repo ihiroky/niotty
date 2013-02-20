@@ -41,7 +41,6 @@ public class ArrayBufferSink implements BufferSink {
             remaining -= writeBytes;
             // Some bytes remains in writeBuffer. Stop this round
             if (writeBytes < readyToWrite) {
-                // offset = end - remaining;
                 offset += readyToWrite;
                 return false;
             }
