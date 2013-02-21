@@ -101,7 +101,7 @@ public class NioClientSocketTransport extends NioSocketTransport<ConnectSelector
     }
 
     @Override
-    public SocketAddress remoteAddress() {
+    public InetSocketAddress remoteAddress() {
         try {
             return (InetSocketAddress) clientChannel.getRemoteAddress();
         } catch (IOException ioe) {
