@@ -1,10 +1,9 @@
 package net.ihiroky.niotty.nio;
 
-import net.ihiroky.niotty.event.TransportState;
-import net.ihiroky.niotty.event.TransportStateEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.Iterator;
@@ -26,16 +25,20 @@ public class ConnectSelector extends AbstractSelector<ConnectSelector> {
             i.remove();
 
             SocketChannel channel = (SocketChannel) key.channel();
-            if (channel.finishConnect()) {
-                logger.info("new channel {} is connected.", channel);
-                channel.configureBlocking(false);
+            @SuppressWarnings("unchecked")
+            TransportFutureAttachment<ConnectSelector> attachment =
+                    (TransportFutureAttachment<ConnectSelector>) key.attachment();
+            try {
+                if (channel.finishConnect()) {
+                    logger.info("new channel {} is connected.", channel);
+                    channel.configureBlocking(false);
+                    unregister(key);
 
-                NioClientSocketTransport parent = (NioClientSocketTransport) key.attachment();
-                key.interestOps(0);
-
-                NioChildChannelTransport child = parent.registerLater(channel, SelectionKey.OP_READ);
-                child.loadEventLater(
-                        new TransportStateEvent(child, TransportState.CONNECTED, channel.getRemoteAddress()));
+                    NioClientSocketTransport parent =  (NioClientSocketTransport) attachment.getTransport();
+                    parent.registerLater(channel, SelectionKey.OP_READ, attachment.getFuture());
+                }
+            } catch (IOException ioe) {
+                attachment.getFuture().setThrowable(ioe);
             }
         }
     }

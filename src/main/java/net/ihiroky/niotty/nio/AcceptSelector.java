@@ -1,7 +1,6 @@
 package net.ihiroky.niotty.nio;
 
-import net.ihiroky.niotty.event.TransportState;
-import net.ihiroky.niotty.event.TransportStateEvent;
+import net.ihiroky.niotty.DefaultTransportFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,10 +30,12 @@ public class AcceptSelector extends AbstractSelector<AcceptSelector> {
             logger.info("new channel {} is accepted.", childChannel);
             childChannel.configureBlocking(false);
 
-            NioServerSocketTransport parent = (NioServerSocketTransport) key.attachment();
-            NioChildChannelTransport child = parent.registerLater(childChannel, SelectionKey.OP_READ);
-            child.loadEventLater(
-                    new TransportStateEvent(child, TransportState.ACCEPTED, childChannel.getRemoteAddress()));
+            @SuppressWarnings("unchecked")
+            TransportFutureAttachment<AcceptSelector> attachment =
+                    (TransportFutureAttachment<AcceptSelector>) key.attachment();
+            NioServerSocketTransport parent = (NioServerSocketTransport) attachment.getTransport();
+            DefaultTransportFuture future = attachment.getFuture();
+            parent.registerLater(childChannel, SelectionKey.OP_READ, future);
         }
     }
 }

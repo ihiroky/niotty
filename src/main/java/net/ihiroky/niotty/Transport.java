@@ -11,10 +11,10 @@ import java.net.SocketAddress;
  */
 public interface Transport {
 
-    void bind(SocketAddress local);
-    void connect(SocketAddress remote);
-    void close();
-    void join(InetAddress group, NetworkInterface networkInterface, InetAddress source);
+    TransportFuture bind(SocketAddress local);
+    TransportFuture connect(SocketAddress remote);
+    TransportFuture close();
+    TransportFuture join(InetAddress group, NetworkInterface networkInterface, InetAddress source);
     void write(Object message);
     void write(Object message, SocketAddress remote);
     void addListener(TransportListener listener);

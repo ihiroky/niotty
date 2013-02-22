@@ -12,7 +12,7 @@ import java.nio.channels.SelectableChannel;
  */
 public abstract class AbstractSelectorPool<S extends AbstractSelector<S>> extends EventLoopGroup<S> {
 
-    public void register(final NioSocketTransport<S> transport, final SelectableChannel channel, final int ops) {
+    protected final S searchLoop() {
         int min = Integer.MAX_VALUE;
         S target = null;
         for (S loop : eventLoops()) {
@@ -22,12 +22,18 @@ public abstract class AbstractSelectorPool<S extends AbstractSelector<S>> extend
                 target = loop;
             }
         }
+        return target;
+    }
+
+    public void register(final SelectableChannel channel, final int ops,
+                         final TransportFutureAttachment<S> attachment) {
+        S target = searchLoop();
         if (target != null) {
-            transport.setEventLoop(target);
+            attachment.getTransport().setEventLoop(target);
             target.offerTask(new EventLoop.Task<S>() {
                 @Override
                 public boolean execute(S eventLoop) {
-                    eventLoop.register(transport, channel, ops);
+                    eventLoop.register(channel, ops, attachment);
                     return true;
                 }
             });

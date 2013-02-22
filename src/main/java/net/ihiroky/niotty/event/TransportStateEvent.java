@@ -1,5 +1,6 @@
 package net.ihiroky.niotty.event;
 
+import net.ihiroky.niotty.DefaultTransportFuture;
 import net.ihiroky.niotty.Transport;
 import net.ihiroky.niotty.TransportEvent;
 
@@ -11,11 +12,18 @@ import net.ihiroky.niotty.TransportEvent;
 public class TransportStateEvent implements TransportEvent {
 
     private Transport transport;
+    private DefaultTransportFuture future;
     private TransportState state;
     private Object value;
 
     public TransportStateEvent(Transport transport, TransportState state, Object value) {
+        this(transport, state, null, value);
+    }
+
+    public TransportStateEvent(Transport transport, TransportState state,
+                               DefaultTransportFuture future, Object value) {
         this.transport = transport;
+        this.future = future;
         this.state = state;
         this.value = value;
     }
@@ -27,6 +35,10 @@ public class TransportStateEvent implements TransportEvent {
 
     public TransportState getState() {
         return state;
+    }
+
+    public DefaultTransportFuture getFuture() {
+        return future;
     }
 
     public Object getValue() {

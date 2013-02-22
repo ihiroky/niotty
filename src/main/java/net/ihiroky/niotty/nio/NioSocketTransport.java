@@ -1,7 +1,10 @@
 package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.AbstractTransport;
+import net.ihiroky.niotty.DefaultTransportFuture;
 import net.ihiroky.niotty.EventLoop;
+import net.ihiroky.niotty.SucceededTransportFuture;
+import net.ihiroky.niotty.TransportFuture;
 
 import java.io.IOException;
 import java.nio.channels.SelectableChannel;
@@ -27,29 +30,27 @@ public abstract class NioSocketTransport<S extends AbstractSelector<S>> extends 
         this.key = key;
     }
 
-    void unregisterLater() {
+    TransportFuture closeSelectableChannelLater() {
         S selector = getEventLoop();
-        if (selector != null) {
-            selector.offerTask(new EventLoop.Task<S>() {
-                @Override
-                public boolean execute(S eventLoop) {
-                    eventLoop.unregister(NioSocketTransport.this, key.channel(), key.interestOps());
-                    return true;
-                }
-            });
+        if (selector == null) {
+            return new SucceededTransportFuture(this);
         }
-    }
-
-    void closeLater() {
-        S selector = getEventLoop();
-        if (selector != null) {
-            selector.close(this);
-        }
+        final DefaultTransportFuture future = new DefaultTransportFuture(this);
+        selector.offerTask(new EventLoop.Task<S>() {
+            @Override
+            public boolean execute(S eventLoop) throws Exception {
+                closeSelectableChannel();
+                future.done();
+                return true;
+            }
+        });
+        return future;
     }
 
     void closeSelectableChannel() {
         if (key != null) {
             SelectableChannel channel = key.channel();
+            getEventLoop().unregister(key); // decrement register count
             key.cancel();
             try {
                 channel.close();

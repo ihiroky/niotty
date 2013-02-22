@@ -1,9 +1,11 @@
 package net.ihiroky.niotty.nio;
 
+import net.ihiroky.niotty.DefaultTransportFuture;
 import net.ihiroky.niotty.EventLoop;
 import net.ihiroky.niotty.PipeLine;
 import net.ihiroky.niotty.PipeLineFactory;
 import net.ihiroky.niotty.TransportConfig;
+import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.buffer.BufferSink;
 import net.ihiroky.niotty.event.MessageEvent;
 import net.ihiroky.niotty.event.TransportState;
@@ -83,23 +85,24 @@ public class NioChildChannelTransport extends NioSocketTransport<MessageIOSelect
     }
 
     @Override
-    public void bind(SocketAddress socketAddress) {
+    public TransportFuture bind(SocketAddress socketAddress) {
         throw new UnsupportedOperationException("bind");
     }
 
     @Override
-    public void connect(SocketAddress remoteAddress) {
+    public TransportFuture connect(SocketAddress remoteAddress) {
         throw new UnsupportedOperationException("connect");
     }
 
     @Override
-    public void close() {
-        fire(new TransportStateEvent(this, TransportState.CONNECTED, null));
-        getTransportListener().onClose(this);
+    public TransportFuture close() {
+        DefaultTransportFuture future = new DefaultTransportFuture(this);
+        fire(new TransportStateEvent(this, TransportState.CONNECTED, future, null));
+        return future;
     }
 
     @Override
-    public void join(InetAddress group, NetworkInterface networkInterface, InetAddress source) {
+    public TransportFuture join(InetAddress group, NetworkInterface networkInterface, InetAddress source) {
         throw new UnsupportedOperationException("join");
     }
 

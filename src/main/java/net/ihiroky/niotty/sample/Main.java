@@ -1,6 +1,7 @@
 package net.ihiroky.niotty.sample;
 
 import net.ihiroky.niotty.Transport;
+import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.nio.NioClientSocketConfig;
 import net.ihiroky.niotty.nio.NioClientSocketProcessor;
 import net.ihiroky.niotty.nio.NioServerSocketConfig;
@@ -32,11 +33,11 @@ public class Main {
             NioClientSocketConfig clientConfig = new NioClientSocketConfig();
             clientConfig.setPipeLineFactory(new ClientPipeLineFactory());
             clientTransport = client.createTransport(clientConfig);
-            clientTransport.connect(new InetSocketAddress("localhost", 10000));
+            TransportFuture connectFuture = clientTransport.connect(new InetSocketAddress("localhost", 10000));
+            connectFuture.waitForCompletion();
+            System.out.println("connection wait gets done.");
 
             Thread.sleep(500);
-            System.out.println("type enter to broadcast from server.");
-            System.in.read();
             serverTransport.write("broadcast from server in thread " + Thread.currentThread());
 
             Thread.sleep(500);

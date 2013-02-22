@@ -1,7 +1,13 @@
 package net.ihiroky.niotty.nio;
 
+import net.ihiroky.niotty.DefaultTransportFuture;
 import net.ihiroky.niotty.EventLoop;
+import net.ihiroky.niotty.FailedTransportFuture;
+import net.ihiroky.niotty.SucceededTransportFuture;
+import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.buffer.BufferSink;
+import net.ihiroky.niotty.event.TransportState;
+import net.ihiroky.niotty.event.TransportStateEvent;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -40,40 +46,47 @@ public class NioClientSocketTransport extends NioSocketTransport<ConnectSelector
     }
 
     @Override
-    public void bind(SocketAddress local) {
+    public TransportFuture bind(SocketAddress local) {
         try {
             clientChannel.bind(local);
             getTransportListener().onBind(this, local);
+            return new SucceededTransportFuture(this);
         } catch (IOException ioe) {
-            throw new RuntimeException("failed to bind " + clientChannel + " to " + local, ioe);
+            return new FailedTransportFuture(this, ioe);
         }
     }
 
     @Override
-    public void connect(SocketAddress remote) {
+    public TransportFuture connect(SocketAddress remote) {
         try {
-            clientChannel.connect(remote);
-            processor.getConnectSelectorPool().register(this, clientChannel, SelectionKey.OP_CONNECT);
+            if (clientChannel.connect(remote)) {
+                return new SucceededTransportFuture(this);
+            }
+            DefaultTransportFuture future = new DefaultTransportFuture(this);
+            processor.getConnectSelectorPool().register(
+                    clientChannel, SelectionKey.OP_CONNECT, new TransportFutureAttachment<>(this, future));
+            return future;
         } catch (IOException ioe) {
-            throw new RuntimeException("failed to connect " + clientChannel + " to " + remote, ioe);
+            return new FailedTransportFuture(this, ioe);
         }
     }
 
     @Override
-    public void close() {
-        if (getEventLoop() != null) {
-            closeLater();
-        } else {
+    public TransportFuture close() {
+        if (getEventLoop() == null) {
             closeSelectableChannel();
+            return new SucceededTransportFuture(this);
         }
+
+        // SelectionKey of NioClientSocketTransport is already cancelled here.
         if (childTransport != null) {
-            // onClose() is called by childTransport.
-            childTransport.closeLater();
+            return childTransport.closeSelectableChannelLater();
         }
+        return new SucceededTransportFuture(this);
     }
 
     @Override
-    public void join(InetAddress group, NetworkInterface networkInterface, InetAddress source) {
+    public TransportFuture join(InetAddress group, NetworkInterface networkInterface, InetAddress source) {
         throw new UnsupportedOperationException("join");
     }
 
@@ -114,16 +127,22 @@ public class NioClientSocketTransport extends NioSocketTransport<ConnectSelector
         return clientChannel.isOpen();
     }
 
-    NioChildChannelTransport registerLater(SelectableChannel channel, int ops) {
+    void registerLater(SelectableChannel channel, int ops, DefaultTransportFuture future) {
+        InetSocketAddress remoteAddress;
         try {
-            getTransportListener().onConnect(this, clientChannel.getRemoteAddress());
-        } catch (IOException ignored) {
+            remoteAddress = (InetSocketAddress) clientChannel.getRemoteAddress();
+            getTransportListener().onConnect(this, remoteAddress);
+            future.done();
+        } catch (IOException e) {
+            future.setThrowable(e);
+            return;
         }
+
         NioChildChannelTransport child =
                 new NioChildChannelTransport(config, processor.getWriteBufferSize(), processor.isUseDirectBuffer());
         this.childTransport = child;
-        processor.getMessageIOSelectorPool().register(child, channel, ops);
-        return childTransport;
+        processor.getMessageIOSelectorPool().register(channel, ops, child);
+        child.loadEventLater(new TransportStateEvent(child, TransportState.CONNECTED, remoteAddress));
     }
 
     @Override

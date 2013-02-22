@@ -21,7 +21,7 @@ public class DefaultTransportFuture implements TransportFuture {
     }
 
     @Override
-    public Transport getTransport() {
+    public Transport transport() {
         return transport;
     }
 
@@ -38,6 +38,19 @@ public class DefaultTransportFuture implements TransportFuture {
     @Override
     public Throwable getThrowable() {
         return throwable;
+    }
+
+    @Override
+    public void throwIfFailed() {
+        if (throwable != null) {
+            if (throwable instanceof RuntimeException) {
+                throw (RuntimeException) throwable;
+            } else if (throwable instanceof Error) {
+                throw (Error) throwable;
+            } else {
+                throw new RuntimeException(throwable);
+            }
+        }
     }
 
     @Override
@@ -118,9 +131,11 @@ public class DefaultTransportFuture implements TransportFuture {
 
     public void cancel() {
         cancelled = true;
+        done();
     }
 
     public void setThrowable(Throwable t) {
         throwable = t;
+        done();
     }
 }

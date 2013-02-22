@@ -37,14 +37,13 @@ public abstract class AbstractSelector<S extends AbstractSelector<S>> extends Ev
                     NioServerSocketTransport transport = (NioServerSocketTransport) event.getTransport();
                     Object value = event.getValue();
                     switch (event.getState()) {
-                        case ACCEPTED:
-                            // fall through
-                        case CONNECTED:
-                            // fall through
+                        case ACCEPTED: // fall through
+                        case CONNECTED: // fall through
                         case BOUND:
                             if (value == null || Boolean.FALSE.equals(value)) {
                                 transport.closeSelectableChannel();
                             }
+                            event.getFuture().done();
                             break;
                         default:
                             break;
@@ -109,7 +108,8 @@ public abstract class AbstractSelector<S extends AbstractSelector<S>> extends Ev
         }
     }
 
-    void register(final NioSocketTransport<S> transport, final SelectableChannel channel, final int ops) {
+
+    void register(SelectableChannel channel, int ops, NioSocketTransport<S> transport) {
         try {
             SelectionKey key = channel.register(selector, ops, transport);
             transport.setSelectionKey(key);
@@ -120,24 +120,21 @@ public abstract class AbstractSelector<S extends AbstractSelector<S>> extends Ev
         }
     }
 
-    void unregister(NioSocketTransport<S> transport, final SelectableChannel channel, final int ops) {
+    void register(SelectableChannel channel, int ops, TransportFutureAttachment<S> attachment) {
         try {
-            channel.register(selector, channel.validOps() & (~ops));
-            registeredCount.decrementAndGet();
-            logger.debug("channel {} is unregistered from {}.", channel, Thread.currentThread());
+            SelectionKey key = channel.register(selector, ops, attachment);
+            attachment.getTransport().setSelectionKey(key);
+            registeredCount.incrementAndGet();
+            logger.debug("channel {} is registered to {}.", channel, Thread.currentThread());
         } catch (IOException ioe) {
-            logger.warn("failed to unregisterLater channel:" + channel, ioe);
+            logger.warn("failed to register channel:" + channel, ioe);
         }
     }
 
-    void close(final NioSocketTransport<S> transport) {
-        offerTask(new Task<S>() {
-            @Override
-            public boolean execute(S loop) {
-                transport.closeSelectableChannel();
-                return true;
-            }
-        });
+    void unregister(SelectionKey key) {
+        key.interestOps(0);
+        registeredCount.decrementAndGet();
+        logger.debug("channel {} is unregistered from {}.", key.channel(), Thread.currentThread());
     }
 
     int getRegisteredCount() {

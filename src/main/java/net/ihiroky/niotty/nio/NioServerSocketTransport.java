@@ -1,9 +1,15 @@
 package net.ihiroky.niotty.nio;
 
+import net.ihiroky.niotty.DefaultTransportFuture;
+import net.ihiroky.niotty.FailedTransportFuture;
+import net.ihiroky.niotty.SucceededTransportFuture;
 import net.ihiroky.niotty.Transport;
 import net.ihiroky.niotty.TransportAggregate;
 import net.ihiroky.niotty.TransportAggregateSupport;
+import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.buffer.BufferSink;
+import net.ihiroky.niotty.event.TransportState;
+import net.ihiroky.niotty.event.TransportStateEvent;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -13,6 +19,7 @@ import java.net.SocketAddress;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
 import java.util.Set;
 
 /**
@@ -81,39 +88,53 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
     }
 
     @Override
-    public void bind(SocketAddress socketAddress) {
+    public TransportFuture bind(SocketAddress socketAddress) {
         try {
             serverChannel.bind(socketAddress, config.getBacklog());
             getTransportListener().onBind(this, socketAddress);
-            processor.getAcceptSelectorPool().register(this, serverChannel, SelectionKey.OP_ACCEPT);
+            DefaultTransportFuture future = new DefaultTransportFuture(this);
+            processor.getAcceptSelectorPool().register(
+                    serverChannel, SelectionKey.OP_ACCEPT, new TransportFutureAttachment<>(this, future));
+            return future;
         } catch (IOException e) {
-            throw new RuntimeException("failed to bind server socket:" + socketAddress, e);
+            return new FailedTransportFuture(this, e);
         }
     }
 
     @Override
-    public void connect(SocketAddress remoteAddress) {
+    public TransportFuture connect(SocketAddress remoteAddress) {
         throw new UnsupportedOperationException("connect");
     }
 
     @Override
-    public void close() {
+    public TransportFuture close() {
         if (getEventLoop() != null) {
-            closeLater();
+            return closeSelectableChannelLater();
         }
+        return new SucceededTransportFuture(this);
     }
 
     @Override
-    public void join(InetAddress group, NetworkInterface networkInterface, InetAddress source) {
+    public TransportFuture join(InetAddress group, NetworkInterface networkInterface, InetAddress source) {
         throw new UnsupportedOperationException("join");
     }
 
-    NioChildChannelTransport registerLater(SelectableChannel channel, int ops) {
+    void registerLater(SelectableChannel channel, int ops, DefaultTransportFuture future) {
+        InetSocketAddress remoteAddress;
+        try {
+            remoteAddress = (InetSocketAddress) ((SocketChannel)channel).getRemoteAddress();
+            getTransportListener().onConnect(this, remoteAddress());
+            future.done();
+        } catch (IOException ioe) {
+            future.setThrowable(ioe);
+            return;
+        }
+
         NioChildChannelTransport child =
                 new NioChildChannelTransport(config, processor.getWriteBufferSize(), processor.isUseDirectBuffer());
         childAggregate.add(child);
-        processor.getMessageIOSelectorPool().register(child, channel, ops);
-        return child;
+        processor.getMessageIOSelectorPool().register(channel, ops, child);
+        child.loadEventLater(new TransportStateEvent(child, TransportState.ACCEPTED, remoteAddress));
     }
 
     @Override
