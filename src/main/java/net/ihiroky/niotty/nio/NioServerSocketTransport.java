@@ -34,7 +34,6 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
     private NioServerSocketConfig config;
     private TransportAggregateSupport childAggregate;
 
-
     NioServerSocketTransport(NioServerSocketConfig config, NioServerSocketProcessor processor) {
         ServerSocketChannel serverChannel = null;
         try {
@@ -131,7 +130,8 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
         }
 
         NioChildChannelTransport child =
-                new NioChildChannelTransport(config, processor.getWriteBufferSize(), processor.isUseDirectBuffer());
+                new NioChildChannelTransport(config, processor.getName(),
+                        processor.getWriteBufferSize(), processor.isUseDirectBuffer());
         childAggregate.add(child);
         processor.getMessageIOSelectorPool().register(channel, ops, child);
         child.loadEventLater(new TransportStateEvent(child, TransportState.ACCEPTED, remoteAddress));

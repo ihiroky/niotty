@@ -57,6 +57,11 @@ public class NioServerSocketProcessor implements Processor<NioServerSocketTransp
     }
 
     @Override
+    public String getName() {
+        return name;
+    }
+
+    @Override
     public NioServerSocketTransport createTransport(NioServerSocketConfig config) {
         return new NioServerSocketTransport(config, this);
     }

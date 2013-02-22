@@ -8,9 +8,9 @@ import net.ihiroky.niotty.event.TransportStateEvent;
  *
  * @author Hiroki Itoh
  */
-public interface PipeLine {
+public interface Pipeline {
 
-    PipeLine add(Stage<?, ?> stage);
+    Pipeline add(Stage<?, ?> stage);
     StageContext<?, ?> getFirstContext();
     StageContext<?, ?> getLastContext();
     StageContext<?, ?> searchContextFor(Class<? extends Stage<?, ?>> c);

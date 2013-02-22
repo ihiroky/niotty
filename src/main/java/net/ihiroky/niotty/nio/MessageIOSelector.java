@@ -1,6 +1,6 @@
 package net.ihiroky.niotty.nio;
 
-import net.ihiroky.niotty.PipeLine;
+import net.ihiroky.niotty.Pipeline;
 import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.StageContextAdapter;
 import net.ihiroky.niotty.StageContextListener;
@@ -34,7 +34,7 @@ public class MessageIOSelector extends AbstractSelector<MessageIOSelector> {
             new StageContextAdapter<Object, BufferSink>() {
                 @Override
                 public void onProceed(
-                        PipeLine pipeLine, StageContext<Object, BufferSink> context, MessageEvent<BufferSink> event) {
+                        Pipeline pipeline, StageContext<Object, BufferSink> context, MessageEvent<BufferSink> event) {
                     NioChildChannelTransport transport = (NioChildChannelTransport) event.getTransport();
                     try {
                         transport.writeBufferSink(event.getMessage());
@@ -46,8 +46,8 @@ public class MessageIOSelector extends AbstractSelector<MessageIOSelector> {
 
                 @Override
                 public void onProceed(
-                        PipeLine pipeLine, StageContext<Object, BufferSink> context, TransportStateEvent event) {
-                    AbstractSelector.SELECTOR_STORE_CONTEXT_LISTENER.onProceed(pipeLine, context, event);
+                        Pipeline pipeline, StageContext<Object, BufferSink> context, TransportStateEvent event) {
+                    AbstractSelector.SELECTOR_STORE_CONTEXT_LISTENER.onProceed(pipeline, context, event);
                 }
             };
 

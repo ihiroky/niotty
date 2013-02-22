@@ -1,7 +1,6 @@
 package net.ihiroky.niotty.nio;
 
-import net.ihiroky.niotty.Niotty;
-import net.ihiroky.niotty.PipeLine;
+import net.ihiroky.niotty.Pipeline;
 import net.ihiroky.niotty.TransportConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,14 +21,13 @@ public class NioServerSocketConfig extends TransportConfig {
     private int backlog;
     private int receiveBufferSize;
     private boolean reuseAddress;
-    private PipeLine contextPipeLine;
+    private Pipeline contextPipeline;
 
     private Logger logger = LoggerFactory.getLogger(NioServerSocketTransport.class);
 
     public NioServerSocketConfig() {
         backlog = 50;
         reuseAddress = true;
-        setPipeLineFactory(Niotty.newEmptyPipeLineFactory(NioServerSocketProcessor.DEFAULT_NAME));
     }
 
     private <T> void setOption(ServerSocketChannel channel, SocketOption<T> option, T value) {
@@ -84,11 +82,11 @@ public class NioServerSocketConfig extends TransportConfig {
         return reuseAddress;
     }
 
-    public void setContextPipeLine(PipeLine pipeLine) {
-        contextPipeLine = pipeLine;
+    public void setContextPipeline(Pipeline pipeline) {
+        contextPipeline = pipeline;
     }
 
-    public PipeLine getContextPipeLine() {
-        return contextPipeLine;
+    public Pipeline getContextPipeline() {
+        return contextPipeline;
     }
 }

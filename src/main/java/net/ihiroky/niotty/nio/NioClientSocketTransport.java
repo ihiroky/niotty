@@ -139,7 +139,8 @@ public class NioClientSocketTransport extends NioSocketTransport<ConnectSelector
         }
 
         NioChildChannelTransport child =
-                new NioChildChannelTransport(config, processor.getWriteBufferSize(), processor.isUseDirectBuffer());
+                new NioChildChannelTransport(config, processor.getName(),
+                        processor.getWriteBufferSize(), processor.isUseDirectBuffer());
         this.childTransport = child;
         processor.getMessageIOSelectorPool().register(channel, ops, child);
         child.loadEventLater(new TransportStateEvent(child, TransportState.CONNECTED, remoteAddress));

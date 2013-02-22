@@ -1,9 +1,8 @@
 package net.ihiroky.niotty.nio;
 
+import net.ihiroky.niotty.DefaultPipeline;
 import net.ihiroky.niotty.DefaultTransportFuture;
 import net.ihiroky.niotty.EventLoop;
-import net.ihiroky.niotty.PipeLine;
-import net.ihiroky.niotty.PipeLineFactory;
 import net.ihiroky.niotty.TransportConfig;
 import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.buffer.BufferSink;
@@ -35,16 +34,21 @@ public class NioChildChannelTransport extends NioSocketTransport<MessageIOSelect
     private ByteBuffer writeBuffer;
     private Queue<BufferSink> pendingQueue;
 
-    NioChildChannelTransport(TransportConfig config, int writeBufferSize, boolean directWriteBuffer) {
-        PipeLineFactory factory = config.getPipeLineFactory();
-        PipeLine loadPipeLine = factory.createLoadPipeLine();
-        PipeLine storePipeLine = factory.createStorePipeLine();
-        storePipeLine.getLastContext().addListener(MessageIOSelector.MESSAGE_IO_STORE_CONTEXT_LISTENER);
+    NioChildChannelTransport(TransportConfig config, String name, int writeBufferSize, boolean directWriteBuffer) {
+        DefaultPipeline loadPipeline = DefaultPipeline.createLoadPipeLine(name);
+        DefaultPipeline storePipeline = DefaultPipeline.createStorePipeLine(name);
+        config.getPipelineInitializer().setUpPipeline(loadPipeline, storePipeline);
+        loadPipeline.regulate();
+        storePipeline.regulate();
+        storePipeline.getLastContext().addListener(MessageIOSelector.MESSAGE_IO_STORE_CONTEXT_LISTENER);
+        loadPipeline.verifyStageContextType();
+        storePipeline.verifyStageContextType();
+
         ByteBuffer writeBuffer = directWriteBuffer
                 ? ByteBuffer.allocateDirect(writeBufferSize) : ByteBuffer.allocate(writeBufferSize);
 
-        setLoadPipeLine(loadPipeLine);
-        setStorePipeLine(storePipeLine);
+        setLoadPipeline(loadPipeline);
+        setStorePipeline(storePipeline);
         this.writeBuffer = writeBuffer;
         this.pendingQueue = new LinkedList<>();
     }
@@ -171,15 +175,15 @@ public class NioChildChannelTransport extends NioSocketTransport<MessageIOSelect
     }
 
     private void fire(MessageEvent<Object> event) {
-        getStorePipeLine().fire(event);
+        getStorePipeline().fire(event);
     }
 
     private void fire(TransportStateEvent event) {
-        getStorePipeLine().fire(event);
+        getStorePipeline().fire(event);
     }
 
     void loadEvent(MessageEvent<Object> event) {
-        getLoadPipeLine().fire(event);
+        getLoadPipeline().fire(event);
     }
 
     void loadEventLater(final TransportStateEvent event) {
@@ -188,7 +192,7 @@ public class NioChildChannelTransport extends NioSocketTransport<MessageIOSelect
             selector.offerTask(new EventLoop.Task<MessageIOSelector>() {
                 @Override
                 public boolean execute(MessageIOSelector eventLoop) {
-                    getLoadPipeLine().fire(event);
+                    getLoadPipeline().fire(event);
                     return true;
                 }
             });

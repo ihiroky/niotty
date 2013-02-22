@@ -26,12 +26,12 @@ public class Main {
         Transport clientTransport = null;
         try {
             NioServerSocketConfig serverConfig = new NioServerSocketConfig();
-            serverConfig.setPipeLineFactory(new ServerPipeLineFactory());
+            serverConfig.setPipelineInitializer(new ServerPipelineInitializer());
             serverTransport = server.createTransport(serverConfig);
             serverTransport.bind(new InetSocketAddress(10000));
 
             NioClientSocketConfig clientConfig = new NioClientSocketConfig();
-            clientConfig.setPipeLineFactory(new ClientPipeLineFactory());
+            clientConfig.setPipelineInitializer(new ClientPipelineInitializer());
             clientTransport = client.createTransport(clientConfig);
             TransportFuture connectFuture = clientTransport.connect(new InetSocketAddress("localhost", 10000));
             connectFuture.waitForCompletion();
@@ -41,8 +41,6 @@ public class Main {
             serverTransport.write("broadcast from server in thread " + Thread.currentThread());
 
             Thread.sleep(500);
-            System.out.println("type enter to finish.");
-            System.in.read();
             System.out.println("end.");
         } catch (Exception e) {
             e.printStackTrace();

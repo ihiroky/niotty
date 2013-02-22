@@ -13,21 +13,32 @@ import java.lang.reflect.Type;
  *
  * @author Hiroki Itoh
  */
-public class DefaultPipeLine implements PipeLine {
+public class DefaultPipeline implements Pipeline {
 
     private String name;
     private StageContext<Object, Object> headContext;
     private StageContext<Object, Object> tailContext;
-    private Logger logger = LoggerFactory.getLogger(DefaultPipeLine.class);
+    private Logger logger = LoggerFactory.getLogger(DefaultPipeline.class);
 
-    protected DefaultPipeLine(String name) {
-        this.name = String.valueOf(name);
+    private static final String SUFFIX_LOAD = "[load]";
+    private static final String UFFIX_STORE = "[store]";
+
+    public static DefaultPipeline createLoadPipeLine(String name) {
+        return new DefaultPipeline(String.valueOf(name).concat(SUFFIX_LOAD));
+    }
+
+    public static DefaultPipeline createStorePipeLine(String name) {
+        return new DefaultPipeline(String.valueOf(name).concat(SUFFIX_LOAD));
+    }
+
+    protected DefaultPipeline(String name) {
+        this.name = name;
         this.headContext = StageContext.TERMINAL;
         this.tailContext = StageContext.TERMINAL;
     }
 
     @Override
-    public DefaultPipeLine add(Stage<?, ?> stage) {
+    public DefaultPipeline add(Stage<?, ?> stage) {
         @SuppressWarnings("unchecked")
         Stage<Object, Object> s = (Stage<Object, Object>) stage;
         if (headContext == StageContext.TERMINAL) {
@@ -41,7 +52,20 @@ public class DefaultPipeLine implements PipeLine {
         return this;
     }
 
+    public void regulate() {
+        // requires at least one stage
+        int count = 0;
+        for (StageContext<?, ?> ctx = headContext; ctx != StageContext.TERMINAL; ctx = ctx.getNext()) {
+            count++;
+        }
+        if (count == 0) {
+            add(new EmptyStage());
+        }
+    }
+
     public void verifyStageContextType() {
+        Class<?> outputClass;
+        String outputClassName;
         if (logger.isDebugEnabled()) {
             int counter = 0;
             for (StageContext<?, ?> ctx = headContext; ctx != StageContext.TERMINAL; ctx = ctx.getNext()) {
@@ -90,5 +114,16 @@ public class DefaultPipeLine implements PipeLine {
     @Override
     public void fire(TransportStateEvent event) {
         headContext.fire(event);
+    }
+
+    private static class EmptyStage implements Stage<Object, Object> {
+
+        @Override
+        public void process(StageContext<Object, Object> context, MessageEvent<Object> event) {
+        }
+
+        @Override
+        public void process(StageContext<Object, Object> context, TransportStateEvent event) {
+        }
     }
 }

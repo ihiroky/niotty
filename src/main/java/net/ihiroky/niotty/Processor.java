@@ -8,5 +8,6 @@ package net.ihiroky.niotty;
 public interface Processor<T extends Transport, C extends TransportConfig> {
     void start();
     void stop();
+    String getName();
     T createTransport(C config);
 }

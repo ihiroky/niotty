@@ -9,14 +9,22 @@ import java.util.Objects;
  */
 public class TransportConfig {
 
-    private volatile PipeLineFactory pipeLineFactory;
+    private volatile PipelineInitializer pipelineInitializer = EMPTY;
 
-    public PipeLineFactory getPipeLineFactory() {
-        return pipeLineFactory;
+    private static final PipelineInitializer EMPTY = new EmptyPipelineInitializer();
+
+    public PipelineInitializer getPipelineInitializer() {
+        return pipelineInitializer;
     }
 
-    public void setPipeLineFactory(PipeLineFactory pipeLineFactory) {
-        Objects.requireNonNull(pipeLineFactory, "pipeLineFactory");
-        this.pipeLineFactory = pipeLineFactory;
+    public void setPipelineInitializer(PipelineInitializer pipelineInitializer) {
+        Objects.requireNonNull(pipelineInitializer, "pipelineInitializer");
+        this.pipelineInitializer = pipelineInitializer;
+    }
+
+    private static class EmptyPipelineInitializer implements PipelineInitializer {
+        @Override
+        public void setUpPipeline(Pipeline loadPipeline, Pipeline storePipeline) {
+        }
     }
 }

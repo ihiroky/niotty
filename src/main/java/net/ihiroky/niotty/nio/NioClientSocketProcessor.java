@@ -59,6 +59,11 @@ public class NioClientSocketProcessor implements Processor<NioClientSocketTransp
         connectSelectorPool.close();
     }
 
+    @Override
+    public String getName() {
+        return name;
+    }
+
     public void setName(String name) {
         Objects.requireNonNull(name, "name");
         this.name = name;

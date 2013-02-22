@@ -1,7 +1,7 @@
 package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.EventLoop;
-import net.ihiroky.niotty.PipeLine;
+import net.ihiroky.niotty.Pipeline;
 import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.StageContextAdapter;
 import net.ihiroky.niotty.StageContextListener;
@@ -33,7 +33,7 @@ public abstract class AbstractSelector<S extends AbstractSelector<S>> extends Ev
             new StageContextAdapter<Object, BufferSink>() {
                 @Override
                 public void onProceed(
-                        PipeLine pipeLine, StageContext<Object, BufferSink> context, TransportStateEvent event) {
+                        Pipeline pipeline, StageContext<Object, BufferSink> context, TransportStateEvent event) {
                     NioServerSocketTransport transport = (NioServerSocketTransport) event.getTransport();
                     Object value = event.getValue();
                     switch (event.getState()) {

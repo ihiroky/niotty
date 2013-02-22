@@ -19,43 +19,43 @@ public class StageContext<I, O> {
     private Stage<I, O> stage;
     private StageContext<O, ?> next;
     private StageContextListener<I, O> listener;
-    private PipeLine pipeLine;
+    private Pipeline pipeline;
 
     private Logger logger = LoggerFactory.getLogger(StageContext.class);
 
     private static final StageContextListener<Object, Object> NULL_LISTENER = new StageContextAdapter<>();
-    static final StageContext<Object, Object> TERMINAL = new StageContext<>(null, Stage.NULL);
+    static final StageContext<Object, Object> TERMINAL = new StageContext<>(null, new NullStage());
 
     @SuppressWarnings("unchecked")
-    StageContext(PipeLine pipeLine, Stage<I, O> stage) {
+    StageContext(Pipeline pipeline, Stage<I, O> stage) {
         Objects.requireNonNull(stage, "stage");
 
         this.stage = stage;
         this.next = (StageContext<O, ?>) TERMINAL;
         this.listener = (StageContextListener<I, O>) NULL_LISTENER;
-        this.pipeLine = pipeLine;
+        this.pipeline = pipeline;
     }
 
 
     protected void fire(MessageEvent<I> event) {
         logger.trace("execute {} with {}", stage, event);
-        listener.onFire(pipeLine, this, event);
+        listener.onFire(pipeline, this, event);
         stage.process(this, event);
     }
 
     protected void fire(TransportStateEvent event) {
         logger.trace("execute {} with {}", stage, event);
-        listener.onFire(pipeLine, this, event);
+        listener.onFire(pipeline, this, event);
         stage.process(this, event);
     }
 
     public void proceed(MessageEvent<O> event) {
-        listener.onProceed(pipeLine, this, event);
+        listener.onProceed(pipeline, this, event);
         next.fire(event);
     }
 
     public void proceed(TransportStateEvent event) {
-        listener.onProceed(pipeLine, this, event);
+        listener.onProceed(pipeline, this, event);
         next.fire(event);
     }
 
@@ -105,31 +105,44 @@ public class StageContext<I, O> {
         List<StageContextListener<I, O>> list = new CopyOnWriteArrayList<>();
 
         @Override
-        public void onFire(PipeLine pipeLine, StageContext<I, O> context, MessageEvent<I> event) {
+        public void onFire(Pipeline pipeline, StageContext<I, O> context, MessageEvent<I> event) {
             for (StageContextListener<I, O> listener : list) {
-                listener.onFire(pipeLine, context, event);
+                listener.onFire(pipeline, context, event);
             }
         }
 
         @Override
-        public void onFire(PipeLine pipeLine, StageContext<I, O> context, TransportStateEvent event) {
+        public void onFire(Pipeline pipeline, StageContext<I, O> context, TransportStateEvent event) {
             for (StageContextListener<I, O> listener : list) {
-                listener.onFire(pipeLine, context, event);
+                listener.onFire(pipeline, context, event);
             }
         }
 
         @Override
-        public void onProceed(PipeLine pipeLine, StageContext<I, O> context, MessageEvent<O> event) {
+        public void onProceed(Pipeline pipeline, StageContext<I, O> context, MessageEvent<O> event) {
             for (StageContextListener<I, O> listener : list) {
-                listener.onProceed(pipeLine, context, event);
+                listener.onProceed(pipeline, context, event);
             }
         }
 
         @Override
-        public void onProceed(PipeLine pipeLine, StageContext<I, O> context, TransportStateEvent event) {
+        public void onProceed(Pipeline pipeline, StageContext<I, O> context, TransportStateEvent event) {
             for (StageContextListener<I, O> listener : list) {
-                listener.onProceed(pipeLine, context, event);
+                listener.onProceed(pipeline, context, event);
             }
+        }
+    }
+
+    private static class NullStage implements Stage<Object, Object> {
+        @Override
+        public void process(StageContext<Object, Object> context, MessageEvent<Object> event) {
+        }
+        @Override
+        public void process(StageContext<Object, Object> context, TransportStateEvent event) {
+        }
+        @Override
+        public String toString() {
+            return "NULL_STAGE";
         }
     }
 }
