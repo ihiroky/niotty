@@ -1,6 +1,6 @@
 package net.ihiroky.niotty.stage.codec.frame;
 
-import net.ihiroky.niotty.StageContextMock;
+import net.ihiroky.niotty.LoadStageContextMock;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.DecodeBuffer;
 import net.ihiroky.niotty.buffer.EncodeBuffer;
@@ -17,14 +17,14 @@ import static org.junit.Assert.*;
 public class LengthRemoveDecoderTest {
 
     LengthRemoveDecoder sut;
-    StageContextMock<DecodeBuffer, DecodeBuffer> context;
+    LoadStageContextMock<DecodeBuffer, DecodeBuffer> context;
     byte[] data;
     int dataLength;
 
     @Before
     public void setUp() {
         sut = new LengthRemoveDecoder();
-        context = new StageContextMock<>(sut);
+        context = new LoadStageContextMock<>(sut);
         EncodeBuffer encodeBuffer = Buffers.newEncodeBuffer(32);
         encodeBuffer.writeVariableByteInteger(12); // length header + contents
         encodeBuffer.writeInt(1);
@@ -38,7 +38,7 @@ public class LengthRemoveDecoderTest {
     public void testProcessMessageEventOnce() throws Exception {
         DecodeBuffer input = Buffers.newDecodeBuffer(data, 0, dataLength);
 
-        sut.process(context, new MessageEvent<>(null, input));
+        sut.load(context, new MessageEvent<>(null, input));
 
         DecodeBuffer output = context.getProceededMessageEvent().getMessage();
         assertThat(output.remainingBytes(), is(12));
@@ -50,15 +50,15 @@ public class LengthRemoveDecoderTest {
     @Test
     public void testProcessMessageEventMany() throws Exception {
         // read first 4 byte
-        sut.process(context, new MessageEvent<>(null, Buffers.newDecodeBuffer(data, 0, 4)));
+        sut.load(context, new MessageEvent<>(null, Buffers.newDecodeBuffer(data, 0, 4)));
         assertThat(context.getProceededMessageEvent(), is(nullValue()));
 
         // prepend length field is read
-        sut.process(context, new MessageEvent<>(null, Buffers.newDecodeBuffer(data, 4, 1)));
+        sut.load(context, new MessageEvent<>(null, Buffers.newDecodeBuffer(data, 4, 1)));
         assertThat(context.getProceededMessageEvent(), is(nullValue()));
 
         // read remaining
-        sut.process(context, new MessageEvent<>(null, Buffers.newDecodeBuffer(data, 5, 8)));
+        sut.load(context, new MessageEvent<>(null, Buffers.newDecodeBuffer(data, 5, 8)));
         DecodeBuffer output = context.getProceededMessageEvent().getMessage();
 
         assertThat(output.remainingBytes(), is(12));

@@ -1,6 +1,7 @@
 package net.ihiroky.niotty.nio;
 
-import net.ihiroky.niotty.DefaultPipeline;
+import net.ihiroky.niotty.DefaultLoadPipeline;
+import net.ihiroky.niotty.DefaultStorePipeline;
 import net.ihiroky.niotty.DefaultTransportFuture;
 import net.ihiroky.niotty.EventLoop;
 import net.ihiroky.niotty.TransportConfig;
@@ -35,13 +36,15 @@ public class NioChildChannelTransport extends NioSocketTransport<MessageIOSelect
     private Queue<BufferSink> pendingQueue;
 
     NioChildChannelTransport(TransportConfig config, String name, int writeBufferSize, boolean directWriteBuffer) {
-        DefaultPipeline loadPipeline = DefaultPipeline.createLoadPipeLine(name);
-        DefaultPipeline storePipeline = DefaultPipeline.createStorePipeLine(name);
+        DefaultLoadPipeline loadPipeline = DefaultLoadPipeline.createPipeline(name);
+        DefaultStorePipeline storePipeline = DefaultStorePipeline.createPipeline(name);
         config.getPipelineInitializer().setUpPipeline(loadPipeline, storePipeline);
+
         loadPipeline.regulate();
+        loadPipeline.verifyStageContextType();
+
         storePipeline.regulate();
         storePipeline.getLastContext().addListener(MessageIOSelector.MESSAGE_IO_STORE_CONTEXT_LISTENER);
-        loadPipeline.verifyStageContextType();
         storePipeline.verifyStageContextType();
 
         ByteBuffer writeBuffer = directWriteBuffer
@@ -187,16 +190,12 @@ public class NioChildChannelTransport extends NioSocketTransport<MessageIOSelect
     }
 
     void loadEventLater(final TransportStateEvent event) {
-        MessageIOSelector selector = getEventLoop();
-        if (selector != null) { // TODO Null Object
-            selector.offerTask(new EventLoop.Task<MessageIOSelector>() {
-                @Override
-                public boolean execute(MessageIOSelector eventLoop) {
-                    getLoadPipeline().fire(event);
-                    return true;
-                }
-            });
-        }
+        offerTask(new EventLoop.Task<MessageIOSelector>() {
+            @Override
+            public boolean execute(MessageIOSelector eventLoop) throws Exception {
+                getLoadPipeline().fire(event);
+                return true;
+            }
+        });
     }
-
 }

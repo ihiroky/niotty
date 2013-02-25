@@ -1,8 +1,5 @@
 package net.ihiroky.niotty;
 
-import net.ihiroky.niotty.event.MessageEvent;
-import net.ihiroky.niotty.event.TransportStateEvent;
-
 /**
  * Created on 13/01/09, 17:21
  *
@@ -10,11 +7,8 @@ import net.ihiroky.niotty.event.TransportStateEvent;
  */
 public interface Pipeline {
 
-    Pipeline add(Stage<?, ?> stage);
-    StageContext<?, ?> getFirstContext();
-    StageContext<?, ?> getLastContext();
-    StageContext<?, ?> searchContextFor(Class<? extends Stage<?, ?>> c);
-    <S extends Stage<?, ?>> S searchStageFor(Class<? extends Stage<?, ?>> c);
-    void fire(MessageEvent<Object> event);
-    void fire(TransportStateEvent event);
+    StageContext<Object, Object> getFirstContext();
+    StageContext<Object, Object> getLastContext();
+    StageContext<Object, Object> searchContextFor(Class<?> stageClass);
+    <S> S searchStageFor(Class<S> stageClass);
 }

@@ -1,7 +1,7 @@
 package net.ihiroky.niotty.stage.codec.frame;
 
-import net.ihiroky.niotty.Stage;
-import net.ihiroky.niotty.StageContext;
+import net.ihiroky.niotty.StoreStage;
+import net.ihiroky.niotty.StoreStageContext;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.EncodeBuffer;
 import net.ihiroky.niotty.buffer.EncodeBufferGroup;
@@ -11,13 +11,13 @@ import net.ihiroky.niotty.event.TransportStateEvent;
 /**
  * @author Hiroki Itoh
  */
-public class LengthPrependEncoder implements Stage<EncodeBufferGroup, EncodeBufferGroup> {
+public class LengthPrependEncoder implements StoreStage<EncodeBufferGroup, EncodeBufferGroup> {
 
     private static final int INITIAL_BUFFER_SIZE = 5;
     static final int MINIMUM_WHOLE_LENGTH = 5;
 
     @Override
-    public void process(StageContext<EncodeBufferGroup, EncodeBufferGroup> context,
+    public void store(StoreStageContext<EncodeBufferGroup, EncodeBufferGroup> context,
                         MessageEvent<EncodeBufferGroup> event) {
         EncodeBufferGroup contents = event.getMessage();
         int contentsLength = contents.filledBytes();
@@ -34,7 +34,7 @@ public class LengthPrependEncoder implements Stage<EncodeBufferGroup, EncodeBuff
     }
 
     @Override
-    public void process(StageContext<EncodeBufferGroup, EncodeBufferGroup> context, TransportStateEvent event) {
+    public void store(StoreStageContext<EncodeBufferGroup, EncodeBufferGroup> context, TransportStateEvent event) {
         context.proceed(event);
     }
 

@@ -14,8 +14,8 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 abstract public class AbstractTransport<L extends EventLoop<L>> implements Transport {
 
-    private Pipeline loadPipeline;
-    private Pipeline storePipeline;
+    private LoadPipeline loadPipeline;
+    private StorePipeline storePipeline;
     private AtomicReference<Object> attachmentReference;
     private TransportListener transportListener;
     private L loop;
@@ -27,19 +27,21 @@ abstract public class AbstractTransport<L extends EventLoop<L>> implements Trans
         transportListener = NULL_LISTENER;
     }
 
-    protected final void setLoadPipeline(Pipeline pipeline) {
+    protected final void setLoadPipeline(LoadPipeline pipeline) {
+        Objects.requireNonNull(pipeline, "pipeline");
         loadPipeline = pipeline;
     }
 
-    protected Pipeline getLoadPipeline() {
+    protected LoadPipeline getLoadPipeline() {
         return loadPipeline;
     }
 
-    protected final void setStorePipeline(Pipeline pipeline) {
+    protected final void setStorePipeline(StorePipeline pipeline) {
+        Objects.requireNonNull(pipeline, "pipeline");
         storePipeline = pipeline;
     }
 
-    protected Pipeline getStorePipeline() {
+    protected StorePipeline getStorePipeline() {
         return storePipeline;
     }
 

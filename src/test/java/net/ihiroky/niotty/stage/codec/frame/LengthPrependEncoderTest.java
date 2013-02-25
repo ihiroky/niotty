@@ -1,6 +1,6 @@
 package net.ihiroky.niotty.stage.codec.frame;
 
-import net.ihiroky.niotty.StageContextMock;
+import net.ihiroky.niotty.StoreStageContextMock;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.EncodeBuffer;
 import net.ihiroky.niotty.buffer.EncodeBufferGroup;
@@ -17,13 +17,13 @@ import static org.junit.Assert.*;
 public class LengthPrependEncoderTest {
 
     LengthPrependEncoder sut;
-    StageContextMock<EncodeBufferGroup, EncodeBufferGroup> context;
+    StoreStageContextMock<EncodeBufferGroup, EncodeBufferGroup> context;
 
     @Before
     @SuppressWarnings("unchecked")
     public void setUp() throws Exception {
         sut = new LengthPrependEncoder();
-        context = new StageContextMock<>(sut);
+        context = new StoreStageContextMock<>(sut);
     }
 
     @Test
@@ -33,7 +33,7 @@ public class LengthPrependEncoderTest {
         EncodeBufferGroup group = new EncodeBufferGroup();
         group.addLast(input);
 
-        sut.process(context, new MessageEvent<>(null, group));
+        sut.store(context, new MessageEvent<>(null, group));
 
         EncodeBufferGroup actual = context.getProceededMessageEvent().getMessage();
         assertThat(actual.filledBytes(), is(6));
@@ -46,7 +46,7 @@ public class LengthPrependEncoderTest {
         EncodeBufferGroup group = new EncodeBufferGroup();
         group.addLast(input);
 
-        sut.process(context, new MessageEvent<>(null, group));
+        sut.store(context, new MessageEvent<>(null, group));
 
         EncodeBufferGroup actual = context.getProceededMessageEvent().getMessage();
         assertThat(actual.filledBytes(), is(5));

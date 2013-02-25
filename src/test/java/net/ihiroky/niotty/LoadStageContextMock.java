@@ -5,12 +5,13 @@ import net.ihiroky.niotty.event.MessageEvent;
 /**
  * @author Hiroki Itoh
  */
-public class StageContextMock<I, O> extends StageContext<I, O> {
+public class LoadStageContextMock<I, O> extends LoadStageContext<I, O> {
 
     MessageEvent<O> proceededMessageEvent;
 
-    public StageContextMock(Stage<I, O> stage) {
-        super(null, stage);
+    @SuppressWarnings("unchecked")
+    public LoadStageContextMock(LoadStage<?, ?> stage) {
+        super(null, (LoadStage<Object, Object>) stage);
     }
 
     @Override

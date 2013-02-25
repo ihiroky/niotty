@@ -1,7 +1,7 @@
 package net.ihiroky.niotty.stage.codec.frame;
 
-import net.ihiroky.niotty.Stage;
-import net.ihiroky.niotty.StageContext;
+import net.ihiroky.niotty.LoadStage;
+import net.ihiroky.niotty.LoadStageContext;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.DecodeBuffer;
 import net.ihiroky.niotty.event.MessageEvent;
@@ -10,13 +10,13 @@ import net.ihiroky.niotty.event.TransportStateEvent;
 /**
  * @author Hiroki Itoh
  */
-public class LengthRemoveDecoder implements Stage<DecodeBuffer, DecodeBuffer> {
+public class LengthRemoveDecoder implements LoadStage<DecodeBuffer, DecodeBuffer> {
 
     private int frameBytes;
     private DecodeBuffer pooling;
 
     @Override
-    public void process(StageContext<DecodeBuffer, DecodeBuffer> context, MessageEvent<DecodeBuffer> event) {
+    public void load(LoadStageContext<DecodeBuffer, DecodeBuffer> context, MessageEvent<DecodeBuffer> event) {
         DecodeBuffer input = event.getMessage();
 
         int length = frameBytes;
@@ -42,7 +42,7 @@ public class LengthRemoveDecoder implements Stage<DecodeBuffer, DecodeBuffer> {
     }
 
     @Override
-    public void process(StageContext<DecodeBuffer, DecodeBuffer> context, TransportStateEvent event) {
+    public void load(LoadStageContext<DecodeBuffer, DecodeBuffer> context, TransportStateEvent event) {
         context.proceed(event);
     }
 

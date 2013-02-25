@@ -24,7 +24,7 @@ public class TransportConfig {
 
     private static class EmptyPipelineInitializer implements PipelineInitializer {
         @Override
-        public void setUpPipeline(Pipeline loadPipeline, Pipeline storePipeline) {
+        public void setUpPipeline(LoadPipeline loadPipeline, StorePipeline storePipeline) {
         }
     }
 }

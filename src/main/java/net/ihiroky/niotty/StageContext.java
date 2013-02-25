@@ -2,8 +2,6 @@ package net.ihiroky.niotty;
 
 import net.ihiroky.niotty.event.MessageEvent;
 import net.ihiroky.niotty.event.TransportStateEvent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Objects;
@@ -14,44 +12,37 @@ import java.util.concurrent.CopyOnWriteArrayList;
  *
  * @author Hiroki Itoh
  */
-public class StageContext<I, O> {
+public abstract class StageContext<I, O> {
 
-    private Stage<I, O> stage;
-    private StageContext<O, ?> next;
-    private StageContextListener<I, O> listener;
     private Pipeline pipeline;
-
-    private Logger logger = LoggerFactory.getLogger(StageContext.class);
+    private StageContext<O, Object> next;
+    private StageContextListener<I, O> listener;
 
     private static final StageContextListener<Object, Object> NULL_LISTENER = new StageContextAdapter<>();
-    static final StageContext<Object, Object> TERMINAL = new StageContext<>(null, new NullStage());
 
     @SuppressWarnings("unchecked")
-    StageContext(Pipeline pipeline, Stage<I, O> stage) {
-        Objects.requireNonNull(stage, "stage");
+    private static <I, O> StageContextListener<I, O> nullListener() {
+        return (StageContextListener<I, O>) NULL_LISTENER;
+    }
 
-        this.stage = stage;
-        this.next = (StageContext<O, ?>) TERMINAL;
-        this.listener = (StageContextListener<I, O>) NULL_LISTENER;
+    protected StageContext(Pipeline pipeline) {
         this.pipeline = pipeline;
+        this.listener = nullListener();
     }
 
-
-    protected void fire(MessageEvent<I> event) {
-        logger.trace("execute {} with {}", stage, event);
-        listener.onFire(pipeline, this, event);
-        stage.process(this, event);
+    protected StageContext<O, Object> getNext() {
+        return next;
     }
 
-    protected void fire(TransportStateEvent event) {
-        logger.trace("execute {} with {}", stage, event);
-        listener.onFire(pipeline, this, event);
-        stage.process(this, event);
+    protected void setNext(StageContext<O, Object> next) {
+        Objects.requireNonNull(next, "next");
+        this.next = next;
     }
 
     public void proceed(MessageEvent<O> event) {
         listener.onProceed(pipeline, this, event);
         next.fire(event);
+
     }
 
     public void proceed(TransportStateEvent event) {
@@ -59,15 +50,13 @@ public class StageContext<I, O> {
         next.fire(event);
     }
 
-    protected void setNext(StageContext<O, ?> context) {
-        Objects.requireNonNull(context, "context");
-        this.next = context;
+    protected void callOnFire(MessageEvent<I> event) {
+        listener.onFire(pipeline, this, event);
     }
 
-    protected StageContext<O, ?> getNext() {
-        return next;
+    protected void callOnFire(TransportStateEvent event) {
+        listener.onFire(pipeline, this, event);
     }
-
 
     public void addListener(StageContextListener<?, ?> contextListener) {
         Objects.requireNonNull(contextListener, "contextListener");
@@ -81,7 +70,7 @@ public class StageContext<I, O> {
             return;
         }
         if (listener instanceof ListenerList) {
-            ((ListenerList<I, O>)listener).list.add(newListener);
+            ((ListenerList<I, O>) listener).list.add(newListener);
             return;
         }
 
@@ -91,13 +80,8 @@ public class StageContext<I, O> {
         listener = listenerList;
     }
 
-    public Stage<I, O> getStage() {
-        return stage;
-    }
-
-    @Override
-    public String toString() {
-        return "stage:" + stage;
+    protected StageContextListener<I, O> getListener() {
+        return listener;
     }
 
     private static class ListenerList<I, O> implements StageContextListener<I, O> {
@@ -133,16 +117,7 @@ public class StageContext<I, O> {
         }
     }
 
-    private static class NullStage implements Stage<Object, Object> {
-        @Override
-        public void process(StageContext<Object, Object> context, MessageEvent<Object> event) {
-        }
-        @Override
-        public void process(StageContext<Object, Object> context, TransportStateEvent event) {
-        }
-        @Override
-        public String toString() {
-            return "NULL_STAGE";
-        }
-    }
+    protected abstract Object getStage();
+    protected abstract void fire(MessageEvent<I> event);
+    protected abstract void fire(TransportStateEvent event);
 }

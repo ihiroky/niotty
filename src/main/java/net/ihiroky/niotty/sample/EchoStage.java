@@ -1,7 +1,7 @@
 package net.ihiroky.niotty.sample;
 
-import net.ihiroky.niotty.Stage;
-import net.ihiroky.niotty.StageContext;
+import net.ihiroky.niotty.LoadStage;
+import net.ihiroky.niotty.LoadStageContext;
 import net.ihiroky.niotty.event.MessageEvent;
 import net.ihiroky.niotty.event.TransportStateEvent;
 import org.slf4j.Logger;
@@ -12,18 +12,18 @@ import org.slf4j.LoggerFactory;
  *
  * @author Hiroki Itoh
  */
-public class EchoStage implements Stage<String, Object> {
+public class EchoStage implements LoadStage<String, Object> {
 
     private Logger logger = LoggerFactory.getLogger(EchoStage.class);
 
     @Override
-    public void process(StageContext<String, Object> context, MessageEvent<String> event) {
+    public void load(LoadStageContext<String, Object> context, MessageEvent<String> event) {
         logger.info(event.toString());
         event.getTransport().write(event.getMessage());
     }
 
     @Override
-    public void process(StageContext<String, Object> context, TransportStateEvent event) {
+    public void load(LoadStageContext<String, Object> context, TransportStateEvent event) {
         logger.info(event.toString());
     }
 }

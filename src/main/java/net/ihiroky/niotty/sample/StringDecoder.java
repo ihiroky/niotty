@@ -1,7 +1,7 @@
 package net.ihiroky.niotty.sample;
 
-import net.ihiroky.niotty.Stage;
-import net.ihiroky.niotty.StageContext;
+import net.ihiroky.niotty.LoadStage;
+import net.ihiroky.niotty.LoadStageContext;
 import net.ihiroky.niotty.buffer.DecodeBuffer;
 import net.ihiroky.niotty.event.MessageEvent;
 import net.ihiroky.niotty.event.TransportStateEvent;
@@ -18,7 +18,7 @@ import java.nio.charset.CodingErrorAction;
  *
  * @author Hiroki Itoh
  */
-public class StringDecoder implements Stage<DecodeBuffer, String> {
+public class StringDecoder implements LoadStage<DecodeBuffer, String> {
 
     private Logger logger = LoggerFactory.getLogger(StringDecoder.class);
 
@@ -29,7 +29,7 @@ public class StringDecoder implements Stage<DecodeBuffer, String> {
             .onUnmappableCharacter(CodingErrorAction.IGNORE);
 
     @Override
-    public void process(StageContext<DecodeBuffer, String> context, MessageEvent<DecodeBuffer> event) {
+    public void load(LoadStageContext<DecodeBuffer, String> context, MessageEvent<DecodeBuffer> event) {
         DecodeBuffer message = event.getMessage();
         try {
             String s = decoder.decode(message.toByteBuffer()).toString();
@@ -40,7 +40,7 @@ public class StringDecoder implements Stage<DecodeBuffer, String> {
     }
 
     @Override
-    public void process(StageContext<DecodeBuffer, String> context, TransportStateEvent event) {
+    public void load(LoadStageContext<DecodeBuffer, String> context, TransportStateEvent event) {
         logger.info(event.toString());
         context.proceed(event);
     }

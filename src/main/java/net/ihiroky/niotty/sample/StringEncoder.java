@@ -1,7 +1,7 @@
 package net.ihiroky.niotty.sample;
 
-import net.ihiroky.niotty.Stage;
-import net.ihiroky.niotty.StageContext;
+import net.ihiroky.niotty.StoreStage;
+import net.ihiroky.niotty.StoreStageContext;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.EncodeBuffer;
 import net.ihiroky.niotty.buffer.EncodeBufferGroup;
@@ -17,14 +17,14 @@ import java.nio.charset.Charset;
  *
  * @author Hiroki Itoh
  */
-public class StringEncoder implements Stage<String, EncodeBufferGroup> {
+public class StringEncoder implements StoreStage<String, EncodeBufferGroup> {
 
     private Logger logger = LoggerFactory.getLogger(StringEncoder.class);
 
     static Charset CHARSET = Charset.forName("UTF-8");
 
     @Override
-    public void process(StageContext<String, EncodeBufferGroup> context, MessageEvent<String> event) {
+    public void store(StoreStageContext<String, EncodeBufferGroup> context, MessageEvent<String> event) {
         String message = event.getMessage();
         EncodeBuffer buffer = Buffers.newEncodeBuffer();
         buffer.writeString(CHARSET.newEncoder(), message);
@@ -33,7 +33,7 @@ public class StringEncoder implements Stage<String, EncodeBufferGroup> {
     }
 
     @Override
-    public void process(StageContext<String, EncodeBufferGroup> context, TransportStateEvent event) {
+    public void store(StoreStageContext<String, EncodeBufferGroup> context, TransportStateEvent event) {
         logger.info(event.toString());
         context.proceed(event);
     }

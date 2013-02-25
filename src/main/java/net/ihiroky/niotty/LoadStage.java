@@ -8,8 +8,8 @@ import net.ihiroky.niotty.event.TransportStateEvent;
  *
  * @author Hiroki Itoh
  */
-public interface Stage<I, O> {
+public interface LoadStage<I, O> {
 
-    void process(StageContext<I, O> context, MessageEvent<I> event);
-    void process(StageContext<I, O> context, TransportStateEvent event);
+    void load(LoadStageContext<I, O> context, MessageEvent<I> event);
+    void load(LoadStageContext<I, O> context, TransportStateEvent event);
 }
