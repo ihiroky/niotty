@@ -9,17 +9,17 @@ import java.util.Objects;
  */
 public class TransportConfig {
 
-    private volatile PipelineInitializer pipelineInitializer = EMPTY;
+    private volatile PipelineInitializer pipelineInitializer_ = EMPTY;
 
     private static final PipelineInitializer EMPTY = new EmptyPipelineInitializer();
 
     public PipelineInitializer getPipelineInitializer() {
-        return pipelineInitializer;
+        return pipelineInitializer_;
     }
 
     public void setPipelineInitializer(PipelineInitializer pipelineInitializer) {
         Objects.requireNonNull(pipelineInitializer, "pipelineInitializer");
-        this.pipelineInitializer = pipelineInitializer;
+        this.pipelineInitializer_ = pipelineInitializer;
     }
 
     private static class EmptyPipelineInitializer implements PipelineInitializer {

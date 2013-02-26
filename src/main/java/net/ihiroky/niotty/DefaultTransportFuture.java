@@ -10,45 +10,45 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class DefaultTransportFuture implements TransportFuture {
 
-    private final Transport transport;
-    private volatile AtomicBoolean done;
-    private volatile Throwable throwable;
-    private volatile boolean cancelled;
+    private final Transport transport_;
+    private volatile AtomicBoolean done_;
+    private volatile Throwable throwable_;
+    private volatile boolean cancelled_;
 
     public DefaultTransportFuture(Transport transport) {
-        this.transport = transport;
-        this.done = new AtomicBoolean();
+        this.transport_ = transport;
+        this.done_ = new AtomicBoolean();
     }
 
     @Override
     public Transport transport() {
-        return transport;
+        return transport_;
     }
 
     @Override
     public boolean isCancelled() {
-        return cancelled;
+        return cancelled_;
     }
 
     @Override
     public boolean isDone() {
-        return done.get();
+        return done_.get();
     }
 
     @Override
     public Throwable getThrowable() {
-        return throwable;
+        return throwable_;
     }
 
     @Override
     public void throwIfFailed() {
-        if (throwable != null) {
-            if (throwable instanceof RuntimeException) {
-                throw (RuntimeException) throwable;
-            } else if (throwable instanceof Error) {
-                throw (Error) throwable;
+        if (throwable_ != null) {
+            if (throwable_ instanceof RuntimeException) {
+                throw (RuntimeException) throwable_;
+            } else if (throwable_ instanceof Error) {
+                throw (Error) throwable_;
             } else {
-                throw new RuntimeException(throwable);
+                throw new RuntimeException(throwable_);
             }
         }
     }
@@ -56,7 +56,7 @@ public class DefaultTransportFuture implements TransportFuture {
     @Override
     public TransportFuture waitForCompletion() throws InterruptedException {
         synchronized (this) {
-            while (!done.get()) {
+            while (!done_.get()) {
                 wait();
             }
         }
@@ -69,7 +69,7 @@ public class DefaultTransportFuture implements TransportFuture {
         synchronized (this) {
             long start = System.currentTimeMillis();
             long now;
-            while (!done.get() && left > 0) {
+            while (!done_.get() && left > 0) {
                 wait(left);
                 now = System.currentTimeMillis();
                 left -= (now - start);
@@ -83,7 +83,7 @@ public class DefaultTransportFuture implements TransportFuture {
     public TransportFuture waitForCompletionUninterruptibly() {
         boolean interrupted = false;
         synchronized (this) {
-            while (!done.get()) {
+            while (!done_.get()) {
                 try {
                     wait();
                 } catch (InterruptedException ie) {
@@ -104,7 +104,7 @@ public class DefaultTransportFuture implements TransportFuture {
         synchronized (this) {
             long start = System.currentTimeMillis();
             long now;
-            while (!done.get() && left > 0) {
+            while (!done_.get() && left > 0) {
                 try {
                     wait(left);
                 } catch (InterruptedException ie) {
@@ -122,7 +122,7 @@ public class DefaultTransportFuture implements TransportFuture {
     }
 
     public void done() {
-        if (done.compareAndSet(false, true)) {
+        if (done_.compareAndSet(false, true)) {
             synchronized (this) {
                 notifyAll();
             }
@@ -130,12 +130,12 @@ public class DefaultTransportFuture implements TransportFuture {
     }
 
     public void cancel() {
-        cancelled = true;
+        cancelled_ = true;
         done();
     }
 
     public void setThrowable(Throwable t) {
-        throwable = t;
+        throwable_ = t;
         done();
     }
 }

@@ -5,27 +5,27 @@ package net.ihiroky.niotty;
  */
 public class FailedTransportFuture extends CompletedTransportFuture {
 
-    private Throwable throwable;
+    private Throwable throwable_;
 
     public FailedTransportFuture(Transport transport, Throwable throwable) {
         super(transport);
 
-        this.throwable = throwable;
+        this.throwable_ = throwable;
     }
 
     @Override
     public Throwable getThrowable() {
-        return throwable;
+        return throwable_;
     }
 
     @Override
     public void throwIfFailed() {
-        if (throwable instanceof RuntimeException) {
-            throw (RuntimeException) throwable;
-        } else if (throwable instanceof Error) {
-            throw (Error) throwable;
+        if (throwable_ instanceof RuntimeException) {
+            throw (RuntimeException) throwable_;
+        } else if (throwable_ instanceof Error) {
+            throw (Error) throwable_;
         } else {
-            throw new RuntimeException(throwable);
+            throw new RuntimeException(throwable_);
         }
     }
 }

@@ -10,34 +10,34 @@ import java.util.Objects;
  */
 public class LoadStageContext<I, O> extends StageContext<I, O> {
 
-    private LoadStage<I, O> stage;
+    private LoadStage<I, O> stage_;
 
     @SuppressWarnings("unchecked")
     public LoadStageContext(Pipeline pipeline, LoadStage<Object, Object> stage) {
         super(pipeline);
         Objects.requireNonNull(stage, "stage");
-        this.stage = (LoadStage<I, O>) stage;
+        this.stage_ = (LoadStage<I, O>) stage;
     }
 
     @Override
     protected LoadStage<I, O> getStage() {
-        return stage;
+        return stage_;
     }
 
     @Override
     protected void fire(MessageEvent<I> event) {
         callOnFire(event);
-        stage.load(this, event);
+        stage_.load(this, event);
     }
 
     @Override
     protected void fire(TransportStateEvent event) {
         callOnFire(event);
-        stage.load(this, event);
+        stage_.load(this, event);
     }
 
     @Override
     public String toString() {
-        return "(load stage:" + stage + ')';
+        return "(load stage:" + stage_ + ')';
     }
 }

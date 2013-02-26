@@ -14,9 +14,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
  */
 public abstract class StageContext<I, O> {
 
-    private Pipeline pipeline;
-    private StageContext<O, Object> next;
-    private StageContextListener<I, O> listener;
+    private Pipeline pipeline_;
+    private StageContext<O, Object> next_;
+    private StageContextListener<I, O> listener_;
 
     private static final StageContextListener<Object, Object> NULL_LISTENER = new StageContextAdapter<>();
 
@@ -26,62 +26,62 @@ public abstract class StageContext<I, O> {
     }
 
     protected StageContext(Pipeline pipeline) {
-        this.pipeline = pipeline;
-        this.listener = nullListener();
+        this.pipeline_ = pipeline;
+        this.listener_ = nullListener();
     }
 
     protected StageContext<O, Object> getNext() {
-        return next;
+        return next_;
     }
 
     protected void setNext(StageContext<O, Object> next) {
         Objects.requireNonNull(next, "next");
-        this.next = next;
+        this.next_ = next;
     }
 
     public void proceed(MessageEvent<O> event) {
-        listener.onProceed(pipeline, this, event);
-        next.fire(event);
+        listener_.onProceed(pipeline_, this, event);
+        next_.fire(event);
 
     }
 
     public void proceed(TransportStateEvent event) {
-        listener.onProceed(pipeline, this, event);
-        next.fire(event);
+        listener_.onProceed(pipeline_, this, event);
+        next_.fire(event);
     }
 
     protected void callOnFire(MessageEvent<I> event) {
-        listener.onFire(pipeline, this, event);
+        listener_.onFire(pipeline_, this, event);
     }
 
     protected void callOnFire(TransportStateEvent event) {
-        listener.onFire(pipeline, this, event);
+        listener_.onFire(pipeline_, this, event);
     }
 
     public void addListener(StageContextListener<?, ?> contextListener) {
         Objects.requireNonNull(contextListener, "contextListener");
 
-        StageContextListener<I, O> oldListener = listener;
+        StageContextListener<I, O> oldListener = listener_;
         @SuppressWarnings("unchecked")
         StageContextListener<I, O> newListener = (StageContextListener<I, O>) contextListener;
 
-        if (listener == NULL_LISTENER) {
-            listener = newListener;
+        if (listener_ == NULL_LISTENER) {
+            listener_ = newListener;
             return;
         }
-        if (listener instanceof ListenerList) {
-            ((ListenerList<I, O>) listener).list.add(newListener);
+        if (listener_ instanceof ListenerList) {
+            ((ListenerList<I, O>) listener_).list.add(newListener);
             return;
         }
 
         ListenerList<I, O> listenerList = new ListenerList<>();
         listenerList.list.add(oldListener);
         listenerList.list.add(newListener);
-        listener = listenerList;
+        listener_ = listenerList;
     }
 
     protected StageContextListener<I, O> getListener() {
-        return listener;
+        return listener_;
     }
 
     private static class ListenerList<I, O> implements StageContextListener<I, O> {

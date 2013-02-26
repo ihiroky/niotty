@@ -10,35 +10,35 @@ import java.util.Objects;
  */
 public class StoreStageContext<I, O> extends StageContext<I, O> {
 
-    private StoreStage<I, O> stage;
+    private StoreStage<I, O> stage_;
 
     @SuppressWarnings("unchecked")
     public StoreStageContext(Pipeline pipeline, StoreStage<Object, Object> stage) {
         super(pipeline);
-        Objects.requireNonNull(stage,"stage");
-        this.stage = (StoreStage<I, O>) stage;
+        Objects.requireNonNull(stage, "stage");
+        this.stage_ = (StoreStage<I, O>) stage;
     }
 
     @Override
     protected Object getStage() {
-        return stage;
+        return stage_;
     }
 
     @Override
     protected void fire(MessageEvent<I> event) {
         callOnFire(event);
-        stage.store(this, event);
+        stage_.store(this, event);
     }
 
     @Override
     protected void fire(TransportStateEvent event) {
         callOnFire(event);
-        stage.store(this, event);
+        stage_.store(this, event);
     }
 
 
     @Override
     public String toString() {
-        return "(store stage:" + stage + ')';
+        return "(store stage:" + stage_ + ')';
     }
 }

@@ -7,15 +7,15 @@ import java.util.concurrent.TimeUnit;
  */
 abstract class CompletedTransportFuture implements TransportFuture {
 
-    private Transport transport;
+    private Transport transport_;
 
     protected CompletedTransportFuture(Transport transport) {
-        this.transport = transport;
+        this.transport_ = transport;
     }
 
     @Override
     public Transport transport() {
-        return transport;
+        return transport_;
     }
 
     @Override

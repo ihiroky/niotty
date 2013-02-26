@@ -14,54 +14,54 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 abstract public class AbstractTransport<L extends EventLoop<L>> implements Transport {
 
-    private LoadPipeline loadPipeline;
-    private StorePipeline storePipeline;
-    private AtomicReference<Object> attachmentReference;
-    private TransportListener transportListener;
-    private L loop;
+    private LoadPipeline loadPipeline_;
+    private StorePipeline storePipeline_;
+    private AtomicReference<Object> attachmentReference_;
+    private TransportListener transportListener_;
+    private L loop_;
 
     static final TransportListener NULL_LISTENER = new NullListener();
 
     protected AbstractTransport() {
-        attachmentReference = new AtomicReference<>();
-        transportListener = NULL_LISTENER;
+        attachmentReference_ = new AtomicReference<>();
+        transportListener_ = NULL_LISTENER;
     }
 
     protected final void setLoadPipeline(LoadPipeline pipeline) {
         Objects.requireNonNull(pipeline, "pipeline");
-        loadPipeline = pipeline;
+        loadPipeline_ = pipeline;
     }
 
     protected LoadPipeline getLoadPipeline() {
-        return loadPipeline;
+        return loadPipeline_;
     }
 
     protected final void setStorePipeline(StorePipeline pipeline) {
         Objects.requireNonNull(pipeline, "pipeline");
-        storePipeline = pipeline;
+        storePipeline_ = pipeline;
     }
 
     protected StorePipeline getStorePipeline() {
-        return storePipeline;
+        return storePipeline_;
     }
 
     public final void setEventLoop(L loop) {
         Objects.requireNonNull(loop, "loop");
-        this.loop = loop;
+        this.loop_ = loop;
     }
 
     public final L getEventLoop() {
-        return loop;
+        return loop_;
     }
 
     protected void offerTask(EventLoop.Task<L> task) {
-        if (loop != null) {
-            loop.offerTask(task);
+        if (loop_ != null) {
+            loop_.offerTask(task);
         }
     }
 
     protected TransportListener getTransportListener() {
-        return transportListener;
+        return transportListener_;
     }
 
     @Override
@@ -69,9 +69,9 @@ abstract public class AbstractTransport<L extends EventLoop<L>> implements Trans
         Objects.requireNonNull(listener, "listener");
 
         synchronized (this) {
-            TransportListener oldListener = transportListener;
+            TransportListener oldListener = transportListener_;
             if (oldListener == null) {
-                transportListener = listener;
+                transportListener_ = listener;
                 return;
             }
             if (oldListener instanceof ListenerList) {
@@ -81,7 +81,7 @@ abstract public class AbstractTransport<L extends EventLoop<L>> implements Trans
             ListenerList listenerList = new ListenerList();
             listenerList.list.add(oldListener);
             listenerList.list.add(listener);
-            transportListener = listenerList;
+            transportListener_ = listenerList;
         }
     }
 
@@ -90,15 +90,15 @@ abstract public class AbstractTransport<L extends EventLoop<L>> implements Trans
         Objects.requireNonNull(listener, "listener");
 
         synchronized (this) {
-            if (transportListener == listener) {
-                transportListener = NULL_LISTENER;
+            if (transportListener_ == listener) {
+                transportListener_ = NULL_LISTENER;
                 return;
             }
-            if (transportListener instanceof ListenerList) {
-                ListenerList listenerList = (ListenerList) transportListener;
-                listenerList.list.remove(transportListener);
+            if (transportListener_ instanceof ListenerList) {
+                ListenerList listenerList = (ListenerList) transportListener_;
+                listenerList.list.remove(transportListener_);
                 if (listenerList.list.size() == 1) {
-                    transportListener = listenerList.list.get(0);
+                    transportListener_ = listenerList.list.get(0);
                 }
             }
         }
@@ -106,12 +106,12 @@ abstract public class AbstractTransport<L extends EventLoop<L>> implements Trans
 
     @Override
     public Object attach(Object attachment) {
-        return attachmentReference.getAndSet(attachment);
+        return attachmentReference_.getAndSet(attachment);
     }
 
     @Override
     public Object attachment() {
-        return attachmentReference.get();
+        return attachmentReference_.get();
     }
 
 

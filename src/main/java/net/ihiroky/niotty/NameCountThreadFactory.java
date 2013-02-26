@@ -8,16 +8,16 @@ import java.util.concurrent.ThreadFactory;
  */
 public class NameCountThreadFactory implements ThreadFactory {
 
-    private String name;
-    private int count;
+    private String name_;
+    private int count_;
 
     public NameCountThreadFactory(String name) {
         Objects.requireNonNull(name, "name");
-        this.name = name.concat(":");
+        this.name_ = name.concat(":");
     }
 
     @Override
     public Thread newThread(Runnable r) {
-        return new Thread(r, name.concat(Integer.toString(count++)));
+        return new Thread(r, name_.concat(Integer.toString(count_++)));
     }
 }

@@ -16,37 +16,37 @@ import java.util.concurrent.ThreadFactory;
  */
 public abstract class EventLoop<L extends EventLoop<L>> implements Runnable {
 
-    private Queue<Task<L>> taskQueue;
-    private volatile Thread thread;
+    private Queue<Task<L>> taskQueue_;
+    private volatile Thread thread_;
 
-    private Logger logger = LoggerFactory.getLogger(EventLoop.class);
+    private Logger logger_ = LoggerFactory.getLogger(EventLoop.class);
 
     private static final int TIMEOUT = 100;
 
     protected EventLoop() {
-        taskQueue = new ConcurrentLinkedQueue<Task<L>>();
+        taskQueue_ = new ConcurrentLinkedQueue<Task<L>>();
     }
 
     synchronized void openWith(ThreadFactory tf) {
         Objects.requireNonNull(tf, "tf");
 
         onOpen();
-        if (thread == null) {
-            thread = tf.newThread(this);
-            thread.start();
+        if (thread_ == null) {
+            thread_ = tf.newThread(this);
+            thread_.start();
         }
     }
 
     public synchronized void close() {
-        Thread t = thread;
-        thread = null;
+        Thread t = thread_;
+        thread_ = null;
         if (t != null) {
             t.interrupt();
         }
     }
 
     public void offerTask(Task<L> task) {
-        taskQueue.offer(task);
+        taskQueue_.offer(task);
         wakeUp();
     }
 
@@ -54,21 +54,21 @@ public abstract class EventLoop<L extends EventLoop<L>> implements Runnable {
         Queue<Task<L>> taskBuffer = new LinkedList<Task<L>>();
         int timeout = 0;
         try {
-            while (thread != null) {
+            while (thread_ != null) {
                 try {
                     process(timeout);
                 } catch (Exception e) {
-                    if (thread != null) {
-                        logger.warn("[run] process failed.", e);
+                    if (thread_ != null) {
+                        logger_.warn("[run] process failed.", e);
                     }
                 }
-                timeout = processTasks(taskQueue, taskBuffer);
+                timeout = processTasks(taskQueue_, taskBuffer);
             }
         } finally {
-            taskQueue.clear();
+            taskQueue_.clear();
             onClose();
             synchronized (this) {
-                thread = null;
+                thread_ = null;
             }
         }
     }
@@ -81,8 +81,8 @@ public abstract class EventLoop<L extends EventLoop<L>> implements Runnable {
                     buffer.offer(task);
                 }
             } catch (Exception e) {
-                if (thread != null) {
-                    logger.warn("failed to execute task : " + task, e);
+                if (thread_ != null) {
+                    logger_.warn("failed to execute task : " + task, e);
                 }
             }
         }
@@ -94,7 +94,7 @@ public abstract class EventLoop<L extends EventLoop<L>> implements Runnable {
 
     @Override
     public String toString() {
-        return (thread != null) ? thread.getName() : "[NOT WORKING]";
+        return (thread_ != null) ? thread_.getName() : "[NOT WORKING]";
     }
 
     protected abstract void onOpen();

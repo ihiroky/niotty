@@ -12,8 +12,8 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class TransportAggregateSupport implements TransportAggregate, TransportListener {
 
-    private final ConcurrentMap<Transport, Boolean> transportMap;
-    private final boolean removeOnClose;
+    private final ConcurrentMap<Transport, Boolean> transportMap_;
+    private final boolean removeOnClose_;
     // TODO eviction by time if Transport is closed.
 
     public TransportAggregateSupport() {
@@ -21,18 +21,18 @@ public class TransportAggregateSupport implements TransportAggregate, TransportL
     }
 
     public TransportAggregateSupport(boolean removeOnClose) {
-        this.transportMap = new ConcurrentHashMap<>();
-        this.removeOnClose = removeOnClose;
+        this.transportMap_ = new ConcurrentHashMap<>();
+        this.removeOnClose_ = removeOnClose;
     }
 
     public void write(Object message) {
-        for (Transport transport : transportMap.keySet()) {
+        for (Transport transport : transportMap_.keySet()) {
             transport.write(message);
         }
     }
 
     public void close() {
-        for (Transport transport : transportMap.keySet()) {
+        for (Transport transport : transportMap_.keySet()) {
             transport.close();
         }
     }
@@ -42,19 +42,19 @@ public class TransportAggregateSupport implements TransportAggregate, TransportL
             throw new IllegalArgumentException("transport must be an instance of AbstractTransport.");
         }
         AbstractTransport<?> abstractTransport = (AbstractTransport<?>) transport;
-        if (transportMap.putIfAbsent(abstractTransport, Boolean.FALSE) == null && removeOnClose) {
+        if (transportMap_.putIfAbsent(abstractTransport, Boolean.FALSE) == null && removeOnClose_) {
             transport.addListener(this);
         }
         // log
     }
 
     public void remove(Transport transport) {
-        transportMap.remove(transport);
+        transportMap_.remove(transport);
     }
 
     @Override
     public Set<Transport> childSet() {
-        return transportMap.keySet();
+        return transportMap_.keySet();
     }
 
     @Override
@@ -71,6 +71,6 @@ public class TransportAggregateSupport implements TransportAggregate, TransportL
 
     @Override
     public void onClose(Transport transport) {
-        transportMap.remove(transport);
+        transportMap_.remove(transport);
     }
 }

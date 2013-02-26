@@ -15,40 +15,40 @@ import java.lang.reflect.Type;
  */
 public abstract class AbstractPipeline<S> implements Pipeline {
 
-    private String name;
-    private StageContext<Object, Object> headContext;
-    private StageContext<Object, Object> tailContext;
-    private Logger logger = LoggerFactory.getLogger(AbstractPipeline.class);
+    private String name_;
+    private StageContext<Object, Object> headContext_;
+    private StageContext<Object, Object> tailContext_;
+    private static Logger logger_ = LoggerFactory.getLogger(AbstractPipeline.class);
 
     private static final StageContext<Object, Object> TERMINAL = new NullContext();
 
     protected AbstractPipeline(String name) {
-        this.name = name;
-        this.headContext = TERMINAL;
-        this.tailContext = TERMINAL;
+        this.name_ = name;
+        this.headContext_ = TERMINAL;
+        this.tailContext_ = TERMINAL;
     }
 
     protected void addStage(S stage) {
-        if (headContext == TERMINAL) {
+        if (headContext_ == TERMINAL) {
             StageContext<Object, Object> context = createContext(stage);
             context.setNext(TERMINAL);
-            headContext = tailContext = context;
+            headContext_ = tailContext_ = context;
             return;
         }
 
         StageContext<Object, Object> context = createContext(stage);
         context.setNext(TERMINAL);
-        tailContext.setNext(context);
-        tailContext = context;
+        tailContext_.setNext(context);
+        tailContext_ = context;
     }
 
     protected abstract StageContext<Object, Object> createContext(S stage);
 
     public void regulate() {
-        if (headContext == TERMINAL) {
+        if (headContext_ == TERMINAL) {
             StageContext<Object, Object> context = new NullContext();
             context.setNext(TERMINAL);
-            headContext = tailContext = context;
+            headContext_ = tailContext_ = context;
         }
     }
 
@@ -56,14 +56,14 @@ public abstract class AbstractPipeline<S> implements Pipeline {
 
         // TODO verify next input class is assignable from previous output class
 
-        if (logger.isDebugEnabled()) {
+        if (logger_.isDebugEnabled()) {
             int counter = 0;
-            for (StageContext<Object, Object> ctx = headContext; ctx != TERMINAL; ctx = ctx.getNext()) {
+            for (StageContext<Object, Object> ctx = headContext_; ctx != TERMINAL; ctx = ctx.getNext()) {
                 for (Type type : ctx.getStage().getClass().getGenericInterfaces()) {
                     if (type instanceof ParameterizedType) {
                         Type[] actualTypeArguments = ((ParameterizedType) type).getActualTypeArguments();
-                        logger.debug("[verifyStageContextType] {}:{} - I:{}, O:{}",
-                                name, counter++, actualTypeArguments[0], actualTypeArguments[1]);
+                        logger_.debug("[verifyStageContextType] {}:{} - I:{}, O:{}",
+                                name_, counter++, actualTypeArguments[0], actualTypeArguments[1]);
                         break;
                     }
                 }
@@ -72,23 +72,23 @@ public abstract class AbstractPipeline<S> implements Pipeline {
     }
 
     public void fire(MessageEvent<Object> event) {
-        headContext.fire(event);
+        headContext_.fire(event);
     }
 
     public void fire(TransportStateEvent event) {
-        headContext.fire(event);
+        headContext_.fire(event);
     }
 
     public StageContext<Object, Object> getFirstContext() {
-        return headContext;
+        return headContext_;
     }
 
     public StageContext<Object, Object> getLastContext() {
-        return tailContext;
+        return tailContext_;
     }
 
     public StageContext<Object, Object> searchContextFor(Class<?> stageClass) {
-        for (StageContext<Object, Object> ctx = headContext; ctx != tailContext; ctx = ctx.getNext()) {
+        for (StageContext<Object, Object> ctx = headContext_; ctx != tailContext_; ctx = ctx.getNext()) {
             if (stageClass.equals(ctx.getStage().getClass())) {
                 return ctx;
             }

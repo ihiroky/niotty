@@ -15,43 +15,43 @@ import java.util.concurrent.ThreadFactory;
  */
 public abstract class EventLoopGroup<L extends EventLoop<L>> {
 
-    private Collection<L> eventLoops = nullValue();
-    private Logger logger = LoggerFactory.getLogger(EventLoopGroup.class);
+    private Collection<L> eventLoops_ = nullValue();
+    private Logger logger_ = LoggerFactory.getLogger(EventLoopGroup.class);
 
-    public synchronized void open(ThreadFactory threadFactory, int numberOfWorker){
+    public synchronized void open(ThreadFactory threadFactory, int numberOfWorker) {
         if (!isInitialized(eventLoops())) {
             L[] loops = newArray(numberOfWorker);
             for (int i = 0; i < numberOfWorker; i++) {
                 L loop = newEventLoop();
                 loop.openWith(threadFactory);
                 loops[i] = loop;
-                logger.info("start event loop {}.", loop);
+                logger_.info("start event loop {}.", loop);
             }
-            eventLoops = Collections.unmodifiableCollection(new CopyOnWriteArrayList<L>(loops));
+            eventLoops_ = Collections.unmodifiableCollection(new CopyOnWriteArrayList<L>(loops));
         }
     }
 
     @SuppressWarnings("unchecked")
     public synchronized void close() {
         if (isInitialized(eventLoops())) {
-            for (L loop : eventLoops) {
+            for (L loop : eventLoops_) {
                 loop.close();
             }
-            eventLoops = nullValue();
+            eventLoops_ = nullValue();
         }
     }
 
     public void offerTask(EventLoop.Task<L> task) {
-        for (L loop : eventLoops) {
+        for (L loop : eventLoops_) {
             loop.offerTask(task);
         }
     }
 
     protected Collection<L> eventLoops() {
-        return eventLoops;
+        return eventLoops_;
     }
 
-    abstract protected L newEventLoop();
+    protected abstract L newEventLoop();
 
     private static Collection<EventLoop<?>> NULL = Collections.emptyList();
 
