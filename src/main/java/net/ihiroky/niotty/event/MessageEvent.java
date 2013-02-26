@@ -10,36 +10,25 @@ import net.ihiroky.niotty.TransportEvent;
  */
 public class MessageEvent<E> implements TransportEvent {
 
-    private Transport transport;
-    private E message;
-    private int id;
+    private Transport transport_;
+    private E message_;
 
     public MessageEvent(Transport transport, E message) {
-        this.transport = transport;
-        this.message = message;
-    }
-
-    public MessageEvent(Transport transport, E message, int id) {
-        this.transport = transport;
-        this.message = message;
-        this.id = id;
+        this.transport_ = transport;
+        this.message_ = message;
     }
 
     @Override
     public Transport getTransport() {
-        return transport;
+        return transport_;
     }
 
     public E getMessage() {
-        return message;
-    }
-
-    public int getId() {
-        return id;
+        return message_;
     }
 
     @Override
     public String toString() {
-        return "transport:[" + transport + "], message:[" + message + ']';
+        return "transport:[" + transport_ + "], message:[" + message_ + ']';
     }
 }

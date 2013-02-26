@@ -11,10 +11,10 @@ import net.ihiroky.niotty.TransportEvent;
  */
 public class TransportStateEvent implements TransportEvent {
 
-    private Transport transport;
-    private DefaultTransportFuture future;
-    private TransportState state;
-    private Object value;
+    private Transport transport_;
+    private DefaultTransportFuture future_;
+    private TransportState state_;
+    private Object value_;
 
     public TransportStateEvent(Transport transport, TransportState state, Object value) {
         this(transport, state, null, value);
@@ -22,31 +22,31 @@ public class TransportStateEvent implements TransportEvent {
 
     public TransportStateEvent(Transport transport, TransportState state,
                                DefaultTransportFuture future, Object value) {
-        this.transport = transport;
-        this.future = future;
-        this.state = state;
-        this.value = value;
+        this.transport_ = transport;
+        this.future_ = future;
+        this.state_ = state;
+        this.value_ = value;
     }
 
     @Override
     public Transport getTransport() {
-        return transport;
+        return transport_;
     }
 
     public TransportState getState() {
-        return state;
+        return state_;
     }
 
     public DefaultTransportFuture getFuture() {
-        return future;
+        return future_;
     }
 
     public Object getValue() {
-        return value;
+        return value_;
     }
 
     @Override
     public String toString() {
-        return "transport:[" + transport + "], state:[" + state + "], value:[" + value + ']';
+        return "transport:[" + transport_ + "], state:[" + state_ + "], value:[" + value_ + ']';
     }
 }
