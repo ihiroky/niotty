@@ -12,15 +12,15 @@ import net.ihiroky.niotty.event.TransportStateEvent;
  */
 public class FrameLengthRemoveDecoder implements LoadStage<DecodeBuffer, DecodeBuffer> {
 
-    private int poolingFrameBytes;
-    private DecodeBuffer pooling;
+    private int poolingFrameBytes_;
+    private DecodeBuffer pooling_;
 
     @Override
     public void load(LoadStageContext<DecodeBuffer, DecodeBuffer> context, MessageEvent<DecodeBuffer> event) {
         DecodeBuffer input = event.getMessage();
 
         for (;;) {
-            int frameBytes = poolingFrameBytes;
+            int frameBytes = poolingFrameBytes_;
 
             // load frame length
             if (frameBytes == 0) {
@@ -34,11 +34,11 @@ public class FrameLengthRemoveDecoder implements LoadStage<DecodeBuffer, DecodeB
             // load frame
             DecodeBuffer output = readFully(input, frameBytes);
             if (output == null) {
-                poolingFrameBytes = frameBytes;
+                poolingFrameBytes_ = frameBytes;
                 return;
             }
 
-            poolingFrameBytes = 0;
+            poolingFrameBytes_ = 0;
             if (output.remainingBytes() == frameBytes) {
                 context.proceed(new MessageEvent<>(event.getTransport(), output));
                 return;
@@ -56,11 +56,11 @@ public class FrameLengthRemoveDecoder implements LoadStage<DecodeBuffer, DecodeB
     }
 
     private DecodeBuffer readFully(DecodeBuffer input, int requiredLength) {
-        if (pooling != null) {
-            pooling.drainFrom(input);
-            if (pooling.remainingBytes() >= requiredLength) {
-                DecodeBuffer fulfilled = pooling;
-                pooling = null;
+        if (pooling_ != null) {
+            pooling_.drainFrom(input);
+            if (pooling_.remainingBytes() >= requiredLength) {
+                DecodeBuffer fulfilled = pooling_;
+                pooling_ = null;
                 return fulfilled;
             }
             return null;
@@ -72,15 +72,15 @@ public class FrameLengthRemoveDecoder implements LoadStage<DecodeBuffer, DecodeB
 
         DecodeBuffer p = Buffers.newDecodeBuffer(new byte[requiredLength], 0, 0);
         p.drainFrom(input);
-        pooling = p;
+        pooling_ = p;
         return null;
     }
 
     int getPoolingFrameBytes() {
-        return poolingFrameBytes;
+        return poolingFrameBytes_;
     }
 
     DecodeBuffer getPooling() {
-        return pooling;
+        return pooling_;
     }
 }
