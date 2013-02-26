@@ -12,33 +12,42 @@ import net.ihiroky.niotty.event.TransportStateEvent;
  */
 public class LengthRemoveDecoder implements LoadStage<DecodeBuffer, DecodeBuffer> {
 
-    private int frameBytes;
+    private int poolingFrameBytes;
     private DecodeBuffer pooling;
 
     @Override
     public void load(LoadStageContext<DecodeBuffer, DecodeBuffer> context, MessageEvent<DecodeBuffer> event) {
         DecodeBuffer input = event.getMessage();
 
-        int length = frameBytes;
+        for (;;) {
+            int frameBytes = poolingFrameBytes;
 
-        // load frame length
-        if (length == 0) {
-            input = fulfill(input, LengthPrependEncoder.MINIMUM_WHOLE_LENGTH);
-            if (input == null) {
+            // load frame length
+            if (frameBytes == 0) {
+                input = readFully(input, LengthPrependEncoder.MINIMUM_WHOLE_LENGTH);
+                if (input == null) {
+                    return;
+                }
+                frameBytes = input.readVariableByteInteger();
+            }
+
+            // load frame
+            DecodeBuffer output = readFully(input, frameBytes);
+            if (output == null) {
+                poolingFrameBytes = frameBytes;
                 return;
             }
-            length = input.readVariableByteInteger();
-        }
 
-        // load frame
-        input = fulfill(input, length);
-        if (input == null) {
-            frameBytes = length;
-            return;
+            poolingFrameBytes = 0;
+            if (output.remainingBytes() == frameBytes) {
+                context.proceed(new MessageEvent<>(event.getTransport(), output));
+                return;
+            }
+            // if (output.remainingBytes() > frameBytes) {
+            output = Buffers.newDecodeBuffer(frameBytes);
+            output.drainFrom(input, frameBytes);
+            context.proceed(new MessageEvent<>(event.getTransport(), output));
         }
-
-        frameBytes = 0;
-        context.proceed(new MessageEvent<>(event.getTransport(), input));
     }
 
     @Override
@@ -46,7 +55,7 @@ public class LengthRemoveDecoder implements LoadStage<DecodeBuffer, DecodeBuffer
         context.proceed(event);
     }
 
-    private DecodeBuffer fulfill(DecodeBuffer input, int requiredLength) {
+    private DecodeBuffer readFully(DecodeBuffer input, int requiredLength) {
         if (pooling != null) {
             pooling.drainFrom(input);
             if (pooling.remainingBytes() >= requiredLength) {
@@ -65,5 +74,13 @@ public class LengthRemoveDecoder implements LoadStage<DecodeBuffer, DecodeBuffer
         p.drainFrom(input);
         pooling = p;
         return null;
+    }
+
+    int getPoolingFrameBytes() {
+        return poolingFrameBytes;
+    }
+
+    DecodeBuffer getPooling() {
+        return pooling;
     }
 }
