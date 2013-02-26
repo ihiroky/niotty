@@ -11,7 +11,7 @@ import net.ihiroky.niotty.event.TransportStateEvent;
 /**
  * @author Hiroki Itoh
  */
-public class LengthPrependEncoder implements StoreStage<EncodeBufferGroup, EncodeBufferGroup> {
+public class FrameLengthPrependEncoder implements StoreStage<EncodeBufferGroup, EncodeBufferGroup> {
 
     private static final int INITIAL_BUFFER_SIZE = 5;
     static final int MINIMUM_WHOLE_LENGTH = 5;

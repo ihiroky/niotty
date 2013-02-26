@@ -16,16 +16,16 @@ import static org.junit.Assert.*;
 /**
  * @author Hiroki Itoh
  */
-public class LengthRemoveDecoderTest {
+public class FrameLengthRemoveDecoderTest {
 
-    LengthRemoveDecoder sut;
+    FrameLengthRemoveDecoder sut;
     LoadStageContextMock<DecodeBuffer, DecodeBuffer> context;
     byte[] data;
     int dataLength;
 
     @Before
     public void setUp() {
-        sut = new LengthRemoveDecoder();
+        sut = new FrameLengthRemoveDecoder();
         context = new LoadStageContextMock<>(sut);
         EncodeBuffer encodeBuffer = Buffers.newEncodeBuffer(32);
         encodeBuffer.writeVariableByteInteger(12); // length header + contents

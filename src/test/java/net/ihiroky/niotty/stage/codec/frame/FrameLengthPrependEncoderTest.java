@@ -14,15 +14,15 @@ import static org.junit.Assert.*;
 /**
  * @author Hiroki Itoh
  */
-public class LengthPrependEncoderTest {
+public class FrameLengthPrependEncoderTest {
 
-    LengthPrependEncoder sut;
+    FrameLengthPrependEncoder sut;
     StoreStageContextMock<EncodeBufferGroup, EncodeBufferGroup> context;
 
     @Before
     @SuppressWarnings("unchecked")
     public void setUp() throws Exception {
-        sut = new LengthPrependEncoder();
+        sut = new FrameLengthPrependEncoder();
         context = new StoreStageContextMock<>(sut);
     }
 

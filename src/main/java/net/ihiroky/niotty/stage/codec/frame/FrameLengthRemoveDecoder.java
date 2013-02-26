@@ -10,7 +10,7 @@ import net.ihiroky.niotty.event.TransportStateEvent;
 /**
  * @author Hiroki Itoh
  */
-public class LengthRemoveDecoder implements LoadStage<DecodeBuffer, DecodeBuffer> {
+public class FrameLengthRemoveDecoder implements LoadStage<DecodeBuffer, DecodeBuffer> {
 
     private int poolingFrameBytes;
     private DecodeBuffer pooling;
@@ -24,7 +24,7 @@ public class LengthRemoveDecoder implements LoadStage<DecodeBuffer, DecodeBuffer
 
             // load frame length
             if (frameBytes == 0) {
-                input = readFully(input, LengthPrependEncoder.MINIMUM_WHOLE_LENGTH);
+                input = readFully(input, FrameLengthPrependEncoder.MINIMUM_WHOLE_LENGTH);
                 if (input == null) {
                     return;
                 }
