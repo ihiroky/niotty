@@ -13,15 +13,15 @@ import java.util.Arrays;
  */
 public class ArrayDecodeBuffer extends AbstractDecodeBuffer implements DecodeBuffer {
 
-    private byte[] buffer;
-    private int offset;
-    private int position;
-    private int end;
+    private byte[] buffer_;
+    private int offset_;
+    private int position_;
+    private int end_;
 
     private static final byte[] EMPTY_BYTES = new byte[0];
 
     ArrayDecodeBuffer() {
-        buffer = EMPTY_BYTES;
+        buffer_ = EMPTY_BYTES;
     }
 
     ArrayDecodeBuffer(byte[] b, int offset, int length) {
@@ -29,10 +29,10 @@ public class ArrayDecodeBuffer extends AbstractDecodeBuffer implements DecodeBuf
             throw new IndexOutOfBoundsException(
                     "offset + length (" + (offset + length) + ") exceeds buffer capacity " + b.length);
         }
-        buffer = b;
-        this.offset = offset;
-        position = offset;
-        end = offset + length;
+        buffer_ = b;
+        this.offset_ = offset;
+        position_ = offset;
+        end_ = offset + length;
     }
 
     /**
@@ -40,10 +40,10 @@ public class ArrayDecodeBuffer extends AbstractDecodeBuffer implements DecodeBuf
      */
     @Override
     public int readByte() {
-        if (position >= end) {
+        if (position_ >= end_) {
             throw new IndexOutOfBoundsException("position exceeds end of buffer.");
         }
-        return buffer[position++] & CodecUtil.BYTE_MASK;
+        return buffer_[position_++] & CodecUtil.BYTE_MASK;
     }
 
     /**
@@ -51,8 +51,8 @@ public class ArrayDecodeBuffer extends AbstractDecodeBuffer implements DecodeBuf
      */
     @Override
     public void readBytes(byte[] bytes, int offset, int length) {
-        System.arraycopy(buffer, position, bytes, offset, length);
-        position += length;
+        System.arraycopy(buffer_, position_, bytes, offset, length);
+        position_ += length;
     }
 
     /**
@@ -63,8 +63,8 @@ public class ArrayDecodeBuffer extends AbstractDecodeBuffer implements DecodeBuf
         int space = byteBuffer.remaining();
         int remaining = remainingBytes();
         int read = (space <= remaining) ? space : remaining;
-        byteBuffer.put(buffer, position, read);
-        position += read;
+        byteBuffer.put(buffer_, position_, read);
+        position_ += read;
     }
 
     /**
@@ -76,13 +76,13 @@ public class ArrayDecodeBuffer extends AbstractDecodeBuffer implements DecodeBuf
             throw new IllegalArgumentException("bytes must be in [0, 4].");
         }
 
-        int pos = position;
-        byte[] b = buffer;
+        int pos = position_;
+        byte[] b = buffer_;
         int decoded = 0;
         for (int i = 0; i < bytes; i++) {
             decoded = (decoded << CodecUtil.BITS_PER_BYTE) | (b[pos++] & CodecUtil.BYTE_MASK);
         }
-        position = pos;
+        position_ = pos;
         return decoded;
     }
 
@@ -95,13 +95,13 @@ public class ArrayDecodeBuffer extends AbstractDecodeBuffer implements DecodeBuf
             throw new IllegalArgumentException("bytes must be in [0, 8].");
         }
 
-        int pos = position;
-        byte[] b = buffer;
+        int pos = position_;
+        byte[] b = buffer_;
         long decoded = 0L;
         for (int i = 0; i < bytes; i++) {
             decoded = (decoded << CodecUtil.BITS_PER_BYTE) | (b[pos++] & CodecUtil.BYTE_MASK);
         }
-        position = pos;
+        position_ = pos;
         return decoded;
     }
 
@@ -110,11 +110,11 @@ public class ArrayDecodeBuffer extends AbstractDecodeBuffer implements DecodeBuf
      */
     @Override
     public char readChar() {
-        if (position + CodecUtil.CHAR_BYTES > end) {
+        if (position_ + CodecUtil.CHAR_BYTES > end_) {
             throw new IndexOutOfBoundsException("position exceeds the end of buffer if read char.");
         }
-        return (char) (((buffer[position++] & CodecUtil.BYTE_MASK) << CodecUtil.BYTE_SHIFT1)
-                | (buffer[position++] & CodecUtil.BYTE_MASK));
+        return (char) (((buffer_[position_++] & CodecUtil.BYTE_MASK) << CodecUtil.BYTE_SHIFT1)
+                | (buffer_[position_++] & CodecUtil.BYTE_MASK));
     }
 
     /**
@@ -122,11 +122,11 @@ public class ArrayDecodeBuffer extends AbstractDecodeBuffer implements DecodeBuf
      */
     @Override
     public short readShort() {
-        if (position + CodecUtil.SHORT_BYTES > end) {
+        if (position_ + CodecUtil.SHORT_BYTES > end_) {
             throw new IndexOutOfBoundsException("position exceeds the end of buffer if read short.");
         }
-        return (short) (((buffer[position++] & CodecUtil.BYTE_MASK) << CodecUtil.BYTE_SHIFT1)
-                | (buffer[position++] & CodecUtil.BYTE_MASK));
+        return (short) (((buffer_[position_++] & CodecUtil.BYTE_MASK) << CodecUtil.BYTE_SHIFT1)
+                | (buffer_[position_++] & CodecUtil.BYTE_MASK));
     }
 
     /**
@@ -134,16 +134,16 @@ public class ArrayDecodeBuffer extends AbstractDecodeBuffer implements DecodeBuf
      */
     @Override
     public int readInt() {
-        byte[] b = buffer;
-        int pos = position;
-        if (pos + CodecUtil.INT_BYTES > end) {
+        byte[] b = buffer_;
+        int pos = position_;
+        if (pos + CodecUtil.INT_BYTES > end_) {
             throw new IndexOutOfBoundsException("position exceeds the end of buffer if read int wide byte.");
         }
         int result = (((b[pos++] & CodecUtil.BYTE_MASK) << CodecUtil.BYTE_SHIFT3)
                 | ((b[pos++] & CodecUtil.BYTE_MASK) << CodecUtil.BYTE_SHIFT2)
                 | ((b[pos++] & CodecUtil.BYTE_MASK) << CodecUtil.BYTE_SHIFT1)
                 |  (b[pos++] & CodecUtil.BYTE_MASK));
-        position = pos;
+        position_ = pos;
         return result;
     }
 
@@ -152,9 +152,9 @@ public class ArrayDecodeBuffer extends AbstractDecodeBuffer implements DecodeBuf
      */
     @Override
     public long readLong() {
-        byte[] b = buffer;
-        int pos = position;
-        if (pos + CodecUtil.LONG_BYTES > end) {
+        byte[] b = buffer_;
+        int pos = position_;
+        if (pos + CodecUtil.LONG_BYTES > end_) {
             throw new IndexOutOfBoundsException("position exceeds the end of buffer if read long wide byte.");
         }
         long result = ((((long) b[pos++] & CodecUtil.BYTE_MASK) << CodecUtil.BYTE_SHIFT7)
@@ -165,7 +165,7 @@ public class ArrayDecodeBuffer extends AbstractDecodeBuffer implements DecodeBuf
                 | (((long) b[pos++] & CodecUtil.BYTE_MASK) << CodecUtil.BYTE_SHIFT2)
                 | (((long) b[pos++] & CodecUtil.BYTE_MASK) << CodecUtil.BYTE_SHIFT1)
                 |  ((long) b[pos++] & CodecUtil.BYTE_MASK));
-        position = pos;
+        position_ = pos;
         return result;
     }
 
@@ -193,12 +193,12 @@ public class ArrayDecodeBuffer extends AbstractDecodeBuffer implements DecodeBuf
         }
 
         float charsPerByte = charsetDecoder.averageCharsPerByte();
-        ByteBuffer input = ByteBuffer.wrap(buffer, position, bytes);
+        ByteBuffer input = ByteBuffer.wrap(buffer_, position_, bytes);
         CharBuffer output = CharBuffer.allocate(Buffers.outputCharBufferSize(charsPerByte, bytes));
         for (;;) {
             CoderResult cr = charsetDecoder.decode(input, output, true);
             if (!cr.isError() && !cr.isOverflow()) {
-                position = input.position();
+                position_ = input.position();
                 break;
             }
             if (cr.isOverflow()) {
@@ -206,7 +206,7 @@ public class ArrayDecodeBuffer extends AbstractDecodeBuffer implements DecodeBuf
                 continue;
             }
             if (cr.isError()) {
-                position = input.position();
+                position_ = input.position();
                 Buffers.throwRuntimeException(cr);
             }
         }
@@ -219,12 +219,12 @@ public class ArrayDecodeBuffer extends AbstractDecodeBuffer implements DecodeBuf
      */
     @Override
     public int skipBytes(int bytes) {
-        int pos = position;
-        int n = end - pos; // remaining
+        int pos = position_;
+        int n = end_ - pos; // remaining
         if (bytes < n) {
             n = (bytes < -pos) ? -pos : bytes;
         }
-        position += n;
+        position_ += n;
         return n;
     }
 
@@ -233,7 +233,7 @@ public class ArrayDecodeBuffer extends AbstractDecodeBuffer implements DecodeBuf
      */
     @Override
     public int remainingBytes() {
-        return end - position;
+        return end_ - position_;
     }
 
     /**
@@ -241,7 +241,7 @@ public class ArrayDecodeBuffer extends AbstractDecodeBuffer implements DecodeBuf
      */
     @Override
     public int limitBytes() {
-        return end;
+        return end_;
     }
 
     /**
@@ -249,9 +249,9 @@ public class ArrayDecodeBuffer extends AbstractDecodeBuffer implements DecodeBuf
      */
     @Override
     public void clear() {
-        position = 0;
-        offset = 0;
-        end = 0;
+        position_ = 0;
+        offset_ = 0;
+        end_ = 0;
     }
 
     /**
@@ -259,7 +259,7 @@ public class ArrayDecodeBuffer extends AbstractDecodeBuffer implements DecodeBuf
      */
     @Override
     public BufferSink toBufferSink() {
-        return new ArrayBufferSink(buffer, offset, end);
+        return new ArrayBufferSink(buffer_, offset_, end_);
     }
 
     /**
@@ -267,7 +267,7 @@ public class ArrayDecodeBuffer extends AbstractDecodeBuffer implements DecodeBuf
      */
     @Override
     public ByteBuffer toByteBuffer() {
-        return ByteBuffer.wrap(buffer, offset, end);
+        return ByteBuffer.wrap(buffer_, offset_, end_);
     }
 
     /**
@@ -283,14 +283,14 @@ public class ArrayDecodeBuffer extends AbstractDecodeBuffer implements DecodeBuf
      */
     @Override
     public byte[] toArray() {
-        return buffer;
+        return buffer_;
     }
 
     /**
      * {@inheritDoc}
      */
     public int arrayOffset() {
-        return offset;
+        return offset_;
     }
 
     /**
@@ -320,15 +320,15 @@ public class ArrayDecodeBuffer extends AbstractDecodeBuffer implements DecodeBuf
      * @return {@code bytes}
      */
     private int drainFromNoCheck(DecodeBuffer input, int bytes) {
-        int capacity = buffer.length;
-        int space = capacity - end;
+        int capacity = buffer_.length;
+        int space = capacity - end_;
         if (space < bytes) {
-            int required = end + bytes;
+            int required = end_ + bytes;
             int twice = capacity * 2;
-            buffer = Arrays.copyOf(buffer, (required >= twice) ? required : twice);
+            buffer_ = Arrays.copyOf(buffer_, (required >= twice) ? required : twice);
         }
-        input.readBytes(buffer, end, bytes);
-        end += bytes;
+        input.readBytes(buffer_, end_, bytes);
+        end_ += bytes;
         return bytes;
     }
 }

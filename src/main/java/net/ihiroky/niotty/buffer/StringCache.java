@@ -9,7 +9,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * TODO test
+ * Empty and one byte ascii string cache.
  * @author Hiroki Itoh
  */
 final class StringCache {

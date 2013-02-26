@@ -10,16 +10,16 @@ import java.nio.charset.CoderResult;
  */
 public class ByteBufferDecodeBuffer extends AbstractDecodeBuffer implements DecodeBuffer {
 
-    private ByteBuffer buffer;
+    private ByteBuffer buffer_;
 
     ByteBufferDecodeBuffer() {
         ByteBuffer b = ByteBuffer.allocate(512);
         b.limit(0);
-        this.buffer = b;
+        this.buffer_ = b;
     }
 
     ByteBufferDecodeBuffer(ByteBuffer buffer) {
-        this.buffer = buffer;
+        this.buffer_ = buffer;
     }
 
     /**
@@ -27,7 +27,7 @@ public class ByteBufferDecodeBuffer extends AbstractDecodeBuffer implements Deco
      */
     @Override
     public int readByte() {
-        return buffer.get() & CodecUtil.BYTE_MASK;
+        return buffer_.get() & CodecUtil.BYTE_MASK;
     }
 
     /**
@@ -35,7 +35,7 @@ public class ByteBufferDecodeBuffer extends AbstractDecodeBuffer implements Deco
      */
     @Override
     public void readBytes(byte[] bytes, int offset, int length) {
-        buffer.get(bytes, offset, length);
+        buffer_.get(bytes, offset, length);
     }
 
     /**
@@ -43,7 +43,7 @@ public class ByteBufferDecodeBuffer extends AbstractDecodeBuffer implements Deco
      */
     @Override
     public void readBytes(ByteBuffer byteBuffer) {
-        ByteBuffer myBuffer = buffer;
+        ByteBuffer myBuffer = buffer_;
         int space = byteBuffer.remaining();
         if (space >= myBuffer.remaining()) {
             byteBuffer.put(myBuffer);
@@ -65,7 +65,7 @@ public class ByteBufferDecodeBuffer extends AbstractDecodeBuffer implements Deco
         }
         int decoded = 0;
         for (int i = 0; i < bytes; i++) {
-            decoded = (decoded << CodecUtil.BITS_PER_BYTE) | (buffer.get() & CodecUtil.BYTE_MASK);
+            decoded = (decoded << CodecUtil.BITS_PER_BYTE) | (buffer_.get() & CodecUtil.BYTE_MASK);
         }
         return decoded;
     }
@@ -80,7 +80,7 @@ public class ByteBufferDecodeBuffer extends AbstractDecodeBuffer implements Deco
         }
         long decoded = 0L;
         for (int i = 0; i < bytes; i++) {
-            decoded = (decoded << CodecUtil.BITS_PER_BYTE) | (buffer.get() & CodecUtil.BYTE_MASK);
+            decoded = (decoded << CodecUtil.BITS_PER_BYTE) | (buffer_.get() & CodecUtil.BYTE_MASK);
         }
         return decoded;
     }
@@ -90,7 +90,7 @@ public class ByteBufferDecodeBuffer extends AbstractDecodeBuffer implements Deco
      */
     @Override
     public char readChar() {
-        return buffer.getChar();
+        return buffer_.getChar();
     }
 
     /**
@@ -98,7 +98,7 @@ public class ByteBufferDecodeBuffer extends AbstractDecodeBuffer implements Deco
      */
     @Override
     public short readShort() {
-        return buffer.getShort();
+        return buffer_.getShort();
     }
 
     /**
@@ -106,7 +106,7 @@ public class ByteBufferDecodeBuffer extends AbstractDecodeBuffer implements Deco
      */
     @Override
     public int readInt() {
-        return buffer.getInt();
+        return buffer_.getInt();
     }
 
     /**
@@ -114,7 +114,7 @@ public class ByteBufferDecodeBuffer extends AbstractDecodeBuffer implements Deco
      */
     @Override
     public long readLong() {
-        return buffer.getLong();
+        return buffer_.getLong();
     }
 
     /**
@@ -122,7 +122,7 @@ public class ByteBufferDecodeBuffer extends AbstractDecodeBuffer implements Deco
      */
     @Override
     public float readFloat() {
-        return Float.intBitsToFloat(buffer.getInt());
+        return Float.intBitsToFloat(buffer_.getInt());
     }
 
     /**
@@ -130,7 +130,7 @@ public class ByteBufferDecodeBuffer extends AbstractDecodeBuffer implements Deco
      */
     @Override
     public double readDouble() {
-        return Double.longBitsToDouble(buffer.getLong());
+        return Double.longBitsToDouble(buffer_.getLong());
     }
 
     @Override
@@ -141,7 +141,7 @@ public class ByteBufferDecodeBuffer extends AbstractDecodeBuffer implements Deco
         }
 
         float charsPerByte = charsetDecoder.maxCharsPerByte();
-        ByteBuffer input = buffer;
+        ByteBuffer input = buffer_;
         CharBuffer output = CharBuffer.allocate(Buffers.outputCharBufferSize(charsPerByte, bytes));
         int limit = input.limit();
         input.limit(input.position() + bytes);
@@ -170,7 +170,7 @@ public class ByteBufferDecodeBuffer extends AbstractDecodeBuffer implements Deco
      */
     @Override
     public int skipBytes(int bytes) {
-        ByteBuffer b = buffer;
+        ByteBuffer b = buffer_;
         int n = b.remaining();
         if (bytes < n) {
             n = (bytes < -b.position()) ? -b.position() : bytes;
@@ -184,7 +184,7 @@ public class ByteBufferDecodeBuffer extends AbstractDecodeBuffer implements Deco
      */
     @Override
     public int remainingBytes() {
-        return buffer.remaining();
+        return buffer_.remaining();
     }
 
     /**
@@ -192,7 +192,7 @@ public class ByteBufferDecodeBuffer extends AbstractDecodeBuffer implements Deco
      */
     @Override
     public int limitBytes() {
-        return buffer.limit();
+        return buffer_.limit();
     }
 
     /**
@@ -201,8 +201,8 @@ public class ByteBufferDecodeBuffer extends AbstractDecodeBuffer implements Deco
     @Override
     public void clear() {
         // ready to drainFrom()
-        buffer.position(0);
-        buffer.limit(0);
+        buffer_.position(0);
+        buffer_.limit(0);
     }
 
     /**
@@ -210,7 +210,7 @@ public class ByteBufferDecodeBuffer extends AbstractDecodeBuffer implements Deco
      */
     @Override
     public BufferSink toBufferSink() {
-        return new ByteBufferBufferSink(buffer);
+        return new ByteBufferBufferSink(buffer_);
     }
 
     /**
@@ -218,7 +218,7 @@ public class ByteBufferDecodeBuffer extends AbstractDecodeBuffer implements Deco
      */
     @Override
     public ByteBuffer toByteBuffer() {
-        return buffer;
+        return buffer_;
     }
 
     /**
@@ -226,7 +226,7 @@ public class ByteBufferDecodeBuffer extends AbstractDecodeBuffer implements Deco
      */
     @Override
     public boolean hasArray() {
-        return buffer.hasArray();
+        return buffer_.hasArray();
     }
 
     /**
@@ -234,7 +234,7 @@ public class ByteBufferDecodeBuffer extends AbstractDecodeBuffer implements Deco
      */
     @Override
     public byte[] toArray() {
-        return buffer.array();
+        return buffer_.array();
     }
 
     /**
@@ -242,7 +242,7 @@ public class ByteBufferDecodeBuffer extends AbstractDecodeBuffer implements Deco
      */
     @Override
     public int arrayOffset() {
-        return buffer.arrayOffset();
+        return buffer_.arrayOffset();
     }
 
     /**
@@ -272,14 +272,14 @@ public class ByteBufferDecodeBuffer extends AbstractDecodeBuffer implements Deco
      * @return {@code bytes}
      */
     private int drainFromNoCheck(DecodeBuffer input, int bytes) {
-        ByteBuffer bb = buffer;
+        ByteBuffer bb = buffer_;
         int space = bb.capacity() - bb.limit();
         if (space < bytes) {
             int required = bb.limit() + bytes;
             int twice = bb.capacity() * 2;
             ByteBuffer newBuffer = ByteBuffer.allocate((required >= twice) ? required : twice);
             newBuffer.put(bb).flip();
-            buffer = newBuffer;
+            buffer_ = newBuffer;
             bb = newBuffer;
         }
         int limit = bb.limit();

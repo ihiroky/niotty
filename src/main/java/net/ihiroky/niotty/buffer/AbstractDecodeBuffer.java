@@ -75,7 +75,7 @@ public abstract class AbstractDecodeBuffer implements DecodeBuffer {
             shift += CodecUtil.VB_BIT_IN_BYTE;
         }
         // if the value is 0 and and the b is 0x02 with sign bit, then Long.MIN_VALUE
-        if (value == 0 && b == CodecUtil.VB_LONG_MIN_LAST) {
+        if (value == 0 && b == (CodecUtil.VB_END_BIT | CodecUtil.VB_LONG_MIN_LAST)) {
             return Long.MIN_VALUE;
         }
         value |= (b & CodecUtil.VB_MASK_BIT7) << shift;
@@ -102,7 +102,7 @@ public abstract class AbstractDecodeBuffer implements DecodeBuffer {
             shift += CodecUtil.VB_BIT_IN_BYTE;
         }
         // if the value is 0 and and the b is 0x02 with sign bit, then Long.MIN_VALUE
-        if (value == 0 && b == CodecUtil.VB_INT_MIN_LAST) {
+        if (value == 0 && b == (CodecUtil.VB_END_BIT | CodecUtil.VB_INT_MIN_LAST)) {
             return Integer.MIN_VALUE;
         }
         value |= (b & CodecUtil.VB_MASK_BIT7) << shift;

@@ -10,18 +10,18 @@ import java.nio.channels.WritableByteChannel;
  */
 public class ByteBufferBufferSink implements BufferSink {
 
-    private ByteBuffer byteBuffer;
+    private ByteBuffer byteBuffer_;
 
     ByteBufferBufferSink(ByteBuffer byteBuffer) {
-        this.byteBuffer = byteBuffer;
+        this.byteBuffer_ = byteBuffer;
     }
 
     @Override
     public boolean transferTo(WritableByteChannel channel, ByteBuffer writeBuffer) throws IOException {
-        ByteBuffer localByteBuffer = byteBuffer;
+        ByteBuffer localByteBuffer = byteBuffer_;
         int remaining = localByteBuffer.remaining();
         while (remaining > 0) {
-            int limit = byteBuffer.limit();
+            int limit = byteBuffer_.limit();
             int space = writeBuffer.remaining();
             int readyToWrite = (remaining <= space) ? remaining : space;
             localByteBuffer.limit(localByteBuffer.position() + readyToWrite);
@@ -46,6 +46,6 @@ public class ByteBufferBufferSink implements BufferSink {
 
     @Override
     public int remainingBytes() {
-        return byteBuffer.remaining();
+        return byteBuffer_.remaining();
     }
 }

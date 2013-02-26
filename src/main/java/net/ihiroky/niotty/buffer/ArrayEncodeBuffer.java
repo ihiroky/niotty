@@ -14,9 +14,9 @@ import java.util.Arrays;
  */
 public class ArrayEncodeBuffer extends AbstractEncodeBuffer implements EncodeBuffer {
 
-    private byte[] buffer;
-    private int offset;
-    private int position;
+    private byte[] buffer_;
+    private int offset_;
+    private int position_;
 
     private static final int DEFAULT_CAPACITY = 512;
     private static final int MINIMUM_CAPACITY = 8;
@@ -30,7 +30,7 @@ public class ArrayEncodeBuffer extends AbstractEncodeBuffer implements EncodeBuf
         if (capacity <= MINIMUM_CAPACITY) {
             capacity = MINIMUM_CAPACITY;
         }
-        buffer = new byte[capacity];
+        buffer_ = new byte[capacity];
     }
 
     ArrayEncodeBuffer(byte[] buffer, int offset, int length) {
@@ -38,9 +38,9 @@ public class ArrayEncodeBuffer extends AbstractEncodeBuffer implements EncodeBuf
             throw new IndexOutOfBoundsException(
                     "offset + length (" + (offset + length) + ") exceeds buffer capacity " + buffer.length);
         }
-        this.buffer = buffer;
-        this.offset = offset;
-        this.position = offset + length;
+        this.buffer_ = buffer;
+        this.offset_ = offset;
+        this.position_ = offset + length;
 
     }
 
@@ -51,12 +51,12 @@ public class ArrayEncodeBuffer extends AbstractEncodeBuffer implements EncodeBuf
      * @param length the size of byte to be written
      */
     void ensureSpace(int length) {
-        int current = buffer.length;
-        int required = position + length;
+        int current = buffer_.length;
+        int required = position_ + length;
         if (required >= current) {
             int twice = current * 2;
             int newCapacity = (required >= twice) ? required : twice;
-            buffer = Arrays.copyOf(buffer, newCapacity);
+            buffer_ = Arrays.copyOf(buffer_, newCapacity);
         }
     }
 
@@ -66,7 +66,7 @@ public class ArrayEncodeBuffer extends AbstractEncodeBuffer implements EncodeBuf
     @Override
     public void writeByte(int value) {
         ensureSpace(1);
-        buffer[position++] = (byte) value;
+        buffer_[position_++] = (byte) value;
     }
 
     /**
@@ -75,8 +75,8 @@ public class ArrayEncodeBuffer extends AbstractEncodeBuffer implements EncodeBuf
     @Override
     public void writeBytes(byte[] bytes, int offset, int length) {
         ensureSpace(length);
-        System.arraycopy(bytes, offset, buffer, position, length);
-        position += length;
+        System.arraycopy(bytes, offset, buffer_, position_, length);
+        position_ += length;
     }
 
     /**
@@ -85,8 +85,8 @@ public class ArrayEncodeBuffer extends AbstractEncodeBuffer implements EncodeBuf
     public void writeBytes(ByteBuffer byteBuffer) {
         int remaining = byteBuffer.remaining();
         ensureSpace(remaining);
-        byteBuffer.get(buffer, position, remaining);
-        position += remaining;
+        byteBuffer.get(buffer_, position_, remaining);
+        position_ += remaining;
     }
 
     /**
@@ -119,12 +119,12 @@ public class ArrayEncodeBuffer extends AbstractEncodeBuffer implements EncodeBuf
     private void writeBytes8RangeUnchecked(long bits, int bytes) {
         ensureSpace(bytes);
         int bytesMinus1 = bytes - 1;
-        int base = position;
-        byte[] b = buffer;
+        int base = position_;
+        byte[] b = buffer_;
         for (int i = 0; i < bytes; i++) {
             b[base + i] = (byte) ((bits >>> (bytesMinus1 - i)) & CodecUtil.BYTE_MASK);
         }
-        position = base + bytes;
+        position_ = base + bytes;
     }
 
     /**
@@ -133,10 +133,10 @@ public class ArrayEncodeBuffer extends AbstractEncodeBuffer implements EncodeBuf
     @Override
     public void writeShort(short value) {
         ensureSpace(CodecUtil.SHORT_BYTES);
-        int c = position;
-        buffer[c] = (byte) ((value >>> CodecUtil.BYTE_SHIFT1) & CodecUtil.BYTE_MASK);
-        buffer[c + 1] = (byte) (value & CodecUtil.BYTE_MASK);
-        position = c + CodecUtil.SHORT_BYTES;
+        int c = position_;
+        buffer_[c] = (byte) ((value >>> CodecUtil.BYTE_SHIFT1) & CodecUtil.BYTE_MASK);
+        buffer_[c + 1] = (byte) (value & CodecUtil.BYTE_MASK);
+        position_ = c + CodecUtil.SHORT_BYTES;
     }
 
     /**
@@ -145,10 +145,10 @@ public class ArrayEncodeBuffer extends AbstractEncodeBuffer implements EncodeBuf
     @Override
     public void writeChar(char value) {
         ensureSpace(CodecUtil.CHAR_BYTES);
-        int c = position;
-        buffer[c] = (byte) ((value >>> CodecUtil.BYTE_SHIFT1) & CodecUtil.BYTE_MASK);
-        buffer[c + 1] = (byte) (value & CodecUtil.BYTE_MASK);
-        position = c + CodecUtil.CHAR_BYTES;
+        int c = position_;
+        buffer_[c] = (byte) ((value >>> CodecUtil.BYTE_SHIFT1) & CodecUtil.BYTE_MASK);
+        buffer_[c + 1] = (byte) (value & CodecUtil.BYTE_MASK);
+        position_ = c + CodecUtil.CHAR_BYTES;
     }
 
     /**
@@ -157,13 +157,13 @@ public class ArrayEncodeBuffer extends AbstractEncodeBuffer implements EncodeBuf
     @Override
     public void writeInt(int value) {
         ensureSpace(CodecUtil.INT_BYTES);
-        int c = position;
-        byte[] b = buffer;
+        int c = position_;
+        byte[] b = buffer_;
         b[c] = (byte) ((value >>> CodecUtil.BYTE_SHIFT3) & CodecUtil.BYTE_MASK);
         b[c + 1] = (byte) ((value >>> CodecUtil.BYTE_SHIFT2) & CodecUtil.BYTE_MASK);
         b[c + 2] = (byte) ((value >>> CodecUtil.BYTE_SHIFT1) & CodecUtil.BYTE_MASK);
         b[c + 3] = (byte) (value & CodecUtil.BYTE_MASK);
-        position = c + CodecUtil.INT_BYTES;
+        position_ = c + CodecUtil.INT_BYTES;
     }
 
     /**
@@ -172,8 +172,8 @@ public class ArrayEncodeBuffer extends AbstractEncodeBuffer implements EncodeBuf
     @Override
     public void writeLong(long value) {
         ensureSpace(CodecUtil.LONG_BYTES);
-        int c = position;
-        byte[] b = buffer;
+        int c = position_;
+        byte[] b = buffer_;
         b[c] = (byte) ((value >>> CodecUtil.BYTE_SHIFT7) & CodecUtil.BYTE_MASK);
         b[c + 1] = (byte) ((value >>> CodecUtil.BYTE_SHIFT6) & CodecUtil.BYTE_MASK);
         b[c + 2] = (byte) ((value >>> CodecUtil.BYTE_SHIFT5) & CodecUtil.BYTE_MASK);
@@ -182,7 +182,7 @@ public class ArrayEncodeBuffer extends AbstractEncodeBuffer implements EncodeBuf
         b[c + 5] = (byte) ((value >>> CodecUtil.BYTE_SHIFT2) & CodecUtil.BYTE_MASK);
         b[c + 6] = (byte) ((value >>> CodecUtil.BYTE_SHIFT1) & CodecUtil.BYTE_MASK);
         b[c + 7] = (byte) (value & CodecUtil.BYTE_MASK);
-        position = c + CodecUtil.LONG_BYTES;
+        position_ = c + CodecUtil.LONG_BYTES;
     }
 
     /**
@@ -218,24 +218,24 @@ public class ArrayEncodeBuffer extends AbstractEncodeBuffer implements EncodeBuf
         int expectedLengthBytes = CodecUtil.variableByteLength(
                 Buffers.outputByteBufferSize(charsetEncoder.averageBytesPerChar(), length));
         ensureSpace(expectedLengthBytes);
-        position += expectedLengthBytes;
-        int startPosition = position;
+        position_ += expectedLengthBytes;
+        int startPosition = position_;
         CharBuffer input = CharBuffer.wrap(s);
-        ByteBuffer output = ByteBuffer.wrap(buffer, position, buffer.length - position);
+        ByteBuffer output = ByteBuffer.wrap(buffer_, position_, buffer_.length - position_);
         for (;;) {
             CoderResult cr = charsetEncoder.encode(input, output, true);
             if (!cr.isError() && !cr.isOverflow()) {
-                position = output.position();
+                position_ = output.position();
                 break;
             }
             if (cr.isOverflow()) {
-                position = output.position();
+                position_ = output.position();
                 ensureSpace((int) (charsetEncoder.averageBytesPerChar() * input.remaining() + 1));
-                output = ByteBuffer.wrap(buffer, position, buffer.length - position);
+                output = ByteBuffer.wrap(buffer_, position_, buffer_.length - position_);
                 continue;
             }
             if (cr.isError()) {
-                position = output.position();
+                position_ = output.position();
                 try {
                     cr.throwException();
                 } catch (CharacterCodingException cce) {
@@ -243,24 +243,24 @@ public class ArrayEncodeBuffer extends AbstractEncodeBuffer implements EncodeBuf
                 }
             }
         }
-        int outputLength = position - startPosition;
+        int outputLength = position_ - startPosition;
         int lengthBytes = CodecUtil.variableByteLength(outputLength);
         if (lengthBytes != expectedLengthBytes) {
             int delta = lengthBytes - expectedLengthBytes;
             ensureSpace(delta);
-            System.arraycopy(buffer, startPosition, buffer, startPosition + delta, outputLength);
-            position += delta;
+            System.arraycopy(buffer_, startPosition, buffer_, startPosition + delta, outputLength);
+            position_ += delta;
         }
-        int tmp = position;
-        position = startPosition - expectedLengthBytes;
+        int tmp = position_;
+        position_ = startPosition - expectedLengthBytes;
         writeVariableByteInteger(outputLength);
-        position = tmp;
+        position_ = tmp;
     }
 
     @Override
     public void drainTo(EncodeBuffer encodeBuffer) {
-        encodeBuffer.writeBytes(buffer, offset, position);
-        position = offset;
+        encodeBuffer.writeBytes(buffer_, offset_, position_);
+        position_ = offset_;
     }
 
     /**
@@ -268,7 +268,7 @@ public class ArrayEncodeBuffer extends AbstractEncodeBuffer implements EncodeBuf
      */
     @Override
     public int filledBytes() {
-        return position - offset;
+        return position_ - offset_;
     }
 
     /**
@@ -276,7 +276,7 @@ public class ArrayEncodeBuffer extends AbstractEncodeBuffer implements EncodeBuf
      */
     @Override
     public int limitBytes() {
-        return buffer.length;
+        return buffer_.length;
     }
 
     /**
@@ -284,8 +284,8 @@ public class ArrayEncodeBuffer extends AbstractEncodeBuffer implements EncodeBuf
      */
     @Override
     public void clear() {
-        position = 0;
-        offset = 0;
+        position_ = 0;
+        offset_ = 0;
     }
 
     /**
@@ -293,7 +293,7 @@ public class ArrayEncodeBuffer extends AbstractEncodeBuffer implements EncodeBuf
      */
     @Override
     public BufferSink createBufferSink() {
-        return new ArrayBufferSink(buffer, offset, position);
+        return new ArrayBufferSink(buffer_, offset_, position_);
     }
 
     /**
@@ -307,19 +307,19 @@ public class ArrayEncodeBuffer extends AbstractEncodeBuffer implements EncodeBuf
      * {@inheritDoc}
      */
     public byte[] toArray() {
-        return buffer;
+        return buffer_;
     }
 
     /**
      * {@inheritDoc}
      */
     public int arrayOffset() {
-        return offset;
+        return offset_;
     }
     /**
      * {@inheritDoc}
      */
     public ByteBuffer toByteBuffer() {
-        return ByteBuffer.wrap(buffer, offset, position);
+        return ByteBuffer.wrap(buffer_, offset_, position_);
     }
 }

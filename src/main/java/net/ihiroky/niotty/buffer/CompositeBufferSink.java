@@ -11,7 +11,7 @@ import java.util.Objects;
  */
 public class CompositeBufferSink implements BufferSink {
 
-    private BufferSink[] bufferSinks;
+    private BufferSink[] bufferSinks_;
 
     private static final BufferSink[] EMPTY = new BufferSink[0];
 
@@ -23,24 +23,24 @@ public class CompositeBufferSink implements BufferSink {
         for (EncodeBuffer encodeBuffer : encodeBuffers) {
             bs[count++] = encodeBuffer.createBufferSink();
         }
-        bufferSinks = bs;
+        bufferSinks_ = bs;
     }
 
     @Override
     public boolean transferTo(WritableByteChannel channel, ByteBuffer writeBuffer) throws IOException {
-        for (BufferSink bufferSink : bufferSinks) {
+        for (BufferSink bufferSink : bufferSinks_) {
             if (!bufferSink.transferTo(channel, writeBuffer)) {
                 return false;
             }
         }
-        bufferSinks = EMPTY;
+        bufferSinks_ = EMPTY;
         return true;
     }
 
     @Override
     public int remainingBytes() {
         long sum = 0;
-        for (BufferSink bufferSink : bufferSinks) {
+        for (BufferSink bufferSink : bufferSinks_) {
             sum += bufferSink.remainingBytes();
         }
         return (sum <= Integer.MAX_VALUE) ? (int) sum : Integer.MAX_VALUE;

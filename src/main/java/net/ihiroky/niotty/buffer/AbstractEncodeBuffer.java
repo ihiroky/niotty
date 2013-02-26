@@ -32,7 +32,7 @@ public abstract class AbstractEncodeBuffer implements EncodeBuffer {
         writeByte(0);
 
         // write last bit with end bit and negative sign bit
-        writeByte(CodecUtil.VB_LONG_MIN_LAST);
+        writeByte(CodecUtil.VB_END_BIT | CodecUtil.VB_LONG_MIN_LAST);
     }
 
     /**
@@ -48,7 +48,7 @@ public abstract class AbstractEncodeBuffer implements EncodeBuffer {
         writeByte(0);
 
         // write last bit with end bit and negative sign bit
-        writeByte(CodecUtil.VB_INT_MIN_LAST);
+        writeByte(CodecUtil.VB_END_BIT | CodecUtil.VB_INT_MIN_LAST);
     }
 
     /**

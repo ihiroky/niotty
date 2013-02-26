@@ -12,43 +12,43 @@ import java.util.Iterator;
  */
 public class EncodeBufferGroup implements Iterable<EncodeBuffer>, BufferSink {
 
-    private Deque<EncodeBuffer> group = new ArrayDeque<>();
-    private BufferSink bufferSink;
+    private Deque<EncodeBuffer> group_ = new ArrayDeque<>();
+    private BufferSink bufferSink_;
 
     public EncodeBufferGroup addLast(EncodeBuffer encodeBuffer) {
-        group.addLast(encodeBuffer);
+        group_.addLast(encodeBuffer);
         return this;
     }
 
     public EncodeBufferGroup addFirst(EncodeBuffer encodeBuffer) {
-        group.addFirst(encodeBuffer);
+        group_.addFirst(encodeBuffer);
         return this;
     }
 
     public EncodeBuffer pollFirst() {
-        return group.pollFirst();
+        return group_.pollFirst();
     }
 
     public EncodeBuffer pollLast() {
-        return group.pollLast();
+        return group_.pollLast();
     }
 
     public EncodeBuffer peekFirst() {
-        return group.peekFirst();
+        return group_.peekFirst();
     }
 
     public EncodeBuffer peekLast() {
-        return group.peekLast();
+        return group_.peekLast();
     }
 
     @Override
     public Iterator<EncodeBuffer> iterator() {
-        return group.iterator();
+        return group_.iterator();
     }
 
     public int filledBytes() {
         int sum = 0;
-        for (EncodeBuffer encodeBuffer : group) {
+        for (EncodeBuffer encodeBuffer : group_) {
             sum += encodeBuffer.filledBytes();
         }
         return sum;
@@ -56,15 +56,15 @@ public class EncodeBufferGroup implements Iterable<EncodeBuffer>, BufferSink {
 
     @Override
     public boolean transferTo(WritableByteChannel channel, ByteBuffer writeBuffer) throws IOException {
-        BufferSink bs = bufferSink;
+        BufferSink bs = bufferSink_;
         if (bs == null) {
-            bs = bufferSink = Buffers.createBufferSink(group);
+            bs = bufferSink_ = Buffers.createBufferSink(group_);
         }
         return bs.transferTo(channel, writeBuffer);
     }
 
     @Override
     public int remainingBytes() {
-        return (bufferSink != null) ? bufferSink.remainingBytes() : filledBytes();
+        return (bufferSink_ != null) ? bufferSink_.remainingBytes() : filledBytes();
     }
 }
