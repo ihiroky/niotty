@@ -20,11 +20,11 @@ import java.nio.charset.CodingErrorAction;
  */
 public class StringDecoder implements LoadStage<DecodeBuffer, String> {
 
-    private Logger logger = LoggerFactory.getLogger(StringDecoder.class);
+    private Logger logger_ = LoggerFactory.getLogger(StringDecoder.class);
 
-    private static Charset CHARSET = Charset.forName("UTF-8");
+    private static final Charset CHARSET = Charset.forName("UTF-8");
 
-    private CharsetDecoder decoder = CHARSET.newDecoder()
+    private CharsetDecoder decoder_ = CHARSET.newDecoder()
             .onMalformedInput(CodingErrorAction.IGNORE)
             .onUnmappableCharacter(CodingErrorAction.IGNORE);
 
@@ -32,7 +32,7 @@ public class StringDecoder implements LoadStage<DecodeBuffer, String> {
     public void load(LoadStageContext<DecodeBuffer, String> context, MessageEvent<DecodeBuffer> event) {
         DecodeBuffer message = event.getMessage();
         try {
-            String s = decoder.decode(message.toByteBuffer()).toString();
+            String s = decoder_.decode(message.toByteBuffer()).toString();
             context.proceed(new MessageEvent<>(event.getTransport(), s));
         } catch (CharacterCodingException cce) {
             cce.printStackTrace();
@@ -41,7 +41,7 @@ public class StringDecoder implements LoadStage<DecodeBuffer, String> {
 
     @Override
     public void load(LoadStageContext<DecodeBuffer, String> context, TransportStateEvent event) {
-        logger.info(event.toString());
+        logger_.info(event.toString());
         context.proceed(event);
     }
 }

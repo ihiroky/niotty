@@ -19,9 +19,9 @@ import java.nio.charset.Charset;
  */
 public class StringEncoder implements StoreStage<String, EncodeBufferGroup> {
 
-    private Logger logger = LoggerFactory.getLogger(StringEncoder.class);
+    private Logger logger_ = LoggerFactory.getLogger(StringEncoder.class);
 
-    static Charset CHARSET = Charset.forName("UTF-8");
+    private static final Charset CHARSET = Charset.forName("UTF-8");
 
     @Override
     public void store(StoreStageContext<String, EncodeBufferGroup> context, MessageEvent<String> event) {
@@ -34,7 +34,7 @@ public class StringEncoder implements StoreStage<String, EncodeBufferGroup> {
 
     @Override
     public void store(StoreStageContext<String, EncodeBufferGroup> context, TransportStateEvent event) {
-        logger.info(event.toString());
+        logger_.info(event.toString());
         context.proceed(event);
     }
 }

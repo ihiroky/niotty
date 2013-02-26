@@ -12,11 +12,11 @@ import org.slf4j.LoggerFactory;
  */
 public class HelloWorldStage implements LoadStage<String, Object> {
 
-    private Logger logger = LoggerFactory.getLogger(HelloWorldStage.class);
+    private Logger logger_ = LoggerFactory.getLogger(HelloWorldStage.class);
 
     @Override
     public void load(LoadStageContext<String, Object> context, MessageEvent<String> event) {
-        logger.info(event.toString());
+        logger_.info(event.toString());
         System.out.println(event.toString());
     }
 
@@ -25,7 +25,7 @@ public class HelloWorldStage implements LoadStage<String, Object> {
         switch (event.getState()) {
             case CONNECTED:
                 if (event.getValue() != null) {
-                    logger.info(event.toString());
+                    logger_.info(event.toString());
                     event.getTransport().write("Hello World.");
                 }
                 break;
