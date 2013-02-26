@@ -29,10 +29,10 @@ import java.util.Set;
  */
 public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector> implements TransportAggregate {
 
-    private ServerSocketChannel serverChannel;
-    private NioServerSocketProcessor processor;
-    private NioServerSocketConfig config;
-    private TransportAggregateSupport childAggregate;
+    private ServerSocketChannel serverChannel_;
+    private NioServerSocketProcessor processor_;
+    private NioServerSocketConfig config_;
+    private TransportAggregateSupport childAggregate_;
 
     NioServerSocketTransport(NioServerSocketConfig config, NioServerSocketProcessor processor) {
         ServerSocketChannel serverChannel = null;
@@ -41,10 +41,10 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
             serverChannel.configureBlocking(false);
             config.applySocketOptions(serverChannel);
 
-            this.config = config;
-            this.serverChannel = serverChannel;
-            this.processor = processor;
-            this.childAggregate = new TransportAggregateSupport();
+            this.config_ = config;
+            this.serverChannel_ = serverChannel;
+            this.processor_ = processor;
+            this.childAggregate_ = new TransportAggregateSupport();
         } catch (IOException ioe) {
             if (serverChannel != null) {
                 try {
@@ -59,7 +59,7 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
 
     @Override
     public void write(final Object message) {
-        childAggregate.write(message);
+        childAggregate_.write(message);
     }
 
     @Override
@@ -70,7 +70,7 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
     @Override
     public InetSocketAddress localAddress() {
         try {
-            return (InetSocketAddress) serverChannel.getLocalAddress();
+            return (InetSocketAddress) serverChannel_.getLocalAddress();
         } catch (IOException ioe) {
             throw new RuntimeException(ioe);
         }
@@ -83,17 +83,17 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
 
     @Override
     public boolean isOpen() {
-        return serverChannel.isOpen();
+        return serverChannel_.isOpen();
     }
 
     @Override
     public TransportFuture bind(SocketAddress socketAddress) {
         try {
-            serverChannel.bind(socketAddress, config.getBacklog());
+            serverChannel_.bind(socketAddress, config_.getBacklog());
             getTransportListener().onBind(this, socketAddress);
             DefaultTransportFuture future = new DefaultTransportFuture(this);
-            processor.getAcceptSelectorPool().register(
-                    serverChannel, SelectionKey.OP_ACCEPT, new TransportFutureAttachment<>(this, future));
+            processor_.getAcceptSelectorPool().register(
+                    serverChannel_, SelectionKey.OP_ACCEPT, new TransportFutureAttachment<>(this, future));
             return future;
         } catch (IOException e) {
             return new FailedTransportFuture(this, e);
@@ -130,10 +130,10 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
         }
 
         NioChildChannelTransport child =
-                new NioChildChannelTransport(config, processor.getName(),
-                        processor.getWriteBufferSize(), processor.isUseDirectBuffer());
-        childAggregate.add(child);
-        processor.getMessageIOSelectorPool().register(channel, ops, child);
+                new NioChildChannelTransport(config_, processor_.getName(),
+                        processor_.getWriteBufferSize(), processor_.isUseDirectBuffer());
+        childAggregate_.add(child);
+        processor_.getMessageIOSelectorPool().register(channel, ops, child);
         child.loadEventLater(new TransportStateEvent(child, TransportState.ACCEPTED, remoteAddress));
     }
 
@@ -143,6 +143,6 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
     }
 
     public Set<Transport> childSet() {
-        return childAggregate.childSet();
+        return childAggregate_.childSet();
     }
 }

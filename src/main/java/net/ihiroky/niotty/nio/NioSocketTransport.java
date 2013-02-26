@@ -18,16 +18,16 @@ import java.util.Objects;
  */
 public abstract class NioSocketTransport<S extends AbstractSelector<S>> extends AbstractTransport<S> {
 
-    private SelectionKey key;
+    private SelectionKey key_;
 
     @Override
     public String toString() {
-        return (key != null) ? key.channel().toString() : "unregistered";
+        return (key_ != null) ? key_.channel().toString() : "unregistered";
     }
 
     void setSelectionKey(SelectionKey key) {
         Objects.requireNonNull(key, "key");
-        this.key = key;
+        this.key_ = key;
     }
 
     TransportFuture closeSelectableChannelLater() {
@@ -48,10 +48,10 @@ public abstract class NioSocketTransport<S extends AbstractSelector<S>> extends 
     }
 
     void closeSelectableChannel() {
-        if (key != null) {
-            SelectableChannel channel = key.channel();
-            getEventLoop().unregister(key); // decrement register count
-            key.cancel();
+        if (key_ != null) {
+            SelectableChannel channel = key_.channel();
+            getEventLoop().unregister(key_); // decrement register count
+            key_.cancel();
             try {
                 channel.close();
             } catch (IOException ignored) {
@@ -60,6 +60,6 @@ public abstract class NioSocketTransport<S extends AbstractSelector<S>> extends 
     }
 
     protected final SelectionKey getSelectionKey() {
-        return key;
+        return key_;
     }
 }

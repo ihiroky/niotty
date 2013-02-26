@@ -12,14 +12,14 @@ import java.util.Objects;
  */
 public class NioClientSocketProcessor implements Processor<NioClientSocketTransport, NioClientSocketConfig> {
 
-    private ConnectSelectorPool connectSelectorPool;
-    private MessageIOSelectorPool messageIOSelectorPool;
-    private String name;
-    private int numberOfConnectThread;
-    private int numberOfMessageIOThread;
-    private int readBufferSize;
-    private int writeBufferSize;
-    private boolean useDirectBuffer;
+    private ConnectSelectorPool connectSelectorPool_;
+    private MessageIOSelectorPool messageIOSelectorPool_;
+    private String name_;
+    private int numberOfConnectThread_;
+    private int numberOfMessageIOThread_;
+    private int readBufferSize_;
+    private int writeBufferSize_;
+    private boolean useDirectBuffer_;
 
     private static final int DEFAULT_NUMBER_OF_CONNECT_THREAD = 1;
     private static final int DEFAULT_NUMBER_OF_MESSAGE_IO_THREAD =
@@ -30,14 +30,14 @@ public class NioClientSocketProcessor implements Processor<NioClientSocketTransp
     static final String DEFAULT_NAME = "NioServerSocket";
 
     public NioClientSocketProcessor() {
-        connectSelectorPool = new ConnectSelectorPool();
-        messageIOSelectorPool = new MessageIOSelectorPool();
-        name = "NioClientSocket";
-        numberOfConnectThread = DEFAULT_NUMBER_OF_CONNECT_THREAD;
-        numberOfMessageIOThread = DEFAULT_NUMBER_OF_MESSAGE_IO_THREAD;
-        readBufferSize = DEFAULT_BUFFER_SIZE;
-        writeBufferSize = DEFAULT_BUFFER_SIZE;
-        useDirectBuffer = DEFAULT_DIRECT_BUFFER;
+        connectSelectorPool_ = new ConnectSelectorPool();
+        messageIOSelectorPool_ = new MessageIOSelectorPool();
+        name_ = "NioClientSocket";
+        numberOfConnectThread_ = DEFAULT_NUMBER_OF_CONNECT_THREAD;
+        numberOfMessageIOThread_ = DEFAULT_NUMBER_OF_MESSAGE_IO_THREAD;
+        readBufferSize_ = DEFAULT_BUFFER_SIZE;
+        writeBufferSize_ = DEFAULT_BUFFER_SIZE;
+        useDirectBuffer_ = DEFAULT_DIRECT_BUFFER;
     }
 
     @Override
@@ -47,77 +47,77 @@ public class NioClientSocketProcessor implements Processor<NioClientSocketTransp
 
     @Override
     public void start() {
-        messageIOSelectorPool.setReadBufferSize(readBufferSize);
-        messageIOSelectorPool.setDirect(useDirectBuffer);
-        messageIOSelectorPool.open(new NameCountThreadFactory(name.concat("-MessageIO")), numberOfMessageIOThread);
-        connectSelectorPool.open(new NameCountThreadFactory(name.concat("-Connect")), numberOfConnectThread);
+        messageIOSelectorPool_.setReadBufferSize(readBufferSize_);
+        messageIOSelectorPool_.setDirect(useDirectBuffer_);
+        messageIOSelectorPool_.open(new NameCountThreadFactory(name_.concat("-MessageIO")), numberOfMessageIOThread_);
+        connectSelectorPool_.open(new NameCountThreadFactory(name_.concat("-Connect")), numberOfConnectThread_);
     }
 
     @Override
     public void stop() {
-        messageIOSelectorPool.close();
-        connectSelectorPool.close();
+        messageIOSelectorPool_.close();
+        connectSelectorPool_.close();
     }
 
     @Override
     public String getName() {
-        return name;
+        return name_;
     }
 
     public void setName(String name) {
         Objects.requireNonNull(name, "name");
-        this.name = name;
+        this.name_ = name;
     }
 
     public void setNumberOfConnectThread(int numberOfConnectThread) {
         if (numberOfConnectThread <= 0) {
             throw new IllegalArgumentException("numberOfConnectThread must be positive.");
         }
-        this.numberOfConnectThread = numberOfConnectThread;
+        this.numberOfConnectThread_ = numberOfConnectThread;
     }
 
     public void setNumberOfMessageIOThread(int numberOfMessageIOThread) {
         if (numberOfMessageIOThread <= 0) {
             throw new IllegalArgumentException("numberOfMessageIOThread must be positive.");
         }
-        this.numberOfMessageIOThread = numberOfMessageIOThread;
+        this.numberOfMessageIOThread_ = numberOfMessageIOThread;
     }
 
     public void setReadBufferSize(int readBufferSize) {
         if (readBufferSize <= 0) {
             throw new IllegalArgumentException("readBufferSize must be positive.");
         }
-        this.readBufferSize = readBufferSize;
+        this.readBufferSize_ = readBufferSize;
     }
 
     public void setWriteBufferSize(int writeBufferSize) {
         if (writeBufferSize <= 0) {
             throw new IllegalArgumentException("writeBufferSize must be positive.");
         }
-        this.writeBufferSize = writeBufferSize;
+        this.writeBufferSize_ = writeBufferSize;
     }
 
     public void setUseDirectBuffer(boolean useDirectBuffer) {
-        this.useDirectBuffer = useDirectBuffer;
+        this.useDirectBuffer_ = useDirectBuffer;
     }
 
     ConnectSelectorPool getConnectSelectorPool() {
-        return connectSelectorPool;
+        return connectSelectorPool_;
     }
 
     MessageIOSelectorPool getMessageIOSelectorPool() {
-        return messageIOSelectorPool;
+        return messageIOSelectorPool_;
     }
 
     int getReadBufferSize() {
-        return readBufferSize;
+        return readBufferSize_;
     }
 
     int getWriteBufferSize() {
-        return writeBufferSize;
+        return writeBufferSize_;
     }
 
     boolean isUseDirectBuffer() {
-        return useDirectBuffer;
+        return useDirectBuffer_;
     }
 }

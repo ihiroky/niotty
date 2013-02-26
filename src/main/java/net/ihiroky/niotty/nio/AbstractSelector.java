@@ -24,10 +24,10 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public abstract class AbstractSelector<S extends AbstractSelector<S>> extends EventLoop<S> {
 
-    private Selector selector;
-    private AtomicInteger registeredCount;
+    private Selector selector_;
+    private AtomicInteger registeredCount_;
 
-    private Logger logger = LoggerFactory.getLogger(AbstractSelector.class);
+    private Logger logger_ = LoggerFactory.getLogger(AbstractSelector.class);
 
     static final StageContextListener<Object, BufferSink> SELECTOR_STORE_CONTEXT_LISTENER =
             new StageContextAdapter<Object, BufferSink>() {
@@ -52,21 +52,21 @@ public abstract class AbstractSelector<S extends AbstractSelector<S>> extends Ev
             };
 
     AbstractSelector() {
-        registeredCount = new AtomicInteger();
+        registeredCount_ = new AtomicInteger();
     }
 
     @Override
     protected void onOpen() {
         try {
-            selector = Selector.open();
+            selector_ = Selector.open();
         } catch (IOException e) {
-            if (selector != null) {
+            if (selector_ != null) {
                 try {
-                    selector.close();
+                    selector_.close();
                 } catch (Exception e1) {
                     e1.printStackTrace();
                 }
-                selector = null;
+                selector_ = null;
             }
             throw new RuntimeException("failed to open selector.", e);
         }
@@ -74,35 +74,35 @@ public abstract class AbstractSelector<S extends AbstractSelector<S>> extends Ev
 
     @Override
     protected void process(int timeout) throws Exception {
-        int selected = (timeout <= 0) ? selector.select() : selector.select(timeout);
+        int selected = (timeout <= 0) ? selector_.select() : selector_.select(timeout);
         if (selected > 0) {
-            processSelectedKeys(selector.selectedKeys());
+            processSelectedKeys(selector_.selectedKeys());
         }
     }
 
     @Override
     protected void wakeUp() {
-        selector.wakeup();
+        selector_.wakeup();
     }
 
     protected abstract void processSelectedKeys(Set<SelectionKey> selectedKeys) throws Exception;
 
     @Override
     protected void onClose() {
-        for (SelectionKey key : selector.keys()) {
+        for (SelectionKey key : selector_.keys()) {
             SelectableChannel channel = key.channel();
             try {
                 key.cancel();
                 channel.close();
             } catch (IOException ioe) {
-                if (logger.isDebugEnabled()) {
-                    logger.debug("failed to close registered channel : " + key, ioe);
+                if (logger_.isDebugEnabled()) {
+                    logger_.debug("failed to close registered channel : " + key, ioe);
                 }
             }
         }
 
         try {
-            selector.close();
+            selector_.close();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -111,41 +111,41 @@ public abstract class AbstractSelector<S extends AbstractSelector<S>> extends Ev
 
     void register(SelectableChannel channel, int ops, NioSocketTransport<S> transport) {
         try {
-            SelectionKey key = channel.register(selector, ops, transport);
+            SelectionKey key = channel.register(selector_, ops, transport);
             transport.setSelectionKey(key);
-            registeredCount.incrementAndGet();
-            logger.debug("channel {} is registered to {}.", channel, Thread.currentThread());
+            registeredCount_.incrementAndGet();
+            logger_.debug("channel {} is registered to {}.", channel, Thread.currentThread());
         } catch (IOException ioe) {
-            logger.warn("failed to register channel:" + channel, ioe);
+            logger_.warn("failed to register channel:" + channel, ioe);
         }
     }
 
     void register(SelectableChannel channel, int ops, TransportFutureAttachment<S> attachment) {
         try {
-            SelectionKey key = channel.register(selector, ops, attachment);
+            SelectionKey key = channel.register(selector_, ops, attachment);
             attachment.getTransport().setSelectionKey(key);
-            registeredCount.incrementAndGet();
-            logger.debug("channel {} is registered to {}.", channel, Thread.currentThread());
+            registeredCount_.incrementAndGet();
+            logger_.debug("channel {} is registered to {}.", channel, Thread.currentThread());
         } catch (IOException ioe) {
-            logger.warn("failed to register channel:" + channel, ioe);
+            logger_.warn("failed to register channel:" + channel, ioe);
         }
     }
 
     void unregister(SelectionKey key) {
         key.interestOps(0);
-        registeredCount.decrementAndGet();
-        logger.debug("channel {} is unregistered from {}.", key.channel(), Thread.currentThread());
+        registeredCount_.decrementAndGet();
+        logger_.debug("channel {} is unregistered from {}.", key.channel(), Thread.currentThread());
     }
 
     int getRegisteredCount() {
-        return registeredCount.get();
+        return registeredCount_.get();
     }
 
     Set<SelectionKey> keys() {
-        return selector.keys();
+        return selector_.keys();
     }
 
     public boolean isOpen() {
-        return (selector != null) && selector.isOpen();
+        return (selector_ != null) && selector_.isOpen();
     }
 }

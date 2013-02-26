@@ -11,29 +11,28 @@ import java.nio.channels.SelectableChannel;
  */
 public class MessageIOSelectorPool extends AbstractSelectorPool<MessageIOSelector> {
 
-    private int readBufferSize;
-    private int writeBufferSize; // write buffer size, different from buffer queue.
-    private boolean direct;
+    private int readBufferSize_;
+    private boolean direct_;
 
     public MessageIOSelectorPool() {
-        readBufferSize = 8192;
-        direct = false;
+        readBufferSize_ = 8192;
+        direct_ = false;
     }
 
     public void setReadBufferSize(int size) {
-        if (readBufferSize <= 0) {
+        if (readBufferSize_ <= 0) {
             throw new IllegalArgumentException("readBufferSize must be positive.");
         }
-        readBufferSize = size;
+        readBufferSize_ = size;
     }
 
     public void setDirect(boolean on) {
-        this.direct = on;
+        this.direct_ = on;
     }
 
     @Override
     protected MessageIOSelector newEventLoop() {
-        return new MessageIOSelector(readBufferSize, direct);
+        return new MessageIOSelector(readBufferSize_, direct_);
     }
 
     public void register(final SelectableChannel channel, final int ops,

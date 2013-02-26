@@ -16,14 +16,14 @@ import java.nio.channels.SocketChannel;
  */
 public class NioClientSocketConfig extends TransportConfig {
 
-    private int sendBufferSize;
-    private int receiveBufferSize;
-    private boolean keepAlive;
-    private boolean reuseAddress;
-    private int linger;
-    private boolean tcpNoDelay;
+    private int sendBufferSize_;
+    private int receiveBufferSize_;
+    private boolean keepAlive_;
+    private boolean reuseAddress_;
+    private int linger_;
+    private boolean tcpNoDelay_;
 
-    private Logger logger = LoggerFactory.getLogger(NioClientSocketConfig.class);
+    private Logger logger_ = LoggerFactory.getLogger(NioClientSocketConfig.class);
 
     public NioClientSocketConfig() {
     }
@@ -38,25 +38,25 @@ public class NioClientSocketConfig extends TransportConfig {
 
     private <T> void logOptionValue(SocketChannel channel, SocketOption<T> option) {
         try {
-            logger.info("{}'s {}: {}", channel, option, channel.getOption(option));
+            logger_.info("{}'s {}: {}", channel, option, channel.getOption(option));
         } catch (IOException ioe) {
             throw new RuntimeException("failed to set socket option:" + option + " for:" + channel);
         }
     }
 
     void applySocketOptions(SocketChannel channel) {
-        if (sendBufferSize > 0) {
-            setOption(channel, StandardSocketOptions.SO_SNDBUF, sendBufferSize);
+        if (sendBufferSize_ > 0) {
+            setOption(channel, StandardSocketOptions.SO_SNDBUF, sendBufferSize_);
         }
-        if (receiveBufferSize > 0) {
-            setOption(channel, StandardSocketOptions.SO_RCVBUF, receiveBufferSize);
+        if (receiveBufferSize_ > 0) {
+            setOption(channel, StandardSocketOptions.SO_RCVBUF, receiveBufferSize_);
         }
-        if (linger > 0) {
-            setOption(channel, StandardSocketOptions.SO_LINGER, linger);
+        if (linger_ > 0) {
+            setOption(channel, StandardSocketOptions.SO_LINGER, linger_);
         }
-        setOption(channel, StandardSocketOptions.SO_REUSEADDR, reuseAddress);
-        setOption(channel, StandardSocketOptions.SO_KEEPALIVE, keepAlive);
-        setOption(channel, StandardSocketOptions.TCP_NODELAY, tcpNoDelay);
+        setOption(channel, StandardSocketOptions.SO_REUSEADDR, reuseAddress_);
+        setOption(channel, StandardSocketOptions.SO_KEEPALIVE, keepAlive_);
+        setOption(channel, StandardSocketOptions.TCP_NODELAY, tcpNoDelay_);
 
         logOptionValue(channel, StandardSocketOptions.SO_SNDBUF);
         logOptionValue(channel, StandardSocketOptions.SO_RCVBUF);
@@ -67,26 +67,26 @@ public class NioClientSocketConfig extends TransportConfig {
     }
 
     public void setSendBufferSize(int sendBufferSize) {
-        this.sendBufferSize = sendBufferSize;
+        this.sendBufferSize_ = sendBufferSize;
     }
 
     public void setReceiveBufferSize(int receiveBufferSize) {
-        this.receiveBufferSize = receiveBufferSize;
+        this.receiveBufferSize_ = receiveBufferSize;
     }
 
-    public void setKeepAlive(boolean keepAlive) {
-        this.keepAlive = keepAlive;
+    public void setKeepAlive(boolean keepAlive_) {
+        this.keepAlive_ = keepAlive_;
     }
 
-    public void setReuseAddress(boolean reuseAddress) {
-        this.reuseAddress = reuseAddress;
+    public void setReuseAddress(boolean reuseAddress_) {
+        this.reuseAddress_ = reuseAddress_;
     }
 
-    public void setLinger(int linger) {
-        this.linger = linger;
+    public void setLinger(int linger_) {
+        this.linger_ = linger_;
     }
 
-    public void setTcpNoDelay(boolean tcpNoDelay) {
-        this.tcpNoDelay = tcpNoDelay;
+    public void setTcpNoDelay(boolean tcpNoDelay_) {
+        this.tcpNoDelay_ = tcpNoDelay_;
     }
 }

@@ -25,8 +25,8 @@ import java.util.Set;
  */
 public class MessageIOSelector extends AbstractSelector<MessageIOSelector> {
 
-    private ByteBuffer byteBuffer;
-    private Logger logger = LoggerFactory.getLogger(MessageIOSelector.class);
+    private ByteBuffer byteBuffer_;
+    private Logger logger_ = LoggerFactory.getLogger(MessageIOSelector.class);
 
     private static final int MIN_BUFFER_SIZE = 256;
 
@@ -77,12 +77,12 @@ public class MessageIOSelector extends AbstractSelector<MessageIOSelector> {
         if (bufferSize < MIN_BUFFER_SIZE) {
             bufferSize = MIN_BUFFER_SIZE;
         }
-        byteBuffer = direct ? ByteBuffer.allocateDirect(bufferSize) : ByteBuffer.allocate(bufferSize);
+        byteBuffer_ = direct ? ByteBuffer.allocateDirect(bufferSize) : ByteBuffer.allocate(bufferSize);
     }
 
     @Override
     protected void processSelectedKeys(Set<SelectionKey> selectedKeys) throws IOException {
-        ByteBuffer localByteBuffer = byteBuffer;
+        ByteBuffer localByteBuffer = byteBuffer_;
         int read;
 
         for (Iterator<SelectionKey> i = selectedKeys.iterator(); i.hasNext(); ) {

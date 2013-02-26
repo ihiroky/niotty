@@ -25,10 +25,10 @@ import java.nio.channels.SocketChannel;
  */
 public class NioClientSocketTransport extends NioSocketTransport<ConnectSelector> {
 
-    private SocketChannel clientChannel;
-    private NioClientSocketConfig config;
-    private NioClientSocketProcessor processor;
-    private volatile NioChildChannelTransport childTransport;
+    private SocketChannel clientChannel_;
+    private NioClientSocketConfig config_;
+    private NioClientSocketProcessor processor_;
+    private volatile NioChildChannelTransport childTransport_;
 
     public NioClientSocketTransport(NioClientSocketConfig config, NioClientSocketProcessor processor) {
         try {
@@ -37,9 +37,9 @@ public class NioClientSocketTransport extends NioSocketTransport<ConnectSelector
             clientChannel.configureBlocking(false);
             config.applySocketOptions(clientChannel);
 
-            this.clientChannel = clientChannel;
-            this.config = config;
-            this.processor = processor;
+            this.clientChannel_ = clientChannel;
+            this.config_ = config;
+            this.processor_ = processor;
         } catch (Exception e) {
             throw new RuntimeException("failed to open client socket channel.", e);
         }
@@ -48,7 +48,7 @@ public class NioClientSocketTransport extends NioSocketTransport<ConnectSelector
     @Override
     public TransportFuture bind(SocketAddress local) {
         try {
-            clientChannel.bind(local);
+            clientChannel_.bind(local);
             getTransportListener().onBind(this, local);
             return new SucceededTransportFuture(this);
         } catch (IOException ioe) {
@@ -59,12 +59,12 @@ public class NioClientSocketTransport extends NioSocketTransport<ConnectSelector
     @Override
     public TransportFuture connect(SocketAddress remote) {
         try {
-            if (clientChannel.connect(remote)) {
+            if (clientChannel_.connect(remote)) {
                 return new SucceededTransportFuture(this);
             }
             DefaultTransportFuture future = new DefaultTransportFuture(this);
-            processor.getConnectSelectorPool().register(
-                    clientChannel, SelectionKey.OP_CONNECT, new TransportFutureAttachment<>(this, future));
+            processor_.getConnectSelectorPool().register(
+                    clientChannel_, SelectionKey.OP_CONNECT, new TransportFutureAttachment<>(this, future));
             return future;
         } catch (IOException ioe) {
             return new FailedTransportFuture(this, ioe);
@@ -79,8 +79,8 @@ public class NioClientSocketTransport extends NioSocketTransport<ConnectSelector
         }
 
         // SelectionKey of NioClientSocketTransport is already cancelled here.
-        if (childTransport != null) {
-            return childTransport.closeSelectableChannelLater();
+        if (childTransport_ != null) {
+            return childTransport_.closeSelectableChannelLater();
         }
         return new SucceededTransportFuture(this);
     }
@@ -92,7 +92,7 @@ public class NioClientSocketTransport extends NioSocketTransport<ConnectSelector
 
     @Override
     public void write(final Object message) {
-        NioChildChannelTransport transport = childTransport;
+        NioChildChannelTransport transport = childTransport_;
         if (transport == null) {
             throw new IllegalStateException("not connected.");
         }
@@ -107,7 +107,7 @@ public class NioClientSocketTransport extends NioSocketTransport<ConnectSelector
     @Override
     public InetSocketAddress localAddress() {
         try {
-            return (InetSocketAddress) clientChannel.getLocalAddress();
+            return (InetSocketAddress) clientChannel_.getLocalAddress();
         } catch (IOException ioe) {
             throw new RuntimeException(ioe);
         }
@@ -116,7 +116,7 @@ public class NioClientSocketTransport extends NioSocketTransport<ConnectSelector
     @Override
     public InetSocketAddress remoteAddress() {
         try {
-            return (InetSocketAddress) clientChannel.getRemoteAddress();
+            return (InetSocketAddress) clientChannel_.getRemoteAddress();
         } catch (IOException ioe) {
             throw new RuntimeException(ioe);
         }
@@ -124,13 +124,13 @@ public class NioClientSocketTransport extends NioSocketTransport<ConnectSelector
 
     @Override
     public boolean isOpen() {
-        return clientChannel.isOpen();
+        return clientChannel_.isOpen();
     }
 
     void registerLater(SelectableChannel channel, int ops, DefaultTransportFuture future) {
         InetSocketAddress remoteAddress;
         try {
-            remoteAddress = (InetSocketAddress) clientChannel.getRemoteAddress();
+            remoteAddress = (InetSocketAddress) clientChannel_.getRemoteAddress();
             getTransportListener().onConnect(this, remoteAddress);
             future.done();
         } catch (IOException e) {
@@ -139,10 +139,10 @@ public class NioClientSocketTransport extends NioSocketTransport<ConnectSelector
         }
 
         NioChildChannelTransport child =
-                new NioChildChannelTransport(config, processor.getName(),
-                        processor.getWriteBufferSize(), processor.isUseDirectBuffer());
-        this.childTransport = child;
-        processor.getMessageIOSelectorPool().register(channel, ops, child);
+                new NioChildChannelTransport(config_, processor_.getName(),
+                        processor_.getWriteBufferSize(), processor_.isUseDirectBuffer());
+        this.childTransport_ = child;
+        processor_.getMessageIOSelectorPool().register(channel, ops, child);
         child.loadEventLater(new TransportStateEvent(child, TransportState.CONNECTED, remoteAddress));
     }
 
@@ -151,7 +151,7 @@ public class NioClientSocketTransport extends NioSocketTransport<ConnectSelector
         getEventLoop().offerTask(new EventLoop.Task<ConnectSelector>() {
             @Override
             public boolean execute(ConnectSelector eventLoop) throws Exception {
-                childTransport.writeBufferSink(buffer);
+                childTransport_.writeBufferSink(buffer);
                 return true;
             }
         });

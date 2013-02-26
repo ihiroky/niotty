@@ -31,9 +31,9 @@ import java.util.Queue;
  */
 public class NioChildChannelTransport extends NioSocketTransport<MessageIOSelector> {
 
-    private boolean remainingPreviousData;
-    private ByteBuffer writeBuffer;
-    private Queue<BufferSink> pendingQueue;
+    private boolean remainingPreviousData_;
+    private ByteBuffer writeBuffer_;
+    private Queue<BufferSink> pendingQueue_;
 
     NioChildChannelTransport(TransportConfig config, String name, int writeBufferSize, boolean directWriteBuffer) {
         DefaultLoadPipeline loadPipeline = DefaultLoadPipeline.createPipeline(name);
@@ -52,8 +52,8 @@ public class NioChildChannelTransport extends NioSocketTransport<MessageIOSelect
 
         setLoadPipeline(loadPipeline);
         setStorePipeline(storePipeline);
-        this.writeBuffer = writeBuffer;
-        this.pendingQueue = new LinkedList<>();
+        this.writeBuffer_ = writeBuffer;
+        this.pendingQueue_ = new LinkedList<>();
     }
 
     @Override
@@ -130,47 +130,47 @@ public class NioChildChannelTransport extends NioSocketTransport<MessageIOSelect
 
     void writeBufferSink(BufferSink buffer) throws IOException {
         WritableByteChannel channel = (WritableByteChannel) getSelectionKey().channel();
-        ByteBuffer localWriteBuffer = writeBuffer;
+        ByteBuffer localWriteBuffer = writeBuffer_;
 
-        if (remainingPreviousData) {
+        if (remainingPreviousData_) {
             channel.write(localWriteBuffer);
             if (localWriteBuffer.hasRemaining()) {
-                pendingQueue.offer(buffer);
+                pendingQueue_.offer(buffer);
                 return;
             }
-            remainingPreviousData = false;
+            remainingPreviousData_ = false;
             localWriteBuffer.clear();
         }
 
-        if (pendingQueue.isEmpty()) {
+        if (pendingQueue_.isEmpty()) {
             if (buffer.transferTo(channel, localWriteBuffer)) {
                 localWriteBuffer.clear();
             } else {
-                remainingPreviousData = true;
-                pendingQueue.offer(buffer);
+                remainingPreviousData_ = true;
+                pendingQueue_.offer(buffer);
             }
         }
     }
 
     boolean flush() throws IOException {
         WritableByteChannel channel = (WritableByteChannel) getSelectionKey().channel();
-        ByteBuffer localWriteBuffer = writeBuffer;
+        ByteBuffer localWriteBuffer = writeBuffer_;
 
-        if (remainingPreviousData) {
+        if (remainingPreviousData_) {
             channel.write(localWriteBuffer);
             if (localWriteBuffer.hasRemaining()) {
                 return false;
             }
-            remainingPreviousData = false;
+            remainingPreviousData_ = false;
             localWriteBuffer.clear();
         }
 
-        for (BufferSink pendingBuffer; (pendingBuffer = pendingQueue.peek()) != null; ) {
+        for (BufferSink pendingBuffer; (pendingBuffer = pendingQueue_.peek()) != null; ) {
             if (pendingBuffer.transferTo(channel, localWriteBuffer)) {
                 localWriteBuffer.clear();
-                pendingQueue.poll();
+                pendingQueue_.poll();
             } else {
-                remainingPreviousData = true;
+                remainingPreviousData_ = true;
                 return false;
             }
         }

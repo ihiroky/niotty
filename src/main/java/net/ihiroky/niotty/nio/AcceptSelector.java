@@ -17,7 +17,7 @@ import java.util.Set;
  */
 public class AcceptSelector extends AbstractSelector<AcceptSelector> {
 
-    private Logger logger = LoggerFactory.getLogger(AcceptSelector.class);
+    private Logger logger_ = LoggerFactory.getLogger(AcceptSelector.class);
 
     @Override
     protected void processSelectedKeys(Set<SelectionKey> selectedKeys) throws Exception {
@@ -27,7 +27,7 @@ public class AcceptSelector extends AbstractSelector<AcceptSelector> {
 
             ServerSocketChannel parentChannel = (ServerSocketChannel) key.channel();
             SocketChannel childChannel = parentChannel.accept();
-            logger.info("new channel {} is accepted.", childChannel);
+            logger_.info("new channel {} is accepted.", childChannel);
             childChannel.configureBlocking(false);
 
             @SuppressWarnings("unchecked")

@@ -16,7 +16,7 @@ import java.util.Set;
  */
 public class ConnectSelector extends AbstractSelector<ConnectSelector> {
 
-    private Logger logger = LoggerFactory.getLogger(ConnectSelector.class);
+    private Logger logger_ = LoggerFactory.getLogger(ConnectSelector.class);
 
     @Override
     protected void processSelectedKeys(Set<SelectionKey> selectedKeys) throws Exception {
@@ -30,7 +30,7 @@ public class ConnectSelector extends AbstractSelector<ConnectSelector> {
                     (TransportFutureAttachment<ConnectSelector>) key.attachment();
             try {
                 if (channel.finishConnect()) {
-                    logger.info("new channel {} is connected.", channel);
+                    logger_.info("new channel {} is connected.", channel);
                     channel.configureBlocking(false);
                     unregister(key);
 
