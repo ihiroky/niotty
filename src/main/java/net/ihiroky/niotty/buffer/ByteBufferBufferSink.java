@@ -13,7 +13,7 @@ public class ByteBufferBufferSink implements BufferSink {
     private ByteBuffer byteBuffer;
 
     ByteBufferBufferSink(ByteBuffer byteBuffer) {
-        this.byteBuffer= byteBuffer;
+        this.byteBuffer = byteBuffer;
     }
 
     @Override

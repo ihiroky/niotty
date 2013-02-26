@@ -249,12 +249,33 @@ public class ByteBufferDecodeBuffer extends AbstractDecodeBuffer implements Deco
      * {@inheritDoc}
      */
     @Override
-    public void drainFrom(DecodeBuffer decodeBuffer) {
+    public int drainFrom(DecodeBuffer decodeBuffer) {
+        return drainFromNoCheck(decodeBuffer, decodeBuffer.remainingBytes());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int drainFrom(DecodeBuffer decodeBuffer, int bytes) {
+        if (bytes < 0) {
+            throw new IllegalArgumentException("bytes must be >= 0.");
+        }
+        int remaining = decodeBuffer.remainingBytes();
+        return drainFromNoCheck(decodeBuffer, (bytes <= remaining) ? bytes : remaining);
+    }
+
+    /**
+     * Drains data from {@code input} with specified bytes
+     * @param input buffer which contains the data transferred from
+     * @param bytes the number of byte to be transferred
+     * @return {@code bytes}
+     */
+    private int drainFromNoCheck(DecodeBuffer input, int bytes) {
         ByteBuffer bb = buffer;
         int space = bb.capacity() - bb.limit();
-        int remaining = decodeBuffer.remainingBytes();
-        if (space < remaining) {
-            int required = bb.limit() + remaining;
+        if (space < bytes) {
+            int required = bb.limit() + bytes;
             int twice = bb.capacity() * 2;
             ByteBuffer newBuffer = ByteBuffer.allocate((required >= twice) ? required : twice);
             newBuffer.put(bb).flip();
@@ -262,9 +283,11 @@ public class ByteBufferDecodeBuffer extends AbstractDecodeBuffer implements Deco
             bb = newBuffer;
         }
         int limit = bb.limit();
-        bb.limit(limit + remaining);
+        int position = bb.position();
+        bb.limit(limit + bytes);
         bb.position(limit);
-        decodeBuffer.readBytes(bb);
-        bb.position(0);
+        input.readBytes(bb);
+        bb.position(position);
+        return bytes;
     }
 }

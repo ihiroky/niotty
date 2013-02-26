@@ -424,22 +424,24 @@ public class ByteBufferDecodeBufferTest {
             byte[] a = new byte[10];
             Arrays.fill(a, (byte) 'a');
             sut.clear();
-            sut.drainFrom(Buffers.newDecodeBuffer(a, 0, a.length));
-
+            int drained = sut.drainFrom(Buffers.newDecodeBuffer(a, 0, a.length));
+            assertThat(drained, is(10));
             assertThat(sut.remainingBytes(), is(10));
             assertThat(sut.limitBytes(), is(10));
 
             // drain 10 bytes
             byte[] b = new byte[10];
             Arrays.fill(b, (byte) 'b');
-            sut.drainFrom(Buffers.newDecodeBuffer(b, 0, b.length));
+            drained = sut.drainFrom(Buffers.newDecodeBuffer(b, 0, b.length));
+            assertThat(drained, is(10));
             assertThat(sut.remainingBytes(), is(20));
             assertThat(sut.limitBytes(), is(20));
 
             // drain 50 bytes
             byte[] c = new byte[50];
             Arrays.fill(c, (byte) 'c');
-            sut.drainFrom(Buffers.newDecodeBuffer(c, 0, c.length));
+            drained = sut.drainFrom(Buffers.newDecodeBuffer(c, 0, c.length));
+            assertThat(drained, is(50));
             assertThat(sut.remainingBytes(), is(70));
             assertThat(sut.limitBytes(), is(70));
 
@@ -456,6 +458,32 @@ public class ByteBufferDecodeBufferTest {
             assertThat(ec, is(c));
 
             assertThat(sut.remainingBytes(), is(0));
+        }
+
+        @Test
+        public void testDrainFromWithLimit() throws Exception {
+            byte[] a = new byte[40];
+            Arrays.fill(a, (byte) 'a');
+            DecodeBuffer input = new ArrayDecodeBuffer(a, 0, a.length);
+            sut.clear();
+
+            // drain 30 bytes.
+            int drained = sut.drainFrom(input, 30);
+            assertThat(drained, is(30));
+            assertThat(sut.remainingBytes(), is(30));
+            assertThat(sut.limitBytes(), is(30));
+
+            // try to drain 20 bytes, but drain 10 bytes
+            drained = sut.drainFrom(input, 20);
+            assertThat(drained, is(10));
+            assertThat(sut.remainingBytes(), is(40));
+            assertThat(sut.limitBytes(), is(40));
+        }
+
+        @Test
+        public void testDrainFromWithNegative() throws Exception {
+            expectedException.expect(IllegalArgumentException.class);
+            sut.drainFrom(Buffers.newDecodeBuffer(1), -1);
         }
 
         @Test

@@ -297,16 +297,38 @@ public class ArrayDecodeBuffer extends AbstractDecodeBuffer implements DecodeBuf
      * {@inheritDoc}
      */
     @Override
-    public void drainFrom(DecodeBuffer decodeBuffer) {
+    public int drainFrom(DecodeBuffer decodeBuffer) {
+        return drainFromNoCheck(decodeBuffer, decodeBuffer.remainingBytes());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int drainFrom(DecodeBuffer decodeBuffer, int bytes) {
+        if (bytes < 0) {
+            throw new IllegalArgumentException("bytes must be >= 0.");
+        }
+        int remaining = decodeBuffer.remainingBytes();
+        return drainFromNoCheck(decodeBuffer, (bytes <= remaining) ? bytes : remaining);
+    }
+
+    /**
+     * Drains data from {@code input} with specified bytes
+     * @param input buffer which contains the data transferred from
+     * @param bytes the number of byte to be transferred
+     * @return {@code bytes}
+     */
+    private int drainFromNoCheck(DecodeBuffer input, int bytes) {
         int capacity = buffer.length;
         int space = capacity - end;
-        int remaining = decodeBuffer.remainingBytes();
-        if (space < remaining) {
-            int required = end + remaining;
+        if (space < bytes) {
+            int required = end + bytes;
             int twice = capacity * 2;
             buffer = Arrays.copyOf(buffer, (required >= twice) ? required : twice);
         }
-        decodeBuffer.readBytes(buffer, end, remaining);
-        end += remaining;
+        input.readBytes(buffer, end, bytes);
+        end += bytes;
+        return bytes;
     }
 }

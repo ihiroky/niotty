@@ -230,10 +230,19 @@ public interface DecodeBuffer {
     int arrayOffset();
 
     /**
-     * Drains a specified {@code decodeBuffer}'s contents to this instance. The {@code decodeBuffer} is read
+     * Drains from a specified {@code decodeBuffer}'s contents to this instance. The {@code decodeBuffer} is read
      * by this instance and gets empty.
      *
      * @param decodeBuffer buffer which is drained from.
+     * @return the number of bytes transferred
      */
-    void drainFrom(DecodeBuffer decodeBuffer);
+    int drainFrom(DecodeBuffer decodeBuffer);
+
+    /**
+     * Drains from a specified {@code decodeBuffer}'s contents to this instance at most specified {@code bytes}.
+     *
+     * @param decodeBuffer buffer which is drained from.
+     * @return the number of bytes transferred
+     */
+    int drainFrom(DecodeBuffer decodeBuffer, int bytes);
 }

@@ -61,6 +61,23 @@ public final class Buffers {
     }
 
     /**
+     * Creates a new {@code DecodeBuffer} with specified limit.
+     *
+     * The new {@code DecodeBuffer} is backed by the specified byte array. If some data is written into the
+     * {@code DecodeBuffer}, then the backed byte array is also modified and vice versa. The new
+     * {@code DecodeBuffer}'s limit is {@code limit} and the position is {@code 0}.
+     * An invocation of this method of the form {@code newDecodeBuffer(n)} behaves in exactly the same way
+     * as the invocation {@code newDecode(new byte[n], 0, 0)}
+     *
+     * @param limit the content length in {@code b} from {@code offset},
+     *               must be non-negative and less than or equal to {@code b.length - offset}
+     * @return the new {@code DecodeBuffer}
+     */
+    public static DecodeBuffer newDecodeBuffer(int limit) {
+        return new ArrayDecodeBuffer(new byte[limit], 0,  0);
+    }
+
+    /**
      * Wraps a specified byte array into {@code DecodeBuffer}.
      *
      * The new {@code DecodeBuffer} is backed by the specified byte array. If some data is written into the
