@@ -18,58 +18,58 @@ import static org.junit.Assert.*;
  */
 public class FrameLengthRemoveDecoderTest {
 
-    FrameLengthRemoveDecoder sut;
-    LoadStageContextMock<DecodeBuffer, DecodeBuffer> context;
-    byte[] data;
-    int dataLength;
+    FrameLengthRemoveDecoder sut_;
+    LoadStageContextMock<DecodeBuffer, DecodeBuffer> context_;
+    byte[] data_;
+    int dataLength_;
 
     @Before
     public void setUp() {
-        sut = new FrameLengthRemoveDecoder();
-        context = new LoadStageContextMock<>(sut);
+        sut_ = new FrameLengthRemoveDecoder();
+        context_ = new LoadStageContextMock<>(sut_);
         EncodeBuffer encodeBuffer = Buffers.newEncodeBuffer(32);
         encodeBuffer.writeVariableByteInteger(12); // length header + contents
         encodeBuffer.writeInt(1);
         encodeBuffer.writeInt(2);
         encodeBuffer.writeInt(3);
-        data = encodeBuffer.toArray();
-        dataLength = encodeBuffer.filledBytes();
+        data_ = encodeBuffer.toArray();
+        dataLength_ = encodeBuffer.filledBytes();
     }
 
     @Test
     public void testLoadMessageEventOnce() throws Exception {
-        DecodeBuffer input = Buffers.newDecodeBuffer(data, 0, dataLength);
+        DecodeBuffer input = Buffers.newDecodeBuffer(data_, 0, dataLength_);
 
-        sut.load(context, new MessageEvent<>(null, input));
+        sut_.load(context_, new MessageEvent<>(null, input));
 
-        Queue<MessageEvent<DecodeBuffer>> queue = context.getProceededMessageEventQueue();
+        Queue<MessageEvent<DecodeBuffer>> queue = context_.getProceededMessageEventQueue();
         DecodeBuffer output = queue.poll().getMessage();
         assertThat(output.remainingBytes(), is(12));
         assertThat(output.readInt(), is(1));
         assertThat(output.readInt(), is(2));
         assertThat(output.readInt(), is(3));
         assertThat(queue.isEmpty(), is(true));
-        assertThat(sut.getPooling(), is(nullValue()));
-        assertThat(sut.getPoolingFrameBytes(), is(0));
+        assertThat(sut_.getPooling(), is(nullValue()));
+        assertThat(sut_.getPoolingFrameBytes(), is(0));
     }
 
     @Test
     public void testLoadMessageEventManyIncompletePacket() throws Exception {
         // read first 4 byte
-        sut.load(context, new MessageEvent<>(null, Buffers.newDecodeBuffer(data, 0, 4)));
-        assertThat(context.getProceededMessageEventQueue().size(), is(0));
-        assertThat(sut.getPooling().remainingBytes(), is(4));
-        assertThat(sut.getPoolingFrameBytes(), is(0));
+        sut_.load(context_, new MessageEvent<>(null, Buffers.newDecodeBuffer(data_, 0, 4)));
+        assertThat(context_.getProceededMessageEventQueue().size(), is(0));
+        assertThat(sut_.getPooling().remainingBytes(), is(4));
+        assertThat(sut_.getPoolingFrameBytes(), is(0));
 
         // prepend length field is read
-        sut.load(context, new MessageEvent<>(null, Buffers.newDecodeBuffer(data, 4, 1)));
-        assertThat(context.getProceededMessageEventQueue().size(), is(0));
-        assertThat(sut.getPooling().remainingBytes(), is(4));
-        assertThat(sut.getPoolingFrameBytes(), is(12));
+        sut_.load(context_, new MessageEvent<>(null, Buffers.newDecodeBuffer(data_, 4, 1)));
+        assertThat(context_.getProceededMessageEventQueue().size(), is(0));
+        assertThat(sut_.getPooling().remainingBytes(), is(4));
+        assertThat(sut_.getPoolingFrameBytes(), is(12));
 
         // read remaining
-        sut.load(context, new MessageEvent<>(null, Buffers.newDecodeBuffer(data, 5, 8)));
-        Queue<MessageEvent<DecodeBuffer>> queue = context.getProceededMessageEventQueue();
+        sut_.load(context_, new MessageEvent<>(null, Buffers.newDecodeBuffer(data_, 5, 8)));
+        Queue<MessageEvent<DecodeBuffer>> queue = context_.getProceededMessageEventQueue();
 
         DecodeBuffer output = queue.poll().getMessage();
         assertThat(output.remainingBytes(), is(12));
@@ -77,8 +77,8 @@ public class FrameLengthRemoveDecoderTest {
         assertThat(output.readInt(), is(2));
         assertThat(output.readInt(), is(3));
         assertThat(queue.isEmpty(), is(true));
-        assertThat(sut.getPooling(), is(nullValue()));
-        assertThat(sut.getPoolingFrameBytes(), is(0));
+        assertThat(sut_.getPooling(), is(nullValue()));
+        assertThat(sut_.getPoolingFrameBytes(), is(0));
     }
 
     @Test
@@ -93,13 +93,13 @@ public class FrameLengthRemoveDecoderTest {
         // remaining 4 bytes
         encodeBuffer.writeVariableByteInteger(12);
         encodeBuffer.writeBytes(new byte[3], 0, 3);
-        data = encodeBuffer.toArray();
-        dataLength = encodeBuffer.filledBytes();
-        DecodeBuffer input = Buffers.newDecodeBuffer(data, 0, dataLength);
+        data_ = encodeBuffer.toArray();
+        dataLength_ = encodeBuffer.filledBytes();
+        DecodeBuffer input = Buffers.newDecodeBuffer(data_, 0, dataLength_);
 
-        sut.load(context, new MessageEvent<>(null, input));
+        sut_.load(context_, new MessageEvent<>(null, input));
 
-        Queue<MessageEvent<DecodeBuffer>> queue = context.getProceededMessageEventQueue();
+        Queue<MessageEvent<DecodeBuffer>> queue = context_.getProceededMessageEventQueue();
         for (int i = 0; i < 3; i++) {
             MessageEvent<DecodeBuffer> messageEvent = queue.poll();
             DecodeBuffer output = messageEvent.getMessage();
@@ -109,8 +109,8 @@ public class FrameLengthRemoveDecoderTest {
         }
         assertThat(queue.size(), is(0));
         assertThat(input.remainingBytes(), is(0));
-        assertThat(sut.getPooling().remainingBytes(), is(4)); // less than MINIMUM_WHOLE_LENGTH
-        assertThat(sut.getPoolingFrameBytes(), is(0));
+        assertThat(sut_.getPooling().remainingBytes(), is(4)); // less than MINIMUM_WHOLE_LENGTH
+        assertThat(sut_.getPoolingFrameBytes(), is(0));
     }
 
     @Test
@@ -123,13 +123,13 @@ public class FrameLengthRemoveDecoderTest {
             encodeBuffer.writeInt(3);
         }
         // just 3 packets
-        data = encodeBuffer.toArray();
-        dataLength = encodeBuffer.filledBytes();
-        DecodeBuffer input = Buffers.newDecodeBuffer(data, 0, dataLength);
+        data_ = encodeBuffer.toArray();
+        dataLength_ = encodeBuffer.filledBytes();
+        DecodeBuffer input = Buffers.newDecodeBuffer(data_, 0, dataLength_);
 
-        sut.load(context, new MessageEvent<>(null, input));
+        sut_.load(context_, new MessageEvent<>(null, input));
 
-        Queue<MessageEvent<DecodeBuffer>> queue = context.getProceededMessageEventQueue();
+        Queue<MessageEvent<DecodeBuffer>> queue = context_.getProceededMessageEventQueue();
         for (int i = 0; i < 3; i++) {
             MessageEvent<DecodeBuffer> messageEvent = queue.poll();
             DecodeBuffer output = messageEvent.getMessage();
@@ -139,8 +139,8 @@ public class FrameLengthRemoveDecoderTest {
         }
         assertThat(queue.size(), is(0));
         assertThat(input.remainingBytes(), is(0));
-        assertThat(sut.getPooling(), is(nullValue()));
-        assertThat(sut.getPoolingFrameBytes(), is(0));
+        assertThat(sut_.getPooling(), is(nullValue()));
+        assertThat(sut_.getPoolingFrameBytes(), is(0));
     }
 
 }

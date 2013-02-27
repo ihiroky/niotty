@@ -7,7 +7,7 @@ import net.ihiroky.niotty.event.MessageEvent;
  */
 public class StoreStageContextMock<I, O> extends StoreStageContext<I, O> {
 
-    MessageEvent<O> proceededMessageEvent;
+    MessageEvent<O> proceededMessageEvent_;
 
     @SuppressWarnings("unchecked")
     public StoreStageContextMock(StoreStage<?, ?> stage) {
@@ -16,10 +16,10 @@ public class StoreStageContextMock<I, O> extends StoreStageContext<I, O> {
 
     @Override
     public void proceed(MessageEvent<O> messageEvent) {
-        proceededMessageEvent = messageEvent;
+        proceededMessageEvent_ = messageEvent;
     }
 
     public MessageEvent<O> getProceededMessageEvent() {
-        return proceededMessageEvent;
+        return proceededMessageEvent_;
     }
 }

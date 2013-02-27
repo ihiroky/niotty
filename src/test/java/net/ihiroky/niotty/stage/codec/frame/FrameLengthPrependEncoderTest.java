@@ -16,14 +16,14 @@ import static org.junit.Assert.*;
  */
 public class FrameLengthPrependEncoderTest {
 
-    FrameLengthPrependEncoder sut;
-    StoreStageContextMock<EncodeBufferGroup, EncodeBufferGroup> context;
+    FrameLengthPrependEncoder sut_;
+    StoreStageContextMock<EncodeBufferGroup, EncodeBufferGroup> context_;
 
     @Before
     @SuppressWarnings("unchecked")
     public void setUp() throws Exception {
-        sut = new FrameLengthPrependEncoder();
-        context = new StoreStageContextMock<>(sut);
+        sut_ = new FrameLengthPrependEncoder();
+        context_ = new StoreStageContextMock<>(sut_);
     }
 
     @Test
@@ -33,9 +33,9 @@ public class FrameLengthPrependEncoderTest {
         EncodeBufferGroup group = new EncodeBufferGroup();
         group.addLast(input);
 
-        sut.store(context, new MessageEvent<>(null, group));
+        sut_.store(context_, new MessageEvent<>(null, group));
 
-        EncodeBufferGroup actual = context.getProceededMessageEvent().getMessage();
+        EncodeBufferGroup actual = context_.getProceededMessageEvent().getMessage();
         assertThat(actual.filledBytes(), is(6));
     }
 
@@ -46,9 +46,9 @@ public class FrameLengthPrependEncoderTest {
         EncodeBufferGroup group = new EncodeBufferGroup();
         group.addLast(input);
 
-        sut.store(context, new MessageEvent<>(null, group));
+        sut_.store(context_, new MessageEvent<>(null, group));
 
-        EncodeBufferGroup actual = context.getProceededMessageEvent().getMessage();
+        EncodeBufferGroup actual = context_.getProceededMessageEvent().getMessage();
         assertThat(actual.filledBytes(), is(5));
     }
 }

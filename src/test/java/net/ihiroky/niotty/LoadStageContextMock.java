@@ -10,7 +10,7 @@ import java.util.Queue;
  */
 public class LoadStageContextMock<I, O> extends LoadStageContext<I, O> {
 
-    Queue<MessageEvent<O>> proceededMessageEventQueue = new ArrayDeque<>();
+    Queue<MessageEvent<O>> proceededMessageEventQueue_ = new ArrayDeque<>();
 
     @SuppressWarnings("unchecked")
     public LoadStageContextMock(LoadStage<?, ?> stage) {
@@ -19,10 +19,10 @@ public class LoadStageContextMock<I, O> extends LoadStageContext<I, O> {
 
     @Override
     public void proceed(MessageEvent<O> messageEvent) {
-        proceededMessageEventQueue.add(messageEvent);
+        proceededMessageEventQueue_.add(messageEvent);
     }
 
     public Queue<MessageEvent<O>> getProceededMessageEventQueue() {
-        return proceededMessageEventQueue;
+        return proceededMessageEventQueue_;
     }
 }

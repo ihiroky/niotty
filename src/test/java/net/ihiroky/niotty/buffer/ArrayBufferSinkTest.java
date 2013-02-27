@@ -22,20 +22,20 @@ import static org.mockito.Mockito.*;
  */
 public class ArrayBufferSinkTest {
 
-    private ArrayBufferSink sut;
-    private int dataLength;
+    private ArrayBufferSink sut_;
+    private int dataLength_;
 
     @Before
     public void setUp() {
         byte[] data = new byte[32];
         Arrays.fill(data, (byte) '0');
-        sut = new ArrayBufferSink(data, 0, data.length);
-        dataLength = data.length;
+        sut_ = new ArrayBufferSink(data, 0, data.length);
+        dataLength_ = data.length;
     }
 
     @Test
     public void testTransferToWriteOnce() throws Exception {
-        ByteBuffer buffer = ByteBuffer.allocate(dataLength);
+        ByteBuffer buffer = ByteBuffer.allocate(dataLength_);
         WritableByteChannel channel = mock(WritableByteChannel.class);
         when(channel.write(buffer)).thenAnswer(new Answer<Object>() {
             @Override
@@ -47,18 +47,18 @@ public class ArrayBufferSinkTest {
             }
         });
 
-        assertThat(sut.remainingBytes(), is(dataLength));
+        assertThat(sut_.remainingBytes(), is(dataLength_));
 
-        boolean result = sut.transferTo(channel, buffer);
+        boolean result = sut_.transferTo(channel, buffer);
 
         assertThat(result, is(true));
-        assertThat(sut.remainingBytes(), is(0));
+        assertThat(sut_.remainingBytes(), is(0));
         verify(channel, times(1)).write(buffer);
     }
 
     @Test
     public void testTransferToWriteThreeTimes() throws Exception {
-        ByteBuffer buffer = ByteBuffer.allocateDirect(dataLength / 3 + 1);
+        ByteBuffer buffer = ByteBuffer.allocateDirect(dataLength_ / 3 + 1);
         WritableByteChannel channel = mock(WritableByteChannel.class);
         when(channel.write(buffer)).thenAnswer(new Answer<Object>() {
             @Override
@@ -70,18 +70,18 @@ public class ArrayBufferSinkTest {
             }
         });
 
-        assertThat(sut.remainingBytes(), is(dataLength));
+        assertThat(sut_.remainingBytes(), is(dataLength_));
 
-        boolean result = sut.transferTo(channel, buffer);
+        boolean result = sut_.transferTo(channel, buffer);
 
         assertThat(result, is(true));
-        assertThat(sut.remainingBytes(), is(0));
+        assertThat(sut_.remainingBytes(), is(0));
         verify(channel, times(3)).write(buffer);
     }
 
     @Test
     public void testTransferToNotEnoughWrite() throws Exception {
-        ByteBuffer buffer = ByteBuffer.allocateDirect(dataLength);
+        ByteBuffer buffer = ByteBuffer.allocateDirect(dataLength_);
         WritableByteChannel channel = mock(WritableByteChannel.class);
         when(channel.write(buffer)).thenAnswer(new Answer<Object>() {
             @Override
@@ -89,37 +89,37 @@ public class ArrayBufferSinkTest {
                 Object[] args = invocation.getArguments();
                 ByteBuffer bb = (ByteBuffer) args[0];
                 bb.position(bb.limit() - 1);
-                return dataLength - 1;
+                return dataLength_ - 1;
             }
         });
 
-        assertThat(sut.remainingBytes(), is(dataLength));
+        assertThat(sut_.remainingBytes(), is(dataLength_));
 
-        boolean result = sut.transferTo(channel, buffer);
+        boolean result = sut_.transferTo(channel, buffer);
 
         assertThat(result, is(false));
-        assertThat(sut.remainingBytes(), is(0));
+        assertThat(sut_.remainingBytes(), is(0));
         assertThat(buffer.remaining(), is(1));
         verify(channel, times(1)).write(buffer);
     }
 
     @Test(expected = EOFException.class)
     public void testTransferToEOF() throws Exception {
-        ByteBuffer buffer = ByteBuffer.allocate(dataLength);
+        ByteBuffer buffer = ByteBuffer.allocate(dataLength_);
         WritableByteChannel channel = mock(WritableByteChannel.class);
         when(channel.write(buffer)).thenReturn(-1);
 
-        sut.transferTo(channel, buffer);
+        sut_.transferTo(channel, buffer);
         verify(channel, times(1)).write(buffer);
     }
 
     @Test(expected = IOException.class)
     public void testTransferToIOException() throws  Exception {
-        ByteBuffer buffer = ByteBuffer.allocate(dataLength);
+        ByteBuffer buffer = ByteBuffer.allocate(dataLength_);
         WritableByteChannel channel = mock(WritableByteChannel.class);
         when(channel.write(buffer)).thenThrow(new IOException());
 
-        sut.transferTo(channel, buffer);
+        sut_.transferTo(channel, buffer);
         verify(channel, times(1)).write(buffer);
     }
 }
