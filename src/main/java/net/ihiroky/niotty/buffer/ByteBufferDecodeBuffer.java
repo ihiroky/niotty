@@ -4,21 +4,25 @@ import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CoderResult;
+import java.util.Objects;
 
 /**
+ * Implementation of {@link net.ihiroky.niotty.buffer.DecodeBuffer} using {@code java.nio.ByteBuffer}.
  * @author Hiroki Itoh
  */
 public class ByteBufferDecodeBuffer extends AbstractDecodeBuffer implements DecodeBuffer {
 
     private ByteBuffer buffer_;
 
+    private static final ByteBuffer EMPTY = ByteBuffer.allocate(0);
+    private static final int EXPAND_MULTIPLIER = 2;
+
     ByteBufferDecodeBuffer() {
-        ByteBuffer b = ByteBuffer.allocate(512);
-        b.limit(0);
-        this.buffer_ = b;
+        this.buffer_ = EMPTY;
     }
 
     ByteBufferDecodeBuffer(ByteBuffer buffer) {
+        Objects.requireNonNull(buffer, "buffer");
         this.buffer_ = buffer;
     }
 
@@ -266,7 +270,7 @@ public class ByteBufferDecodeBuffer extends AbstractDecodeBuffer implements Deco
     }
 
     /**
-     * Drains data from {@code input} with specified bytes
+     * Drains data from {@code input} with specified bytes.
      * @param input buffer which contains the data transferred from
      * @param bytes the number of byte to be transferred
      * @return {@code bytes}
@@ -276,7 +280,7 @@ public class ByteBufferDecodeBuffer extends AbstractDecodeBuffer implements Deco
         int space = bb.capacity() - bb.limit();
         if (space < bytes) {
             int required = bb.limit() + bytes;
-            int twice = bb.capacity() * 2;
+            int twice = bb.capacity() * EXPAND_MULTIPLIER;
             ByteBuffer newBuffer = ByteBuffer.allocate((required >= twice) ? required : twice);
             newBuffer.put(bb).flip();
             buffer_ = newBuffer;
@@ -289,5 +293,28 @@ public class ByteBufferDecodeBuffer extends AbstractDecodeBuffer implements Deco
         input.readBytes(bb);
         bb.position(position);
         return bytes;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public DecodeBuffer slice(int bytes) {
+        ByteBuffer bb = buffer_;
+        if (bytes < 0 || bytes > bb.remaining()) {
+            throw new IllegalArgumentException("Invalid input " + bytes + ". " + bb.remaining() + " byte remains.");
+        }
+        ByteBuffer sliced = bb.slice();
+        sliced.limit(bytes);
+        bb.position(bb.position() + bytes);
+        return new ByteBufferDecodeBuffer(sliced);
+    }
+
+    /**
+     * Returns a summary of this buffer state.
+     * @return a summary of this buffer state
+     */
+    @Override
+    public String toString() {
+        return buffer_.toString();
     }
 }

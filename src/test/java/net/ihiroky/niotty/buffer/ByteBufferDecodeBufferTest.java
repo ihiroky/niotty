@@ -134,6 +134,23 @@ public class ByteBufferDecodeBufferTest {
             assertThat(sut.remainingBytes(), is(3));
             assertThat(sut.limitBytes(), is(3));
         }
+
+        @Test
+        public void testSlice() throws Exception {
+            DecodeBuffer sliced = sut.slice(0);
+            assertThat(sliced.remainingBytes(), is(0));
+        }
+
+        @Test(expected = IllegalArgumentException.class)
+        public void testSliceNegative() throws Exception {
+            sut.slice(-1);
+        }
+
+        @Test(expected = IllegalArgumentException.class)
+        public void testSliceOverRemaining() throws Exception {
+            sut.slice(1);
+        }
+
     }
 
     public static class NormalCase {
@@ -505,6 +522,43 @@ public class ByteBufferDecodeBufferTest {
             ByteBuffer b = ByteBuffer.wrap(new byte[1], 0, 1);
             b.position(1);
             assertThat(new ByteBufferDecodeBuffer(b.slice()).arrayOffset(), is(1));
+        }
+        @Test
+        public void testSlice() throws Exception {
+            byte[] buffer = new byte[3];
+
+            DecodeBuffer sliced = sut.slice(3);
+
+            sliced.readBytes(buffer, 0, buffer.length);
+            assertThat(buffer, is(new byte[]{'0', '1', '2'}));
+            assertThat(sliced.remainingBytes(), is(0));
+            assertThat(sut.remainingBytes(), is(13));
+        }
+
+        @Test
+        public void testSliceShare() throws Exception {
+            byte[] buffer = new byte[5];
+            DecodeBuffer input = Buffers.newDecodeBuffer(new byte[]{'a', 'b'}, 0, 2);
+
+            DecodeBuffer sliced = sut.slice(3);
+            sliced.drainFrom(input);
+
+            sliced.readBytes(buffer, 0, 5);
+            assertThat(buffer, is(new byte[]{'0', '1', '2', 'a', 'b'}));
+            sut.readBytes(buffer, 0, 2);
+            assertThat(Arrays.copyOf(buffer, 2), is(new byte[]{'a', 'b'}));
+        }
+
+        @Test
+        public void testSliceNegative() throws Exception {
+            expectedException.expect(IllegalArgumentException.class);
+            sut.slice(-1);
+        }
+
+        @Test
+        public void testSliceOverRemaining() throws Exception {
+            expectedException.expect(IllegalArgumentException.class);
+            sut.slice(17);
         }
     }
 }

@@ -19,6 +19,7 @@ public class ArrayDecodeBuffer extends AbstractDecodeBuffer implements DecodeBuf
     private int end_;
 
     private static final byte[] EMPTY_BYTES = new byte[0];
+    private static final int EXPAND_MULTIPLIER = 2;
 
     ArrayDecodeBuffer() {
         buffer_ = EMPTY_BYTES;
@@ -313,7 +314,7 @@ public class ArrayDecodeBuffer extends AbstractDecodeBuffer implements DecodeBuf
         return drainFromNoCheck(decodeBuffer, (bytes <= remaining) ? bytes : remaining);
     }
 
-    /**
+    /*
      * Drains data from {@code input} with specified bytes
      * @param input buffer which contains the data transferred from
      * @param bytes the number of byte to be transferred
@@ -324,11 +325,33 @@ public class ArrayDecodeBuffer extends AbstractDecodeBuffer implements DecodeBuf
         int space = capacity - end_;
         if (space < bytes) {
             int required = end_ + bytes;
-            int twice = capacity * 2;
+            int twice = capacity * EXPAND_MULTIPLIER;
             buffer_ = Arrays.copyOf(buffer_, (required >= twice) ? required : twice);
         }
         input.readBytes(buffer_, end_, bytes);
         end_ += bytes;
         return bytes;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public DecodeBuffer slice(int bytes) {
+        if (bytes < 0 || bytes > remainingBytes()) {
+            throw new IllegalArgumentException("Invalid input " + bytes + ". " + remainingBytes() + " byte remains.");
+        }
+        int position = position_;
+        position_ += bytes;
+        return new ArrayDecodeBuffer(buffer_, position, bytes);
+    }
+
+    /**
+     * Returns a summary of this buffer state.
+     * @return a summary of this buffer state
+     */
+    @Override
+    public String toString() {
+        return "(position:" + position_ + ", end:" + end_ + ", capacity:" + buffer_.length + ')';
     }
 }
