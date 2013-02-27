@@ -44,9 +44,8 @@ public class FrameLengthRemoveDecoder implements LoadStage<DecodeBuffer, DecodeB
                 return;
             }
             // if (output.remainingBytes() > frameBytes) {
-            output = Buffers.newDecodeBuffer(frameBytes);
-            output.drainFrom(input, frameBytes);
-            context.proceed(new MessageEvent<>(event.getTransport(), output));
+            DecodeBuffer frame = output.slice(frameBytes);
+            context.proceed(new MessageEvent<>(event.getTransport(), frame));
         }
     }
 
