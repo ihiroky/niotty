@@ -12,8 +12,10 @@ import java.util.Iterator;
  */
 public class EncodeBufferGroup implements Iterable<EncodeBuffer>, BufferSink {
 
-    private Deque<EncodeBuffer> group_ = new ArrayDeque<>();
+    private Deque<EncodeBuffer> group_ = new ArrayDeque<>(INITIAL_GROUP_CAPACITY);
     private BufferSink bufferSink_;
+
+    private static final int INITIAL_GROUP_CAPACITY = 4; // actually 8 in ArrayDeque.
 
     public EncodeBufferGroup addLast(EncodeBuffer encodeBuffer) {
         group_.addLast(encodeBuffer);
@@ -58,7 +60,8 @@ public class EncodeBufferGroup implements Iterable<EncodeBuffer>, BufferSink {
     public boolean transferTo(WritableByteChannel channel, ByteBuffer writeBuffer) throws IOException {
         BufferSink bs = bufferSink_;
         if (bs == null) {
-            bs = bufferSink_ = Buffers.createBufferSink(group_);
+            bs = Buffers.createBufferSink(group_);
+            bufferSink_ = bs;
         }
         return bs.transferTo(channel, writeBuffer);
     }
