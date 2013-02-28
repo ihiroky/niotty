@@ -25,7 +25,11 @@ public class FrameLengthRemoveDecoderTest {
 
     @Before
     public void setUp() {
-        sut_ = new FrameLengthRemoveDecoder();
+        setUp(false);
+    }
+
+    private void setUp(boolean useSlice) {
+        sut_ = new FrameLengthRemoveDecoder(useSlice);
         context_ = new LoadStageContextMock<>(sut_);
         EncodeBuffer encodeBuffer = Buffers.newEncodeBuffer(32);
         encodeBuffer.writeVariableByteInteger(12); // length header + contents
@@ -115,6 +119,37 @@ public class FrameLengthRemoveDecoderTest {
 
     @Test
     public void testLoadMessageManyPacketAndNoRemaining() throws Exception {
+        EncodeBuffer encodeBuffer = Buffers.newEncodeBuffer(40);
+        for (int i = 0; i < 3; i++) {
+            encodeBuffer.writeVariableByteInteger(12); // content length
+            encodeBuffer.writeInt(1);
+            encodeBuffer.writeInt(2);
+            encodeBuffer.writeInt(3);
+        }
+        // just 3 packets
+        data_ = encodeBuffer.toArray();
+        dataLength_ = encodeBuffer.filledBytes();
+        DecodeBuffer input = Buffers.newDecodeBuffer(data_, 0, dataLength_);
+
+        sut_.load(context_, new MessageEvent<>(null, input));
+
+        Queue<MessageEvent<DecodeBuffer>> queue = context_.getProceededMessageEventQueue();
+        for (int i = 0; i < 3; i++) {
+            MessageEvent<DecodeBuffer> messageEvent = queue.poll();
+            DecodeBuffer output = messageEvent.getMessage();
+            assertThat(output.readInt(), is(1));
+            assertThat(output.readInt(), is(2));
+            assertThat(output.readInt(), is(3));
+        }
+        assertThat(queue.size(), is(0));
+        assertThat(input.remainingBytes(), is(0));
+        assertThat(sut_.getPooling(), is(nullValue()));
+        assertThat(sut_.getPoolingFrameBytes(), is(0));
+    }
+
+    @Test
+    public void testLoadMessageManyPacketAndNoRemainingWithUseSlice() throws Exception {
+        setUp(true);
         EncodeBuffer encodeBuffer = Buffers.newEncodeBuffer(40);
         for (int i = 0; i < 3; i++) {
             encodeBuffer.writeVariableByteInteger(12); // content length

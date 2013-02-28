@@ -12,8 +12,17 @@ import net.ihiroky.niotty.event.TransportStateEvent;
  */
 public class FrameLengthRemoveDecoder implements LoadStage<DecodeBuffer, DecodeBuffer> {
 
+    private final boolean useSlice_;
     private int poolingFrameBytes_;
     private DecodeBuffer pooling_;
+
+    public FrameLengthRemoveDecoder() {
+        useSlice_ = false;
+    }
+
+    public FrameLengthRemoveDecoder(boolean useSlice) {
+        this.useSlice_ = useSlice;
+    }
 
     @Override
     public void load(LoadStageContext<DecodeBuffer, DecodeBuffer> context, MessageEvent<DecodeBuffer> event) {
@@ -44,7 +53,7 @@ public class FrameLengthRemoveDecoder implements LoadStage<DecodeBuffer, DecodeB
                 return;
             }
             // if (output.remainingBytes() > frameBytes) {
-            DecodeBuffer frame = output.slice(frameBytes);
+            DecodeBuffer frame = useSlice_ ? output.slice(frameBytes) : copy(output, frameBytes);
             context.proceed(new MessageEvent<>(event.getTransport(), frame));
         }
     }
@@ -52,6 +61,12 @@ public class FrameLengthRemoveDecoder implements LoadStage<DecodeBuffer, DecodeB
     @Override
     public void load(LoadStageContext<DecodeBuffer, DecodeBuffer> context, TransportStateEvent event) {
         context.proceed(event);
+    }
+
+    private DecodeBuffer copy(DecodeBuffer output, int bytes) {
+        DecodeBuffer b = Buffers.newDecodeBuffer(bytes);
+        b.drainFrom(output, bytes);
+        return b;
     }
 
     private DecodeBuffer readFully(DecodeBuffer input, int requiredLength) {
