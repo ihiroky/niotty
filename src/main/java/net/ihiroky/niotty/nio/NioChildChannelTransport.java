@@ -128,28 +128,8 @@ public class NioChildChannelTransport extends NioSocketTransport<MessageIOSelect
         }
     }
 
-    void writeBufferSink(BufferSink buffer) throws IOException {
-        WritableByteChannel channel = (WritableByteChannel) getSelectionKey().channel();
-        ByteBuffer localWriteBuffer = writeBuffer_;
-
-        if (remainingPreviousData_) {
-            channel.write(localWriteBuffer);
-            if (localWriteBuffer.hasRemaining()) {
-                pendingQueue_.offer(buffer);
-                return;
-            }
-            remainingPreviousData_ = false;
-            localWriteBuffer.clear();
-        }
-
-        if (pendingQueue_.isEmpty()) {
-            if (buffer.transferTo(channel, localWriteBuffer)) {
-                localWriteBuffer.clear();
-            } else {
-                remainingPreviousData_ = true;
-                pendingQueue_.offer(buffer);
-            }
-        }
+    void writeBufferSink(BufferSink buffer) {
+        pendingQueue_.offer(buffer);
     }
 
     boolean flush() throws IOException {
@@ -157,15 +137,22 @@ public class NioChildChannelTransport extends NioSocketTransport<MessageIOSelect
         ByteBuffer localWriteBuffer = writeBuffer_;
 
         if (remainingPreviousData_) {
-            channel.write(localWriteBuffer);
+            int written = channel.write(localWriteBuffer);
             if (localWriteBuffer.hasRemaining()) {
                 return false;
+            }
+            if (written == -1) {
+                throw new IOException("end of stream.");
             }
             remainingPreviousData_ = false;
             localWriteBuffer.clear();
         }
 
-        for (BufferSink pendingBuffer; (pendingBuffer = pendingQueue_.peek()) != null; ) {
+        for (;;) {
+            BufferSink pendingBuffer = pendingQueue_.peek();
+            if (pendingBuffer == null) {
+                break;
+            }
             if (pendingBuffer.transferTo(channel, localWriteBuffer)) {
                 localWriteBuffer.clear();
                 pendingQueue_.poll();
