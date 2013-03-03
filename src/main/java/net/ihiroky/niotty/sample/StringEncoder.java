@@ -3,8 +3,8 @@ package net.ihiroky.niotty.sample;
 import net.ihiroky.niotty.StoreStage;
 import net.ihiroky.niotty.StoreStageContext;
 import net.ihiroky.niotty.buffer.Buffers;
-import net.ihiroky.niotty.buffer.EncodeBuffer;
-import net.ihiroky.niotty.buffer.EncodeBufferGroup;
+import net.ihiroky.niotty.buffer.CodecBuffer;
+import net.ihiroky.niotty.buffer.CodecBufferDeque;
 import net.ihiroky.niotty.event.MessageEvent;
 import net.ihiroky.niotty.event.TransportStateEvent;
 import org.slf4j.Logger;
@@ -17,23 +17,23 @@ import java.nio.charset.Charset;
  *
  * @author Hiroki Itoh
  */
-public class StringEncoder implements StoreStage<String, EncodeBufferGroup> {
+public class StringEncoder implements StoreStage<String, CodecBufferDeque> {
 
     private Logger logger_ = LoggerFactory.getLogger(StringEncoder.class);
 
     private static final Charset CHARSET = Charset.forName("UTF-8");
 
     @Override
-    public void store(StoreStageContext<String, EncodeBufferGroup> context, MessageEvent<String> event) {
+    public void store(StoreStageContext<String, CodecBufferDeque> context, MessageEvent<String> event) {
         String message = event.getMessage();
-        EncodeBuffer buffer = Buffers.newEncodeBuffer();
+        CodecBuffer buffer = Buffers.newCodecBuffer();
         buffer.writeString(CHARSET.newEncoder(), message);
-        EncodeBufferGroup group = new EncodeBufferGroup().addFirst(buffer);
+        CodecBufferDeque group = new CodecBufferDeque().addFirst(buffer);
         context.proceed(new MessageEvent<>(event.getTransport(), group));
     }
 
     @Override
-    public void store(StoreStageContext<String, EncodeBufferGroup> context, TransportStateEvent event) {
+    public void store(StoreStageContext<String, CodecBufferDeque> context, TransportStateEvent event) {
         logger_.info(event.toString());
         context.proceed(event);
     }

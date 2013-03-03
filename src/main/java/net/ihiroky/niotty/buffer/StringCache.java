@@ -40,10 +40,16 @@ final class StringCache {
         return set;
     }
 
-    static boolean writeAsOneCharAscii(EncodeBuffer b, CharsetEncoder encoder, String s) {
-        if (CHARSET_INCLUDE_ASCII.contains(encoder.charset())){
-            char c =  s.charAt(0);
-            if (c  <= StringCache.MAX_ASCII) {
+    static boolean writeEmptyOrOneCharAscii(CodecBuffer b, CharsetEncoder encoder, String s) {
+        int length = s.length();
+        if (length == 0) {
+            b.writeVariableByteInteger(0);
+            return true;
+        }
+        if (length == 1 && CHARSET_INCLUDE_ASCII.contains(encoder.charset())) {
+            char c = s.charAt(0);
+            if (c <= StringCache.MAX_ASCII) {
+                b.writeVariableByteInteger(1);
                 b.writeByte(c);
                 return true;
             }
@@ -51,7 +57,7 @@ final class StringCache {
         return false;
     }
 
-    static String getCachedValue(DecodeBuffer b, CharsetDecoder decoder, int bytes) {
+    static String getCachedValue(CodecBuffer b, CharsetDecoder decoder, int bytes) {
         switch (bytes) {
             case 0:
                 return StringCache.EMPTY;

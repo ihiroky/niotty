@@ -36,12 +36,8 @@ public class MessageIOSelector extends AbstractSelector<MessageIOSelector> {
                 public void onProceed(
                         Pipeline pipeline, StageContext<Object, BufferSink> context, MessageEvent<BufferSink> event) {
                     NioChildChannelTransport transport = (NioChildChannelTransport) event.getTransport();
-                    try {
-                        transport.writeBufferSink(event.getMessage());
-                        transport.getEventLoop().offerTask(new FlushTask(transport));
-                    } catch (IOException ioe) {
-                        transport.closeSelectableChannel();
-                    }
+                    transport.writeBufferSink(event.getMessage());
+                    transport.getEventLoop().offerTask(new FlushTask(transport));
                 }
 
                 @Override
@@ -94,7 +90,7 @@ public class MessageIOSelector extends AbstractSelector<MessageIOSelector> {
             localByteBuffer.flip();
 
             NioChildChannelTransport transport = (NioChildChannelTransport) key.attachment();
-            transport.loadEvent(new MessageEvent<Object>(transport, Buffers.newDecodeBuffer(localByteBuffer)));
+            transport.loadEvent(new MessageEvent<Object>(transport, Buffers.newCodecBuffer(localByteBuffer)));
             localByteBuffer.clear();
             if (read == -1) {
                 // close current key and socket.

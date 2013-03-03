@@ -5,16 +5,12 @@ import java.nio.CharBuffer;
 import java.nio.charset.CoderResult;
 import java.nio.charset.MalformedInputException;
 import java.nio.charset.UnmappableCharacterException;
-import java.util.Collection;
 
 /**
  *
  * @author Hiroki Itoh
  */
 public final class Buffers {
-
-    // TODO must be read only
-    private static final EncodeBuffer NULL_ENCODE_BUFFER = new ArrayEncodeBuffer(0);
 
     private Buffers() {
         throw new AssertionError();
@@ -44,71 +40,54 @@ public final class Buffers {
         }
     }
 
-    public static EncodeBuffer emptyEncodeBuffer() {
-        return NULL_ENCODE_BUFFER;
-    }
-
-    public static EncodeBuffer newEncodeBuffer() {
-        return new ArrayEncodeBuffer();
-    }
-
-    public static EncodeBuffer newEncodeBuffer(int initialCapacity) {
-        return new ArrayEncodeBuffer(initialCapacity);
-    }
-
-    public static EncodeBuffer newEncodeBuffer(byte[] buffer, int offset, int length) {
-        return new ArrayEncodeBuffer(buffer, offset, length);
-    }
-
     /**
-     * Creates a new {@code DecodeBuffer} with specified limit.
-     *
-     * The new {@code DecodeBuffer} is backed by the specified byte array. If some data is written into the
-     * {@code DecodeBuffer}, then the backed byte array is also modified and vice versa. The new
-     * {@code DecodeBuffer}'s limit is {@code limit} and the position is {@code 0}.
-     * An invocation of this method of the form {@code newDecodeBuffer(n)} behaves in exactly the same way
-     * as the invocation {@code newDecode(new byte[n], 0, 0)}
-     *
-     * @param limit the content length in {@code b} from {@code offset},
-     *               must be non-negative and less than or equal to {@code b.length - offset}
-     * @return the new {@code DecodeBuffer}
+     * Creates a new {@code CodecBuffer} which has initial capacity 512.
+     * The new {@code CodecBuffer} has no content to read. An invocation of this method behaves
+     * in exactly the same way as the invocation {@code new}
+     * @return the new {@code newCodecBuffer(512)}.
      */
-    public static DecodeBuffer newDecodeBuffer(int limit) {
-        return new ArrayDecodeBuffer(new byte[limit], 0,  0);
+    public static CodecBuffer newCodecBuffer() {
+        return new ArrayCodecBuffer();
     }
 
     /**
-     * Wraps a specified byte array into {@code DecodeBuffer}.
+     * Creates a new {@code CodecBuffer} which has initial capacity {@code initialCapacity}.
+     * The new {@code CodecBuffer} has no content to read. An invocation of this method of the form
+     * {@code newCodecBuffer(n)} behaves in exactly the same way as the invocation
+     * {@code newCodecBuffer(new byte[n], 0, 0)}.
      *
-     * The new {@code DecodeBuffer} is backed by the specified byte array. If some data is written into the
-     * {@code DecodeBuffer}, then the backed byte array is also modified and vice versa. The new
-     * {@code DecodeBuffer}'s limit is {@code offset + length} and the position is {@code offset}.
+     * @param initialCapacity the initial capacity of the new {@code CodecBuffer}.
+     * @return the new {@code CodecBuffer}
+     */
+    public static CodecBuffer newCodecBuffer(int initialCapacity) {
+        return new ArrayCodecBuffer(initialCapacity);
+    }
+
+    /**
+     * Creates a new {@code CodecBuffer} which is backed by a specified byte array.
+     *
+     * If some data is written into the {@code CodecBuffer}, then the backed byte array is also modified
+     * and vice versa. The new {@code CodecBuffer}'s beginning is {@code offset} and end is {@code offset + length}.
      *
      * @param buffer the backed byte array
-     * @param offset the offset
-     * @param length the content length in {@code b} from {@code offset},
-     *               must be non-negative and less than or equal to {@code b.length - offset}
+     * @param offset the offset of content in {@code buffer}
+     * @param length the length of content in {@code buffer} from {@code offset}
      * @return the new {@code DecodeBuffer}
      */
-    public static DecodeBuffer newDecodeBuffer(byte[] buffer, int offset, int length) {
-        return new ArrayDecodeBuffer(buffer, offset,  length);
+    public static CodecBuffer newCodecBuffer(byte[] buffer, int offset, int length) {
+        return new ArrayCodecBuffer(buffer, offset, length);
     }
 
     /**
-     * Wraps a specified {@code ByteBuffer} into {@code DecodeBuffer}.
+     * Creates a new {@code CodecBuffer} which is backed by a specified byte buffer.
      *
-     * The new {@code DecodeBuffer} is backed by the specified {@code ByteBuffer}. If some data is written into the
-     * {@code DecodeBuffer}, then the backed {@code ByteBuffer} is also modified and vice versa. The new
-     * {@code DecodeBuffer}'s limit is {@code offset + length} and the position is {@code offset}.
+     * If some data is written into the {@code DecodeBuffer}, then the backed {@code ByteBuffer} is also modified
+     * and vice versa. The new {@code DecodeBuffer}'s beginning is buffer' position and end is buffer's limit.
      *
      * @param byteBuffer the backed {@code ByteBuffer}
      * @return the new {@code DecodeBuffer}
      */
-    public static DecodeBuffer newDecodeBuffer(ByteBuffer byteBuffer) {
-        return new ByteBufferDecodeBuffer(byteBuffer);
-    }
-
-    public static BufferSink createBufferSink(Collection<EncodeBuffer> encodeBuffers) {
-        return new CompositeBufferSink(encodeBuffers);
+    public static CodecBuffer newCodecBuffer(ByteBuffer byteBuffer) {
+        return new ByteBufferCodecBuffer(byteBuffer);
     }
 }

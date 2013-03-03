@@ -2,7 +2,7 @@ package net.ihiroky.niotty.sample;
 
 import net.ihiroky.niotty.LoadStage;
 import net.ihiroky.niotty.LoadStageContext;
-import net.ihiroky.niotty.buffer.DecodeBuffer;
+import net.ihiroky.niotty.buffer.CodecBuffer;
 import net.ihiroky.niotty.event.MessageEvent;
 import net.ihiroky.niotty.event.TransportStateEvent;
 import org.slf4j.Logger;
@@ -18,7 +18,7 @@ import java.nio.charset.CodingErrorAction;
  *
  * @author Hiroki Itoh
  */
-public class StringDecoder implements LoadStage<DecodeBuffer, String> {
+public class StringDecoder implements LoadStage<CodecBuffer, String> {
 
     private Logger logger_ = LoggerFactory.getLogger(StringDecoder.class);
 
@@ -29,8 +29,8 @@ public class StringDecoder implements LoadStage<DecodeBuffer, String> {
             .onUnmappableCharacter(CodingErrorAction.IGNORE);
 
     @Override
-    public void load(LoadStageContext<DecodeBuffer, String> context, MessageEvent<DecodeBuffer> event) {
-        DecodeBuffer message = event.getMessage();
+    public void load(LoadStageContext<CodecBuffer, String> context, MessageEvent<CodecBuffer> event) {
+        CodecBuffer message = event.getMessage();
         try {
             String s = decoder_.decode(message.toByteBuffer()).toString();
             context.proceed(new MessageEvent<>(event.getTransport(), s));
@@ -40,7 +40,7 @@ public class StringDecoder implements LoadStage<DecodeBuffer, String> {
     }
 
     @Override
-    public void load(LoadStageContext<DecodeBuffer, String> context, TransportStateEvent event) {
+    public void load(LoadStageContext<CodecBuffer, String> context, TransportStateEvent event) {
         logger_.info(event.toString());
         context.proceed(event);
     }

@@ -18,7 +18,7 @@ public interface BufferSink {
      * @param channel the {@code WritableByteChannel} to be written into
      * @param writeBuffer the buffer to write data into the {@code channel}
      * @return true if all data in this instance is written into the {@code channel}
-     * @throws IOException
+     * @throws IOException if I/O operation is failed
      */
     boolean transferTo(WritableByteChannel channel, ByteBuffer writeBuffer) throws IOException;
 

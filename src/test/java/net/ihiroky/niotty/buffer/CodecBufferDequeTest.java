@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
 import java.util.Arrays;
+import java.util.Iterator;
 
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
@@ -18,9 +19,9 @@ import static org.mockito.Mockito.*;
 /**
  * @author Hiroki Itoh
  */
-public class CompositeBufferSinkTest {
+public class CodecBufferDequeTest {
 
-    private CompositeBufferSink sut_;
+    private CodecBufferDeque sut_;
     private int dataLength_;
 
     @Before
@@ -28,8 +29,9 @@ public class CompositeBufferSinkTest {
         dataLength_ = 32;
         byte[] data = new byte[dataLength_ / 2];
         Arrays.fill(data, (byte) '0');
-        sut_ = new CompositeBufferSink(Arrays.asList(
-                Buffers.newEncodeBuffer(data, 0, data.length), Buffers.newEncodeBuffer(data, 0, data.length)));
+        sut_ = new CodecBufferDeque()
+                .addLast(Buffers.newCodecBuffer(data, 0, data.length))
+                .addLast(Buffers.newCodecBuffer(data, 0, data.length));
     }
 
     @Test
@@ -123,5 +125,42 @@ public class CompositeBufferSinkTest {
         when(channel.write(writeBuffer)).thenThrow(new IOException());
 
         sut_.transferTo(channel, writeBuffer);
+    }
+
+    @Test
+    public void testIterator() throws Exception {
+        CodecBufferDeque sut = new CodecBufferDeque();
+        sut.addFirst(Buffers.newCodecBuffer(new byte[1], 0, 1));
+        sut.addLast(Buffers.newCodecBuffer(new byte[2], 0, 2));
+        sut.addFirst(Buffers.newCodecBuffer(new byte[3], 0, 3));
+        sut.addLast(Buffers.newCodecBuffer(new byte[4], 0, 4));
+
+        Iterator<CodecBuffer> i = sut.iterator();
+        assertThat(i.hasNext(), is(true));
+        assertThat(i.next().capacityBytes(), is(3));
+        assertThat(i.hasNext(), is(true));
+        assertThat(i.next().capacityBytes(), is(1));
+        assertThat(i.hasNext(), is(true));
+        assertThat(i.next().capacityBytes(), is(2));
+        assertThat(i.hasNext(), is(true));
+        assertThat(i.next().capacityBytes(), is(4));
+        assertThat(i.hasNext(), is(false));
+    }
+
+    @Test
+    public void testPeek() throws Exception {
+        CodecBufferDeque sut = new CodecBufferDeque()
+                .addLast(Buffers.newCodecBuffer(new byte[1], 0, 1))
+                .addLast(Buffers.newCodecBuffer(new byte[2], 0, 2));
+        assertThat(sut.peekFirst().capacityBytes(), is(1));
+        assertThat(sut.peekLast().capacityBytes(), is(2));
+    }
+
+    @Test
+    public void testRemainingBytes() throws Exception {
+        CodecBufferDeque sut = new CodecBufferDeque()
+                .addLast(Buffers.newCodecBuffer(new byte[1], 0, 1))
+                .addLast(Buffers.newCodecBuffer(new byte[2], 0, 2));
+        assertThat(sut.remainingBytes(), is(3));
     }
 }
