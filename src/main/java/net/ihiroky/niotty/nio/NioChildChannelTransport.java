@@ -20,8 +20,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.WritableByteChannel;
-import java.util.LinkedList;
 import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * Created on 13/01/15, 16:50
@@ -53,7 +53,7 @@ public class NioChildChannelTransport extends NioSocketTransport<MessageIOSelect
         setLoadPipeline(loadPipeline);
         setStorePipeline(storePipeline);
         this.writeBuffer_ = writeBuffer;
-        this.pendingQueue_ = new LinkedList<>();
+        this.pendingQueue_ = new ConcurrentLinkedQueue<>();
     }
 
     @Override
