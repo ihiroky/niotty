@@ -7,7 +7,7 @@ import java.nio.charset.MalformedInputException;
 import java.nio.charset.UnmappableCharacterException;
 
 /**
- *
+ * TODO comment against priority.
  * @author Hiroki Itoh
  */
 public final class Buffers {
@@ -43,8 +43,8 @@ public final class Buffers {
     /**
      * Creates a new {@code CodecBuffer} which has initial capacity 512.
      * The new {@code CodecBuffer} has no content to read. An invocation of this method behaves
-     * in exactly the same way as the invocation {@code new}
-     * @return the new {@code newCodecBuffer(512)}.
+     * in exactly the same way as the invocation {@code newCodecBuffer(512)}
+     * @return the new {@code CodecBuffer}.
      */
     public static CodecBuffer newCodecBuffer() {
         return new ArrayCodecBuffer();
@@ -90,4 +90,62 @@ public final class Buffers {
     public static CodecBuffer newCodecBuffer(ByteBuffer byteBuffer) {
         return new ByteBufferCodecBuffer(byteBuffer);
     }
+
+    /**
+     * Creates a new {@code CodecBuffer} which has initial capacity 512 with a specified priority.
+     * An invocation of this method behaves in exactly the same way as the invocation {@link #newCodecBuffer()}
+     * if {@code priority < 0}.
+     *
+     * @param priority buffer priority
+     * @return the new {@code CodecBuffer}
+     */
+    public static CodecBuffer newPriorityCodecBuffer(int priority) {
+        return (priority < 0) ? newCodecBuffer() : new PriorityArrayCodecBuffer(priority);
+    }
+
+    /**
+     * Creates a new {@code CodecBuffer} which has initial capacity {@code initialCapacity} with a specified priority.
+     * An invocation of this method behaves in exactly the same way as the invocation {@link #newCodecBuffer(int)}
+     * if {@code priority < 0}.
+     *
+     * @param initialCapacity the initial capacity of the new {@code CodecBuffer}
+     * @param priority buffer priority
+     * @return the new {@code CodecBuffer}
+     */
+    public static CodecBuffer newPriorityCodecBuffer(int initialCapacity, int priority) {
+        return (priority < 0)
+                ? newCodecBuffer(initialCapacity)
+                : new PriorityArrayCodecBuffer(initialCapacity, priority);
+    }
+
+    /**
+     * Creates a new {@code CodecBuffer} which is backed by a specified byte array with a specified priority.
+     * An invocation of this method behaves in exactly the same way as the invocation
+     * {@link #newCodecBuffer(byte[], int, int)} if {@code priority < 0}.
+     *
+     * @param buffer the backed byte array
+     * @param offset the offset of content in {@code buffer}
+     * @param length the length of content in {@code buffer} from {@code offset}
+     * @param priority buffer priority
+     * @return the new {@code DecodeBuffer}
+     */
+    public static CodecBuffer newPriorityCodecBuffer(byte[] buffer, int offset, int length, int priority) {
+        return (priority < 0)
+                ? newCodecBuffer(buffer, offset, length)
+                : new PriorityArrayCodecBuffer(buffer, offset, length, priority);
+    }
+
+    /**
+     * Creates a new {@code CodecBuffer} which is backed by a specified byte buffer.
+     * An invocation of this method behaves in exactly the same way as the invocation
+     * {@link #newCodecBuffer(java.nio.ByteBuffer)} if {@code priority < 0}.
+     *
+     * @param byteBuffer the backed {@code ByteBuffer}
+     * @param priority buffer priority
+     * @return the new {@code DecodeBuffer}
+     */
+    public static CodecBuffer newPriorityCodecBuffer(ByteBuffer byteBuffer, int priority) {
+        return (priority < 0) ? newCodecBuffer(byteBuffer) : new PriorityByteBufferCodecBuffer(byteBuffer, priority);
+    }
+
 }

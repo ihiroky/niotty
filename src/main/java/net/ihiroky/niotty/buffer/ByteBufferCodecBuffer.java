@@ -491,6 +491,11 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer implements CodecB
     }
 
     @Override
+    public int priority() {
+        return -1;
+    }
+
+    @Override
     public int spaceBytes() {
         syncBeginEnd();
         return buffer_.capacity() - end_;

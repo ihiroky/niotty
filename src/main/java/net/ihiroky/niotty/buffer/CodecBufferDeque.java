@@ -65,4 +65,9 @@ public class CodecBufferDeque implements Iterable<CodecBuffer>, BufferSink {
         }
         return (sum <= Integer.MAX_VALUE) ? (int) sum : Integer.MAX_VALUE;
     }
+
+    @Override
+    public int priority() {
+        return 0;
+    }
 }

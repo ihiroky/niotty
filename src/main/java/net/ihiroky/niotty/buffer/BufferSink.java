@@ -27,4 +27,6 @@ public interface BufferSink {
      * @return the byte size of remaining data in this instance.
      */
     int remainingBytes();
+
+    int priority();
 }

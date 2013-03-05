@@ -506,6 +506,14 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer implements CodecBuffer
      * {@inheritDoc}
      */
     @Override
+    public int priority() {
+        return -1;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public int spaceBytes() {
         return buffer_.length - end_;
     }
