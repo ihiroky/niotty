@@ -507,7 +507,7 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer implements CodecBuffer
      */
     @Override
     public int priority() {
-        return -1;
+        return Buffers.DEFAULT_PRIORITY;
     }
 
     /**

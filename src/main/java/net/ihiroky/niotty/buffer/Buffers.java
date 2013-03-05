@@ -16,6 +16,9 @@ public final class Buffers {
         throw new AssertionError();
     }
 
+    /** Default priority (no wait). */
+    static final int DEFAULT_PRIORITY = -1;
+
     static int outputByteBufferSize(float bytesPerChar, int chars) {
         return (int) (bytesPerChar * chars) + 1;
     }

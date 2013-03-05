@@ -68,6 +68,6 @@ public class CodecBufferDeque implements Iterable<CodecBuffer>, BufferSink {
 
     @Override
     public int priority() {
-        return 0;
+        return Buffers.DEFAULT_PRIORITY;
     }
 }

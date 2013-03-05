@@ -492,7 +492,7 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer implements CodecB
 
     @Override
     public int priority() {
-        return -1;
+        return Buffers.DEFAULT_PRIORITY;
     }
 
     @Override
