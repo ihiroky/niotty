@@ -34,7 +34,7 @@ public abstract class AbstractSelector<S extends AbstractSelector<S>> extends Ev
                 @Override
                 public void onProceed(
                         Pipeline pipeline, StageContext<Object, BufferSink> context, TransportStateEvent event) {
-                    NioServerSocketTransport transport = (NioServerSocketTransport) event.getTransport();
+                    NioSocketTransport<?> transport = (NioSocketTransport<?>) event.getTransport();
                     Object value = event.getValue();
                     switch (event.getState()) {
                         case ACCEPTED: // fall through
