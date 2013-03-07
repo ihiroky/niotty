@@ -16,12 +16,9 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
 import java.net.SocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.WritableByteChannel;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * Created on 13/01/15, 16:50
@@ -31,9 +28,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  */
 public class NioChildChannelTransport extends NioSocketTransport<MessageIOSelector> {
 
-    private boolean remainingPreviousData_;
-    private ByteBuffer writeBuffer_;
-    private Queue<BufferSink> pendingQueue_;
+    private NioWriteQueue queue_;
 
     NioChildChannelTransport(TransportConfig config, String name, int writeBufferSize, boolean directWriteBuffer) {
         DefaultLoadPipeline loadPipeline = DefaultLoadPipeline.createPipeline(name);
@@ -47,13 +42,9 @@ public class NioChildChannelTransport extends NioSocketTransport<MessageIOSelect
         storePipeline.getLastContext().addListener(MessageIOSelector.MESSAGE_IO_STORE_CONTEXT_LISTENER);
         storePipeline.verifyStageContextType();
 
-        ByteBuffer writeBuffer = directWriteBuffer
-                ? ByteBuffer.allocateDirect(writeBufferSize) : ByteBuffer.allocate(writeBufferSize);
-
         setLoadPipeline(loadPipeline);
         setStorePipeline(storePipeline);
-        this.writeBuffer_ = writeBuffer;
-        this.pendingQueue_ = new ConcurrentLinkedQueue<>();
+        queue_ = new SimpleWriteQueue(writeBufferSize, directWriteBuffer);
     }
 
     @Override
@@ -129,39 +120,13 @@ public class NioChildChannelTransport extends NioSocketTransport<MessageIOSelect
     }
 
     void writeBufferSink(BufferSink buffer) {
-        pendingQueue_.offer(buffer);
+        queue_.offer(buffer);
     }
 
     boolean flush() throws IOException {
         WritableByteChannel channel = (WritableByteChannel) getSelectionKey().channel();
-        ByteBuffer localWriteBuffer = writeBuffer_;
-
-        if (remainingPreviousData_) {
-            int written = channel.write(localWriteBuffer);
-            if (localWriteBuffer.hasRemaining()) {
-                return false;
-            }
-            if (written == -1) {
-                throw new IOException("end of stream.");
-            }
-            remainingPreviousData_ = false;
-            localWriteBuffer.clear();
-        }
-
-        for (;;) {
-            BufferSink pendingBuffer = pendingQueue_.peek();
-            if (pendingBuffer == null) {
-                break;
-            }
-            if (pendingBuffer.transferTo(channel, localWriteBuffer)) {
-                localWriteBuffer.clear();
-                pendingQueue_.poll();
-            } else {
-                remainingPreviousData_ = true;
-                return false;
-            }
-        }
-        return true;
+        NioWriteQueue.FlushStatus status = queue_.flushTo(channel);
+        return status == NioWriteQueue.FlushStatus.FLUSHED;
     }
 
     private void fire(MessageEvent<Object> event) {
