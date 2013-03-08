@@ -16,6 +16,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
 import java.net.SocketAddress;
+import java.nio.ByteBuffer;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.WritableByteChannel;
@@ -28,9 +29,10 @@ import java.nio.channels.WritableByteChannel;
  */
 public class NioChildChannelTransport extends NioSocketTransport<MessageIOSelector> {
 
-    private NioWriteQueue queue_;
+    private WriteQueue queue_;
 
-    NioChildChannelTransport(TransportConfig config, String name, int writeBufferSize, boolean directWriteBuffer) {
+    NioChildChannelTransport(
+            TransportConfig config, String name, MessageIOSelector messageIO, WriteQueue writeQueue) {
         DefaultLoadPipeline loadPipeline = DefaultLoadPipeline.createPipeline(name);
         DefaultStorePipeline storePipeline = DefaultStorePipeline.createPipeline(name);
         config.getPipelineInitializer().setUpPipeline(loadPipeline, storePipeline);
@@ -39,12 +41,12 @@ public class NioChildChannelTransport extends NioSocketTransport<MessageIOSelect
         loadPipeline.verifyStageContextType();
 
         storePipeline.regulate();
-        storePipeline.getLastContext().addListener(MessageIOSelector.MESSAGE_IO_STORE_CONTEXT_LISTENER);
+        storePipeline.getLastContext().addListener(messageIO.storeContextListener());
         storePipeline.verifyStageContextType();
 
         setLoadPipeline(loadPipeline);
         setStorePipeline(storePipeline);
-        queue_ = new SimpleWriteQueue(writeBufferSize, directWriteBuffer);
+        queue_ = writeQueue;
     }
 
     @Override
@@ -123,10 +125,10 @@ public class NioChildChannelTransport extends NioSocketTransport<MessageIOSelect
         queue_.offer(buffer);
     }
 
-    boolean flush() throws IOException {
+    boolean flush(ByteBuffer byteBuffer) throws IOException {
         WritableByteChannel channel = (WritableByteChannel) getSelectionKey().channel();
-        NioWriteQueue.FlushStatus status = queue_.flushTo(channel);
-        return status == NioWriteQueue.FlushStatus.FLUSHED;
+        WriteQueue.FlushStatus status = queue_.flushTo(channel, byteBuffer);
+        return status == WriteQueue.FlushStatus.FLUSHED;
     }
 
     private void fire(MessageEvent<Object> event) {

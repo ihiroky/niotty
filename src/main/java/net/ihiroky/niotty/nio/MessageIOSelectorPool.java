@@ -1,6 +1,7 @@
 package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.EventLoop;
+import net.ihiroky.niotty.TransportConfig;
 
 import java.nio.channels.SelectableChannel;
 
@@ -12,10 +13,14 @@ import java.nio.channels.SelectableChannel;
 public class MessageIOSelectorPool extends AbstractSelectorPool<MessageIOSelector> {
 
     private int readBufferSize_;
+    private int writeBufferSize_;
     private boolean direct_;
 
+    private static final int DEFAULT_BUFFER_SIZE = 8192;
+
     public MessageIOSelectorPool() {
-        readBufferSize_ = 8192;
+        readBufferSize_ = DEFAULT_BUFFER_SIZE;
+        writeBufferSize_ = DEFAULT_BUFFER_SIZE;
         direct_ = false;
     }
 
@@ -32,13 +37,15 @@ public class MessageIOSelectorPool extends AbstractSelectorPool<MessageIOSelecto
 
     @Override
     protected MessageIOSelector newEventLoop() {
-        return new MessageIOSelector(readBufferSize_, direct_);
+        return new MessageIOSelector(readBufferSize_, writeBufferSize_, direct_);
     }
 
-    public void register(final SelectableChannel channel, final int ops,
-                         final NioChildChannelTransport transport) {
+    public NioChildChannelTransport register(
+            TransportConfig config, String name, WriteQueue writeQueue,
+            final SelectableChannel channel, final int ops) {
         MessageIOSelector target = searchLoop();
         if (target != null) {
+            final NioChildChannelTransport transport = new NioChildChannelTransport(config, name, target, writeQueue);
             transport.setEventLoop(target);
             target.offerTask(new EventLoop.Task<MessageIOSelector>() {
                 @Override
@@ -47,6 +54,8 @@ public class MessageIOSelectorPool extends AbstractSelectorPool<MessageIOSelecto
                     return true;
                 }
             });
+            return transport;
         }
+        throw new AssertionError("should not reach here.");
     }
 }

@@ -3,6 +3,7 @@ package net.ihiroky.niotty.nio;
 import net.ihiroky.niotty.buffer.BufferSink;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
 import java.util.ArrayList;
 import java.util.List;
@@ -10,7 +11,7 @@ import java.util.List;
 /**
  * @author Hiroki Itoh
  */
-public class DeficitRoundRobinWriteQueue implements NioWriteQueue {
+public class DeficitRoundRobinWriteQueue implements WriteQueue {
 
     private final SimpleWriteQueue baseQueue_;
     private final List<SimpleWriteQueue> queueList_;
@@ -25,8 +26,7 @@ public class DeficitRoundRobinWriteQueue implements NioWriteQueue {
     private static final float MIN_WEIGHT = 0.05f;
     private static final float MAX_WEIGHT = 1f;
 
-    public DeficitRoundRobinWriteQueue(int writeBufferSize, boolean useDirectBuffer,
-                                       int roundBonus, float ...weights) {
+    public DeficitRoundRobinWriteQueue(int roundBonus, float ...weights) {
         int length = weights.length;
         List<SimpleWriteQueue> ql = new ArrayList<>(length);
         int[] p = new int[length];
@@ -36,9 +36,9 @@ public class DeficitRoundRobinWriteQueue implements NioWriteQueue {
                 throw new IllegalArgumentException("weight must be in [" + MIN_WEIGHT + ", " + MAX_WEIGHT + "]");
             }
             p[i] = Math.round(BASE_WEIGHT * weights[i]);
-            ql.add(new SimpleWriteQueue(writeBufferSize, useDirectBuffer));
+            ql.add(new SimpleWriteQueue());
         }
-        baseQueue_ = new SimpleWriteQueue(writeBufferSize, useDirectBuffer);
+        baseQueue_ = new SimpleWriteQueue();
         queueList_ = ql;
         weights_ = p;
         deficitCounter_ = new int[length];
@@ -56,16 +56,17 @@ public class DeficitRoundRobinWriteQueue implements NioWriteQueue {
     }
 
     @Override
-    public FlushStatus flushTo(WritableByteChannel channel) throws IOException {
-        return flushTo(channel, 0);
+    public FlushStatus flushTo(WritableByteChannel channel, ByteBuffer writeBuffer) throws IOException {
+        return flushTo(channel, writeBuffer, 0);
     }
 
-    private FlushStatus flushTo(WritableByteChannel channel, int previousFlushedByte) throws IOException {
+    private FlushStatus flushTo(
+            WritableByteChannel channel, ByteBuffer writeBuffer, int previousFlushedByte) throws IOException {
         int baseQuantum = 0;
         int flushedBytes = previousFlushedByte;
         int queueIndex = queueIndex_;
         if (queueIndex == QUEUE_INDEX_BASE) {
-            FlushStatus status = baseQueue_.flushTo(channel);
+            FlushStatus status = baseQueue_.flushTo(channel, writeBuffer, Integer.MAX_VALUE);
             baseQuantum = baseQueue_.lastFlushedBytes();
             flushedBytes += baseQuantum;
             if (status == FlushStatus.FLUSHING) {
@@ -91,7 +92,7 @@ public class DeficitRoundRobinWriteQueue implements NioWriteQueue {
 
             // flush operation
             int newDeficitCounter = deficitCounter_[i] + baseQuantum * weights_[i] / BASE_WEIGHT;
-            FlushStatus status = q.flushTo(channel, newDeficitCounter);
+            FlushStatus status = q.flushTo(channel, writeBuffer, newDeficitCounter);
             int qlf = q.lastFlushedBytes();
             flushedBytes += qlf;
             deficitCounter_[i] = newDeficitCounter - qlf;
@@ -118,7 +119,7 @@ public class DeficitRoundRobinWriteQueue implements NioWriteQueue {
         queueIndex_ = QUEUE_INDEX_BASE;
         return baseQueue_.isEmpty()
                 ? (existsSkipped ? FlushStatus.SKIP : FlushStatus.FLUSHED)
-                : flushTo(channel, flushedBytes);
+                : flushTo(channel, writeBuffer, flushedBytes);
     }
 
     private void countUpDeficitCounters(int baseQuantum, int from, int size) {

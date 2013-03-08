@@ -3,14 +3,15 @@ package net.ihiroky.niotty.nio;
 import net.ihiroky.niotty.buffer.BufferSink;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
 
 /**
  * @author Hiroki Itoh
  */
-public interface NioWriteQueue {
+public interface WriteQueue {
     boolean offer(BufferSink bufferSink);
-    FlushStatus flushTo(WritableByteChannel channel) throws IOException;
+    FlushStatus flushTo(WritableByteChannel channel, ByteBuffer writeBuffer) throws IOException;
     int size();
     boolean isEmpty();
     int lastFlushedBytes();

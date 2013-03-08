@@ -44,7 +44,7 @@ public class DeficitRoundRobinWriteQueueTest {
 
     @Test
     public void testConstructor() throws Exception {
-        DeficitRoundRobinWriteQueue sut = new DeficitRoundRobinWriteQueue(16, false, 32, 0.5f, 0.25f);
+        DeficitRoundRobinWriteQueue sut = new DeficitRoundRobinWriteQueue(32, 0.5f, 0.25f);
         assertThat(sut.weights(0), is(50));
         assertThat(sut.weights(1), is(25));
         assertThat(sut.deficitCounter(0), is(0));
@@ -55,7 +55,7 @@ public class DeficitRoundRobinWriteQueueTest {
 
     @Test
     public void testFlushTo_Base() throws Exception {
-        DeficitRoundRobinWriteQueue sut = new DeficitRoundRobinWriteQueue(16, false, 32);
+        DeficitRoundRobinWriteQueue sut = new DeficitRoundRobinWriteQueue(32);
         WritableByteChannel channel = mock(WritableByteChannel.class);
         when(channel.write(Mockito.any(ByteBuffer.class))).thenAnswer(new FlushAllAnswer());
         byte[] data = new byte[] {
@@ -63,16 +63,16 @@ public class DeficitRoundRobinWriteQueueTest {
         };
 
         sut.offer(Buffers.newCodecBuffer(data, 0, data.length));
-        NioWriteQueue.FlushStatus status = sut.flushTo(channel);
+        WriteQueue.FlushStatus status = sut.flushTo(channel, ByteBuffer.allocate(16));
 
-        assertThat(status, is(NioWriteQueue.FlushStatus.FLUSHED));
+        assertThat(status, is(WriteQueue.FlushStatus.FLUSHED));
         assertThat(sut.lastFlushedBytes(), is(4));
         assertThat(sut.queueIndex(), is(-1));
     }
 
     @Test
     public void testFlushTo_BaseIsFlushing() throws Exception {
-        DeficitRoundRobinWriteQueue sut = new DeficitRoundRobinWriteQueue(16, false, 32, 1f, 0.5f, 0.25f);
+        DeficitRoundRobinWriteQueue sut = new DeficitRoundRobinWriteQueue(32, 1f, 0.5f, 0.25f);
         WritableByteChannel channel = mock(WritableByteChannel.class);
         when(channel.write(Mockito.any(ByteBuffer.class))).thenAnswer(new FlushSizeAnswer(4));
         byte[] data = new byte[] {
@@ -82,9 +82,9 @@ public class DeficitRoundRobinWriteQueueTest {
         sut.offer(Buffers.newCodecBuffer(data, 0, data.length));
         sut.offer(Buffers.newPriorityCodecBuffer(data, 0, data.length, 0));
         sut.offer(Buffers.newPriorityCodecBuffer(data, 0, data.length, 2));
-        NioWriteQueue.FlushStatus status = sut.flushTo(channel);
+        WriteQueue.FlushStatus status = sut.flushTo(channel, ByteBuffer.allocate(16));
 
-        assertThat(status, is(NioWriteQueue.FlushStatus.FLUSHING));
+        assertThat(status, is(WriteQueue.FlushStatus.FLUSHING));
         assertThat(sut.lastFlushedBytes(), is(4));
         assertThat(sut.queueIndex(), is(-1));
         assertThat(sut.deficitCounter(0), is(4));
@@ -94,7 +94,7 @@ public class DeficitRoundRobinWriteQueueTest {
 
     @Test
     public void testFlushTo_DeficitCounterGetsZeroIfQueueIsEmpty() throws Exception {
-        DeficitRoundRobinWriteQueue sut = new DeficitRoundRobinWriteQueue(32, false, 32, 1f, 0.5f);
+        DeficitRoundRobinWriteQueue sut = new DeficitRoundRobinWriteQueue(32, 1f, 0.5f);
         WritableByteChannel channel = mock(WritableByteChannel.class);
         when(channel.write(Mockito.any(ByteBuffer.class))).thenAnswer(new FlushAllAnswer());
         byte[] data = new byte[] {
@@ -105,9 +105,9 @@ public class DeficitRoundRobinWriteQueueTest {
 
         sut.offer(Buffers.newCodecBuffer(data, 0, data.length));
         sut.offer(Buffers.newPriorityCodecBuffer(data, 0, data.length / 2, 0));
-        NioWriteQueue.FlushStatus status = sut.flushTo(channel);
+        WriteQueue.FlushStatus status = sut.flushTo(channel, ByteBuffer.allocate(32));
 
-        assertThat(status, is(NioWriteQueue.FlushStatus.FLUSHED));
+        assertThat(status, is(WriteQueue.FlushStatus.FLUSHED));
         assertThat(sut.lastFlushedBytes(), is(8 + 4));
         assertThat(sut.queueIndex(), is(-1));
         assertThat(sut.deficitCounter(0), is(100 + 8 - 4));
@@ -116,7 +116,7 @@ public class DeficitRoundRobinWriteQueueTest {
 
     @Test
     public void testFlushTo_DoNotFlushToPartiallyIfDeficitCounterIsShort() throws Exception {
-        DeficitRoundRobinWriteQueue sut = new DeficitRoundRobinWriteQueue(32, false, 32, 1f, 0.5f);
+        DeficitRoundRobinWriteQueue sut = new DeficitRoundRobinWriteQueue(32, 1f, 0.5f);
         WritableByteChannel channel = mock(WritableByteChannel.class);
         when(channel.write(Mockito.any(ByteBuffer.class))).thenAnswer(new FlushAllAnswer());
         byte[] data = new byte[] {
@@ -125,12 +125,12 @@ public class DeficitRoundRobinWriteQueueTest {
         sut.deficitCounter(0, 0); // priority 0 may not be executed.
         sut.deficitCounter(1, 6);
 
-        sut.offer(Buffers.newCodecBuffer(data, 0, data.length/2));
+        sut.offer(Buffers.newCodecBuffer(data, 0, data.length / 2));
         sut.offer(Buffers.newPriorityCodecBuffer(data, 0, data.length, 0));
         sut.offer(Buffers.newPriorityCodecBuffer(data, 0, data.length, 1));
-        NioWriteQueue.FlushStatus status = sut.flushTo(channel);
+        WriteQueue.FlushStatus status = sut.flushTo(channel, ByteBuffer.allocate(32));
 
-        assertThat(status, is(NioWriteQueue.FlushStatus.SKIP));
+        assertThat(status, is(WriteQueue.FlushStatus.SKIP));
         assertThat(sut.lastFlushedBytes(), is(4 + 8));
         assertThat(sut.queueIndex(), is(-1));
         assertThat(sut.deficitCounter(0), is(4)); // queue -1 input * 1f
@@ -139,7 +139,7 @@ public class DeficitRoundRobinWriteQueueTest {
 
     @Test
     public void testFlushTo_PriorityQueueIsFlushing() throws Exception {
-        DeficitRoundRobinWriteQueue sut = new DeficitRoundRobinWriteQueue(32, false, 64, 1f, 0.5f);
+        DeficitRoundRobinWriteQueue sut = new DeficitRoundRobinWriteQueue(64, 1f, 0.5f);
         WritableByteChannel channel = mock(WritableByteChannel.class);
         when(channel.write(Mockito.any(ByteBuffer.class)))
                 .thenAnswer(new FlushAllAnswer())
@@ -154,9 +154,9 @@ public class DeficitRoundRobinWriteQueueTest {
         sut.offer(Buffers.newCodecBuffer(data, 0, data.length));
         sut.offer(Buffers.newPriorityCodecBuffer(data, 0, data.length, 0));
         sut.offer(Buffers.newPriorityCodecBuffer(data, 0, data.length, 1));
-        NioWriteQueue.FlushStatus status = sut.flushTo(channel);
+        WriteQueue.FlushStatus status = sut.flushTo(channel, ByteBuffer.allocate(32));
 
-        assertThat(status, is(NioWriteQueue.FlushStatus.FLUSHING));
+        assertThat(status, is(WriteQueue.FlushStatus.FLUSHING));
         assertThat(sut.lastFlushedBytes(), is(8 + 3)); // (queue -1) + (queue 0 (limited))
         assertThat(sut.queueIndex(), is(0));
         assertThat(sut.deficitCounter(0), is(8 - 3)); // (queue -1) - (queue 0 (flush size))
@@ -165,7 +165,7 @@ public class DeficitRoundRobinWriteQueueTest {
 
     @Test
     public void testFlushTo_UseRoundBonusIfBaseQueueIsEmpty() throws Exception {
-        DeficitRoundRobinWriteQueue sut = new DeficitRoundRobinWriteQueue(32, false, 64, 1f, 0.5f);
+        DeficitRoundRobinWriteQueue sut = new DeficitRoundRobinWriteQueue(64, 1f, 0.5f);
         WritableByteChannel channel = mock(WritableByteChannel.class);
         when(channel.write(Mockito.any(ByteBuffer.class))).thenAnswer(new FlushAllAnswer());
         byte[] data = new byte[] {
@@ -176,9 +176,9 @@ public class DeficitRoundRobinWriteQueueTest {
 
         sut.offer(Buffers.newPriorityCodecBuffer(data, 0, data.length, 0));
         sut.offer(Buffers.newPriorityCodecBuffer(data, 0, data.length, 1));
-        NioWriteQueue.FlushStatus status = sut.flushTo(channel);
+        WriteQueue.FlushStatus status = sut.flushTo(channel, ByteBuffer.allocate(32));
 
-        assertThat(status, is(NioWriteQueue.FlushStatus.FLUSHED));
+        assertThat(status, is(WriteQueue.FlushStatus.FLUSHED));
         assertThat(sut.lastFlushedBytes(), is(8 + 8));
         assertThat(sut.queueIndex(), is(-1));
         assertThat(sut.deficitCounter(0), is(64 - 8));
@@ -187,7 +187,7 @@ public class DeficitRoundRobinWriteQueueTest {
 
     @Test
     public void testFlushTo_RecursiveCallIfQueueIndexIsNotMinus1() throws Exception {
-        DeficitRoundRobinWriteQueue sut = new DeficitRoundRobinWriteQueue(32, false, 64, 1f, 0.5f);
+        DeficitRoundRobinWriteQueue sut = new DeficitRoundRobinWriteQueue(64, 1f, 0.5f);
         WritableByteChannel channel = mock(WritableByteChannel.class);
         when(channel.write(Mockito.any(ByteBuffer.class))).thenAnswer(new FlushAllAnswer());
         byte[] data = new byte[] {
@@ -200,9 +200,9 @@ public class DeficitRoundRobinWriteQueueTest {
         sut.offer(Buffers.newCodecBuffer(data, 0, data.length));
         sut.offer(Buffers.newPriorityCodecBuffer(data, 0, data.length - 1, 0)); // only 7 byte
         sut.offer(Buffers.newPriorityCodecBuffer(data, 0, data.length, 1)); // flush first
-        NioWriteQueue.FlushStatus status = sut.flushTo(channel);
+        WriteQueue.FlushStatus status = sut.flushTo(channel, ByteBuffer.allocate(32));
 
-        assertThat(status, is(NioWriteQueue.FlushStatus.FLUSHED));
+        assertThat(status, is(WriteQueue.FlushStatus.FLUSHED));
         assertThat(sut.lastFlushedBytes(), is(8 + 7 + 8));
         assertThat(sut.queueIndex(), is(-1));
         assertThat(sut.deficitCounter(0), is(8 - 7));

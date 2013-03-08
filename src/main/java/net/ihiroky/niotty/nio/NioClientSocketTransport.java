@@ -128,16 +128,13 @@ public class NioClientSocketTransport extends NioSocketTransport<ConnectSelector
     }
 
     void registerLater(SelectableChannel channel, int ops, DefaultTransportFuture future) throws IOException {
-        NioChildChannelTransport child =
-                new NioChildChannelTransport(config_, processor_.getName(),
-                        processor_.getWriteBufferSize(), processor_.isUseDirectBuffer());
-        this.childTransport_ = child;
+        NioChildChannelTransport child = processor_.getMessageIOSelectorPool().register(
+                config_, processor_.getName(), config_.newWriteQueue(), channel, ops);
+        childTransport_ = child;
 
         InetSocketAddress remoteAddress = (InetSocketAddress) clientChannel_.getRemoteAddress();
-        getTransportListener().onConnect(this, remoteAddress);
         future.done();
-
-        processor_.getMessageIOSelectorPool().register(channel, ops, child);
+        getTransportListener().onConnect(this, remoteAddress);
         child.loadEventLater(new TransportStateEvent(child, TransportState.CONNECTED, remoteAddress));
     }
 

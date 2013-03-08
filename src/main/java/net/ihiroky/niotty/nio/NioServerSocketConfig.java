@@ -20,12 +20,14 @@ public class NioServerSocketConfig extends TransportConfig {
     private int backlog_;
     private int receiveBufferSize_;
     private boolean reuseAddress_;
+    private WriteQueueFactory writeQueueFactory_;
 
     private Logger logger_ = LoggerFactory.getLogger(NioServerSocketTransport.class);
 
     public NioServerSocketConfig() {
         backlog_ = 50;
         reuseAddress_ = true;
+        writeQueueFactory_ = new SimpleWriteQueueFactory();
     }
 
     private <T> void setOption(ServerSocketChannel channel, SocketOption<T> option, T value) {
@@ -78,5 +80,14 @@ public class NioServerSocketConfig extends TransportConfig {
 
     public boolean getReuseAddress() {
         return reuseAddress_;
+    }
+
+    public void setWriteQueueFactory(WriteQueueFactory writeQueueFactory) {
+        Objects.requireNonNull(writeQueueFactory, "writeQueueFactory");
+        this.writeQueueFactory_ = writeQueueFactory;
+    }
+
+    public WriteQueue newWriteQueue() {
+        return writeQueueFactory_.newriteQueue();
     }
 }

@@ -119,9 +119,13 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
     }
 
     void registerLater(SelectableChannel channel, int ops, DefaultTransportFuture future) {
+        NioChildChannelTransport child = processor_.getMessageIOSelectorPool().register(
+                config_, processor_.getName(), config_.newWriteQueue(), channel, ops);
+        childAggregate_.add(child);
+
         InetSocketAddress remoteAddress;
         try {
-            remoteAddress = (InetSocketAddress) ((SocketChannel)channel).getRemoteAddress();
+            remoteAddress = (InetSocketAddress) ((SocketChannel) channel).getRemoteAddress();
             getTransportListener().onConnect(this, remoteAddress());
             future.done();
         } catch (IOException ioe) {
@@ -129,11 +133,6 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
             return;
         }
 
-        NioChildChannelTransport child =
-                new NioChildChannelTransport(config_, processor_.getName(),
-                        processor_.getWriteBufferSize(), processor_.isUseDirectBuffer());
-        childAggregate_.add(child);
-        processor_.getMessageIOSelectorPool().register(channel, ops, child);
         child.loadEventLater(new TransportStateEvent(child, TransportState.ACCEPTED, remoteAddress));
     }
 

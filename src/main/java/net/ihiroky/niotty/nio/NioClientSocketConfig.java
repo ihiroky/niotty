@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.net.SocketOption;
 import java.net.StandardSocketOptions;
 import java.nio.channels.SocketChannel;
+import java.util.Objects;
 
 /**
  * Created on 13/01/17, 18:01
@@ -22,10 +23,12 @@ public class NioClientSocketConfig extends TransportConfig {
     private boolean reuseAddress_;
     private int linger_;
     private boolean tcpNoDelay_;
+    private WriteQueueFactory writeQueueFactory_;
 
     private Logger logger_ = LoggerFactory.getLogger(NioClientSocketConfig.class);
 
     public NioClientSocketConfig() {
+        writeQueueFactory_ = new SimpleWriteQueueFactory();
     }
 
     private <T> void setOption(SocketChannel channel, SocketOption<T> option, T value) {
@@ -66,6 +69,10 @@ public class NioClientSocketConfig extends TransportConfig {
         logOptionValue(channel, StandardSocketOptions.TCP_NODELAY);
     }
 
+    WriteQueue newWriteQueue() {
+        return writeQueueFactory_.newriteQueue();
+    }
+
     public void setSendBufferSize(int sendBufferSize) {
         this.sendBufferSize_ = sendBufferSize;
     }
@@ -74,19 +81,24 @@ public class NioClientSocketConfig extends TransportConfig {
         this.receiveBufferSize_ = receiveBufferSize;
     }
 
-    public void setKeepAlive(boolean keepAlive_) {
-        this.keepAlive_ = keepAlive_;
+    public void setKeepAlive(boolean keepAlive) {
+        this.keepAlive_ = keepAlive;
     }
 
-    public void setReuseAddress(boolean reuseAddress_) {
-        this.reuseAddress_ = reuseAddress_;
+    public void setReuseAddress(boolean reuseAddress) {
+        this.reuseAddress_ = reuseAddress;
     }
 
-    public void setLinger(int linger_) {
-        this.linger_ = linger_;
+    public void setLinger(int linger) {
+        this.linger_ = linger;
     }
 
-    public void setTcpNoDelay(boolean tcpNoDelay_) {
-        this.tcpNoDelay_ = tcpNoDelay_;
+    public void setTcpNoDelay(boolean tcpNoDelay) {
+        this.tcpNoDelay_ = tcpNoDelay;
+    }
+
+    public void setWriteQueueFactory_(WriteQueueFactory writeQueueFactory) {
+        Objects.requireNonNull(writeQueueFactory, "writeQueueFactory");
+        this.writeQueueFactory_ = writeQueueFactory;
     }
 }

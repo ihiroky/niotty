@@ -11,19 +11,13 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 /**
  * @author Hiroki Itoh
  */
-public class SimpleWriteQueue implements NioWriteQueue {
+public class SimpleWriteQueue implements WriteQueue {
 
     private boolean existsPreviousData_;
-    private ByteBuffer writeBuffer_;
     private Queue<BufferSink> queue_;
     private int lastFlushedBytes_;
 
-    public SimpleWriteQueue(int writeBufferSize, boolean useDirectBuffer) {
-        if (writeBufferSize <= 0) {
-            throw new IllegalArgumentException("writeBufferSize must be positive.");
-        }
-        writeBuffer_ = useDirectBuffer
-                ? ByteBuffer.allocateDirect(writeBufferSize) : ByteBuffer.allocate(writeBufferSize);
+    public SimpleWriteQueue() {
         queue_ = new ConcurrentLinkedQueue<>();
     }
 
@@ -33,12 +27,11 @@ public class SimpleWriteQueue implements NioWriteQueue {
     }
 
     @Override
-    public FlushStatus flushTo(WritableByteChannel channel) throws IOException {
-        return flushTo(channel, Integer.MAX_VALUE);
+    public FlushStatus flushTo(WritableByteChannel channel, ByteBuffer writeBuffer) throws IOException {
+        return flushTo(channel, writeBuffer, Integer.MAX_VALUE);
     }
 
-    FlushStatus flushTo(WritableByteChannel channel, int limitBytes) throws IOException {
-        ByteBuffer writeBuffer = writeBuffer_;
+    FlushStatus flushTo(WritableByteChannel channel, ByteBuffer writeBuffer, int limitBytes) throws IOException {
         int flushedBytes = 0;
 
         if (existsPreviousData_) {

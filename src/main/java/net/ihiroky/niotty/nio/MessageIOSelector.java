@@ -25,19 +25,20 @@ import java.util.Set;
  */
 public class MessageIOSelector extends AbstractSelector<MessageIOSelector> {
 
-    private ByteBuffer byteBuffer_;
+    private ByteBuffer readBuffer_;
+    private ByteBuffer writeBuffer_;
     private Logger logger_ = LoggerFactory.getLogger(MessageIOSelector.class);
 
     private static final int MIN_BUFFER_SIZE = 256;
 
-    static final StageContextListener<Object, BufferSink> MESSAGE_IO_STORE_CONTEXT_LISTENER =
+    final StageContextListener<Object, BufferSink> storeContextListener_ =
             new StageContextAdapter<Object, BufferSink>() {
                 @Override
                 public void onProceed(
                         Pipeline pipeline, StageContext<Object, BufferSink> context, MessageEvent<BufferSink> event) {
                     NioChildChannelTransport transport = (NioChildChannelTransport) event.getTransport();
                     transport.writeBufferSink(event.getMessage());
-                    transport.getEventLoop().offerTask(new FlushTask(transport));
+                    transport.getEventLoop().offerTask(new FlushTask(transport, writeBuffer_));
                 }
 
                 @Override
@@ -47,7 +48,7 @@ public class MessageIOSelector extends AbstractSelector<MessageIOSelector> {
                 }
             };
 
-    static final Task<MessageIOSelector> flushAllTask = new Task<MessageIOSelector>() {
+    final Task<MessageIOSelector> flushAllTask_ = new Task<MessageIOSelector>() {
         @Override
         public boolean execute(MessageIOSelector selector) {
             NioChildChannelTransport transport;
@@ -55,7 +56,7 @@ public class MessageIOSelector extends AbstractSelector<MessageIOSelector> {
             for (SelectionKey key : selector.keys()) {
                 transport = (NioChildChannelTransport) key.attachment();
                 try {
-                    if (!transport.flush()) {
+                    if (!transport.flush(writeBuffer_)) {
                         finish = false;
                     }
                 } catch (IOException ioe) {
@@ -69,16 +70,22 @@ public class MessageIOSelector extends AbstractSelector<MessageIOSelector> {
         }
     };
 
-    MessageIOSelector(int bufferSize, boolean direct) {
-        if (bufferSize < MIN_BUFFER_SIZE) {
-            bufferSize = MIN_BUFFER_SIZE;
+    MessageIOSelector(int readBufferSize, int writeBufferSize, boolean direct) {
+        if (readBufferSize < MIN_BUFFER_SIZE) {
+            readBufferSize = MIN_BUFFER_SIZE;
+            logger_.warn("readBufferSize is set to {}.", readBufferSize);
         }
-        byteBuffer_ = direct ? ByteBuffer.allocateDirect(bufferSize) : ByteBuffer.allocate(bufferSize);
+        if (writeBufferSize < MIN_BUFFER_SIZE) {
+            writeBufferSize = MIN_BUFFER_SIZE;
+            logger_.warn("writeBufferSize is set to {}.", writeBufferSize);
+        }
+        readBuffer_ = direct ? ByteBuffer.allocateDirect(readBufferSize) : ByteBuffer.allocate(readBufferSize);
+        writeBuffer_ = direct ? ByteBuffer.allocateDirect(writeBufferSize) : ByteBuffer.allocate(writeBufferSize);
     }
 
     @Override
     protected void processSelectedKeys(Set<SelectionKey> selectedKeys) throws IOException {
-        ByteBuffer localByteBuffer = byteBuffer_;
+        ByteBuffer localByteBuffer = readBuffer_;
         int read;
 
         for (Iterator<SelectionKey> i = selectedKeys.iterator(); i.hasNext(); ) {
@@ -99,24 +106,34 @@ public class MessageIOSelector extends AbstractSelector<MessageIOSelector> {
         }
     }
 
-    public void flushLater(NioChildChannelTransport transport) {
-        offerTask(new FlushTask(transport));
+    public StageContextListener<Object, BufferSink> storeContextListener() {
+        return storeContextListener_;
+    }
+
+    public Task<MessageIOSelector> flushAllTask() {
+        return flushAllTask_;
+    }
+
+    void flushLater(NioChildChannelTransport transport) {
+        offerTask(new FlushTask(transport, writeBuffer_));
     }
 
     static class FlushTask implements Task<MessageIOSelector> {
 
-        NioChildChannelTransport transport;
+        NioChildChannelTransport transport_;
+        ByteBuffer writeBuffer_;
 
-        FlushTask(NioChildChannelTransport transport) {
-            this.transport = transport;
+        FlushTask(NioChildChannelTransport transport, ByteBuffer writeBuffer) {
+            this.transport_ = transport;
+            this.writeBuffer_ = writeBuffer;
         }
 
         @Override
         public boolean execute(MessageIOSelector selector) {
             try {
-                return transport.flush();
+                return transport_.flush(writeBuffer_);
             } catch (IOException ioe) {
-                transport.closeSelectableChannel();
+                transport_.closeSelectableChannel();
             }
             return true;
         }

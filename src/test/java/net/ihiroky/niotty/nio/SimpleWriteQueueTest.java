@@ -24,20 +24,22 @@ import static org.mockito.Mockito.*;
 public class SimpleWriteQueueTest {
 
     private SimpleWriteQueue sut_;
+    private ByteBuffer writeBuffer_;
 
     @Rule
     public ExpectedException exceptionRule_ = ExpectedException.none();
 
     @Before
     public void setUp() {
-        sut_ = new SimpleWriteQueue(16, false);
+        sut_ = new SimpleWriteQueue();
+        writeBuffer_ = ByteBuffer.allocate(16);
     }
 
     @Test
     public void testFlushToEmpty() throws Exception {
         WritableByteChannel channel = mock(WritableByteChannel.class);
-        NioWriteQueue.FlushStatus status = sut_.flushTo(channel);
-        assertThat(status, is(NioWriteQueue.FlushStatus.FLUSHED));
+        WriteQueue.FlushStatus status = sut_.flushTo(channel, writeBuffer_);
+        assertThat(status, is(WriteQueue.FlushStatus.FLUSHED));
         verify(channel, never()).write(Mockito.any(ByteBuffer.class));
     }
 
@@ -57,9 +59,9 @@ public class SimpleWriteQueueTest {
         };
 
         sut_.offer(Buffers.newCodecBuffer(data, 0, data.length));
-        NioWriteQueue.FlushStatus status = sut_.flushTo(channel);
+        WriteQueue.FlushStatus status = sut_.flushTo(channel, writeBuffer_);
 
-        assertThat(status, is(NioWriteQueue.FlushStatus.FLUSHED));
+        assertThat(status, is(WriteQueue.FlushStatus.FLUSHED));
         assertThat(sut_.lastFlushedBytes(), is(data.length));
         verify(channel, times(1)).write(Mockito.any(ByteBuffer.class));
     }
@@ -80,9 +82,9 @@ public class SimpleWriteQueueTest {
         };
 
         sut_.offer(Buffers.newCodecBuffer(data, 0, data.length));
-        NioWriteQueue.FlushStatus status = sut_.flushTo(channel, data.length);
+        WriteQueue.FlushStatus status = sut_.flushTo(channel, writeBuffer_, data.length);
 
-        assertThat(status, is(NioWriteQueue.FlushStatus.FLUSHED));
+        assertThat(status, is(WriteQueue.FlushStatus.FLUSHED));
         assertThat(sut_.lastFlushedBytes(), is(data.length));
         verify(channel, times(1)).write(Mockito.any(ByteBuffer.class));
     }
@@ -104,9 +106,9 @@ public class SimpleWriteQueueTest {
 
         sut_.offer(Buffers.newCodecBuffer(data, 0, data.length));
         sut_.offer(Buffers.newCodecBuffer(data, 0, data.length));
-        NioWriteQueue.FlushStatus status = sut_.flushTo(channel, data.length);
+        WriteQueue.FlushStatus status = sut_.flushTo(channel, writeBuffer_, data.length);
 
-        assertThat(status, is(NioWriteQueue.FlushStatus.FLUSHING));
+        assertThat(status, is(WriteQueue.FlushStatus.FLUSHING));
         assertThat(sut_.lastFlushedBytes(), is(data.length));
         verify(channel, times(1)).write(Mockito.any(ByteBuffer.class));
     }
@@ -127,9 +129,9 @@ public class SimpleWriteQueueTest {
         };
 
         sut_.offer(Buffers.newCodecBuffer(data, 0, data.length));
-        NioWriteQueue.FlushStatus status = sut_.flushTo(channel);
+        WriteQueue.FlushStatus status = sut_.flushTo(channel, writeBuffer_);
 
-        assertThat(status, CoreMatchers.is(NioWriteQueue.FlushStatus.FLUSHING));
+        assertThat(status, CoreMatchers.is(WriteQueue.FlushStatus.FLUSHING));
         assertThat(sut_.lastFlushedBytes(), is(8));
         verify(channel, times(1)).write(Mockito.any(ByteBuffer.class));
     }
@@ -158,13 +160,13 @@ public class SimpleWriteQueueTest {
                 '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'
         };
         sut_.offer(Buffers.newCodecBuffer(data, 0, data.length));
-        NioWriteQueue.FlushStatus status = sut_.flushTo(channel);
-        assertThat(status, is(NioWriteQueue.FlushStatus.FLUSHING));
+        WriteQueue.FlushStatus status = sut_.flushTo(channel, writeBuffer_);
+        assertThat(status, is(WriteQueue.FlushStatus.FLUSHING));
         assertThat(sut_.lastFlushedBytes(), is(8));
 
-        status = sut_.flushTo(channel);
+        status = sut_.flushTo(channel, writeBuffer_);
 
-        assertThat(status, CoreMatchers.is(NioWriteQueue.FlushStatus.FLUSHED));
+        assertThat(status, CoreMatchers.is(WriteQueue.FlushStatus.FLUSHED));
         assertThat(sut_.lastFlushedBytes(), is(2));
         verify(channel, times(2)).write(Mockito.any(ByteBuffer.class));
     }
@@ -189,13 +191,13 @@ public class SimpleWriteQueueTest {
                 '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'
         };
         sut_.offer(Buffers.newCodecBuffer(data, 0, data.length));
-        NioWriteQueue.FlushStatus status = sut_.flushTo(channel);
-        assertThat(status, is(NioWriteQueue.FlushStatus.FLUSHING));
+        WriteQueue.FlushStatus status = sut_.flushTo(channel, writeBuffer_);
+        assertThat(status, is(WriteQueue.FlushStatus.FLUSHING));
         assertThat(sut_.lastFlushedBytes(), is(8));
 
         exceptionRule_.expect(IOException.class);
         exceptionRule_.expectMessage("end of stream.");
-        sut_.flushTo(channel);
+        sut_.flushTo(channel, writeBuffer_);
     }
 
     public void testFlushToOnceRemainingAndRetryFlushing() throws Exception {
@@ -217,13 +219,13 @@ public class SimpleWriteQueueTest {
                 '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'
         };
         sut_.offer(Buffers.newCodecBuffer(data, 0, data.length));
-        NioWriteQueue.FlushStatus status = sut_.flushTo(channel);
-        assertThat(status, is(NioWriteQueue.FlushStatus.FLUSHING));
+        WriteQueue.FlushStatus status = sut_.flushTo(channel, writeBuffer_);
+        assertThat(status, is(WriteQueue.FlushStatus.FLUSHING));
         assertThat(sut_.lastFlushedBytes(), is(8));
 
-        status = sut_.flushTo(channel);
+        status = sut_.flushTo(channel, writeBuffer_);
 
-        assertThat(status, CoreMatchers.is(NioWriteQueue.FlushStatus.FLUSHING));
+        assertThat(status, CoreMatchers.is(WriteQueue.FlushStatus.FLUSHING));
         assertThat(sut_.lastFlushedBytes(), is(0));
         verify(channel, times(2)).write(Mockito.any(ByteBuffer.class));
     }
