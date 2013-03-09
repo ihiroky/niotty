@@ -47,28 +47,6 @@ public class MessageIOSelector extends AbstractSelector<MessageIOSelector> {
                 }
             };
 
-    final Task<MessageIOSelector> flushAllTask_ = new Task<MessageIOSelector>() {
-        @Override
-        public boolean execute(MessageIOSelector selector) {
-            NioChildChannelTransport transport;
-            boolean finish = true;
-            for (SelectionKey key : selector.keys()) {
-                transport = (NioChildChannelTransport) key.attachment();
-                try {
-                    if (!transport.flush(writeBuffer_)) {
-                        finish = false;
-                    }
-                } catch (IOException ioe) {
-                    transport.closeSelectableChannel();
-                    if (key.isValid()) {
-                        // TODO log
-                    }
-                }
-            }
-            return finish;
-        }
-    };
-
     MessageIOSelector(int readBufferSize, int writeBufferSize, boolean direct) {
         if (readBufferSize < MIN_BUFFER_SIZE) {
             readBufferSize = MIN_BUFFER_SIZE;
@@ -87,28 +65,28 @@ public class MessageIOSelector extends AbstractSelector<MessageIOSelector> {
         ByteBuffer localByteBuffer = readBuffer_;
         int read;
 
-        KEY_LOOP: for (Iterator<SelectionKey> i = selectedKeys.iterator(); i.hasNext();) {
+        for (Iterator<SelectionKey> i = selectedKeys.iterator(); i.hasNext();) {
             SelectionKey key = i.next();
             i.remove();
 
             SocketChannel channel = (SocketChannel) key.channel();
             NioChildChannelTransport transport = (NioChildChannelTransport) key.attachment();
             try {
-                for (;;) {
-                    read = channel.read(localByteBuffer);
-                    if (read == 0) {
-                        break;
+                read = channel.read(localByteBuffer);
+                if (read == -1) {
+                    if (logger_.isDebugEnabled()) {
+                        logger_.debug("transport reaches the end of its stream:" + transport);
                     }
-                    if (read == -1) {
-                        transport.closeSelectableChannel();
-                        unregister(key);
-                        localByteBuffer.clear();
-                        continue KEY_LOOP;
-                    }
+                    transport.closeSelectableChannel();
+                    localByteBuffer.clear();
+                    continue;
                 }
             } catch (IOException ioe) {
+                if (logger_.isDebugEnabled()) {
+                    logger_.debug("failed to read from transport:", transport, ioe);
+                }
                 transport.closeSelectableChannel();
-                unregister(key);
+                localByteBuffer.clear();
                 continue;
             }
 
@@ -122,10 +100,6 @@ public class MessageIOSelector extends AbstractSelector<MessageIOSelector> {
         return storeContextListener_;
     }
 
-    public Task<MessageIOSelector> flushAllTask() {
-        return flushAllTask_;
-    }
-
     void flushLater(NioChildChannelTransport transport) {
         offerTask(new FlushTask(transport, writeBuffer_));
     }
@@ -134,6 +108,8 @@ public class MessageIOSelector extends AbstractSelector<MessageIOSelector> {
 
         NioChildChannelTransport transport_;
         ByteBuffer writeBuffer_;
+
+        static Logger logger_ = LoggerFactory.getLogger(FlushTask.class);
 
         FlushTask(NioChildChannelTransport transport, ByteBuffer writeBuffer) {
             this.transport_ = transport;
@@ -145,6 +121,9 @@ public class MessageIOSelector extends AbstractSelector<MessageIOSelector> {
             try {
                 return transport_.flush(writeBuffer_);
             } catch (IOException ioe) {
+                if (logger_.isDebugEnabled()) {
+                    logger_.debug("failed to flush buffer to " + transport_, ioe);
+                }
                 transport_.closeSelectableChannel();
             }
             return true;
