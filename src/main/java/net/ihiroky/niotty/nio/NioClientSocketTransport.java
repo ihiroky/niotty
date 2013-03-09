@@ -6,8 +6,8 @@ import net.ihiroky.niotty.FailedTransportFuture;
 import net.ihiroky.niotty.SucceededTransportFuture;
 import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.buffer.BufferSink;
-import net.ihiroky.niotty.event.TransportState;
-import net.ihiroky.niotty.event.TransportStateEvent;
+import net.ihiroky.niotty.TransportState;
+import net.ihiroky.niotty.TransportStateEvent;
 
 import java.io.IOException;
 import java.net.InetAddress;

@@ -4,7 +4,6 @@ import net.ihiroky.niotty.StoreStageContextMock;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.CodecBuffer;
 import net.ihiroky.niotty.buffer.CodecBufferDeque;
-import net.ihiroky.niotty.event.MessageEvent;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -33,9 +32,9 @@ public class FrameLengthPrependEncoderTest {
         CodecBufferDeque group = new CodecBufferDeque();
         group.addLast(input);
 
-        sut_.store(context_, new MessageEvent<>(null, group));
+        sut_.store(context_, group);
 
-        CodecBufferDeque actual = context_.getProceededMessageEvent().getMessage();
+        CodecBufferDeque actual = context_.getProceededMessageEvent().poll();
         assertThat(actual.remainingBytes(), is(6));
     }
 
@@ -46,9 +45,9 @@ public class FrameLengthPrependEncoderTest {
         CodecBufferDeque group = new CodecBufferDeque();
         group.addLast(input);
 
-        sut_.store(context_, new MessageEvent<>(null, group));
+        sut_.store(context_, group);
 
-        CodecBufferDeque actual = context_.getProceededMessageEvent().getMessage();
+        CodecBufferDeque actual = context_.getProceededMessageEvent().poll();
         assertThat(actual.remainingBytes(), is(5));
     }
 }

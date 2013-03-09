@@ -3,7 +3,6 @@ package net.ihiroky.niotty.stage.codec.frame;
 import net.ihiroky.niotty.LoadStageContextMock;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.CodecBuffer;
-import net.ihiroky.niotty.event.MessageEvent;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -43,10 +42,10 @@ public class FrameLengthRemoveDecoderTest {
     public void testLoadMessageEventOnce() throws Exception {
         CodecBuffer input = Buffers.newCodecBuffer(data_, 0, dataLength_);
 
-        sut_.load(context_, new MessageEvent<>(null, input));
+        sut_.load(context_, input);
 
-        Queue<MessageEvent<CodecBuffer>> queue = context_.getProceededMessageEventQueue();
-        CodecBuffer output = queue.poll().getMessage();
+        Queue<CodecBuffer> queue = context_.getProceededMessageEventQueue();
+        CodecBuffer output = queue.poll();
         assertThat(output.remainingBytes(), is(12));
         assertThat(output.readInt(), is(1));
         assertThat(output.readInt(), is(2));
@@ -59,22 +58,22 @@ public class FrameLengthRemoveDecoderTest {
     @Test
     public void testLoadMessageEventManyIncompletePacket() throws Exception {
         // read first 4 byte
-        sut_.load(context_, new MessageEvent<>(null, Buffers.newCodecBuffer(data_, 0, 4)));
+        sut_.load(context_, Buffers.newCodecBuffer(data_, 0, 4));
         assertThat(context_.getProceededMessageEventQueue().size(), is(0));
         assertThat(sut_.getPooling().remainingBytes(), is(4));
         assertThat(sut_.getPoolingFrameBytes(), is(0));
 
         // prepend length field is read
-        sut_.load(context_, new MessageEvent<>(null, Buffers.newCodecBuffer(data_, 4, 1)));
+        sut_.load(context_, Buffers.newCodecBuffer(data_, 4, 1));
         assertThat(context_.getProceededMessageEventQueue().size(), is(0));
         assertThat(sut_.getPooling().remainingBytes(), is(4));
         assertThat(sut_.getPoolingFrameBytes(), is(12));
 
         // read remaining
-        sut_.load(context_, new MessageEvent<>(null, Buffers.newCodecBuffer(data_, 5, 8)));
-        Queue<MessageEvent<CodecBuffer>> queue = context_.getProceededMessageEventQueue();
+        sut_.load(context_, Buffers.newCodecBuffer(data_, 5, 8));
+        Queue<CodecBuffer> queue = context_.getProceededMessageEventQueue();
 
-        CodecBuffer output = queue.poll().getMessage();
+        CodecBuffer output = queue.poll();
         assertThat(output.remainingBytes(), is(12));
         assertThat(output.readInt(), is(1));
         assertThat(output.readInt(), is(2));
@@ -100,12 +99,11 @@ public class FrameLengthRemoveDecoderTest {
         dataLength_ = encodeBuffer.remainingBytes();
         CodecBuffer input = Buffers.newCodecBuffer(data_, 0, dataLength_);
 
-        sut_.load(context_, new MessageEvent<>(null, input));
+        sut_.load(context_, input);
 
-        Queue<MessageEvent<CodecBuffer>> queue = context_.getProceededMessageEventQueue();
+        Queue<CodecBuffer> queue = context_.getProceededMessageEventQueue();
         for (int i = 0; i < 3; i++) {
-            MessageEvent<CodecBuffer> messageEvent = queue.poll();
-            CodecBuffer output = messageEvent.getMessage();
+            CodecBuffer output = queue.poll();
             assertThat(output.readInt(), is(1));
             assertThat(output.readInt(), is(2));
             assertThat(output.readInt(), is(3));
@@ -130,12 +128,11 @@ public class FrameLengthRemoveDecoderTest {
         dataLength_ = encodeBuffer.remainingBytes();
         CodecBuffer input = Buffers.newCodecBuffer(data_, 0, dataLength_);
 
-        sut_.load(context_, new MessageEvent<>(null, input));
+        sut_.load(context_, input);
 
-        Queue<MessageEvent<CodecBuffer>> queue = context_.getProceededMessageEventQueue();
+        Queue<CodecBuffer> queue = context_.getProceededMessageEventQueue();
         for (int i = 0; i < 3; i++) {
-            MessageEvent<CodecBuffer> messageEvent = queue.poll();
-            CodecBuffer output = messageEvent.getMessage();
+            CodecBuffer output = queue.poll();
             assertThat(output.readInt(), is(1));
             assertThat(output.readInt(), is(2));
             assertThat(output.readInt(), is(3));

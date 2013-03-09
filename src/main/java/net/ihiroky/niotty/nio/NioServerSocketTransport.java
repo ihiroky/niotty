@@ -8,8 +8,8 @@ import net.ihiroky.niotty.TransportAggregate;
 import net.ihiroky.niotty.TransportAggregateSupport;
 import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.buffer.BufferSink;
-import net.ihiroky.niotty.event.TransportState;
-import net.ihiroky.niotty.event.TransportStateEvent;
+import net.ihiroky.niotty.TransportState;
+import net.ihiroky.niotty.TransportStateEvent;
 
 import java.io.IOException;
 import java.net.InetAddress;

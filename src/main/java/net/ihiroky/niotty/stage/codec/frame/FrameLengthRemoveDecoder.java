@@ -4,8 +4,7 @@ import net.ihiroky.niotty.LoadStage;
 import net.ihiroky.niotty.LoadStageContext;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.CodecBuffer;
-import net.ihiroky.niotty.event.MessageEvent;
-import net.ihiroky.niotty.event.TransportStateEvent;
+import net.ihiroky.niotty.TransportStateEvent;
 
 /**
  * @author Hiroki Itoh
@@ -25,9 +24,7 @@ public class FrameLengthRemoveDecoder implements LoadStage<CodecBuffer, CodecBuf
     }
 
     @Override
-    public void load(LoadStageContext<CodecBuffer, CodecBuffer> context, MessageEvent<CodecBuffer> event) {
-        CodecBuffer input = event.getMessage();
-
+    public void load(LoadStageContext<CodecBuffer, CodecBuffer> context, CodecBuffer input) {
         for (;;) {
             int frameBytes = poolingFrameBytes_;
 
@@ -49,12 +46,12 @@ public class FrameLengthRemoveDecoder implements LoadStage<CodecBuffer, CodecBuf
 
             poolingFrameBytes_ = 0;
             if (output.remainingBytes() == frameBytes) {
-                context.proceed(new MessageEvent<>(event.getTransport(), output));
+                context.proceed(output);
                 return;
             }
             // if (output.remainingBytes() > frameBytes) {
             CodecBuffer frame = useSlice_ ? output.slice(frameBytes) : copy(output, frameBytes);
-            context.proceed(new MessageEvent<>(event.getTransport(), frame));
+            context.proceed(frame);
         }
     }
 

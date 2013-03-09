@@ -1,7 +1,5 @@
 package net.ihiroky.niotty;
 
-import net.ihiroky.niotty.event.MessageEvent;
-
 import java.util.ArrayDeque;
 import java.util.Queue;
 
@@ -10,7 +8,7 @@ import java.util.Queue;
  */
 public class LoadStageContextMock<I, O> extends LoadStageContext<I, O> {
 
-    Queue<MessageEvent<O>> proceededMessageEventQueue_ = new ArrayDeque<>();
+    Queue<O> proceededMessageEventQueue_ = new ArrayDeque<>();
 
     @SuppressWarnings("unchecked")
     public LoadStageContextMock(LoadStage<?, ?> stage) {
@@ -18,11 +16,11 @@ public class LoadStageContextMock<I, O> extends LoadStageContext<I, O> {
     }
 
     @Override
-    public void proceed(MessageEvent<O> messageEvent) {
+    public void proceed(O messageEvent) {
         proceededMessageEventQueue_.add(messageEvent);
     }
 
-    public Queue<MessageEvent<O>> getProceededMessageEventQueue() {
+    public Queue<O> getProceededMessageEventQueue() {
         return proceededMessageEventQueue_;
     }
 }

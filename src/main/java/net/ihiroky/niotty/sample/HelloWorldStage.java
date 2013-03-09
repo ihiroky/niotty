@@ -2,8 +2,7 @@ package net.ihiroky.niotty.sample;
 
 import net.ihiroky.niotty.LoadStage;
 import net.ihiroky.niotty.LoadStageContext;
-import net.ihiroky.niotty.event.MessageEvent;
-import net.ihiroky.niotty.event.TransportStateEvent;
+import net.ihiroky.niotty.TransportStateEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,9 +14,9 @@ public class HelloWorldStage implements LoadStage<String, Object> {
     private Logger logger_ = LoggerFactory.getLogger(HelloWorldStage.class);
 
     @Override
-    public void load(LoadStageContext<String, Object> context, MessageEvent<String> event) {
-        logger_.info(event.toString());
-        System.out.println(event.toString());
+    public void load(LoadStageContext<String, Object> context, String message) {
+        logger_.info(message);
+        System.out.println(message);
     }
 
     @Override

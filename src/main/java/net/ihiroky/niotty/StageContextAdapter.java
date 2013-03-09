@@ -1,8 +1,5 @@
 package net.ihiroky.niotty;
 
-import net.ihiroky.niotty.event.MessageEvent;
-import net.ihiroky.niotty.event.TransportStateEvent;
-
 /**
  * Created on 13/01/18, 15:52
  *
@@ -10,7 +7,7 @@ import net.ihiroky.niotty.event.TransportStateEvent;
  */
 public class StageContextAdapter<I, O> implements StageContextListener<I, O> {
     @Override
-    public void onFire(Pipeline pipeline, StageContext<I, O> context, MessageEvent<I> event) {
+    public void onFire(Pipeline pipeline, StageContext<I, O> context, I input) {
     }
 
     @Override
@@ -18,7 +15,7 @@ public class StageContextAdapter<I, O> implements StageContextListener<I, O> {
     }
 
     @Override
-    public void onProceed(Pipeline pipeline, StageContext<I, O> context, MessageEvent<O> event) {
+    public void onProceed(Pipeline pipeline, StageContext<I, O> context, O output) {
     }
 
     @Override

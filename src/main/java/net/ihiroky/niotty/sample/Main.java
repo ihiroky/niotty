@@ -18,6 +18,9 @@ public class Main {
 
     public static void main(String[] args) {
 
+        final int port = 10000;
+        final int lastWaitMillis = 500;
+
         NioServerSocketProcessor server = new NioServerSocketProcessor();
         NioClientSocketProcessor client = new NioClientSocketProcessor();
         server.start();
@@ -28,19 +31,17 @@ public class Main {
             NioServerSocketConfig serverConfig = new NioServerSocketConfig();
             serverConfig.setPipelineInitializer(new ServerPipelineInitializer());
             serverTransport = server.createTransport(serverConfig);
-            serverTransport.bind(new InetSocketAddress(10000));
+            serverTransport.bind(new InetSocketAddress(port));
 
             NioClientSocketConfig clientConfig = new NioClientSocketConfig();
             clientConfig.setPipelineInitializer(new ClientPipelineInitializer());
             clientTransport = client.createTransport(clientConfig);
-            TransportFuture connectFuture = clientTransport.connect(new InetSocketAddress("localhost", 10000));
+            TransportFuture connectFuture = clientTransport.connect(new InetSocketAddress("localhost", port));
             connectFuture.waitForCompletion();
             System.out.println("connection wait gets done.");
+            serverTransport.write("broadcast from server on thread " + Thread.currentThread());
 
-            Thread.sleep(500);
-            serverTransport.write("broadcast from server in thread " + Thread.currentThread());
-
-            Thread.sleep(500);
+            Thread.sleep(lastWaitMillis);
             System.out.println("end.");
         } catch (Exception e) {
             e.printStackTrace();

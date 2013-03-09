@@ -1,7 +1,5 @@
 package net.ihiroky.niotty;
 
-import net.ihiroky.niotty.event.MessageEvent;
-import net.ihiroky.niotty.event.TransportStateEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,14 +14,16 @@ import java.lang.reflect.Type;
 public abstract class AbstractPipeline<S> implements Pipeline {
 
     private String name_;
+    private Transport transport_;
     private StageContext<Object, Object> headContext_;
     private StageContext<Object, Object> tailContext_;
     private static Logger logger_ = LoggerFactory.getLogger(AbstractPipeline.class);
 
     private static final StageContext<Object, Object> TERMINAL = new NullContext();
 
-    protected AbstractPipeline(String name) {
+    protected AbstractPipeline(String name, Transport transport) {
         this.name_ = name;
+        this.transport_ = transport;
         this.headContext_ = TERMINAL;
         this.tailContext_ = TERMINAL;
     }
@@ -58,7 +58,7 @@ public abstract class AbstractPipeline<S> implements Pipeline {
 
         if (logger_.isDebugEnabled()) {
             int counter = 0;
-            for (StageContext<Object, Object> ctx = headContext_; ctx != TERMINAL; ctx = ctx.getNext()) {
+            for (StageContext<Object, Object> ctx = headContext_; ctx != TERMINAL; ctx = ctx.next()) {
                 for (Type type : ctx.getStage().getClass().getGenericInterfaces()) {
                     if (type instanceof ParameterizedType) {
                         Type[] actualTypeArguments = ((ParameterizedType) type).getActualTypeArguments();
@@ -71,24 +71,32 @@ public abstract class AbstractPipeline<S> implements Pipeline {
         }
     }
 
-    public void fire(MessageEvent<Object> event) {
-        headContext_.fire(event);
+    public void fire(Object input) {
+        headContext_.fire(input);
     }
 
     public void fire(TransportStateEvent event) {
         headContext_.fire(event);
     }
 
+    @Override
+    public Transport transport() {
+        return transport_;
+    }
+
+    @Override
     public StageContext<Object, Object> getFirstContext() {
         return headContext_;
     }
 
+    @Override
     public StageContext<Object, Object> getLastContext() {
         return tailContext_;
     }
 
+    @Override
     public StageContext<Object, Object> searchContextFor(Class<?> stageClass) {
-        for (StageContext<Object, Object> ctx = headContext_; ctx != tailContext_; ctx = ctx.getNext()) {
+        for (StageContext<Object, Object> ctx = headContext_; ctx != tailContext_; ctx = ctx.next()) {
             if (stageClass.equals(ctx.getStage().getClass())) {
                 return ctx;
             }
@@ -96,6 +104,7 @@ public abstract class AbstractPipeline<S> implements Pipeline {
         return null;
     }
 
+    @Override
     @SuppressWarnings("unchecked")
     public <S> S searchStageFor(Class<S> stageClass) {
         return stageClass.cast(searchContextFor(stageClass).getStage());
@@ -110,7 +119,7 @@ public abstract class AbstractPipeline<S> implements Pipeline {
             return this;
         }
         @Override
-        protected void fire(MessageEvent<Object> event) {
+        protected void fire(Object input) {
         }
         @Override
         protected void fire(TransportStateEvent event) {

@@ -4,9 +4,8 @@ import net.ihiroky.niotty.StoreStage;
 import net.ihiroky.niotty.StoreStageContext;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.CodecBuffer;
+import net.ihiroky.niotty.TransportStateEvent;
 import net.ihiroky.niotty.buffer.CodecBufferDeque;
-import net.ihiroky.niotty.event.MessageEvent;
-import net.ihiroky.niotty.event.TransportStateEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,12 +23,10 @@ public class StringEncoder implements StoreStage<String, CodecBufferDeque> {
     private static final Charset CHARSET = Charset.forName("UTF-8");
 
     @Override
-    public void store(StoreStageContext<String, CodecBufferDeque> context, MessageEvent<String> event) {
-        String message = event.getMessage();
+    public void store(StoreStageContext<String, CodecBufferDeque> context, String input) {
         CodecBuffer buffer = Buffers.newCodecBuffer();
-        buffer.writeString(CHARSET.newEncoder(), message);
-        CodecBufferDeque group = new CodecBufferDeque().addFirst(buffer);
-        context.proceed(new MessageEvent<>(event.getTransport(), group));
+        buffer.writeString(CHARSET.newEncoder(), input);
+        context.proceed(new CodecBufferDeque().addLast(buffer));
     }
 
     @Override

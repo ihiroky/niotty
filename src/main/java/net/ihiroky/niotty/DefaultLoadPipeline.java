@@ -9,12 +9,12 @@ public class DefaultLoadPipeline extends AbstractPipeline<LoadStage<Object, Obje
 
     private static final String SUFFIX_LOAD = "[load]";
 
-    public static DefaultLoadPipeline createPipeline(String name) {
-        return new DefaultLoadPipeline(String.valueOf(name).concat(SUFFIX_LOAD));
+    public static DefaultLoadPipeline createPipeline(String name, Transport transport) {
+        return new DefaultLoadPipeline(String.valueOf(name).concat(SUFFIX_LOAD), transport);
     }
 
-    protected DefaultLoadPipeline(String name) {
-        super(name);
+    protected DefaultLoadPipeline(String name, Transport transport) {
+        super(name, transport);
     }
 
     @Override

@@ -7,9 +7,8 @@ import net.ihiroky.niotty.EventLoop;
 import net.ihiroky.niotty.TransportConfig;
 import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.buffer.BufferSink;
-import net.ihiroky.niotty.event.MessageEvent;
-import net.ihiroky.niotty.event.TransportState;
-import net.ihiroky.niotty.event.TransportStateEvent;
+import net.ihiroky.niotty.TransportState;
+import net.ihiroky.niotty.TransportStateEvent;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -33,8 +32,8 @@ public class NioChildChannelTransport extends NioSocketTransport<MessageIOSelect
 
     NioChildChannelTransport(
             TransportConfig config, String name, MessageIOSelector messageIO, WriteQueue writeQueue) {
-        DefaultLoadPipeline loadPipeline = DefaultLoadPipeline.createPipeline(name);
-        DefaultStorePipeline storePipeline = DefaultStorePipeline.createPipeline(name);
+        DefaultLoadPipeline loadPipeline = DefaultLoadPipeline.createPipeline(name, this);
+        DefaultStorePipeline storePipeline = DefaultStorePipeline.createPipeline(name, this);
         config.getPipelineInitializer().setUpPipeline(loadPipeline, storePipeline);
 
         loadPipeline.regulate();
@@ -51,7 +50,7 @@ public class NioChildChannelTransport extends NioSocketTransport<MessageIOSelect
 
     @Override
     public void write(Object message) {
-        fire(new MessageEvent<>(this, message));
+        fire(message);
     }
 
     @Override
@@ -131,7 +130,7 @@ public class NioChildChannelTransport extends NioSocketTransport<MessageIOSelect
         return status == WriteQueue.FlushStatus.FLUSHED;
     }
 
-    private void fire(MessageEvent<Object> event) {
+    private void fire(Object event) {
         getStorePipeline().fire(event);
     }
 
@@ -139,7 +138,7 @@ public class NioChildChannelTransport extends NioSocketTransport<MessageIOSelect
         getStorePipeline().fire(event);
     }
 
-    void loadEvent(MessageEvent<Object> event) {
+    void loadEvent(Object event) {
         getLoadPipeline().fire(event);
     }
 

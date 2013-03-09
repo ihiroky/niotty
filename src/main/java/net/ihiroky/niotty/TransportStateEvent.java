@@ -1,8 +1,4 @@
-package net.ihiroky.niotty.event;
-
-import net.ihiroky.niotty.DefaultTransportFuture;
-import net.ihiroky.niotty.Transport;
-import net.ihiroky.niotty.TransportEvent;
+package net.ihiroky.niotty;
 
 /**
  * Created on 13/01/11, 13:47

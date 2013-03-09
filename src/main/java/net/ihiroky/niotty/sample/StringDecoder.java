@@ -3,8 +3,7 @@ package net.ihiroky.niotty.sample;
 import net.ihiroky.niotty.LoadStage;
 import net.ihiroky.niotty.LoadStageContext;
 import net.ihiroky.niotty.buffer.CodecBuffer;
-import net.ihiroky.niotty.event.MessageEvent;
-import net.ihiroky.niotty.event.TransportStateEvent;
+import net.ihiroky.niotty.TransportStateEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,11 +28,10 @@ public class StringDecoder implements LoadStage<CodecBuffer, String> {
             .onUnmappableCharacter(CodingErrorAction.IGNORE);
 
     @Override
-    public void load(LoadStageContext<CodecBuffer, String> context, MessageEvent<CodecBuffer> event) {
-        CodecBuffer message = event.getMessage();
+    public void load(LoadStageContext<CodecBuffer, String> context, CodecBuffer input) {
         try {
-            String s = decoder_.decode(message.toByteBuffer()).toString();
-            context.proceed(new MessageEvent<>(event.getTransport(), s));
+            String s = decoder_.decode(input.toByteBuffer()).toString();
+            context.proceed(s);
         } catch (CharacterCodingException cce) {
             cce.printStackTrace();
         }

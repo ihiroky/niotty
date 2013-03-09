@@ -9,12 +9,12 @@ public class DefaultStorePipeline extends AbstractPipeline<StoreStage<Object, Ob
 
     private static final String SUFFIX_STORE = "[store]";
 
-    public static DefaultStorePipeline createPipeline(String name) {
-        return new DefaultStorePipeline(String.valueOf(name).concat(SUFFIX_STORE));
+    public static DefaultStorePipeline createPipeline(String name, Transport transport) {
+        return new DefaultStorePipeline(String.valueOf(name).concat(SUFFIX_STORE), transport);
     }
 
-    protected DefaultStorePipeline(String name) {
-        super(name);
+    protected DefaultStorePipeline(String name, Transport transport) {
+        super(name, transport);
     }
 
     @Override

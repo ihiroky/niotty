@@ -1,8 +1,5 @@
 package net.ihiroky.niotty;
 
-import net.ihiroky.niotty.event.MessageEvent;
-import net.ihiroky.niotty.event.TransportStateEvent;
-
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -15,6 +12,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public abstract class StageContext<I, O> {
 
     private Pipeline pipeline_;
+    private I message_;
     private StageContext<O, Object> next_;
     private StageContextListener<I, O> listener_;
 
@@ -30,7 +28,7 @@ public abstract class StageContext<I, O> {
         this.listener_ = nullListener();
     }
 
-    protected StageContext<O, Object> getNext() {
+    protected StageContext<O, Object> next() {
         return next_;
     }
 
@@ -39,9 +37,17 @@ public abstract class StageContext<I, O> {
         this.next_ = next;
     }
 
-    public void proceed(MessageEvent<O> event) {
-        listener_.onProceed(pipeline_, this, event);
-        next_.fire(event);
+    public I message() {
+        return message_;
+    }
+
+    public Transport transport() {
+        return pipeline_.transport();
+    }
+
+    public void proceed(O output) {
+        listener_.onProceed(pipeline_, this, output);
+        next_.fire(output);
 
     }
 
@@ -50,8 +56,8 @@ public abstract class StageContext<I, O> {
         next_.fire(event);
     }
 
-    protected void callOnFire(MessageEvent<I> event) {
-        listener_.onFire(pipeline_, this, event);
+    protected void callOnFire(I input) {
+        listener_.onFire(pipeline_, this, input);
     }
 
     protected void callOnFire(TransportStateEvent event) {
@@ -89,9 +95,9 @@ public abstract class StageContext<I, O> {
         List<StageContextListener<I, O>> list = new CopyOnWriteArrayList<>();
 
         @Override
-        public void onFire(Pipeline pipeline, StageContext<I, O> context, MessageEvent<I> event) {
+        public void onFire(Pipeline pipeline, StageContext<I, O> context, I input) {
             for (StageContextListener<I, O> listener : list) {
-                listener.onFire(pipeline, context, event);
+                listener.onFire(pipeline, context, input);
             }
         }
 
@@ -103,9 +109,9 @@ public abstract class StageContext<I, O> {
         }
 
         @Override
-        public void onProceed(Pipeline pipeline, StageContext<I, O> context, MessageEvent<O> event) {
+        public void onProceed(Pipeline pipeline, StageContext<I, O> context, O output) {
             for (StageContextListener<I, O> listener : list) {
-                listener.onProceed(pipeline, context, event);
+                listener.onProceed(pipeline, context, output);
             }
         }
 
@@ -118,6 +124,6 @@ public abstract class StageContext<I, O> {
     }
 
     protected abstract Object getStage();
-    protected abstract void fire(MessageEvent<I> event);
+    protected abstract void fire(I input);
     protected abstract void fire(TransportStateEvent event);
 }

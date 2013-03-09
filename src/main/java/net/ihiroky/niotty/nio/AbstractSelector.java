@@ -6,7 +6,7 @@ import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.StageContextAdapter;
 import net.ihiroky.niotty.StageContextListener;
 import net.ihiroky.niotty.buffer.BufferSink;
-import net.ihiroky.niotty.event.TransportStateEvent;
+import net.ihiroky.niotty.TransportStateEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

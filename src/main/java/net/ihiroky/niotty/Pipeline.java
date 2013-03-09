@@ -11,4 +11,5 @@ public interface Pipeline {
     StageContext<Object, Object> getLastContext();
     StageContext<Object, Object> searchContextFor(Class<?> stageClass);
     <S> S searchStageFor(Class<S> stageClass);
+    Transport transport();
 }

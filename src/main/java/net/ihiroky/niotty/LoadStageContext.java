@@ -1,8 +1,5 @@
 package net.ihiroky.niotty;
 
-import net.ihiroky.niotty.event.MessageEvent;
-import net.ihiroky.niotty.event.TransportStateEvent;
-
 import java.util.Objects;
 
 /**
@@ -25,9 +22,9 @@ public class LoadStageContext<I, O> extends StageContext<I, O> {
     }
 
     @Override
-    protected void fire(MessageEvent<I> event) {
-        callOnFire(event);
-        stage_.load(this, event);
+    protected void fire(I input) {
+        callOnFire(input);
+        stage_.load(this, input);
     }
 
     @Override

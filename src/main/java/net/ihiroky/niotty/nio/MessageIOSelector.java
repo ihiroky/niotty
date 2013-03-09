@@ -6,8 +6,7 @@ import net.ihiroky.niotty.StageContextAdapter;
 import net.ihiroky.niotty.StageContextListener;
 import net.ihiroky.niotty.buffer.BufferSink;
 import net.ihiroky.niotty.buffer.Buffers;
-import net.ihiroky.niotty.event.MessageEvent;
-import net.ihiroky.niotty.event.TransportStateEvent;
+import net.ihiroky.niotty.TransportStateEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,9 +34,9 @@ public class MessageIOSelector extends AbstractSelector<MessageIOSelector> {
             new StageContextAdapter<Object, BufferSink>() {
                 @Override
                 public void onProceed(
-                        Pipeline pipeline, StageContext<Object, BufferSink> context, MessageEvent<BufferSink> event) {
-                    NioChildChannelTransport transport = (NioChildChannelTransport) event.getTransport();
-                    transport.writeBufferSink(event.getMessage());
+                        Pipeline pipeline, StageContext<Object, BufferSink> context, BufferSink bufferSink) {
+                    NioChildChannelTransport transport = (NioChildChannelTransport) context.transport();
+                    transport.writeBufferSink(bufferSink);
                     transport.getEventLoop().offerTask(new FlushTask(transport, writeBuffer_));
                 }
 
@@ -97,7 +96,7 @@ public class MessageIOSelector extends AbstractSelector<MessageIOSelector> {
             localByteBuffer.flip();
 
             NioChildChannelTransport transport = (NioChildChannelTransport) key.attachment();
-            transport.loadEvent(new MessageEvent<Object>(transport, Buffers.newCodecBuffer(localByteBuffer)));
+            transport.loadEvent(Buffers.newCodecBuffer(localByteBuffer));
             localByteBuffer.clear();
             if (read == -1) {
                 // close current key and socket.

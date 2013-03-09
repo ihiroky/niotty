@@ -1,4 +1,4 @@
-package net.ihiroky.niotty.event;
+package net.ihiroky.niotty;
 
 /**
  * Created on 13/01/11, 13:52

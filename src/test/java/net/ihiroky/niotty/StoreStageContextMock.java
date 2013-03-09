@@ -1,13 +1,14 @@
 package net.ihiroky.niotty;
 
-import net.ihiroky.niotty.event.MessageEvent;
+import java.util.ArrayDeque;
+import java.util.Queue;
 
 /**
  * @author Hiroki Itoh
  */
 public class StoreStageContextMock<I, O> extends StoreStageContext<I, O> {
 
-    MessageEvent<O> proceededMessageEvent_;
+    Queue<O> proceededMessageEvent_ = new ArrayDeque<>();
 
     @SuppressWarnings("unchecked")
     public StoreStageContextMock(StoreStage<?, ?> stage) {
@@ -15,11 +16,11 @@ public class StoreStageContextMock<I, O> extends StoreStageContext<I, O> {
     }
 
     @Override
-    public void proceed(MessageEvent<O> messageEvent) {
-        proceededMessageEvent_ = messageEvent;
+    public void proceed(O messageEvent) {
+        proceededMessageEvent_.offer(messageEvent);
     }
 
-    public MessageEvent<O> getProceededMessageEvent() {
+    public Queue<O> getProceededMessageEvent() {
         return proceededMessageEvent_;
     }
 }
