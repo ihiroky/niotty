@@ -12,7 +12,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public abstract class StageContext<I, O> {
 
     private Pipeline pipeline_;
-    private I message_;
     private StageContext<O, Object> next_;
     private StageContextListener<I, O> listener_;
 
@@ -35,10 +34,6 @@ public abstract class StageContext<I, O> {
     protected void setNext(StageContext<O, Object> next) {
         Objects.requireNonNull(next, "next");
         this.next_ = next;
-    }
-
-    public I message() {
-        return message_;
     }
 
     public Transport transport() {
