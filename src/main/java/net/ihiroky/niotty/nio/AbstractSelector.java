@@ -34,16 +34,16 @@ public abstract class AbstractSelector<S extends AbstractSelector<S>> extends Ev
                 @Override
                 public void onProceed(
                         Pipeline pipeline, StageContext<Object, BufferSink> context, TransportStateEvent event) {
-                    NioSocketTransport<?> transport = (NioSocketTransport<?>) event.getTransport();
-                    Object value = event.getValue();
-                    switch (event.getState()) {
+                    NioSocketTransport<?> transport = (NioSocketTransport<?>) context.transport();
+                    Object value = event.value();
+                    switch (event.state()) {
                         case ACCEPTED: // fall through
                         case CONNECTED: // fall through
                         case BOUND:
                             if (value == null || Boolean.FALSE.equals(value)) {
                                 transport.closeSelectableChannel();
                             }
-                            event.getFuture().done();
+                            event.future().done();
                             break;
                         default:
                             break;
@@ -132,7 +132,7 @@ public abstract class AbstractSelector<S extends AbstractSelector<S>> extends Ev
     }
 
     void unregister(SelectionKey key) {
-        key.interestOps(0);
+        key.cancel();
         registeredCount_.decrementAndGet();
         logger_.debug("channel {} is unregistered from {}.", key.channel(), Thread.currentThread());
     }

@@ -135,7 +135,7 @@ public class NioClientSocketTransport extends NioSocketTransport<ConnectSelector
         InetSocketAddress remoteAddress = (InetSocketAddress) clientChannel_.getRemoteAddress();
         future.done();
         getTransportListener().onConnect(this, remoteAddress);
-        child.loadEventLater(new TransportStateEvent(child, TransportState.CONNECTED, remoteAddress));
+        child.loadEventLater(new TransportStateEvent(TransportState.CONNECTED, remoteAddress));
     }
 
     @Override

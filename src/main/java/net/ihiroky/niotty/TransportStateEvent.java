@@ -5,44 +5,36 @@ package net.ihiroky.niotty;
  *
  * @author Hiroki Itoh
  */
-public class TransportStateEvent implements TransportEvent {
+public class TransportStateEvent {
 
-    private Transport transport_;
-    private DefaultTransportFuture future_;
     private TransportState state_;
     private Object value_;
+    private DefaultTransportFuture future_;
 
-    public TransportStateEvent(Transport transport, TransportState state, Object value) {
-        this(transport, state, null, value);
+    public TransportStateEvent(TransportState state, Object value) {
+        this(state, value, null);
     }
 
-    public TransportStateEvent(Transport transport, TransportState state,
-                               DefaultTransportFuture future, Object value) {
-        this.transport_ = transport;
-        this.future_ = future;
-        this.state_ = state;
-        this.value_ = value;
+    public TransportStateEvent(TransportState state, Object value, DefaultTransportFuture future) {
+        future_ = future;
+        state_ = state;
+        value_ = value;
     }
 
-    @Override
-    public Transport getTransport() {
-        return transport_;
-    }
-
-    public TransportState getState() {
+    public TransportState state() {
         return state_;
     }
 
-    public DefaultTransportFuture getFuture() {
-        return future_;
+    public Object value() {
+        return value_;
     }
 
-    public Object getValue() {
-        return value_;
+    public DefaultTransportFuture future() {
+        return future_;
     }
 
     @Override
     public String toString() {
-        return "transport:[" + transport_ + "], state:[" + state_ + "], value:[" + value_ + ']';
+        return "state:[" + state_ + "], value:[" + value_ + ']';
     }
 }

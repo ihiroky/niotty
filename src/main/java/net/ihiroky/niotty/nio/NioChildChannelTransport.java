@@ -96,7 +96,7 @@ public class NioChildChannelTransport extends NioSocketTransport<MessageIOSelect
     @Override
     public TransportFuture close() {
         DefaultTransportFuture future = new DefaultTransportFuture(this);
-        fire(new TransportStateEvent(this, TransportState.CONNECTED, future, null));
+        fire(new TransportStateEvent(TransportState.CONNECTED, future));
         return future;
     }
 

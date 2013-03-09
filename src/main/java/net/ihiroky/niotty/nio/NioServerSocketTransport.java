@@ -133,7 +133,7 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
             return;
         }
 
-        child.loadEventLater(new TransportStateEvent(child, TransportState.ACCEPTED, remoteAddress));
+        child.loadEventLater(new TransportStateEvent(TransportState.ACCEPTED, remoteAddress));
     }
 
     @Override

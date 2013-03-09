@@ -21,11 +21,11 @@ public class HelloWorldStage implements LoadStage<String, Object> {
 
     @Override
     public void load(LoadStageContext<String, Object> context, TransportStateEvent event) {
-        switch (event.getState()) {
+        switch (event.state()) {
             case CONNECTED:
-                if (event.getValue() != null) {
+                if (event.value() != null) {
                     logger_.info(event.toString());
-                    event.getTransport().write("Hello World.");
+                    context.transport().write("Hello World.");
                 }
                 break;
         }

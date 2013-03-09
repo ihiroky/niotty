@@ -87,21 +87,34 @@ public class MessageIOSelector extends AbstractSelector<MessageIOSelector> {
         ByteBuffer localByteBuffer = readBuffer_;
         int read;
 
-        for (Iterator<SelectionKey> i = selectedKeys.iterator(); i.hasNext(); ) {
+        KEY_LOOP: for (Iterator<SelectionKey> i = selectedKeys.iterator(); i.hasNext();) {
             SelectionKey key = i.next();
             i.remove();
 
             SocketChannel channel = (SocketChannel) key.channel();
-            while ((read = channel.read(localByteBuffer)) > 0) {}
-            localByteBuffer.flip();
-
             NioChildChannelTransport transport = (NioChildChannelTransport) key.attachment();
+            try {
+                for (;;) {
+                    read = channel.read(localByteBuffer);
+                    if (read == 0) {
+                        break;
+                    }
+                    if (read == -1) {
+                        transport.closeSelectableChannel();
+                        unregister(key);
+                        localByteBuffer.clear();
+                        continue KEY_LOOP;
+                    }
+                }
+            } catch (IOException ioe) {
+                transport.closeSelectableChannel();
+                unregister(key);
+                continue;
+            }
+
+            localByteBuffer.flip();
             transport.loadEvent(Buffers.newCodecBuffer(localByteBuffer));
             localByteBuffer.clear();
-            if (read == -1) {
-                // close current key and socket.
-                transport.closeSelectableChannel();
-            }
         }
     }
 
