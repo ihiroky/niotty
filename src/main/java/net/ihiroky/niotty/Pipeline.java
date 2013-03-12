@@ -2,7 +2,7 @@ package net.ihiroky.niotty;
 
 /**
  * Created on 13/01/09, 17:21
- *
+ * TODO preapre context iterator for rebuild pipeline
  * @author Hiroki Itoh
  */
 public interface Pipeline {

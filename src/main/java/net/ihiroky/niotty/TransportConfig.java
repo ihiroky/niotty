@@ -26,5 +26,9 @@ public class TransportConfig {
         @Override
         public void setUpPipeline(LoadPipeline loadPipeline, StorePipeline storePipeline) {
         }
+
+        @Override
+        public void release() {
+        }
     }
 }

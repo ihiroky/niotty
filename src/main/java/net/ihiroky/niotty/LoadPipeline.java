@@ -8,6 +8,8 @@ package net.ihiroky.niotty;
 public interface LoadPipeline extends Pipeline {
 
     LoadPipeline add(LoadStage<?, ?> stage);
-    void fire(Object input);
-    void fire(TransportStateEvent event);
+    LoadPipeline add(LoadStage<?, ?> stage, StageContextExecutor<?> executor);
+    void execute(Object input);
+    void execute(TransportStateEvent event);
+    void close();
 }

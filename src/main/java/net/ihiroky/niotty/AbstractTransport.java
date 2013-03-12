@@ -10,6 +10,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
+ * TODO invalidate pipeline on close and recreate pipelines.
  * @author Hiroki Itoh
  */
 abstract public class AbstractTransport<L extends EventLoop<L>> implements Transport {
@@ -43,6 +44,11 @@ abstract public class AbstractTransport<L extends EventLoop<L>> implements Trans
 
     protected StorePipeline getStorePipeline() {
         return storePipeline_;
+    }
+
+    public final void closePipelines() {
+        loadPipeline_.close();
+        storePipeline_.close();
     }
 
     public final void setEventLoop(L loop) {

@@ -18,15 +18,23 @@ public class DefaultLoadPipeline extends AbstractPipeline<LoadStage<Object, Obje
     }
 
     @Override
-    protected StageContext<Object, Object> createContext(LoadStage<Object, Object> stage) {
-        return new LoadStageContext<>(this, stage);
+    protected StageContext<Object, Object> createContext(
+            LoadStage<Object, Object> stage, StageContextExecutor<Object> executor) {
+        return new LoadStageContext<>(this, stage, executor);
     }
 
     @Override
     public LoadPipeline add(LoadStage<?, ?> stage) {
+        return add(stage, null);
+    }
+
+    @Override
+    public LoadPipeline add(LoadStage<?, ?> stage, StageContextExecutor<?> executor) {
         @SuppressWarnings("unchecked")
         LoadStage<Object, Object> s = (LoadStage<Object, Object>) stage;
-        super.addStage(s);
+        @SuppressWarnings("unchecked")
+        StageContextExecutor<Object> e = (StageContextExecutor<Object>) executor;
+        super.addStage(s, e);
         return this;
     }
 }

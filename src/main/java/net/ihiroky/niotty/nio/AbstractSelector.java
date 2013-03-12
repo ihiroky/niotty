@@ -5,8 +5,8 @@ import net.ihiroky.niotty.Pipeline;
 import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.StageContextAdapter;
 import net.ihiroky.niotty.StageContextListener;
-import net.ihiroky.niotty.buffer.BufferSink;
 import net.ihiroky.niotty.TransportStateEvent;
+import net.ihiroky.niotty.buffer.BufferSink;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,7 +15,6 @@ import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Created on 13/01/10, 17:56
@@ -25,7 +24,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 public abstract class AbstractSelector<S extends AbstractSelector<S>> extends EventLoop<S> {
 
     private Selector selector_;
-    private AtomicInteger registeredCount_;
 
     private Logger logger_ = LoggerFactory.getLogger(AbstractSelector.class);
 
@@ -51,10 +49,6 @@ public abstract class AbstractSelector<S extends AbstractSelector<S>> extends Ev
                 }
             };
 
-    AbstractSelector() {
-        registeredCount_ = new AtomicInteger();
-    }
-
     @Override
     protected void onOpen() {
         try {
@@ -74,7 +68,14 @@ public abstract class AbstractSelector<S extends AbstractSelector<S>> extends Ev
 
     @Override
     protected void process(int timeout) throws Exception {
-        int selected = (timeout <= 0) ? selector_.select() : selector_.select(timeout);
+        int selected;
+        if (timeout > 0) {
+            selected = selector_.select(timeout);
+        } else if (timeout == 0) {
+            selected = selector_.selectNow();
+        } else { // if (timeout < 0) {
+            selected = selector_.select();
+        }
         if (selected > 0) {
             processSelectedKeys(selector_.selectedKeys());
         }
@@ -113,7 +114,7 @@ public abstract class AbstractSelector<S extends AbstractSelector<S>> extends Ev
         try {
             SelectionKey key = channel.register(selector_, ops, transport);
             transport.setSelectionKey(key);
-            registeredCount_.incrementAndGet();
+            processingMemberCount_.incrementAndGet();
             logger_.debug("channel {} is registered to {}.", channel, Thread.currentThread());
         } catch (IOException ioe) {
             logger_.warn("failed to register channel:" + channel, ioe);
@@ -124,7 +125,7 @@ public abstract class AbstractSelector<S extends AbstractSelector<S>> extends Ev
         try {
             SelectionKey key = channel.register(selector_, ops, attachment);
             attachment.getTransport().setSelectionKey(key);
-            registeredCount_.incrementAndGet();
+            processingMemberCount_.incrementAndGet();
             logger_.debug("channel {} is registered to {}.", channel, Thread.currentThread());
         } catch (IOException ioe) {
             logger_.warn("failed to register channel:" + channel, ioe);
@@ -133,12 +134,8 @@ public abstract class AbstractSelector<S extends AbstractSelector<S>> extends Ev
 
     void unregister(SelectionKey key) {
         key.cancel();
-        registeredCount_.decrementAndGet();
+        processingMemberCount_.decrementAndGet();
         logger_.debug("channel {} is unregistered from {}.", key.channel(), Thread.currentThread());
-    }
-
-    int getRegisteredCount() {
-        return registeredCount_.get();
     }
 
     Set<SelectionKey> keys() {

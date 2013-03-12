@@ -13,7 +13,7 @@ import java.util.Objects;
 
 /**
  * Created on 13/01/11, 13:40
- *
+ * TODO fire TransportStateEvent on closed
  * @author Hiroki Itoh
  */
 public abstract class NioSocketTransport<S extends AbstractSelector<S>> extends AbstractTransport<S> {
@@ -33,6 +33,7 @@ public abstract class NioSocketTransport<S extends AbstractSelector<S>> extends 
     TransportFuture closeSelectableChannelLater() {
         S selector = getEventLoop();
         if (selector == null) {
+            closePipelines();
             return new SucceededTransportFuture(this);
         }
         final DefaultTransportFuture future = new DefaultTransportFuture(this);
@@ -48,6 +49,7 @@ public abstract class NioSocketTransport<S extends AbstractSelector<S>> extends 
     }
 
     void closeSelectableChannel() {
+        closePipelines();
         if (key_ != null) {
             SelectableChannel channel = key_.channel();
             getEventLoop().unregister(key_); // decrement register count

@@ -29,20 +29,30 @@ public abstract class AbstractPipeline<S> implements Pipeline {
     }
 
     protected void addStage(S stage) {
+        addStage(stage, null);
+    }
+
+    protected void addStage(S stage, StageContextExecutor<Object> executor) {
         if (headContext_ == TERMINAL) {
-            StageContext<Object, Object> context = createContext(stage);
+            StageContext<Object, Object> context = createContext(stage, executor);
             context.setNext(TERMINAL);
             headContext_ = tailContext_ = context;
             return;
         }
 
-        StageContext<Object, Object> context = createContext(stage);
+        StageContext<Object, Object> context = createContext(stage, executor);
         context.setNext(TERMINAL);
         tailContext_.setNext(context);
         tailContext_ = context;
     }
 
-    protected abstract StageContext<Object, Object> createContext(S stage);
+    protected abstract StageContext<Object, Object> createContext(S stage, StageContextExecutor<Object> executor);
+
+    public void close() {
+        for (StageContext<Object, Object> ctx = headContext_; ctx != TERMINAL; ctx = ctx.next()) {
+            ctx.close();
+        }
+    }
 
     public void regulate() {
         if (headContext_ == TERMINAL) {
@@ -71,12 +81,12 @@ public abstract class AbstractPipeline<S> implements Pipeline {
         }
     }
 
-    public void fire(Object input) {
-        headContext_.fire(input);
+    public void execute(Object input) {
+        headContext_.execute(input);
     }
 
-    public void fire(TransportStateEvent event) {
-        headContext_.fire(event);
+    public void execute(TransportStateEvent event) {
+        headContext_.execute(event);
     }
 
     @Override
@@ -112,7 +122,7 @@ public abstract class AbstractPipeline<S> implements Pipeline {
 
     private static class NullContext extends StageContext<Object, Object> {
         protected NullContext() {
-            super(null);
+            super(null, null);
         }
         @Override
         protected Object getStage() {

@@ -8,4 +8,6 @@ package net.ihiroky.niotty;
 public interface PipelineInitializer {
 
     void setUpPipeline(LoadPipeline loadPipeline, StorePipeline storePipeline);
+    void release();
+
 }

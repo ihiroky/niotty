@@ -10,8 +10,8 @@ public class LoadStageContext<I, O> extends StageContext<I, O> {
     private LoadStage<I, O> stage_;
 
     @SuppressWarnings("unchecked")
-    public LoadStageContext(Pipeline pipeline, LoadStage<Object, Object> stage) {
-        super(pipeline);
+    public LoadStageContext(Pipeline pipeline, LoadStage<Object, Object> stage, StageContextExecutor<I> executor) {
+        super(pipeline, executor);
         Objects.requireNonNull(stage, "stage");
         this.stage_ = (LoadStage<I, O>) stage;
     }

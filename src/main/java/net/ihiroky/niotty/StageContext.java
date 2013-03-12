@@ -13,18 +13,23 @@ public abstract class StageContext<I, O> {
 
     private Pipeline pipeline_;
     private StageContext<O, Object> next_;
+    private StageContextExecutor<I> executor_;
     private StageContextListener<I, O> listener_;
 
     private static final StageContextListener<Object, Object> NULL_LISTENER = new StageContextAdapter<>();
+    private static final StageContextExecutor<Object> DEFAULT_EXECUTOR = new DefaultStageContextExecutor();
 
     @SuppressWarnings("unchecked")
     private static <I, O> StageContextListener<I, O> nullListener() {
         return (StageContextListener<I, O>) NULL_LISTENER;
     }
 
-    protected StageContext(Pipeline pipeline) {
+    protected StageContext(Pipeline pipeline, StageContextExecutor<I> executor) {
+        @SuppressWarnings("unchecked")
+        StageContextExecutor<I> e = (executor != null) ? executor : (StageContextExecutor<I>) DEFAULT_EXECUTOR;
         this.pipeline_ = pipeline;
         this.listener_ = nullListener();
+        this.executor_ = e;
     }
 
     protected StageContext<O, Object> next() {
@@ -40,15 +45,27 @@ public abstract class StageContext<I, O> {
         return pipeline_.transport();
     }
 
+    protected void close() {
+        listener_ = nullListener();
+        executor_.invalidate(this);
+    }
+
+    protected void execute(I input) {
+        executor_.execute(this, input);
+    }
+
+    protected void execute(TransportStateEvent event) {
+        executor_.execute(this, event);
+    }
+
     public void proceed(O output) {
         listener_.onProceed(pipeline_, this, output);
-        next_.fire(output);
-
+        next_.execute(output);
     }
 
     public void proceed(TransportStateEvent event) {
         listener_.onProceed(pipeline_, this, event);
-        next_.fire(event);
+        next_.execute(event);
     }
 
     protected void callOnFire(I input) {

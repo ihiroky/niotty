@@ -8,20 +8,25 @@ import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Created on 13/01/10, 17:56
  *
  * @author Hiroki Itoh
  */
-public abstract class EventLoop<L extends EventLoop<L>> implements Runnable {
+public abstract class EventLoop<L extends EventLoop<L>> implements Runnable, Comparable<EventLoop<L>> {
 
     private Queue<Task<L>> taskQueue_;
     private volatile Thread thread_;
 
+    protected final AtomicInteger processingMemberCount_ = new AtomicInteger();
+
     private Logger logger_ = LoggerFactory.getLogger(EventLoop.class);
 
-    private static final int TIMEOUT = 100;
+    private static final int TIMEOUT_TASK_RETRY = 100;
+    private static final int TIMEOUT_NOW = 0;
+    private static final int TIMEOUT_NO_LIMIT = -1;
 
     protected EventLoop() {
         taskQueue_ = new ConcurrentLinkedQueue<Task<L>>();
@@ -50,6 +55,10 @@ public abstract class EventLoop<L extends EventLoop<L>> implements Runnable {
         wakeUp();
     }
 
+    public boolean hasNoTask() {
+        return taskQueue_.isEmpty();
+    }
+
     public void run() {
         Queue<Task<L>> taskBuffer = new LinkedList<Task<L>>();
         int timeout = 0;
@@ -75,7 +84,11 @@ public abstract class EventLoop<L extends EventLoop<L>> implements Runnable {
 
     private int processTasks(Queue<Task<L>> queue, Queue<Task<L>> buffer) {
         @SuppressWarnings("unchecked") L loop = (L) this;
-        for (Task<L> task; (task = queue.poll()) != null; ) {
+        for (Task<L> task;;) {
+            task = queue.poll();
+            if (task == null) {
+                break;
+            }
             try {
                 if (!task.execute(loop)) {
                     buffer.offer(task);
@@ -86,15 +99,24 @@ public abstract class EventLoop<L extends EventLoop<L>> implements Runnable {
                 }
             }
         }
-        int timeout = buffer.isEmpty() ? 0 : TIMEOUT;
+        int timeout = buffer.isEmpty() ? TIMEOUT_NO_LIMIT : TIMEOUT_TASK_RETRY;
         queue.addAll(buffer);
         buffer.clear();
         return timeout;
     }
 
+    public int processingMemberCount() {
+        return processingMemberCount_.get();
+    }
+
     @Override
     public String toString() {
         return (thread_ != null) ? thread_.getName() : "[NOT WORKING]";
+    }
+
+    @Override
+    public int compareTo(EventLoop<L> that) {
+        return this.processingMemberCount_.get() - that.processingMemberCount_.get();
     }
 
     protected abstract void onOpen();

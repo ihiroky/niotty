@@ -12,7 +12,7 @@ public class StoreStageContextMock<I, O> extends StoreStageContext<I, O> {
 
     @SuppressWarnings("unchecked")
     public StoreStageContextMock(StoreStage<?, ?> stage) {
-        super(null, (StoreStage<Object, Object>) stage);
+        super(null, (StoreStage<Object, Object>) stage, null);
     }
 
     @Override

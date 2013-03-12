@@ -43,7 +43,7 @@ public class MessageIOSelectorPool extends AbstractSelectorPool<MessageIOSelecto
     public NioChildChannelTransport register(
             TransportConfig config, String name, WriteQueue writeQueue,
             final SelectableChannel channel, final int ops) {
-        MessageIOSelector target = searchLoop();
+        MessageIOSelector target = searchLowMemberCountLoop();
         if (target != null) {
             final NioChildChannelTransport transport = new NioChildChannelTransport(config, name, target, writeQueue);
             transport.setEventLoop(target);

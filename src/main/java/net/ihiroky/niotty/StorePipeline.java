@@ -8,6 +8,8 @@ package net.ihiroky.niotty;
 public interface StorePipeline extends Pipeline {
 
     StorePipeline add(StoreStage<?, ?> stage);
-    void fire(Object object);
-    void fire(TransportStateEvent event);
+    StorePipeline add(StoreStage<?, ?> stage, StageContextExecutor<?> executor);
+    void execute(Object object);
+    void execute(TransportStateEvent event);
+    void close();
 }

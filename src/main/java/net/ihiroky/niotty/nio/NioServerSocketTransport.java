@@ -107,6 +107,8 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
 
     @Override
     public TransportFuture close() {
+        config_.getPipelineInitializer().release();
+
         if (getEventLoop() != null) {
             return closeSelectableChannelLater();
         }

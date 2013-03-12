@@ -131,22 +131,22 @@ public class NioChildChannelTransport extends NioSocketTransport<MessageIOSelect
     }
 
     private void fire(Object event) {
-        getStorePipeline().fire(event);
+        getStorePipeline().execute(event);
     }
 
     private void fire(TransportStateEvent event) {
-        getStorePipeline().fire(event);
+        getStorePipeline().execute(event);
     }
 
     void loadEvent(Object event) {
-        getLoadPipeline().fire(event);
+        getLoadPipeline().execute(event);
     }
 
     void loadEventLater(final TransportStateEvent event) {
         offerTask(new EventLoop.Task<MessageIOSelector>() {
             @Override
             public boolean execute(MessageIOSelector eventLoop) throws Exception {
-                getLoadPipeline().fire(event);
+                getLoadPipeline().execute(event);
                 return true;
             }
         });

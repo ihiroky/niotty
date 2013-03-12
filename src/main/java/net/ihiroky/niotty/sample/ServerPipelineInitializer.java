@@ -17,4 +17,8 @@ public class ServerPipelineInitializer implements PipelineInitializer {
         loadPipeline.add(new FrameLengthRemoveDecoder()).add(new StringDecoder()).add(new EchoStage());
         storePipeline.add(new StringEncoder()).add(new FrameLengthPrependEncoder());
     }
+
+    @Override
+    public void release() {
+    }
 }

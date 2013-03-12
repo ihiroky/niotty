@@ -12,22 +12,9 @@ import java.nio.channels.SelectableChannel;
  */
 public abstract class AbstractSelectorPool<S extends AbstractSelector<S>> extends EventLoopGroup<S> {
 
-    protected final S searchLoop() {
-        int min = Integer.MAX_VALUE;
-        S target = null;
-        for (S loop : eventLoops()) {
-            int registered = loop.getRegisteredCount();
-            if (registered < min) {
-                min = registered;
-                target = loop;
-            }
-        }
-        return target;
-    }
-
     public void register(final SelectableChannel channel, final int ops,
                          final TransportFutureAttachment<S> attachment) {
-        S target = searchLoop();
+        S target = searchLowMemberCountLoop();
         if (target != null) {
             attachment.getTransport().setEventLoop(target);
             target.offerTask(new EventLoop.Task<S>() {

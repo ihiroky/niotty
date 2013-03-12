@@ -18,15 +18,23 @@ public class DefaultStorePipeline extends AbstractPipeline<StoreStage<Object, Ob
     }
 
     @Override
-    protected StageContext<Object, Object> createContext(StoreStage<Object, Object> stage) {
-        return new StoreStageContext<>(this, stage);
+    protected StageContext<Object, Object> createContext(
+            StoreStage<Object, Object> stage, StageContextExecutor<Object> executor) {
+        return new StoreStageContext<>(this, stage, executor);
     }
 
     @Override
     public StorePipeline add(StoreStage<?, ?> stage) {
+        return add(stage, null);
+    }
+
+    @Override
+    public StorePipeline add(StoreStage<?, ?> stage, StageContextExecutor<?> executor) {
         @SuppressWarnings("unchecked")
         StoreStage<Object, Object> s = (StoreStage<Object, Object>) stage;
-        super.addStage(s);
+        @SuppressWarnings("unchecked")
+        StageContextExecutor<Object> e = (StageContextExecutor<Object>) executor;
+        super.addStage(s, e);
         return this;
     }
 }

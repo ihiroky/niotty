@@ -17,4 +17,8 @@ public class ClientPipelineInitializer implements PipelineInitializer {
         loadPipeline.add(new FrameLengthRemoveDecoder()).add(new StringDecoder()).add(new HelloWorldStage());
         storePipeline.add(new StringEncoder()).add(new FrameLengthPrependEncoder());
     }
+
+    @Override
+    public void release() {
+    }
 }

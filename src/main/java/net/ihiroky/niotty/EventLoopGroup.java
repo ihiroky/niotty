@@ -3,8 +3,10 @@ package net.ihiroky.niotty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ThreadFactory;
 
@@ -19,7 +21,7 @@ public abstract class EventLoopGroup<L extends EventLoop<L>> {
     private Logger logger_ = LoggerFactory.getLogger(EventLoopGroup.class);
 
     public synchronized void open(ThreadFactory threadFactory, int numberOfWorker) {
-        if (!isInitialized(eventLoops())) {
+        if (!isInitialized(eventLoops_)) {
             L[] loops = newArray(numberOfWorker);
             for (int i = 0; i < numberOfWorker; i++) {
                 L loop = newEventLoop();
@@ -31,9 +33,8 @@ public abstract class EventLoopGroup<L extends EventLoop<L>> {
         }
     }
 
-    @SuppressWarnings("unchecked")
     public synchronized void close() {
-        if (isInitialized(eventLoops())) {
+        if (isInitialized(eventLoops_)) {
             for (L loop : eventLoops_) {
                 loop.close();
             }
@@ -47,13 +48,28 @@ public abstract class EventLoopGroup<L extends EventLoop<L>> {
         }
     }
 
-    protected Collection<L> eventLoops() {
-        return eventLoops_;
+    protected final L searchLowMemberCountLoop() {
+        int min = Integer.MAX_VALUE;
+        L target = null;
+        for (L loop : eventLoops_) {
+            int registered = loop.processingMemberCount_.get();
+            if (registered < min) {
+                min = registered;
+                target = loop;
+            }
+        }
+        return target;
+    }
+
+    protected List<L> sortedLoopsView() {
+        List<L> view = new ArrayList<>(eventLoops_);
+        Collections.sort(view);
+        return view;
     }
 
     protected abstract L newEventLoop();
 
-    private static Collection<EventLoop<?>> NULL = Collections.emptyList();
+    private static final Collection<EventLoop<?>> NULL = Collections.emptyList();
 
     private <L> boolean isInitialized(Collection<L> c) {
         return c != NULL;
