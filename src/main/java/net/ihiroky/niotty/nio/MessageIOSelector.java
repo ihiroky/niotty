@@ -22,25 +22,13 @@ import java.util.Set;
  */
 public class MessageIOSelector extends AbstractSelector<MessageIOSelector> {
 
-    private ByteBuffer readBuffer_;
-    private ByteBuffer writeBuffer_;
+    private final ByteBuffer readBuffer_;
+    private final ByteBuffer writeBuffer_;
     private Logger logger_ = LoggerFactory.getLogger(MessageIOSelector.class);
 
     private static final int MIN_BUFFER_SIZE = 256;
 
-    final StoreStage<BufferSink, Void> ioStoreStage_ = new StoreStage<BufferSink, Void>() {
-        @Override
-        public void store(StoreStageContext<BufferSink, Void> context, BufferSink input) {
-            NioChildChannelTransport transport = (NioChildChannelTransport) context.transport();
-            transport.writeBufferSink(input);
-            transport.getEventLoop().offerTask(new FlushTask(transport, writeBuffer_));
-        }
-
-        @Override
-        public void store(StoreStageContext<BufferSink, Void> context, TransportStateEvent event) {
-            AbstractSelector.SELECTOR_STORE_STAGE.store(context, event);
-        }
-    };
+    private final StoreStage<BufferSink, Void> ioStoreStage_;
 
     MessageIOSelector(int readBufferSize, int writeBufferSize, boolean direct) {
         if (readBufferSize < MIN_BUFFER_SIZE) {
@@ -53,6 +41,7 @@ public class MessageIOSelector extends AbstractSelector<MessageIOSelector> {
         }
         readBuffer_ = direct ? ByteBuffer.allocateDirect(readBufferSize) : ByteBuffer.allocate(readBufferSize);
         writeBuffer_ = direct ? ByteBuffer.allocateDirect(writeBufferSize) : ByteBuffer.allocate(writeBufferSize);
+        ioStoreStage_ = new IOStoreStage(writeBuffer_);
     }
 
     @Override
@@ -99,7 +88,7 @@ public class MessageIOSelector extends AbstractSelector<MessageIOSelector> {
         offerTask(new FlushTask(transport, writeBuffer_));
     }
 
-    static class FlushTask implements Task<MessageIOSelector> {
+    private static class FlushTask implements Task<MessageIOSelector> {
 
         NioChildChannelTransport transport_;
         ByteBuffer writeBuffer_;
@@ -122,6 +111,27 @@ public class MessageIOSelector extends AbstractSelector<MessageIOSelector> {
                 transport_.closeSelectableChannel();
             }
             return true;
+        }
+    }
+
+    private static class IOStoreStage implements StoreStage<BufferSink, Void> {
+
+        private final ByteBuffer writeBuffer_;
+
+        IOStoreStage(ByteBuffer writeBuffer) {
+            writeBuffer_ = writeBuffer;
+        }
+
+        @Override
+        public void store(StoreStageContext<BufferSink, Void> context, BufferSink input) {
+            NioChildChannelTransport transport = (NioChildChannelTransport) context.transport();
+            transport.writeBufferSink(input);
+            transport.getEventLoop().offerTask(new FlushTask(transport, writeBuffer_));
+        }
+
+        @Override
+        public void store(StoreStageContext<BufferSink, Void> context, TransportStateEvent event) {
+            AbstractSelector.SELECTOR_STORE_STAGE.store(context, event);
         }
     }
 }

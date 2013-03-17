@@ -38,11 +38,10 @@ abstract public class AbstractTransport<L extends EventLoop<L>> implements Trans
         DefaultLoadPipeline loadPipeline = new DefaultLoadPipeline(baseName, this);
         DefaultStorePipeline storePipeline = new DefaultStorePipeline(baseName, this);
         pipelineInitializer.setUpPipeline(loadPipeline, storePipeline);
-
-        loadPipeline.verifyStageContextType();
-
         storePipeline.addIOStage(ioStage);
-        storePipeline.verifyStageContextType();
+
+        loadPipeline.verifyStageType();
+        storePipeline.verifyStageType();
 
         loadPipeline_ = loadPipeline;
         storePipeline_ = storePipeline;
@@ -79,6 +78,8 @@ abstract public class AbstractTransport<L extends EventLoop<L>> implements Trans
             if (ioStage != null) {
                 storePipelineCopy.addIOStage(ioStage);
             }
+            loadPipelineCopy.verifyStageType();
+            storePipelineCopy.verifyStageType();
 
             loadPipeline_ = loadPipelineCopy;
             storePipeline_ = storePipelineCopy;

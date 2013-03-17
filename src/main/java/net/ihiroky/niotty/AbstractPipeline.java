@@ -22,6 +22,8 @@ public abstract class AbstractPipeline<S> implements Pipeline<S> {
     private static Logger logger_ = LoggerFactory.getLogger(AbstractPipeline.class);
 
     private static final StageContext<Object, Object> TERMINAL = new NullContext();
+    private static final int INPUT_TYPE = 0;
+    private static final int OUTPUT_TYPE = 1;
 
     protected AbstractPipeline(String name, Transport transport) {
         StageContext<Object, Object> head = new NullContext();
@@ -181,23 +183,93 @@ public abstract class AbstractPipeline<S> implements Pipeline<S> {
         }
     }
 
-    public void verifyStageContextType() {
-
-        // TODO verify next input class is assignable from previous output class
-
-        if (logger_.isDebugEnabled()) {
-            int counter = 0;
-            for (StageContextIterator i = new StageContextIterator(head_); i.hasNext();) {
-                StageContext<Object, Object> ctx = i.next();
-                for (Type type : ctx.stage().getClass().getGenericInterfaces()) {
-                    if (type instanceof ParameterizedType) {
-                        Type[] actualTypeArguments = ((ParameterizedType) type).getActualTypeArguments();
-                        logger_.debug("[verifyStageContextType] {}:{} - I:{}, O:{}",
-                                name_, counter++, actualTypeArguments[0], actualTypeArguments[1]);
-                        break;
-                    }
+    public void verifyStageType() {
+        if (!logger_.isDebugEnabled()) { // TODO review if a dedicated flag instead of log level should be used.
+            return;
+        }
+        int counter = 0;
+        Class<?> prevOutputClass = null;
+        Class<?> prevStageClass = null;
+        for (StageContextIterator i = new StageContextIterator(head_); i.hasNext();) {
+            Class<?> stageClass = i.next().stage().getClass();
+            for (Type type : stageClass.getGenericInterfaces()) {
+                Type[] actualTypeArguments = stageTypeParameters(type);
+                if (actualTypeArguments == null) {
+                    continue;
                 }
+
+                logger_.debug("[verifyStageType] {}:{} - I:{}, O:{}",
+                        name_, counter, actualTypeArguments[INPUT_TYPE], actualTypeArguments[OUTPUT_TYPE]);
+
+                checkIfStageTypeIsValid(stageClass, actualTypeArguments[INPUT_TYPE], prevStageClass, prevOutputClass);
+
+                // Update previous stage and output type.
+                if (actualTypeArguments[OUTPUT_TYPE] instanceof Class) {
+                    prevOutputClass = (Class<?>) actualTypeArguments[OUTPUT_TYPE];
+                    prevStageClass = stageClass;
+                } else {
+                    logger_.debug(
+                            "[verifyStageType] output type {} of {} is not an instance of Class.",
+                            actualTypeArguments[OUTPUT_TYPE], stageClass);
+                    prevOutputClass = null;
+                    prevStageClass = null;
+                }
+                counter++;
+                break;
             }
+        }
+    }
+
+    /**
+     * Returns type parameters of a specified {@code type} if the {@code type} is {@link net.ihiroky.niotty.LoadStage}
+     * or {@link net.ihiroky.niotty.StoreStage}. Otherwise, returns null.
+     *
+     * @param type a type of the stage generic interface
+     * @return type parameters or null
+     */
+    private Type[] stageTypeParameters(Type type) {
+        if (!(type instanceof ParameterizedType)) {
+            return null;
+        }
+        ParameterizedType parameterizedType = (ParameterizedType) type;
+        Type rawType = parameterizedType.getRawType();
+        if (!(rawType instanceof Class)) {
+            return null;
+        }
+        Class<?> rawTypeClass = (Class<?>) rawType;
+        if (!(rawTypeClass.equals(LoadStage.class) || rawTypeClass.equals(StoreStage.class))) {
+            return null;
+        }
+        return parameterizedType.getActualTypeArguments();
+    }
+
+    /**
+     * Check if the input type of the stage is assignable from the previous output type of the previous stage.
+     * That is, the stage is called by the previous stage without ClassCastException.
+     *
+     * @param stageClass class of the stage
+     * @param inputType input type of the stage
+     * @param prevStageClass class of the previous stage
+     * @param prevOutputClass output type of the previous stage
+     * @throws java.lang.RuntimeException the previous stage can't call the stage because of type mismatch.
+     */
+    private void checkIfStageTypeIsValid(
+            Class<?> stageClass, Type inputType, Class<?> prevStageClass, Class<?> prevOutputClass) {
+        if (inputType instanceof Class) {
+            Class<?> inputClass = (Class<?>) inputType;
+            if (prevOutputClass != null) {
+                if (!inputClass.isAssignableFrom(prevOutputClass)) {
+                    throw new RuntimeException("Input type ["
+                            + inputClass + "] of [" + stageClass + "] is not assignable from output type ["
+                            + prevOutputClass + "] of [" + prevStageClass + "].");
+                }
+                logger_.debug("[checkIfStageTypeIsValid] OK from [{}] to [{}]",
+                        prevStageClass.getClass(), stageClass.getClass());
+            }
+        } else {
+            logger_.debug(
+                    "[checkIfStageTypeIsValid] input type {} of {} is not an instance of Class. Skip assignment check.",
+                    inputType, stageClass);
         }
     }
 
