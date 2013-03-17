@@ -138,7 +138,6 @@ public abstract class AbstractPipeline<S> implements Pipeline<S> {
         for (StageContextIterator i = new StageContextIterator(head_); i.hasNext();) {
             StageContext<Object, Object> context = i.next();
             if (context.key().equals(key)) {
-                // don't call context.setNext(TERMINAL) for iteration or execution.
                 StageContext<Object, Object> prev = i.prev();
                 prev.setNext(context.next());
                 context.close();
@@ -162,7 +161,6 @@ public abstract class AbstractPipeline<S> implements Pipeline<S> {
         for (StageContextIterator i = new StageContextIterator(head_); i.hasNext();) {
             StageContext<Object, Object> context = i.next();
             if (context.key().equals(oldKey)) {
-                // don't call context.setNext(TERMINAL) for iteration or execution.
                 StageContext<Object, Object> prev = i.prev();
                 StageContext<Object, Object> next = context.next();
                 StageContext<Object, Object> newContext = createContext(newKey, newStage, pool);
@@ -184,9 +182,11 @@ public abstract class AbstractPipeline<S> implements Pipeline<S> {
     }
 
     public void verifyStageType() {
-        if (!logger_.isDebugEnabled()) { // TODO review if a dedicated flag instead of log level should be used.
+        // TODO review if a dedicated flag instead of log level should be used.
+        if (!logger_.isWarnEnabled()) {
             return;
         }
+
         int counter = 0;
         Class<?> prevOutputClass = null;
         Class<?> prevStageClass = null;
@@ -258,13 +258,12 @@ public abstract class AbstractPipeline<S> implements Pipeline<S> {
         if (inputType instanceof Class) {
             Class<?> inputClass = (Class<?>) inputType;
             if (prevOutputClass != null) {
-                if (!inputClass.isAssignableFrom(prevOutputClass)) {
-                    throw new RuntimeException("Input type ["
-                            + inputClass + "] of [" + stageClass + "] is not assignable from output type ["
-                            + prevOutputClass + "] of [" + prevStageClass + "].");
+                if (inputClass.isAssignableFrom(prevOutputClass)) {
+                    logger_.debug("[checkIfStageTypeIsValid] OK from [{}] to [{}]", prevStageClass, stageClass);
+                } else {
+                    logger_.warn("Input type [{}] of [{}] is not assignable from output type [{}] of [{}].",
+                            inputClass, stageClass, prevOutputClass, prevStageClass);
                 }
-                logger_.debug("[checkIfStageTypeIsValid] OK from [{}] to [{}]",
-                        prevStageClass.getClass(), stageClass.getClass());
             }
         } else {
             logger_.debug(

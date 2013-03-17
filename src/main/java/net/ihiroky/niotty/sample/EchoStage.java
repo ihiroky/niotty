@@ -11,18 +11,18 @@ import org.slf4j.LoggerFactory;
  *
  * @author Hiroki Itoh
  */
-public class EchoStage implements LoadStage<String, Object> {
+public class EchoStage implements LoadStage<String, Void> {
 
     private Logger logger_ = LoggerFactory.getLogger(EchoStage.class);
 
     @Override
-    public void load(LoadStageContext<String, Object> context, String message) {
+    public void load(LoadStageContext<String, Void> context, String message) {
         logger_.info(message);
         context.transport().write(message);
     }
 
     @Override
-    public void load(LoadStageContext<String, Object> context, TransportStateEvent event) {
+    public void load(LoadStageContext<String, Void> context, TransportStateEvent event) {
         logger_.info(event.toString());
     }
 }
