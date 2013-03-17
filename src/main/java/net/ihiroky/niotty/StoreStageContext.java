@@ -10,26 +10,25 @@ public class StoreStageContext<I, O> extends StageContext<I, O> {
     private StoreStage<I, O> stage_;
 
     @SuppressWarnings("unchecked")
-    public StoreStageContext(Pipeline pipeline, StoreStage<Object, Object> stage, StageContextExecutor<I> executor) {
-        super(pipeline, executor);
+    public StoreStageContext(Pipeline<?> pipeline,
+                             StageKey key, StoreStage<Object, Object> stage, StageContextExecutorPool pool) {
+        super(pipeline, key, pool);
         Objects.requireNonNull(stage, "stage");
         this.stage_ = (StoreStage<I, O>) stage;
     }
 
     @Override
-    protected Object getStage() {
+    protected StoreStage<I, O> stage() {
         return stage_;
     }
 
     @Override
     protected void fire(I input) {
-        callOnFire(input);
         stage_.store(this, input);
     }
 
     @Override
     protected void fire(TransportStateEvent event) {
-        callOnFire(event);
         stage_.store(this, event);
     }
 

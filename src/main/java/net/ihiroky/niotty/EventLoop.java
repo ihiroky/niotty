@@ -3,6 +3,9 @@ package net.ihiroky.niotty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.AbstractQueue;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Objects;
 import java.util.Queue;
@@ -17,7 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public abstract class EventLoop<L extends EventLoop<L>> implements Runnable, Comparable<EventLoop<L>> {
 
-    private Queue<Task<L>> taskQueue_;
+    private volatile Queue<Task<L>> taskQueue_;
     private volatile Thread thread_;
 
     protected final AtomicInteger processingMemberCount_ = new AtomicInteger();
@@ -29,7 +32,7 @@ public abstract class EventLoop<L extends EventLoop<L>> implements Runnable, Com
     private static final int TIMEOUT_NO_LIMIT = -1;
 
     protected EventLoop() {
-        taskQueue_ = new ConcurrentLinkedQueue<Task<L>>();
+        taskQueue_ = new ConcurrentLinkedQueue<>();
     }
 
     synchronized void openWith(ThreadFactory tf) {
@@ -74,7 +77,9 @@ public abstract class EventLoop<L extends EventLoop<L>> implements Runnable, Com
                 timeout = processTasks(taskQueue_, taskBuffer);
             }
         } finally {
-            taskQueue_.clear();
+            Queue<Task<L>> queue = taskQueue_;
+            taskQueue_ = EmptyQueue.emptyQueue();
+            queue.clear();
             onClose();
             synchronized (this) {
                 thread_ = null;
@@ -126,5 +131,40 @@ public abstract class EventLoop<L extends EventLoop<L>> implements Runnable, Com
 
     public interface Task<L extends EventLoop<L>> {
         boolean execute(L eventLoop) throws Exception;
+    }
+
+    private static class EmptyQueue extends AbstractQueue<Object> {
+
+        private static final EmptyQueue INSTANCE = new EmptyQueue();
+
+        @SuppressWarnings("unchecked")
+        static <E> Queue<E> emptyQueue() {
+            return (Queue<E>) INSTANCE;
+        }
+
+        @Override
+        public Iterator<Object> iterator() {
+            return Collections.emptyIterator();
+        }
+
+        @Override
+        public int size() {
+            return 0;
+        }
+
+        @Override
+        public boolean offer(Object task) {
+            return false;
+        }
+
+        @Override
+        public Object poll() {
+            return null;
+        }
+
+        @Override
+        public Object peek() {
+            return null;
+        }
     }
 }

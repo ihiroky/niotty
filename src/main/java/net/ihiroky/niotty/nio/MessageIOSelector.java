@@ -1,12 +1,10 @@
 package net.ihiroky.niotty.nio;
 
-import net.ihiroky.niotty.Pipeline;
-import net.ihiroky.niotty.StageContext;
-import net.ihiroky.niotty.StageContextAdapter;
-import net.ihiroky.niotty.StageContextListener;
+import net.ihiroky.niotty.StoreStage;
+import net.ihiroky.niotty.StoreStageContext;
+import net.ihiroky.niotty.TransportStateEvent;
 import net.ihiroky.niotty.buffer.BufferSink;
 import net.ihiroky.niotty.buffer.Buffers;
-import net.ihiroky.niotty.TransportStateEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,22 +28,19 @@ public class MessageIOSelector extends AbstractSelector<MessageIOSelector> {
 
     private static final int MIN_BUFFER_SIZE = 256;
 
-    final StageContextListener<Object, BufferSink> storeContextListener_ =
-            new StageContextAdapter<Object, BufferSink>() {
-                @Override
-                public void onProceed(
-                        Pipeline pipeline, StageContext<Object, BufferSink> context, BufferSink bufferSink) {
-                    NioChildChannelTransport transport = (NioChildChannelTransport) context.transport();
-                    transport.writeBufferSink(bufferSink);
-                    transport.getEventLoop().offerTask(new FlushTask(transport, writeBuffer_));
-                }
+    final StoreStage<BufferSink, Void> ioStoreStage_ = new StoreStage<BufferSink, Void>() {
+        @Override
+        public void store(StoreStageContext<BufferSink, Void> context, BufferSink input) {
+            NioChildChannelTransport transport = (NioChildChannelTransport) context.transport();
+            transport.writeBufferSink(input);
+            transport.getEventLoop().offerTask(new FlushTask(transport, writeBuffer_));
+        }
 
-                @Override
-                public void onProceed(
-                        Pipeline pipeline, StageContext<Object, BufferSink> context, TransportStateEvent event) {
-                    AbstractSelector.SELECTOR_STORE_CONTEXT_LISTENER.onProceed(pipeline, context, event);
-                }
-            };
+        @Override
+        public void store(StoreStageContext<BufferSink, Void> context, TransportStateEvent event) {
+            AbstractSelector.SELECTOR_STORE_STAGE.store(context, event);
+        }
+    };
 
     MessageIOSelector(int readBufferSize, int writeBufferSize, boolean direct) {
         if (readBufferSize < MIN_BUFFER_SIZE) {
@@ -83,7 +78,7 @@ public class MessageIOSelector extends AbstractSelector<MessageIOSelector> {
                 }
             } catch (IOException ioe) {
                 if (logger_.isDebugEnabled()) {
-                    logger_.debug("failed to read from transport:", transport, ioe);
+                    logger_.debug("failed to read from transport:" + transport, ioe);
                 }
                 transport.closeSelectableChannel();
                 localByteBuffer.clear();
@@ -96,8 +91,8 @@ public class MessageIOSelector extends AbstractSelector<MessageIOSelector> {
         }
     }
 
-    public StageContextListener<Object, BufferSink> storeContextListener() {
-        return storeContextListener_;
+    public StoreStage<BufferSink, Void> ioStoreStage() {
+        return ioStoreStage_;
     }
 
     void flushLater(NioChildChannelTransport transport) {

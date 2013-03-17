@@ -12,7 +12,7 @@ public class LoadStageContextMock<I, O> extends LoadStageContext<I, O> {
 
     @SuppressWarnings("unchecked")
     public LoadStageContextMock(LoadStage<?, ?> stage) {
-        super(null, (LoadStage<Object, Object>) stage, null);
+        super(null, null, (LoadStage<Object, Object>) stage, null);
     }
 
     @Override

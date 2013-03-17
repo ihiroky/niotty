@@ -3,26 +3,23 @@ package net.ihiroky.niotty;
 /**
  * @author Hiroki Itoh
  */
-public class DefaultStageContextExecutor implements StageContextExecutor<Object> {
+public class DefaultStageContextExecutor implements StageContextExecutor {
     @Override
-    public void execute(StageContext<Object, ?> context, Object input) {
+    public <I> void execute(StageContext<I, ?> context, I input) {
         context.fire(input);
     }
 
     @Override
-    public void execute(StageContext<Object, ?> context, TransportStateEvent event) {
+    public <I> void execute(StageContext<I, ?> context, TransportStateEvent event) {
         context.fire(event);
     }
 
     @Override
-    public void invalidate(StageContext<Object, ?> context) {
+    public StageContextExecutorPool pool() {
+        return DefaultStageContextExecutorPool.instance();
     }
 
     @Override
-    public void start() {
-    }
-
-    @Override
-    public void stop() {
+    public void close(StageContext<?, ?> context) {
     }
 }

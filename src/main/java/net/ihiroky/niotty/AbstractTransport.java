@@ -15,35 +15,76 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 abstract public class AbstractTransport<L extends EventLoop<L>> implements Transport {
 
-    private LoadPipeline loadPipeline_;
-    private StorePipeline storePipeline_;
+    private DefaultLoadPipeline loadPipeline_;
+    private DefaultStorePipeline storePipeline_;
     private AtomicReference<Object> attachmentReference_;
     private TransportListener transportListener_;
     private L loop_;
 
-    static final TransportListener NULL_LISTENER = new NullListener();
+    private static final TransportListener NULL_LISTENER = new NullListener();
+    private static final DefaultLoadPipeline NULL_LOAD_PIPELINE = new DefaultLoadPipeline("null", null);
+    private static final DefaultStorePipeline NULL_STORE_PIPELINE = new DefaultStorePipeline("null", null);
 
     protected AbstractTransport() {
+        loadPipeline_ = NULL_LOAD_PIPELINE;
+        storePipeline_ = NULL_STORE_PIPELINE;
         attachmentReference_ = new AtomicReference<>();
         transportListener_ = NULL_LISTENER;
     }
 
-    protected final void setLoadPipeline(LoadPipeline pipeline) {
-        Objects.requireNonNull(pipeline, "pipeline");
-        loadPipeline_ = pipeline;
+    protected void setUpPipelines(
+            String baseName, PipelineInitializer pipelineInitializer, StoreStage<BufferSink, Void> ioStage) {
+
+        DefaultLoadPipeline loadPipeline = new DefaultLoadPipeline(baseName, this);
+        DefaultStorePipeline storePipeline = new DefaultStorePipeline(baseName, this);
+        pipelineInitializer.setUpPipeline(loadPipeline, storePipeline);
+
+        loadPipeline.verifyStageContextType();
+
+        storePipeline.addIOStage(ioStage);
+        storePipeline.verifyStageContextType();
+
+        loadPipeline_ = loadPipeline;
+        storePipeline_ = storePipeline;
     }
 
-    protected LoadPipeline getLoadPipeline() {
-        return loadPipeline_;
+    protected void executeLoad(Object message) {
+        loadPipeline_.execute(message);
     }
 
-    protected final void setStorePipeline(StorePipeline pipeline) {
-        Objects.requireNonNull(pipeline, "pipeline");
-        storePipeline_ = pipeline;
+    protected void executeLoad(TransportStateEvent stateEvent) {
+        loadPipeline_.execute(stateEvent);
     }
 
-    protected StorePipeline getStorePipeline() {
-        return storePipeline_;
+    protected void executeStore(Object message) {
+        storePipeline_.execute(message);
+    }
+
+    protected void executeStore(TransportStateEvent stateEvent) {
+        storePipeline_.execute(stateEvent);
+    }
+
+    public final void resetPipelines(PipelineInitializer initializer) {
+        Objects.requireNonNull(initializer, "initializer");
+
+        // use the same lock object as listener to save memory footprint.
+        synchronized (this) {
+            DefaultLoadPipeline oldLoadPipeline = loadPipeline_;
+            DefaultStorePipeline oldStorePipeline = storePipeline_;
+            DefaultLoadPipeline loadPipelineCopy = oldLoadPipeline.createCopy();
+            DefaultStorePipeline storePipelineCopy = oldStorePipeline.createCopy();
+            initializer.setUpPipeline(loadPipelineCopy, storePipelineCopy);
+
+            StoreStage<BufferSink, Void> ioStage = oldStorePipeline.searchIOStage();
+            if (ioStage != null) {
+                storePipelineCopy.addIOStage(ioStage);
+            }
+
+            loadPipeline_ = loadPipelineCopy;
+            storePipeline_ = storePipelineCopy;
+            oldLoadPipeline.close();
+            oldStorePipeline.close();
+        }
     }
 
     public final void closePipelines() {
@@ -81,12 +122,12 @@ abstract public class AbstractTransport<L extends EventLoop<L>> implements Trans
                 return;
             }
             if (oldListener instanceof ListenerList) {
-                ((ListenerList) oldListener).list.add(listener);
+                ((ListenerList) oldListener).list_.add(listener);
                 return;
             }
             ListenerList listenerList = new ListenerList();
-            listenerList.list.add(oldListener);
-            listenerList.list.add(listener);
+            listenerList.list_.add(oldListener);
+            listenerList.list_.add(listener);
             transportListener_ = listenerList;
         }
     }
@@ -102,9 +143,9 @@ abstract public class AbstractTransport<L extends EventLoop<L>> implements Trans
             }
             if (transportListener_ instanceof ListenerList) {
                 ListenerList listenerList = (ListenerList) transportListener_;
-                listenerList.list.remove(transportListener_);
-                if (listenerList.list.size() == 1) {
-                    transportListener_ = listenerList.list.get(0);
+                listenerList.list_.remove(transportListener_);
+                if (listenerList.list_.size() == 1) {
+                    transportListener_ = listenerList.list_.get(0);
                 }
             }
         }
@@ -119,7 +160,6 @@ abstract public class AbstractTransport<L extends EventLoop<L>> implements Trans
     public Object attachment() {
         return attachmentReference_.get();
     }
-
 
     abstract protected void writeDirect(BufferSink buffer);
 
@@ -143,32 +183,32 @@ abstract public class AbstractTransport<L extends EventLoop<L>> implements Trans
 
     private static class ListenerList implements TransportListener {
 
-        CopyOnWriteArrayList<TransportListener> list = new CopyOnWriteArrayList<>();
+        CopyOnWriteArrayList<TransportListener> list_ = new CopyOnWriteArrayList<>();
 
         @Override
         public void onBind(Transport transport, SocketAddress local) {
-            for (TransportListener listener : list) {
+            for (TransportListener listener : list_) {
                 listener.onBind(transport, local);
             }
         }
 
         @Override
         public void onConnect(Transport transport, SocketAddress remote) {
-            for (TransportListener listener : list) {
+            for (TransportListener listener : list_) {
                 listener.onConnect(transport, remote);
             }
         }
 
         @Override
         public void onJoin(Transport transport, InetAddress group, NetworkInterface ni, InetAddress source) {
-            for (TransportListener listener : list) {
+            for (TransportListener listener : list_) {
                 listener.onJoin(transport, group, ni, source);
             }
         }
 
         @Override
         public void onClose(Transport transport) {
-            for (TransportListener listener : list) {
+            for (TransportListener listener : list_) {
                 listener.onClose(transport);
             }
         }

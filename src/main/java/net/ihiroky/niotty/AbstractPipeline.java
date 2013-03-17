@@ -5,60 +5,179 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+import java.util.Objects;
 
 /**
  * Created on 13/01/10, 17:21
  *
  * @author Hiroki Itoh
  */
-public abstract class AbstractPipeline<S> implements Pipeline {
+public abstract class AbstractPipeline<S> implements Pipeline<S> {
 
-    private String name_;
-    private Transport transport_;
-    private StageContext<Object, Object> headContext_;
-    private StageContext<Object, Object> tailContext_;
+    private final String name_;
+    private final Transport transport_;
+    private final StageContext<Object, Object> head_;
     private static Logger logger_ = LoggerFactory.getLogger(AbstractPipeline.class);
 
     private static final StageContext<Object, Object> TERMINAL = new NullContext();
 
     protected AbstractPipeline(String name, Transport transport) {
-        this.name_ = name;
-        this.transport_ = transport;
-        this.headContext_ = TERMINAL;
-        this.tailContext_ = TERMINAL;
+        StageContext<Object, Object> head = new NullContext();
+        head.setNext(TERMINAL);
+
+        name_ = name;
+        transport_ = transport;
+        head_ = head;
     }
 
-    protected void addStage(S stage) {
-        addStage(stage, null);
-    }
+    protected Pipeline<S> add(StageContext<Object, Object> newContext) {
+        Objects.requireNonNull(newContext, "newContext");
 
-    protected void addStage(S stage, StageContextExecutor<Object> executor) {
-        if (headContext_ == TERMINAL) {
-            StageContext<Object, Object> context = createContext(stage, executor);
-            context.setNext(TERMINAL);
-            headContext_ = tailContext_ = context;
-            return;
+        if (head_.next() == TERMINAL) {
+            head_.setNext(newContext);
+            newContext.setNext(TERMINAL);
+            return this;
+        } else {
+            for (StageContextIterator i = new StageContextIterator(head_); i.hasNext();) {
+                StageContext<Object, Object> context = i.next();
+                if (context.next() == TERMINAL) {
+                    newContext.setNext(TERMINAL);
+                    context.setNext(newContext);
+                    break;
+                }
+            }
         }
-
-        StageContext<Object, Object> context = createContext(stage, executor);
-        context.setNext(TERMINAL);
-        tailContext_.setNext(context);
-        tailContext_ = context;
+        return this;
     }
 
-    protected abstract StageContext<Object, Object> createContext(S stage, StageContextExecutor<Object> executor);
+    @Override
+    public Pipeline<S> add(StageKey key, S stage) {
+        return add(key, stage, null);
+    }
+
+    @Override
+    public Pipeline<S> add(StageKey key, S stage, StageContextExecutorPool pool) {
+        Objects.requireNonNull(key, "key");
+        Objects.requireNonNull(stage, "stage");
+
+        if (head_.next() == TERMINAL) {
+            StageContext<Object, Object> newContext = createContext(key, stage, pool);
+            head_.setNext(newContext);
+            newContext.setNext(TERMINAL);
+            return this;
+        } else {
+            for (StageContextIterator i = new StageContextIterator(head_); i.hasNext();) {
+                StageContext<Object, Object> context = i.next();
+                if (context.next() == TERMINAL) {
+                    StageContext<Object, Object> newContext = createContext(key, stage, pool);
+                    newContext.setNext(TERMINAL);
+                    context.setNext(newContext);
+                    break;
+                }
+            }
+        }
+        return this;
+    }
+
+    @Override
+    public Pipeline<S> addBefore(StageKey baseKey, StageKey key, S stage) {
+        return addBefore(baseKey, key, stage, null);
+    }
+
+    @Override
+    public Pipeline<S> addBefore(StageKey baseKey, StageKey key, S stage, StageContextExecutorPool pool) {
+        Objects.requireNonNull(baseKey, "baseKey");
+        Objects.requireNonNull(key, "key");
+        Objects.requireNonNull(stage, "stage");
+
+        for (StageContextIterator i = new StageContextIterator(head_); i.hasNext();) {
+            StageContext<Object, Object> context = i.next();
+            if (context.key().equals(baseKey)) {
+                StageContext<Object, Object> prev = i.prev();
+                StageContext<Object, Object> newContext = createContext(key, stage, pool);
+                newContext.setNext(context);
+                prev.setNext(newContext);
+                return this;
+            }
+        }
+        throw new NoSuchElementException();
+    }
+
+    @Override
+    public Pipeline<S> addAfter(StageKey baseKey, StageKey key, S stage) {
+        return addAfter(baseKey, key, stage, null);
+    }
+
+    @Override
+    public Pipeline<S> addAfter(StageKey baseKey, StageKey key, S stage, StageContextExecutorPool pool) {
+        Objects.requireNonNull(baseKey, "baseKey");
+        Objects.requireNonNull(key, "key");
+        Objects.requireNonNull(stage, "stage");
+
+        for (StageContextIterator i = new StageContextIterator(head_); i.hasNext();) {
+            StageContext<Object, Object> context = i.next();
+            if (context.key().equals(baseKey)) {
+                StageContext<Object, Object> next = context.next();
+                StageContext<Object, Object> newContext = createContext(key, stage, pool);
+                newContext.setNext(next);
+                context.setNext(newContext);
+                return this;
+            }
+        }
+        throw new NoSuchElementException();
+    }
+
+    @Override
+    public Pipeline<S> remove(StageKey key) {
+        Objects.requireNonNull(key, "key");
+
+        for (StageContextIterator i = new StageContextIterator(head_); i.hasNext();) {
+            StageContext<Object, Object> context = i.next();
+            if (context.key().equals(key)) {
+                // don't call context.setNext(TERMINAL) for iteration or execution.
+                StageContext<Object, Object> prev = i.prev();
+                prev.setNext(context.next());
+                context.close();
+                return this;
+            }
+        }
+        throw new NoSuchElementException();
+    }
+
+    @Override
+    public Pipeline<S> replace(StageKey oldKey, StageKey newKey, S newStage) {
+        return replace(oldKey, newKey, newStage, null);
+    }
+
+    @Override
+    public Pipeline<S> replace(StageKey oldKey, StageKey newKey, S newStage, StageContextExecutorPool pool) {
+        Objects.requireNonNull(oldKey, "oldKey");
+        Objects.requireNonNull(newKey, "newKey");
+        Objects.requireNonNull(newStage, "newStage");
+
+        for (StageContextIterator i = new StageContextIterator(head_); i.hasNext();) {
+            StageContext<Object, Object> context = i.next();
+            if (context.key().equals(oldKey)) {
+                // don't call context.setNext(TERMINAL) for iteration or execution.
+                StageContext<Object, Object> prev = i.prev();
+                StageContext<Object, Object> next = context.next();
+                StageContext<Object, Object> newContext = createContext(newKey, newStage, pool);
+                newContext.setNext(next);
+                prev.setNext(newContext);
+                context.close();
+                return this;
+            }
+        }
+        throw new NoSuchElementException();
+    }
+
+    protected abstract StageContext<Object, Object> createContext(StageKey key, S stage, StageContextExecutorPool pool);
 
     public void close() {
-        for (StageContext<Object, Object> ctx = headContext_; ctx != TERMINAL; ctx = ctx.next()) {
+        for (StageContext<Object, Object> ctx = head_; ctx != TERMINAL; ctx = ctx.next()) {
             ctx.close();
-        }
-    }
-
-    public void regulate() {
-        if (headContext_ == TERMINAL) {
-            StageContext<Object, Object> context = new NullContext();
-            context.setNext(TERMINAL);
-            headContext_ = tailContext_ = context;
         }
     }
 
@@ -68,8 +187,9 @@ public abstract class AbstractPipeline<S> implements Pipeline {
 
         if (logger_.isDebugEnabled()) {
             int counter = 0;
-            for (StageContext<Object, Object> ctx = headContext_; ctx != TERMINAL; ctx = ctx.next()) {
-                for (Type type : ctx.getStage().getClass().getGenericInterfaces()) {
+            for (StageContextIterator i = new StageContextIterator(head_); i.hasNext();) {
+                StageContext<Object, Object> ctx = i.next();
+                for (Type type : ctx.stage().getClass().getGenericInterfaces()) {
                     if (type instanceof ParameterizedType) {
                         Type[] actualTypeArguments = ((ParameterizedType) type).getActualTypeArguments();
                         logger_.debug("[verifyStageContextType] {}:{} - I:{}, O:{}",
@@ -82,11 +202,16 @@ public abstract class AbstractPipeline<S> implements Pipeline {
     }
 
     public void execute(Object input) {
-        headContext_.execute(input);
+        head_.next().execute(input);
     }
 
     public void execute(TransportStateEvent event) {
-        headContext_.execute(event);
+        head_.next().execute(event);
+    }
+
+    @Override
+    public String name() {
+        return name_;
     }
 
     @Override
@@ -94,38 +219,26 @@ public abstract class AbstractPipeline<S> implements Pipeline {
         return transport_;
     }
 
-    @Override
-    public StageContext<Object, Object> getFirstContext() {
-        return headContext_;
-    }
-
-    @Override
-    public StageContext<Object, Object> getLastContext() {
-        return tailContext_;
-    }
-
-    @Override
-    public StageContext<Object, Object> searchContextFor(Class<?> stageClass) {
-        for (StageContext<Object, Object> ctx = headContext_; ctx != tailContext_; ctx = ctx.next()) {
-            if (stageClass.equals(ctx.getStage().getClass())) {
-                return ctx;
+    protected StageContext<Object, Object> search(StageKey key) {
+        for (StageContextIterator i = new StageContextIterator(head_); i.hasNext();) {
+            StageContext<Object, Object> context = i.next();
+            if (context.key() == key) {
+                return context;
             }
         }
         return null;
     }
 
-    @Override
-    @SuppressWarnings("unchecked")
-    public <S> S searchStageFor(Class<S> stageClass) {
-        return stageClass.cast(searchContextFor(stageClass).getStage());
+    protected Iterator<StageContext<Object, Object>> iterator() {
+        return new StageContextIterator(head_);
     }
 
     private static class NullContext extends StageContext<Object, Object> {
         protected NullContext() {
-            super(null, null);
+            super(null, null, null);
         }
         @Override
-        protected Object getStage() {
+        protected Object stage() {
             return this;
         }
         @Override
@@ -133,6 +246,50 @@ public abstract class AbstractPipeline<S> implements Pipeline {
         }
         @Override
         protected void fire(TransportStateEvent event) {
+        }
+    }
+
+    /**
+     * Iterates {@code StageContext} chain from head context.
+     */
+    private static class StageContextIterator implements Iterator<StageContext<Object, Object>> {
+
+        private StageContext<Object, Object> context_;
+        private final StageContext<Object, Object> terminal_;
+        private StageContext<Object, Object> prev_;
+
+        StageContextIterator(StageContext<Object, Object> head) {
+            this(head, TERMINAL);
+        }
+
+        StageContextIterator(StageContext<Object, Object> head, StageContext<Object, Object> terminal) {
+            context_ = head;
+            terminal_ = terminal;
+            prev_ = null;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return context_.next() != terminal_;
+        }
+
+        @Override
+        public StageContext<Object, Object> next() {
+            prev_ = context_;
+            context_ = context_.next();
+            if (context_ == terminal_) {
+                throw new NoSuchElementException();
+            }
+            return context_;
+        }
+
+        @Override
+        public void remove() {
+            throw new UnsupportedOperationException();
+        }
+
+        public StageContext<Object, Object> prev() {
+            return prev_;
         }
     }
 }

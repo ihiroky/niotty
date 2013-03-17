@@ -1,10 +1,8 @@
 package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.EventLoop;
-import net.ihiroky.niotty.Pipeline;
-import net.ihiroky.niotty.StageContext;
-import net.ihiroky.niotty.StageContextAdapter;
-import net.ihiroky.niotty.StageContextListener;
+import net.ihiroky.niotty.StoreStage;
+import net.ihiroky.niotty.StoreStageContext;
 import net.ihiroky.niotty.TransportStateEvent;
 import net.ihiroky.niotty.buffer.BufferSink;
 import org.slf4j.Logger;
@@ -27,27 +25,29 @@ public abstract class AbstractSelector<S extends AbstractSelector<S>> extends Ev
 
     private Logger logger_ = LoggerFactory.getLogger(AbstractSelector.class);
 
-    static final StageContextListener<Object, BufferSink> SELECTOR_STORE_CONTEXT_LISTENER =
-            new StageContextAdapter<Object, BufferSink>() {
-                @Override
-                public void onProceed(
-                        Pipeline pipeline, StageContext<Object, BufferSink> context, TransportStateEvent event) {
-                    NioSocketTransport<?> transport = (NioSocketTransport<?>) context.transport();
-                    Object value = event.value();
-                    switch (event.state()) {
-                        case ACCEPTED: // fall through
-                        case CONNECTED: // fall through
-                        case BOUND:
-                            if (value == null || Boolean.FALSE.equals(value)) {
-                                transport.closeSelectableChannel();
-                            }
-                            event.future().done();
-                            break;
-                        default:
-                            break;
+    static final StoreStage<BufferSink, Void> SELECTOR_STORE_STAGE = new StoreStage<BufferSink, Void>() {
+        @Override
+        public void store(StoreStageContext<BufferSink, Void> context, BufferSink input) {
+        }
+
+        @Override
+        public void store(StoreStageContext<BufferSink, Void> context, TransportStateEvent event) {
+            NioSocketTransport<?> transport = (NioSocketTransport<?>) context.transport();
+            Object value = event.value();
+            switch (event.state()) {
+                case ACCEPTED: // fall through
+                case CONNECTED: // fall through
+                case BOUND:
+                    if (value == null || Boolean.FALSE.equals(value)) {
+                        transport.closeSelectableChannel();
                     }
-                }
-            };
+                    event.future().done();
+                    break;
+                default:
+                    break;
+            }
+        }
+    };
 
     @Override
     protected void onOpen() {

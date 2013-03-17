@@ -5,11 +5,17 @@ package net.ihiroky.niotty;
  * TODO preapre context iterator for rebuild pipeline
  * @author Hiroki Itoh
  */
-public interface Pipeline {
+public interface Pipeline<S> {
 
-    StageContext<Object, Object> getFirstContext();
-    StageContext<Object, Object> getLastContext();
-    StageContext<Object, Object> searchContextFor(Class<?> stageClass);
-    <S> S searchStageFor(Class<S> stageClass);
+    Pipeline<S> add(StageKey key, S stage);
+    Pipeline<S> add(StageKey key, S stage, StageContextExecutorPool pool);
+    Pipeline<S> addBefore(StageKey baseKey, StageKey key, S stage);
+    Pipeline<S> addBefore(StageKey baseKey, StageKey key, S stage, StageContextExecutorPool pool);
+    Pipeline<S> addAfter(StageKey baseKey, StageKey key, S stage);
+    Pipeline<S> addAfter(StageKey baseKey, StageKey key, S stage, StageContextExecutorPool pool);
+    Pipeline<S> remove(StageKey key);
+    Pipeline<S> replace(StageKey oldKey, StageKey newKey, S newStage);
+    Pipeline<S> replace(StageKey oldKey, StageKey newKey, S newStage, StageContextExecutorPool pool);
+    String name();
     Transport transport();
 }

@@ -73,8 +73,6 @@ public class NioClientSocketTransport extends NioSocketTransport<ConnectSelector
 
     @Override
     public TransportFuture close() {
-        config_.getPipelineInitializer().release();
-
         if (getEventLoop() == null) {
             closeSelectableChannel();
             return new SucceededTransportFuture(this);

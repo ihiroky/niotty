@@ -11,20 +11,20 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * @author Hiroki Itoh
  */
-public class StageContextEventLoop extends EventLoop<StageContextEventLoop> implements StageContextExecutor<Object> {
+public class LoopStageContextExecutor extends EventLoop<LoopStageContextExecutor> implements StageContextExecutor {
 
     private final Lock lock_;
     private final Condition condition_;
     private final AtomicBoolean signaled_;
-    private final Set<StageContext<Object, ?>> contextSet_;
-    private final Object contextMutex_;
+    private final Set<StageContext<?, ?>> contextSet_;
+    private final LoopStageContextExecutorPool pool_;
 
-    public StageContextEventLoop(Object contextMutex) {
+    public LoopStageContextExecutor(LoopStageContextExecutorPool pool) {
         lock_ = new ReentrantLock();
         condition_ = lock_.newCondition();
         signaled_ = new AtomicBoolean();
         contextSet_ = new HashSet<>();
-        contextMutex_ = contextSet_;
+        pool_ = pool;
     }
 
     @Override
@@ -60,10 +60,10 @@ public class StageContextEventLoop extends EventLoop<StageContextEventLoop> impl
     }
 
     @Override
-    public void execute(final StageContext<Object, ?> context, final Object input) {
-        offerTask(new Task<StageContextEventLoop>() {
+    public <I> void execute(final StageContext<I, ?> context, final I input) {
+        offerTask(new Task<LoopStageContextExecutor>() {
             @Override
-            public boolean execute(StageContextEventLoop eventLoop) throws Exception {
+            public boolean execute(LoopStageContextExecutor eventLoop) throws Exception {
                 context.fire(input);
                 return true;
             }
@@ -71,10 +71,10 @@ public class StageContextEventLoop extends EventLoop<StageContextEventLoop> impl
     }
 
     @Override
-    public void execute(final StageContext<Object, ?> context, final TransportStateEvent event) {
-        offerTask(new Task<StageContextEventLoop>() {
+    public <I> void execute(final StageContext<I, ?> context, final TransportStateEvent event) {
+        offerTask(new Task<LoopStageContextExecutor>() {
             @Override
-            public boolean execute(StageContextEventLoop eventLoop) throws Exception {
+            public boolean execute(LoopStageContextExecutor eventLoop) throws Exception {
                 context.fire(event);
                 return true;
             }
@@ -82,39 +82,38 @@ public class StageContextEventLoop extends EventLoop<StageContextEventLoop> impl
     }
 
     @Override
-    public void invalidate(StageContext<Object, ?> context) {
-        synchronized (contextMutex_) {
+    public StageContextExecutorPool pool() {
+        return pool_;
+    }
+
+    @Override
+    public void close(StageContext<?, ?> context) {
+        synchronized (pool_.allocationLock()) {
             contextSet_.remove(context);
         }
-    }
-
-    @Override
-    public void start() {
-    }
-
-    @Override
-    public void stop() {
+        processingMemberCount_.decrementAndGet();
     }
 
     /**
      * Adds a specified {@code StageContext} to the context set.
-     * This method must be called by {@link net.ihiroky.niotty.StageContextEventLoopGroup} only.
+     * This method must be called by {@link LoopStageContextExecutorPool} only.
      *
      * @param context the {@code StageContext} to be added
      * @return true if the context set does not contains the {@code context}
      */
-    boolean add(StageContext<Object, ?> context) {
+    boolean accept(StageContext<?, ?> context) {
+        processingMemberCount_.incrementAndGet();
         return contextSet_.add(context);
     }
 
     /**
      * Returns true if the context set contains a specified {@code StageContext}.
-     * This method must be called by {@link net.ihiroky.niotty.StageContextEventLoopGroup} only.
+     * This method must be called by {@link LoopStageContextExecutorPool} only.
      *
      * @param context the {@code StageContext} to be checked
      * @return true if the context set contains a specified {@code StageContext}.
      */
-    boolean contains(StageContext<Object, ?> context) {
+    boolean contains(StageContext<?, ?> context) {
         return contextSet_.contains(context);
     }
 }

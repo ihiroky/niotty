@@ -1,14 +1,12 @@
 package net.ihiroky.niotty.nio;
 
-import net.ihiroky.niotty.DefaultLoadPipeline;
-import net.ihiroky.niotty.DefaultStorePipeline;
 import net.ihiroky.niotty.DefaultTransportFuture;
 import net.ihiroky.niotty.EventLoop;
 import net.ihiroky.niotty.TransportConfig;
 import net.ihiroky.niotty.TransportFuture;
-import net.ihiroky.niotty.buffer.BufferSink;
 import net.ihiroky.niotty.TransportState;
 import net.ihiroky.niotty.TransportStateEvent;
+import net.ihiroky.niotty.buffer.BufferSink;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -32,25 +30,13 @@ public class NioChildChannelTransport extends NioSocketTransport<MessageIOSelect
 
     NioChildChannelTransport(
             TransportConfig config, String name, MessageIOSelector messageIO, WriteQueue writeQueue) {
-        DefaultLoadPipeline loadPipeline = DefaultLoadPipeline.createPipeline(name, this);
-        DefaultStorePipeline storePipeline = DefaultStorePipeline.createPipeline(name, this);
-        config.getPipelineInitializer().setUpPipeline(loadPipeline, storePipeline);
-
-        loadPipeline.regulate();
-        loadPipeline.verifyStageContextType();
-
-        storePipeline.regulate();
-        storePipeline.getLastContext().addListener(messageIO.storeContextListener());
-        storePipeline.verifyStageContextType();
-
-        setLoadPipeline(loadPipeline);
-        setStorePipeline(storePipeline);
+        setUpPipelines(name, config.getPipelineInitializer(), messageIO.ioStoreStage());
         queue_ = writeQueue;
     }
 
     @Override
     public void write(Object message) {
-        fire(message);
+        executeStore(message);
     }
 
     @Override
@@ -96,7 +82,7 @@ public class NioChildChannelTransport extends NioSocketTransport<MessageIOSelect
     @Override
     public TransportFuture close() {
         DefaultTransportFuture future = new DefaultTransportFuture(this);
-        fire(new TransportStateEvent(TransportState.CONNECTED, future));
+        executeStore(new TransportStateEvent(TransportState.CONNECTED, future));
         return future;
     }
 
@@ -130,23 +116,15 @@ public class NioChildChannelTransport extends NioSocketTransport<MessageIOSelect
         return status == WriteQueue.FlushStatus.FLUSHED;
     }
 
-    private void fire(Object event) {
-        getStorePipeline().execute(event);
-    }
-
-    private void fire(TransportStateEvent event) {
-        getStorePipeline().execute(event);
-    }
-
-    void loadEvent(Object event) {
-        getLoadPipeline().execute(event);
+    void loadEvent(Object message) {
+        executeLoad(message);
     }
 
     void loadEventLater(final TransportStateEvent event) {
         offerTask(new EventLoop.Task<MessageIOSelector>() {
             @Override
             public boolean execute(MessageIOSelector eventLoop) throws Exception {
-                getLoadPipeline().execute(event);
+                executeLoad(event);
                 return true;
             }
         });
