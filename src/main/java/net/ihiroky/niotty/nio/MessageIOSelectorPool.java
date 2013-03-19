@@ -39,6 +39,7 @@ public class MessageIOSelectorPool extends AbstractSelectorPool<MessageIOSelecto
         return new MessageIOSelector(readBufferSize_, writeBufferSize_, direct_);
     }
 
+    @Override
     public void register(final SelectableChannel channel, final int ops,
                          final NioSocketTransport<MessageIOSelector> transport) {
         MessageIOSelector target = searchLowMemberCountLoop();

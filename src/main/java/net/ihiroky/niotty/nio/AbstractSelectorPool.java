@@ -26,4 +26,18 @@ public abstract class AbstractSelectorPool<S extends AbstractSelector<S>> extend
             });
         }
     }
+
+    public void register(final SelectableChannel channel, final int ops, final NioSocketTransport<S> transport) {
+        S target = searchLowMemberCountLoop();
+        if (target != null) {
+            transport.setEventLoop(target);
+            target.offerTask(new EventLoop.Task<S>() {
+                @Override
+                public boolean execute(S eventLoop) {
+                    eventLoop.register(channel, ops, transport);
+                    return true;
+                }
+            });
+        }
+    }
 }

@@ -1,15 +1,14 @@
 package net.ihiroky.niotty.nio;
 
-import net.ihiroky.niotty.DefaultTransportFuture;
 import net.ihiroky.niotty.FailedTransportFuture;
 import net.ihiroky.niotty.SucceededTransportFuture;
 import net.ihiroky.niotty.Transport;
 import net.ihiroky.niotty.TransportAggregate;
 import net.ihiroky.niotty.TransportAggregateSupport;
 import net.ihiroky.niotty.TransportFuture;
-import net.ihiroky.niotty.buffer.BufferSink;
 import net.ihiroky.niotty.TransportState;
 import net.ihiroky.niotty.TransportStateEvent;
+import net.ihiroky.niotty.buffer.BufferSink;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -91,10 +90,8 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
         try {
             serverChannel_.bind(socketAddress, config_.getBacklog());
             getTransportListener().onBind(this, socketAddress);
-            DefaultTransportFuture future = new DefaultTransportFuture(this);
-            processor_.getAcceptSelectorPool().register(
-                    serverChannel_, SelectionKey.OP_ACCEPT, new TransportFutureAttachment<>(this, future));
-            return future;
+            processor_.getAcceptSelectorPool().register(serverChannel_, SelectionKey.OP_ACCEPT, this);
+            return new SucceededTransportFuture(this);
         } catch (IOException e) {
             return new FailedTransportFuture(this, e);
         }
@@ -118,16 +115,16 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
         throw new UnsupportedOperationException("join");
     }
 
-    void registerReadLater(SelectableChannel channel, DefaultTransportFuture future) throws IOException {
+    void registerReadLater(SelectableChannel channel) throws IOException {
+        // SocketChannel#getRemoteAddress() may throw IOException, so get remoteAddress first.
+        InetSocketAddress remoteAddress = (InetSocketAddress) ((SocketChannel) channel).getRemoteAddress();
+
         NioClientSocketTransport child =
                 new NioClientSocketTransport(config_, processor_.getName(), (SocketChannel) channel);
         processor_.getMessageIOSelectorPool().register(channel, SelectionKey.OP_READ, child);
         childAggregate_.add(child);
 
-        InetSocketAddress remoteAddress = (InetSocketAddress) ((SocketChannel) channel).getRemoteAddress();
         getTransportListener().onConnect(child, remoteAddress);
-        future.done();
-
         child.loadEventLater(new TransportStateEvent(TransportState.ACCEPTED, remoteAddress));
     }
 

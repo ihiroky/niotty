@@ -1,10 +1,8 @@
 package net.ihiroky.niotty.nio;
 
-import net.ihiroky.niotty.DefaultTransportFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
@@ -26,21 +24,13 @@ public class AcceptSelector extends AbstractSelector<AcceptSelector> {
             SelectionKey key = i.next();
             i.remove();
 
-            @SuppressWarnings("unchecked")
-            TransportFutureAttachment<AcceptSelector> attachment =
-                    (TransportFutureAttachment<AcceptSelector>) key.attachment();
-            try {
-                ServerSocketChannel parentChannel = (ServerSocketChannel) key.channel();
-                SocketChannel childChannel = parentChannel.accept();
-                logger_.info("new channel {} is accepted.", childChannel);
-                childChannel.configureBlocking(false);
+            NioServerSocketTransport transport = (NioServerSocketTransport) key.attachment();
+            ServerSocketChannel parentChannel = (ServerSocketChannel) key.channel();
+            SocketChannel childChannel = parentChannel.accept();
+            logger_.info("new channel {} is accepted.", childChannel);
+            childChannel.configureBlocking(false);
 
-                NioServerSocketTransport parent = (NioServerSocketTransport) attachment.getTransport();
-                DefaultTransportFuture future = attachment.getFuture();
-                parent.registerReadLater(childChannel, future);
-            } catch (IOException ioe) {
-                attachment.getFuture().setThrowable(ioe);
-            }
+            transport.registerReadLater(childChannel);
         }
     }
 }
