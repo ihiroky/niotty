@@ -7,7 +7,8 @@ import java.nio.charset.MalformedInputException;
 import java.nio.charset.UnmappableCharacterException;
 
 /**
- * TODO comment against priority.
+ * Provides factory methods of {@link net.ihiroky.niotty.buffer.CodecBuffer} and utility method for this package.
+ *
  * @author Hiroki Itoh
  */
 public final class Buffers {
