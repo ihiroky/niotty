@@ -118,20 +118,15 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
         throw new UnsupportedOperationException("join");
     }
 
-    void registerLater(SelectableChannel channel, int ops, DefaultTransportFuture future) {
-        NioChildChannelTransport child = processor_.getMessageIOSelectorPool().register(
-                config_, processor_.getName(), config_.newWriteQueue(), channel, ops);
+    void registerReadLater(SelectableChannel channel, DefaultTransportFuture future) throws IOException {
+        NioClientSocketTransport child =
+                new NioClientSocketTransport(config_, processor_.getName(), (SocketChannel) channel);
+        processor_.getMessageIOSelectorPool().register(channel, SelectionKey.OP_READ, child);
         childAggregate_.add(child);
 
-        InetSocketAddress remoteAddress;
-        try {
-            remoteAddress = (InetSocketAddress) ((SocketChannel) channel).getRemoteAddress();
-            getTransportListener().onConnect(this, remoteAddress());
-            future.done();
-        } catch (IOException ioe) {
-            future.setThrowable(ioe);
-            return;
-        }
+        InetSocketAddress remoteAddress = (InetSocketAddress) ((SocketChannel) channel).getRemoteAddress();
+        getTransportListener().onConnect(child, remoteAddress);
+        future.done();
 
         child.loadEventLater(new TransportStateEvent(TransportState.ACCEPTED, remoteAddress));
     }

@@ -25,6 +25,5 @@ public abstract class AbstractSelectorPool<S extends AbstractSelector<S>> extend
                 }
             });
         }
-
     }
 }

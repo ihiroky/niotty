@@ -30,8 +30,8 @@ public class NioClientSocketProcessor implements Processor<NioClientSocketTransp
     static final String DEFAULT_NAME = "NioServerSocket";
 
     public NioClientSocketProcessor() {
-        connectSelectorPool_ = new ConnectSelectorPool();
         messageIOSelectorPool_ = new MessageIOSelectorPool();
+        connectSelectorPool_ = new ConnectSelectorPool(messageIOSelectorPool_);
         name_ = "NioClientSocket";
         numberOfConnectThread_ = DEFAULT_NUMBER_OF_CONNECT_THREAD;
         numberOfMessageIOThread_ = DEFAULT_NUMBER_OF_MESSAGE_IO_THREAD;
@@ -42,7 +42,7 @@ public class NioClientSocketProcessor implements Processor<NioClientSocketTransp
 
     @Override
     public NioClientSocketTransport createTransport(NioClientSocketConfig config) {
-        return new NioClientSocketTransport(config, this);
+        return new NioClientSocketTransport(config, name_, connectSelectorPool_);
     }
 
     @Override

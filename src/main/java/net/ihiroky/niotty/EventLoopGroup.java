@@ -29,7 +29,7 @@ public abstract class EventLoopGroup<L extends EventLoop<L>> {
                 loops[i] = loop;
                 logger_.info("start event loop {}.", loop);
             }
-            eventLoops_ = Collections.unmodifiableCollection(new CopyOnWriteArrayList<L>(loops));
+            eventLoops_ = Collections.unmodifiableCollection(new CopyOnWriteArrayList<>(loops));
         }
     }
 

@@ -32,13 +32,11 @@ abstract public class AbstractTransport<L extends EventLoop<L>> implements Trans
         transportListener_ = NULL_LISTENER;
     }
 
-    protected void setUpPipelines(
-            String baseName, PipelineInitializer pipelineInitializer, StoreStage<BufferSink, Void> ioStage) {
+    protected void setUpPipelines(String baseName, PipelineInitializer pipelineInitializer) {
 
         DefaultLoadPipeline loadPipeline = new DefaultLoadPipeline(baseName, this);
         DefaultStorePipeline storePipeline = new DefaultStorePipeline(baseName, this);
         pipelineInitializer.setUpPipeline(loadPipeline, storePipeline);
-        storePipeline.addIOStage(ioStage);
 
         loadPipeline.verifyStageType();
         storePipeline.verifyStageType();
@@ -93,19 +91,28 @@ abstract public class AbstractTransport<L extends EventLoop<L>> implements Trans
         storePipeline_.close();
     }
 
+    public final void addIOStage(StoreStage<BufferSink, Void> ioStage) {
+        Objects.requireNonNull(ioStage, "ioStage");
+        storePipeline_.addIOStage(ioStage);
+    }
+
     public final void setEventLoop(L loop) {
         Objects.requireNonNull(loop, "loop");
         this.loop_ = loop;
     }
 
-    public final L getEventLoop() {
+    protected final L getEventLoop() {
         return loop_;
     }
 
-    protected void offerTask(EventLoop.Task<L> task) {
+    public void offerTask(EventLoop.Task<L> task) {
         if (loop_ != null) {
             loop_.offerTask(task);
         }
+    }
+
+    public boolean isInLoopThread() {
+        return (loop_ != null) && loop_.isInLoopThread();
     }
 
     protected TransportListener getTransportListener() {

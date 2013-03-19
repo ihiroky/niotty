@@ -6,6 +6,7 @@ import net.ihiroky.niotty.StageKey;
 import net.ihiroky.niotty.StorePipeline;
 import net.ihiroky.niotty.Transport;
 import net.ihiroky.niotty.TransportFuture;
+import net.ihiroky.niotty.TransportListener;
 import net.ihiroky.niotty.nio.NioClientSocketConfig;
 import net.ihiroky.niotty.nio.NioClientSocketProcessor;
 import net.ihiroky.niotty.nio.NioServerSocketConfig;
@@ -13,7 +14,10 @@ import net.ihiroky.niotty.nio.NioServerSocketProcessor;
 import net.ihiroky.niotty.stage.codec.frame.FrameLengthPrependEncoder;
 import net.ihiroky.niotty.stage.codec.frame.FrameLengthRemoveDecoder;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.NetworkInterface;
+import java.net.SocketAddress;
 
 /**
  * Created on 13/01/18, 12:59
@@ -39,39 +43,54 @@ public class Main {
         NioClientSocketProcessor client = new NioClientSocketProcessor();
         server.start();
         client.start();
-        Transport serverTransport = null;
-        Transport clientTransport = null;
+        NioServerSocketConfig serverConfig = new NioServerSocketConfig();
+        serverConfig.setPipelineInitializer(new PipelineInitializer() {
+            @Override
+            public void setUpPipeline(LoadPipeline loadPipeline, StorePipeline storePipeline) {
+                loadPipeline.add(MyStageKey.LOAD_FRAMING, new FrameLengthRemoveDecoder())
+                        .add(MyStageKey.LOAD_DECODE, new StringDecoder())
+                        .add(MyStageKey.LOAD_APPLICATION, new EchoStage());
+                storePipeline.add(MyStageKey.STORE_ENCODE, new StringEncoder())
+                        .add(MyStageKey.STORE_FRAMING, new FrameLengthPrependEncoder());
+            }
+        });
+        final Transport serverTransport = server.createTransport(serverConfig);
+        serverTransport.addListener(new TransportListener() {
+            @Override
+            public void onBind(Transport transport, SocketAddress localAddress) {
+            }
+
+            @Override
+            public void onConnect(Transport transport, SocketAddress remoteAddress) {
+                serverTransport.write("new Transport " + transport + " is accepted on " + Thread.currentThread());
+            }
+
+            @Override
+            public void onJoin(Transport transport, InetAddress group, NetworkInterface networkInterface, InetAddress source) {
+            }
+
+            @Override
+            public void onClose(Transport transport) {
+            }
+        });
+        NioClientSocketConfig clientConfig = new NioClientSocketConfig();
+        clientConfig.setPipelineInitializer(new PipelineInitializer() {
+            @Override
+            public void setUpPipeline(LoadPipeline loadPipeline, StorePipeline storePipeline) {
+                loadPipeline.add(MyStageKey.LOAD_FRAMING, new FrameLengthRemoveDecoder())
+                        .add(MyStageKey.LOAD_DECODE, new StringDecoder())
+                        .add(MyStageKey.LOAD_APPLICATION, new HelloWorldStage());
+                storePipeline.add(MyStageKey.STORE_ENCODE, new StringEncoder())
+                        .add(MyStageKey.STORE_FRAMING, new FrameLengthPrependEncoder());
+            }
+        });
+        final Transport clientTransport = client.createTransport(clientConfig);
         try {
-            NioServerSocketConfig serverConfig = new NioServerSocketConfig();
-            serverConfig.setPipelineInitializer(new PipelineInitializer() {
-                @Override
-                public void setUpPipeline(LoadPipeline loadPipeline, StorePipeline storePipeline) {
-                    loadPipeline.add(MyStageKey.LOAD_FRAMING, new FrameLengthRemoveDecoder())
-                            .add(MyStageKey.LOAD_DECODE, new StringDecoder())
-                            .add(MyStageKey.LOAD_APPLICATION, new EchoStage());
-                    storePipeline.add(MyStageKey.STORE_ENCODE, new StringEncoder())
-                            .add(MyStageKey.STORE_FRAMING, new FrameLengthPrependEncoder());
-                }
-            });
-            serverTransport = server.createTransport(serverConfig);
             serverTransport.bind(new InetSocketAddress(port));
 
-            NioClientSocketConfig clientConfig = new NioClientSocketConfig();
-            clientConfig.setPipelineInitializer(new PipelineInitializer() {
-                @Override
-                public void setUpPipeline(LoadPipeline loadPipeline, StorePipeline storePipeline) {
-                    loadPipeline.add(MyStageKey.LOAD_FRAMING, new FrameLengthRemoveDecoder())
-                            .add(MyStageKey.LOAD_DECODE, new StringDecoder())
-                            .add(MyStageKey.LOAD_APPLICATION, new HelloWorldStage());
-                    storePipeline.add(MyStageKey.STORE_ENCODE, new StringEncoder())
-                            .add(MyStageKey.STORE_FRAMING, new FrameLengthPrependEncoder());
-                }
-            });
-            clientTransport = client.createTransport(clientConfig);
             TransportFuture connectFuture = clientTransport.connect(new InetSocketAddress("localhost", port));
             connectFuture.waitForCompletion();
             System.out.println("connection wait gets done.");
-            serverTransport.write("broadcast from server on thread " + Thread.currentThread());
 
             Thread.sleep(lastWaitMillis);
             System.out.println("end.");

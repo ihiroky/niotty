@@ -5,48 +5,81 @@ import net.ihiroky.niotty.EventLoop;
 import net.ihiroky.niotty.FailedTransportFuture;
 import net.ihiroky.niotty.SucceededTransportFuture;
 import net.ihiroky.niotty.TransportFuture;
-import net.ihiroky.niotty.buffer.BufferSink;
-import net.ihiroky.niotty.TransportState;
 import net.ihiroky.niotty.TransportStateEvent;
+import net.ihiroky.niotty.buffer.BufferSink;
 
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
 import java.net.SocketAddress;
-import java.nio.channels.SelectableChannel;
+import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
+import java.nio.channels.WritableByteChannel;
+import java.util.Objects;
 
 /**
- * Created on 13/01/17, 16:13
- *
  * @author Hiroki Itoh
  */
-public class NioClientSocketTransport extends NioSocketTransport<ConnectSelector> {
+public class NioClientSocketTransport extends NioSocketTransport<MessageIOSelector> {
 
-    private SocketChannel clientChannel_;
-    private NioClientSocketConfig config_;
-    private NioClientSocketProcessor processor_;
-    private volatile NioChildChannelTransport childTransport_;
+    private final SocketChannel clientChannel_;
+    private final ConnectSelectorPool connector_;
+    private final WriteQueue writeQueue_;
 
-    public NioClientSocketTransport(NioClientSocketConfig config, NioClientSocketProcessor processor) {
+    NioClientSocketTransport(NioClientSocketConfig config, String name, ConnectSelectorPool connector) {
+        Objects.requireNonNull(config, "config");
+        Objects.requireNonNull(name, "name");
+        Objects.requireNonNull(connector, "connector");
+
         try {
-
             SocketChannel clientChannel = SocketChannel.open();
             clientChannel.configureBlocking(false);
             config.applySocketOptions(clientChannel);
 
-            this.clientChannel_ = clientChannel;
-            this.config_ = config;
-            this.processor_ = processor;
+            setUpPipelines(name, config.getPipelineInitializer());
+
+            clientChannel_ = clientChannel;
+            connector_ = connector;
+            writeQueue_ = config.newWriteQueue();
         } catch (Exception e) {
             throw new RuntimeException("failed to open client socket channel.", e);
         }
     }
 
+    NioClientSocketTransport(NioServerSocketConfig config, String name, SocketChannel child) {
+        Objects.requireNonNull(config, "config");
+        Objects.requireNonNull(name, "name");
+        Objects.requireNonNull(child, "child");
+
+        setUpPipelines(name, config.getPipelineInitializer());
+
+        clientChannel_ = child;
+        connector_ = null;
+        writeQueue_ = config.newWriteQueue();
+    }
+
+    @Override
+    protected void writeDirect(final BufferSink buffer) {
+        if (isInLoopThread()) {
+            writeBufferSink(buffer);
+        } else {
+            offerTask(new EventLoop.Task<MessageIOSelector>() {
+                @Override
+                public boolean execute(MessageIOSelector eventLoop) throws Exception {
+                    writeBufferSink(buffer);
+                    return true;
+                }
+            });
+        }
+    }
+
     @Override
     public TransportFuture bind(SocketAddress local) {
+        if (connector_ == null) {
+            throw new IllegalStateException("Channel is an accepted channel.");
+        }
         try {
             clientChannel_.bind(local);
             getTransportListener().onBind(this, local);
@@ -58,13 +91,16 @@ public class NioClientSocketTransport extends NioSocketTransport<ConnectSelector
 
     @Override
     public TransportFuture connect(SocketAddress remote) {
+        if (connector_ == null) {
+            throw new IllegalStateException("Channel is an accepted channel.");
+        }
         try {
             if (clientChannel_.connect(remote)) {
                 return new SucceededTransportFuture(this);
             }
             DefaultTransportFuture future = new DefaultTransportFuture(this);
-            processor_.getConnectSelectorPool().register(
-                    clientChannel_, SelectionKey.OP_CONNECT, new TransportFutureAttachment<>(this, future));
+            connector_.register(clientChannel_, SelectionKey.OP_CONNECT,
+                    new TransportFutureAttachment<>(new ConnectionWaitTransport(this), future));
             return future;
         } catch (IOException ioe) {
             return new FailedTransportFuture(this, ioe);
@@ -73,35 +109,22 @@ public class NioClientSocketTransport extends NioSocketTransport<ConnectSelector
 
     @Override
     public TransportFuture close() {
-        if (getEventLoop() == null) {
-            closeSelectableChannel();
-            return new SucceededTransportFuture(this);
-        }
-
-        // SelectionKey of NioClientSocketTransport is already cancelled here.
-        if (childTransport_ != null) {
-            return childTransport_.closeSelectableChannelLater();
-        }
-        return new SucceededTransportFuture(this);
+        return isInLoopThread() ? closeSelectableChannel() : closeSelectableChannelLater();
     }
 
     @Override
     public TransportFuture join(InetAddress group, NetworkInterface networkInterface, InetAddress source) {
-        throw new UnsupportedOperationException("join");
+        throw new UnsupportedOperationException();
     }
 
     @Override
-    public void write(final Object message) {
-        NioChildChannelTransport transport = childTransport_;
-        if (transport == null) {
-            throw new IllegalStateException("not connected.");
-        }
-        transport.write(message);
+    public void write(Object message) {
+        executeStore(message);
     }
 
     @Override
     public void write(Object message, SocketAddress remote) {
-        throw new UnsupportedOperationException("write");
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -127,25 +150,35 @@ public class NioClientSocketTransport extends NioSocketTransport<ConnectSelector
         return clientChannel_.isOpen();
     }
 
-    void registerLater(SelectableChannel channel, int ops, DefaultTransportFuture future) throws IOException {
-        NioChildChannelTransport child = processor_.getMessageIOSelectorPool().register(
-                config_, processor_.getName(), config_.newWriteQueue(), channel, ops);
-        childTransport_ = child;
-
-        InetSocketAddress remoteAddress = (InetSocketAddress) clientChannel_.getRemoteAddress();
-        future.done();
-        getTransportListener().onConnect(this, remoteAddress);
-        child.loadEventLater(new TransportStateEvent(TransportState.CONNECTED, remoteAddress));
+    public boolean isConnected() {
+        return clientChannel_.isConnected();
     }
 
-    @Override
-    protected void writeDirect(final BufferSink buffer) {
-        getEventLoop().offerTask(new EventLoop.Task<ConnectSelector>() {
+    void writeBufferSink(BufferSink buffer) {
+        writeQueue_.offer(buffer);
+    }
+
+    boolean flush(ByteBuffer byteBuffer) throws IOException {
+        WritableByteChannel channel = (WritableByteChannel) getSelectionKey().channel();
+        WriteQueue.FlushStatus status = writeQueue_.flushTo(channel, byteBuffer);
+        return status == WriteQueue.FlushStatus.FLUSHED;
+    }
+
+    void loadEvent(Object message) {
+        executeLoad(message);
+    }
+
+    void loadEventLater(final TransportStateEvent event) {
+        offerTask(new EventLoop.Task<MessageIOSelector>() {
             @Override
-            public boolean execute(ConnectSelector eventLoop) throws Exception {
-                childTransport_.writeBufferSink(buffer);
+            public boolean execute(MessageIOSelector eventLoop) throws Exception {
+                executeLoad(event);
                 return true;
             }
         });
+    }
+
+    void fireOnConnect() {
+        getTransportListener().onConnect(this, remoteAddress());
     }
 }

@@ -16,7 +16,7 @@ public class HelloWorldStage implements LoadStage<String, Void> {
     @Override
     public void load(LoadStageContext<String, Void> context, String message) {
         logger_.info(message);
-        System.out.println(message);
+        System.out.println(message + " from " + this.getClass().getName());
     }
 
     @Override

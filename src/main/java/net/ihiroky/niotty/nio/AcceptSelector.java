@@ -4,6 +4,7 @@ import net.ihiroky.niotty.DefaultTransportFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
@@ -21,21 +22,25 @@ public class AcceptSelector extends AbstractSelector<AcceptSelector> {
 
     @Override
     protected void processSelectedKeys(Set<SelectionKey> selectedKeys) throws Exception {
-        for (Iterator<SelectionKey> i = selectedKeys.iterator(); i.hasNext(); ) {
+        for (Iterator<SelectionKey> i = selectedKeys.iterator(); i.hasNext();) {
             SelectionKey key = i.next();
             i.remove();
-
-            ServerSocketChannel parentChannel = (ServerSocketChannel) key.channel();
-            SocketChannel childChannel = parentChannel.accept();
-            logger_.info("new channel {} is accepted.", childChannel);
-            childChannel.configureBlocking(false);
 
             @SuppressWarnings("unchecked")
             TransportFutureAttachment<AcceptSelector> attachment =
                     (TransportFutureAttachment<AcceptSelector>) key.attachment();
-            NioServerSocketTransport parent = (NioServerSocketTransport) attachment.getTransport();
-            DefaultTransportFuture future = attachment.getFuture();
-            parent.registerLater(childChannel, SelectionKey.OP_READ, future);
+            try {
+                ServerSocketChannel parentChannel = (ServerSocketChannel) key.channel();
+                SocketChannel childChannel = parentChannel.accept();
+                logger_.info("new channel {} is accepted.", childChannel);
+                childChannel.configureBlocking(false);
+
+                NioServerSocketTransport parent = (NioServerSocketTransport) attachment.getTransport();
+                DefaultTransportFuture future = attachment.getFuture();
+                parent.registerReadLater(childChannel, future);
+            } catch (IOException ioe) {
+                attachment.getFuture().setThrowable(ioe);
+            }
         }
     }
 }

@@ -114,6 +114,10 @@ public abstract class EventLoop<L extends EventLoop<L>> implements Runnable, Com
         return processingMemberCount_.get();
     }
 
+    protected boolean isInLoopThread() {
+        return Thread.currentThread() == thread_;
+    }
+
     @Override
     public String toString() {
         return (thread_ != null) ? thread_.getName() : "[NOT WORKING]";

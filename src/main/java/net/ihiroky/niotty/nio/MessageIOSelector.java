@@ -54,7 +54,7 @@ public class MessageIOSelector extends AbstractSelector<MessageIOSelector> {
             i.remove();
 
             SocketChannel channel = (SocketChannel) key.channel();
-            NioChildChannelTransport transport = (NioChildChannelTransport) key.attachment();
+            NioClientSocketTransport transport = (NioClientSocketTransport) key.attachment();
             try {
                 read = channel.read(localByteBuffer);
                 if (read == -1) {
@@ -84,39 +84,11 @@ public class MessageIOSelector extends AbstractSelector<MessageIOSelector> {
         return ioStoreStage_;
     }
 
-    void flushLater(NioChildChannelTransport transport) {
-        offerTask(new FlushTask(transport, writeBuffer_));
-    }
-
-    private static class FlushTask implements Task<MessageIOSelector> {
-
-        NioChildChannelTransport transport_;
-        ByteBuffer writeBuffer_;
-
-        static Logger logger_ = LoggerFactory.getLogger(FlushTask.class);
-
-        FlushTask(NioChildChannelTransport transport, ByteBuffer writeBuffer) {
-            this.transport_ = transport;
-            this.writeBuffer_ = writeBuffer;
-        }
-
-        @Override
-        public boolean execute(MessageIOSelector selector) {
-            try {
-                return transport_.flush(writeBuffer_);
-            } catch (IOException ioe) {
-                if (logger_.isDebugEnabled()) {
-                    logger_.debug("failed to flush buffer to " + transport_, ioe);
-                }
-                transport_.closeSelectableChannel();
-            }
-            return true;
-        }
-    }
-
     private static class IOStoreStage implements StoreStage<BufferSink, Void> {
 
         private final ByteBuffer writeBuffer_;
+
+        static Logger logger_ = LoggerFactory.getLogger(IOStoreStage.class);
 
         IOStoreStage(ByteBuffer writeBuffer) {
             writeBuffer_ = writeBuffer;
@@ -124,14 +96,33 @@ public class MessageIOSelector extends AbstractSelector<MessageIOSelector> {
 
         @Override
         public void store(StoreStageContext<BufferSink, Void> context, BufferSink input) {
-            NioChildChannelTransport transport = (NioChildChannelTransport) context.transport();
+            final NioClientSocketTransport transport = (NioClientSocketTransport) context.transport();
             transport.writeBufferSink(input);
-            transport.getEventLoop().offerTask(new FlushTask(transport, writeBuffer_));
+            if (transport.isInLoopThread()) {
+                flush(transport, writeBuffer_);
+            } else {
+                transport.offerTask(new Task<MessageIOSelector>() {
+                    @Override
+                    public boolean execute(MessageIOSelector eventLoop) throws Exception {
+                        return flush(transport, writeBuffer_);
+                    }
+                });
+            }
         }
 
         @Override
         public void store(StoreStageContext<BufferSink, Void> context, TransportStateEvent event) {
             AbstractSelector.SELECTOR_STORE_STAGE.store(context, event);
+        }
+
+        public boolean flush(NioClientSocketTransport transport, ByteBuffer writeBuffer) {
+            try {
+                return transport.flush(writeBuffer);
+            } catch (IOException ioe) {
+                logger_.error("failed to flush buffer to " + transport, ioe);
+                transport.closeSelectableChannel();
+            }
+            return true;
         }
     }
 }

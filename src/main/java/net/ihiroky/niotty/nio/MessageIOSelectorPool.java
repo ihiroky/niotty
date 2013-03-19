@@ -1,7 +1,6 @@
 package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.EventLoop;
-import net.ihiroky.niotty.TransportConfig;
 
 import java.nio.channels.SelectableChannel;
 
@@ -40,22 +39,20 @@ public class MessageIOSelectorPool extends AbstractSelectorPool<MessageIOSelecto
         return new MessageIOSelector(readBufferSize_, writeBufferSize_, direct_);
     }
 
-    public NioChildChannelTransport register(
-            TransportConfig config, String name, WriteQueue writeQueue,
-            final SelectableChannel channel, final int ops) {
+    public void register(final SelectableChannel channel, final int ops,
+                         final NioSocketTransport<MessageIOSelector> transport) {
         MessageIOSelector target = searchLowMemberCountLoop();
-        if (target != null) {
-            final NioChildChannelTransport transport = new NioChildChannelTransport(config, name, target, writeQueue);
-            transport.setEventLoop(target);
-            target.offerTask(new EventLoop.Task<MessageIOSelector>() {
+        if (target == null) {
+            throw new AssertionError("should not reach here.");
+        }
+        transport.addIOStage(target.ioStoreStage());
+        transport.setEventLoop(target);
+        target.offerTask(new EventLoop.Task<MessageIOSelector>() {
                 @Override
                 public boolean execute(MessageIOSelector eventLoop) {
                     eventLoop.register(channel, ops, transport);
                     return true;
                 }
-            });
-            return transport;
-        }
-        throw new AssertionError("should not reach here.");
+        });
     }
 }
