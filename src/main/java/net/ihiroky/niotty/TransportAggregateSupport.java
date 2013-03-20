@@ -1,7 +1,5 @@
 package net.ihiroky.niotty;
 
-import java.net.InetAddress;
-import java.net.NetworkInterface;
 import java.net.SocketAddress;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -58,15 +56,7 @@ public class TransportAggregateSupport implements TransportAggregate, TransportL
     }
 
     @Override
-    public void onBind(Transport transport, SocketAddress localAddress) {
-    }
-
-    @Override
     public void onConnect(Transport transport, SocketAddress remoteAddress) {
-    }
-
-    @Override
-    public void onJoin(Transport transport, InetAddress group, NetworkInterface networkInterface, InetAddress source) {
     }
 
     @Override

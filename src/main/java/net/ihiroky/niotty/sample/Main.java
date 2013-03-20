@@ -14,9 +14,7 @@ import net.ihiroky.niotty.nio.NioServerSocketProcessor;
 import net.ihiroky.niotty.stage.codec.frame.FrameLengthPrependEncoder;
 import net.ihiroky.niotty.stage.codec.frame.FrameLengthRemoveDecoder;
 
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.NetworkInterface;
 import java.net.SocketAddress;
 
 /**
@@ -57,18 +55,9 @@ public class Main {
         final Transport serverTransport = server.createTransport(serverConfig);
         serverTransport.addListener(new TransportListener() {
             @Override
-            public void onBind(Transport transport, SocketAddress localAddress) {
-            }
-
-            @Override
             public void onConnect(Transport transport, SocketAddress remoteAddress) {
                 serverTransport.write("new Transport " + transport + " is accepted on " + Thread.currentThread());
             }
-
-            @Override
-            public void onJoin(Transport transport, InetAddress group, NetworkInterface networkInterface, InetAddress source) {
-            }
-
             @Override
             public void onClose(Transport transport) {
             }
@@ -97,12 +86,8 @@ public class Main {
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
-            if (clientTransport != null) {
-                clientTransport.close();
-            }
-            if (serverTransport != null) {
-                serverTransport.close();
-            }
+            clientTransport.close();
+            serverTransport.close();
             client.stop();
             server.stop();
         }

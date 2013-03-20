@@ -2,8 +2,6 @@ package net.ihiroky.niotty;
 
 import net.ihiroky.niotty.buffer.BufferSink;
 
-import java.net.InetAddress;
-import java.net.NetworkInterface;
 import java.net.SocketAddress;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -169,21 +167,12 @@ abstract public class AbstractTransport<L extends TaskLoop<L>> implements Transp
         return attachmentReference_.get();
     }
 
-    abstract protected void writeDirect(BufferSink buffer);
+    protected abstract void writeDirect(BufferSink buffer);
 
     private static class NullListener implements TransportListener {
         @Override
-        public void onBind(Transport transport, SocketAddress local) {
-        }
-
-        @Override
         public void onConnect(Transport transport, SocketAddress remote) {
         }
-
-        @Override
-        public void onJoin(Transport transport, InetAddress group, NetworkInterface ni, InetAddress source) {
-        }
-
         @Override
         public void onClose(Transport transport) {
         }
@@ -194,23 +183,9 @@ abstract public class AbstractTransport<L extends TaskLoop<L>> implements Transp
         CopyOnWriteArrayList<TransportListener> list_ = new CopyOnWriteArrayList<>();
 
         @Override
-        public void onBind(Transport transport, SocketAddress local) {
-            for (TransportListener listener : list_) {
-                listener.onBind(transport, local);
-            }
-        }
-
-        @Override
         public void onConnect(Transport transport, SocketAddress remote) {
             for (TransportListener listener : list_) {
                 listener.onConnect(transport, remote);
-            }
-        }
-
-        @Override
-        public void onJoin(Transport transport, InetAddress group, NetworkInterface ni, InetAddress source) {
-            for (TransportListener listener : list_) {
-                listener.onJoin(transport, group, ni, source);
             }
         }
 

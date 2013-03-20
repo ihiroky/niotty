@@ -28,7 +28,7 @@ public class ConnectionWaitTransport extends NioSocketTransport<ConnectSelector>
     }
 
     @Override
-    public TransportFuture bind(SocketAddress local) {
+    public void bind(SocketAddress local) {
         throw new UnsupportedOperationException();
     }
 
@@ -43,7 +43,12 @@ public class ConnectionWaitTransport extends NioSocketTransport<ConnectSelector>
     }
 
     @Override
-    public TransportFuture join(InetAddress group, NetworkInterface networkInterface, InetAddress source) {
+    public void join(InetAddress group, NetworkInterface networkInterface) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void join(InetAddress group, NetworkInterface networkInterface, InetAddress source) {
         throw new UnsupportedOperationException();
     }
 

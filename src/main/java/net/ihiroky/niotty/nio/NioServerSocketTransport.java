@@ -1,6 +1,5 @@
 package net.ihiroky.niotty.nio;
 
-import net.ihiroky.niotty.FailedTransportFuture;
 import net.ihiroky.niotty.SucceededTransportFuture;
 import net.ihiroky.niotty.Transport;
 import net.ihiroky.niotty.TransportAggregate;
@@ -86,15 +85,9 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
     }
 
     @Override
-    public TransportFuture bind(SocketAddress socketAddress) {
-        try {
-            serverChannel_.bind(socketAddress, config_.getBacklog());
-            getTransportListener().onBind(this, socketAddress);
-            processor_.getAcceptSelectorPool().register(serverChannel_, SelectionKey.OP_ACCEPT, this);
-            return new SucceededTransportFuture(this);
-        } catch (IOException e) {
-            return new FailedTransportFuture(this, e);
-        }
+    public void bind(SocketAddress socketAddress) throws IOException {
+        serverChannel_.bind(socketAddress, config_.getBacklog());
+        processor_.getAcceptSelectorPool().register(serverChannel_, SelectionKey.OP_ACCEPT, this);
     }
 
     @Override
@@ -111,7 +104,12 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
     }
 
     @Override
-    public TransportFuture join(InetAddress group, NetworkInterface networkInterface, InetAddress source) {
+    public void join(InetAddress group, NetworkInterface networkInterface) {
+        throw new UnsupportedOperationException("join");
+    }
+
+    @Override
+    public void join(InetAddress group, NetworkInterface networkInterface, InetAddress source) {
         throw new UnsupportedOperationException("join");
     }
 

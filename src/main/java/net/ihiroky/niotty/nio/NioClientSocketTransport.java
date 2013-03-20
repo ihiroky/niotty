@@ -76,17 +76,11 @@ public class NioClientSocketTransport extends NioSocketTransport<MessageIOSelect
     }
 
     @Override
-    public TransportFuture bind(SocketAddress local) {
+    public void bind(SocketAddress local) throws IOException {
         if (connector_ == null) {
             throw new IllegalStateException("Channel is an accepted channel.");
         }
-        try {
-            clientChannel_.bind(local);
-            getTransportListener().onBind(this, local);
-            return new SucceededTransportFuture(this);
-        } catch (IOException ioe) {
-            return new FailedTransportFuture(this, ioe);
-        }
+        clientChannel_.bind(local);
     }
 
     @Override
@@ -113,7 +107,12 @@ public class NioClientSocketTransport extends NioSocketTransport<MessageIOSelect
     }
 
     @Override
-    public TransportFuture join(InetAddress group, NetworkInterface networkInterface, InetAddress source) {
+    public void join(InetAddress group, NetworkInterface networkInterface) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void join(InetAddress group, NetworkInterface networkInterface, InetAddress source) {
         throw new UnsupportedOperationException();
     }
 
