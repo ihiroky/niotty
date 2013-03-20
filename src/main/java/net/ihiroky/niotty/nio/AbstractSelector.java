@@ -1,6 +1,6 @@
 package net.ihiroky.niotty.nio;
 
-import net.ihiroky.niotty.EventLoop;
+import net.ihiroky.niotty.TaskLoop;
 import net.ihiroky.niotty.StoreStage;
 import net.ihiroky.niotty.StoreStageContext;
 import net.ihiroky.niotty.TransportStateEvent;
@@ -19,7 +19,7 @@ import java.util.Set;
  *
  * @author Hiroki Itoh
  */
-public abstract class AbstractSelector<S extends AbstractSelector<S>> extends EventLoop<S> {
+public abstract class AbstractSelector<S extends AbstractSelector<S>> extends TaskLoop<S> {
 
     private Selector selector_;
 

@@ -13,7 +13,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * TODO invalidate pipeline on close and recreate pipelines.
  * @author Hiroki Itoh
  */
-abstract public class AbstractTransport<L extends EventLoop<L>> implements Transport {
+abstract public class AbstractTransport<L extends TaskLoop<L>> implements Transport {
 
     private DefaultLoadPipeline loadPipeline_;
     private DefaultStorePipeline storePipeline_;
@@ -105,7 +105,7 @@ abstract public class AbstractTransport<L extends EventLoop<L>> implements Trans
         return loop_;
     }
 
-    public void offerTask(EventLoop.Task<L> task) {
+    public void offerTask(TaskLoop.Task<L> task) {
         if (loop_ != null) {
             loop_.offerTask(task);
         }

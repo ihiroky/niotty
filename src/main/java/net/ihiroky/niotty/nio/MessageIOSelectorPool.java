@@ -1,6 +1,6 @@
 package net.ihiroky.niotty.nio;
 
-import net.ihiroky.niotty.EventLoop;
+import net.ihiroky.niotty.TaskLoop;
 
 import java.nio.channels.SelectableChannel;
 
@@ -48,7 +48,7 @@ public class MessageIOSelectorPool extends AbstractSelectorPool<MessageIOSelecto
         }
         transport.addIOStage(target.ioStoreStage());
         transport.setEventLoop(target);
-        target.offerTask(new EventLoop.Task<MessageIOSelector>() {
+        target.offerTask(new TaskLoop.Task<MessageIOSelector>() {
                 @Override
                 public boolean execute(MessageIOSelector eventLoop) {
                     eventLoop.register(channel, ops, transport);

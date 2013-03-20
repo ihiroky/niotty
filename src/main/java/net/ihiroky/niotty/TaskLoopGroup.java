@@ -15,10 +15,10 @@ import java.util.concurrent.ThreadFactory;
  *
  * @author Hiroki Itoh
  */
-public abstract class EventLoopGroup<L extends EventLoop<L>> {
+public abstract class TaskLoopGroup<L extends TaskLoop<L>> {
 
     private Collection<L> eventLoops_ = nullValue();
-    private Logger logger_ = LoggerFactory.getLogger(EventLoopGroup.class);
+    private Logger logger_ = LoggerFactory.getLogger(TaskLoopGroup.class);
 
     public synchronized void open(ThreadFactory threadFactory, int numberOfWorker) {
         if (!isInitialized(eventLoops_)) {
@@ -42,7 +42,7 @@ public abstract class EventLoopGroup<L extends EventLoop<L>> {
         }
     }
 
-    public void offerTask(EventLoop.Task<L> task) {
+    public void offerTask(TaskLoop.Task<L> task) {
         for (L loop : eventLoops_) {
             loop.offerTask(task);
         }
@@ -69,7 +69,7 @@ public abstract class EventLoopGroup<L extends EventLoop<L>> {
 
     protected abstract L newEventLoop();
 
-    private static final Collection<EventLoop<?>> NULL = Collections.emptyList();
+    private static final Collection<TaskLoop<?>> NULL = Collections.emptyList();
 
     private <L> boolean isInitialized(Collection<L> c) {
         return c != NULL;
@@ -81,7 +81,7 @@ public abstract class EventLoopGroup<L extends EventLoop<L>> {
     }
 
     @SuppressWarnings("unchecked")
-    private static <L extends EventLoop<L>> L[] newArray(int size) {
-        return (L[]) new EventLoop<?>[size];
+    private static <L extends TaskLoop<L>> L[] newArray(int size) {
+        return (L[]) new TaskLoop<?>[size];
     }
 }

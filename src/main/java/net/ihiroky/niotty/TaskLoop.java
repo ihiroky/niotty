@@ -18,20 +18,20 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author Hiroki Itoh
  */
-public abstract class EventLoop<L extends EventLoop<L>> implements Runnable, Comparable<EventLoop<L>> {
+public abstract class TaskLoop<L extends TaskLoop<L>> implements Runnable, Comparable<TaskLoop<L>> {
 
     private volatile Queue<Task<L>> taskQueue_;
     private volatile Thread thread_;
 
     protected final AtomicInteger processingMemberCount_ = new AtomicInteger();
 
-    private Logger logger_ = LoggerFactory.getLogger(EventLoop.class);
+    private Logger logger_ = LoggerFactory.getLogger(TaskLoop.class);
 
     private static final int TIMEOUT_TASK_RETRY = 100;
     private static final int TIMEOUT_NOW = 0;
     private static final int TIMEOUT_NO_LIMIT = -1;
 
-    protected EventLoop() {
+    protected TaskLoop() {
         taskQueue_ = new ConcurrentLinkedQueue<>();
     }
 
@@ -124,7 +124,7 @@ public abstract class EventLoop<L extends EventLoop<L>> implements Runnable, Com
     }
 
     @Override
-    public int compareTo(EventLoop<L> that) {
+    public int compareTo(TaskLoop<L> that) {
         return this.processingMemberCount_.get() - that.processingMemberCount_.get();
     }
 
@@ -133,7 +133,7 @@ public abstract class EventLoop<L extends EventLoop<L>> implements Runnable, Com
     protected abstract void process(int timeout) throws Exception;
     protected abstract void wakeUp();
 
-    public interface Task<L extends EventLoop<L>> {
+    public interface Task<L extends TaskLoop<L>> {
         boolean execute(L eventLoop) throws Exception;
     }
 

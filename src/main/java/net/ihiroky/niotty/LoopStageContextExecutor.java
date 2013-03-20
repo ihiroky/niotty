@@ -11,7 +11,7 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * @author Hiroki Itoh
  */
-public class LoopStageContextExecutor extends EventLoop<LoopStageContextExecutor> implements StageContextExecutor {
+public class LoopStageContextExecutor extends TaskLoop<LoopStageContextExecutor> implements StageContextExecutor {
 
     private final Lock lock_;
     private final Condition condition_;

@@ -1,7 +1,7 @@
 package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.DefaultTransportFuture;
-import net.ihiroky.niotty.EventLoop;
+import net.ihiroky.niotty.TaskLoop;
 import net.ihiroky.niotty.FailedTransportFuture;
 import net.ihiroky.niotty.SucceededTransportFuture;
 import net.ihiroky.niotty.TransportFuture;
@@ -65,7 +65,7 @@ public class NioClientSocketTransport extends NioSocketTransport<MessageIOSelect
         if (isInLoopThread()) {
             writeBufferSink(buffer);
         } else {
-            offerTask(new EventLoop.Task<MessageIOSelector>() {
+            offerTask(new TaskLoop.Task<MessageIOSelector>() {
                 @Override
                 public boolean execute(MessageIOSelector eventLoop) throws Exception {
                     writeBufferSink(buffer);
@@ -169,7 +169,7 @@ public class NioClientSocketTransport extends NioSocketTransport<MessageIOSelect
     }
 
     void loadEventLater(final TransportStateEvent event) {
-        offerTask(new EventLoop.Task<MessageIOSelector>() {
+        offerTask(new TaskLoop.Task<MessageIOSelector>() {
             @Override
             public boolean execute(MessageIOSelector eventLoop) throws Exception {
                 executeLoad(event);

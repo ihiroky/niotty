@@ -5,7 +5,7 @@ import java.util.List;
 /**
  * @author Hiroki Itoh
  */
-public class LoopStageContextExecutorPool extends EventLoopGroup<LoopStageContextExecutor> implements StageContextExecutorPool {
+public class LoopStageContextExecutorPool extends TaskLoopGroup<LoopStageContextExecutor> implements StageContextExecutorPool {
 
     private final Object allocationLock_ = new Object();
 

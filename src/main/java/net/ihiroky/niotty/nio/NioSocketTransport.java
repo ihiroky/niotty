@@ -2,7 +2,7 @@ package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.AbstractTransport;
 import net.ihiroky.niotty.DefaultTransportFuture;
-import net.ihiroky.niotty.EventLoop;
+import net.ihiroky.niotty.TaskLoop;
 import net.ihiroky.niotty.SucceededTransportFuture;
 import net.ihiroky.niotty.TransportFuture;
 
@@ -37,7 +37,7 @@ public abstract class NioSocketTransport<S extends AbstractSelector<S>> extends 
             return new SucceededTransportFuture(this);
         }
         final DefaultTransportFuture future = new DefaultTransportFuture(this);
-        selector.offerTask(new EventLoop.Task<S>() {
+        selector.offerTask(new TaskLoop.Task<S>() {
             @Override
             public boolean execute(S eventLoop) throws Exception {
                 closeSelectableChannel();
