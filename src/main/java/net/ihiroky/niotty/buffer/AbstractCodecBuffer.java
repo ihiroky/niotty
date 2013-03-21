@@ -190,14 +190,14 @@ public abstract class AbstractCodecBuffer implements CodecBuffer {
             if ((b & CodecUtil.VB_END_BIT) != 0) {
                 break;
             }
-            value |= (b & CodecUtil.VB_MASK_BIT7) << shift;
+            value |= (long) (b & CodecUtil.VB_MASK_BIT7) << shift;
             shift += CodecUtil.VB_BIT_IN_BYTE;
         }
         // if the value is 0 and and the b is 0x02 with sign bit, then Long.MIN_VALUE
         if (value == 0 && b == (CodecUtil.VB_END_BIT | CodecUtil.VB_LONG_MIN_LAST)) {
             return Long.MIN_VALUE;
         }
-        value |= (b & CodecUtil.VB_MASK_BIT7) << shift;
+        value |= (long) (b & CodecUtil.VB_MASK_BIT7) << shift;
         return isPositiveOrZero ? value : -value;
     }
 
@@ -234,5 +234,37 @@ public abstract class AbstractCodecBuffer implements CodecBuffer {
     public String readString(CharsetDecoder charsetDecoder) {
         int bytes = readVariableByteInteger();
         return readString(charsetDecoder, bytes);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void writeFloat(float value) {
+        writeInt(Float.floatToIntBits(value));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void writeDouble(double value) {
+        writeLong(Double.doubleToLongBits(value));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public float readFloat() {
+        return Float.intBitsToFloat(readInt());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public double readDouble() {
+        return Double.longBitsToDouble(readLong());
     }
 }

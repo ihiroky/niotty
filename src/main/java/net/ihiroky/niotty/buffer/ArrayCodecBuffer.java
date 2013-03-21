@@ -100,7 +100,15 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer implements CodecBuffer
         if (bytes < 0 || bytes > CodecUtil.INT_BYTES) {
             throw new IllegalArgumentException("bytes must be in int bytes.");
         }
-        writeBytes8RangeUnchecked(bits, bytes);
+
+        ensureSpace(bytes);
+        int bytesMinus1 = bytes - 1;
+        int base = end_;
+        byte[] b = buffer_;
+        for (int i = 0; i < bytes; i++) {
+            b[base + i] = (byte) ((bits >>> (bytesMinus1 - i)) & CodecUtil.BYTE_MASK);
+        }
+        end_ = base + bytes;
     }
 
     /**
@@ -111,15 +119,7 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer implements CodecBuffer
         if (bytes < 0 || bytes > CodecUtil.LONG_BYTES) {
             throw new IllegalArgumentException("bytes must be in long bytes.");
         }
-        writeBytes8RangeUnchecked(bits, bytes);
-    }
 
-    /**
-     * Implementation of writeBytes8() without {@code byte} range check.
-     * @param bits the set of bit to be written
-     * @param bytes the byte size of {@code bits}
-     */
-    private void writeBytes8RangeUnchecked(long bits, int bytes) {
         ensureSpace(bytes);
         int bytesMinus1 = bytes - 1;
         int base = end_;
@@ -188,22 +188,6 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer implements CodecBuffer
         b[c + offset++] = (byte) ((value >>> CodecUtil.BYTE_SHIFT1) & CodecUtil.BYTE_MASK);
         b[c + offset] = (byte) (value & CodecUtil.BYTE_MASK);
         end_ = c + CodecUtil.LONG_BYTES;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void writeFloat(float value) {
-        writeInt(Float.floatToIntBits(value));
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void writeDouble(double value) {
-        writeLong(Double.doubleToLongBits(value));
     }
 
     /**
@@ -405,22 +389,6 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer implements CodecBuffer
                 |  ((long) b[pos++] & CodecUtil.BYTE_MASK));
         beginning_ = pos;
         return result;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public float readFloat() {
-        return Float.intBitsToFloat(readInt());
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public double readDouble() {
-        return Double.longBitsToDouble(readLong());
     }
 
     @Override

@@ -212,22 +212,6 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer implements CodecB
     /**
      * {@inheritDoc}
      */
-    @Override
-    public void writeFloat(float value) {
-        writeInt(Float.floatToIntBits(value));
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void writeDouble(double value) {
-        writeLong(Double.doubleToLongBits(value));
-    }
-
-    /**
-     * {@inheritDoc}
-     */
     public void writeString(CharsetEncoder charsetEncoder, String s) {
         if (s == null) {
             throw new NullPointerException("s must not be null.");
@@ -384,22 +368,6 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer implements CodecB
     public long readLong() {
         changeModeToRead();
         return buffer_.getLong();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public float readFloat() {
-        return Float.intBitsToFloat(readInt());
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public double readDouble() {
-        return Double.longBitsToDouble(readLong());
     }
 
     @Override
