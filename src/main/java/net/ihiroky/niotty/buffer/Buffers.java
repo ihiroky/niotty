@@ -37,11 +37,14 @@ public final class Buffers {
     }
 
     static void throwRuntimeException(CoderResult coderResult) {
-        if (coderResult.isMalformed()) {
+        if (coderResult.isUnderflow()) {
+            throw new IndexOutOfBoundsException("Buffer underflow.");
+        } else if (coderResult.isMalformed()) {
             throw new RuntimeException(new MalformedInputException(coderResult.length()));
         } else if (coderResult.isUnmappable()) {
             throw new RuntimeException(new UnmappableCharacterException(coderResult.length()));
         }
+        throw new AssertionError("Runtime should not reach here.");
     }
 
     /**
@@ -152,4 +155,27 @@ public final class Buffers {
         return (priority < 0) ? newCodecBuffer(byteBuffer) : new PriorityByteBufferCodecBuffer(byteBuffer, priority);
     }
 
+    /**
+     * Creates a new {@code BufferSink} which holds a pair of {@code BufferSink}.
+     * @param car the former one of the pair
+     * @param cdr the latter one of the pair
+     * @return a new {@code BufferSink} which holds a pair of {@code BufferSink}
+     */
+    public static BufferSink newBufferSink(BufferSink car, BufferSink cdr) {
+        return new BufferSinkList(car, cdr);
+    }
+
+    /**
+     * Creates a new {@code BufferSink} which holds a pair of {@code BufferSink}.
+     * An invocation of this method behaves in exactly the same way as the invocation
+     * {@link #newCodecBuffer(java.nio.ByteBuffer)} if {@code priority < 0}.
+     *
+     * @param car the former one of the pair
+     * @param cdr the latter one of the pair
+     * @param priority buffer priority
+     * @return a new prioritized {@code BufferSink} which holds a pair of {@code BufferSink}
+     */
+    public static BufferSink newBufferSink(BufferSink car, BufferSink cdr, int priority) {
+        return new BufferSinkList(car, cdr, priority);
+    }
 }

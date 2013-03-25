@@ -634,6 +634,7 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer implements CodecB
      */
     @Override
     public String toString() {
-        return "(beginning:" + beginning_ + ", end:" + end_ + ", capacity:" + buffer_.capacity() + ')';
+        return "(beginning:" + beginning_ + ", end:" + end_ + ", capacity:" + buffer_.capacity()
+                + ", priority:" + priority() + ')';
     }
 }

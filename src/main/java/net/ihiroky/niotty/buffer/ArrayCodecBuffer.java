@@ -648,6 +648,7 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer implements CodecBuffer
      */
     @Override
     public String toString() {
-        return "(beginning:" + beginning_ + ", end:" + end_ + ", capacity:" + buffer_.length + ')';
+        return "(beginning:" + beginning_ + ", end:" + end_ + ", capacity:" + buffer_.length
+                + ", priority:" + priority() + ')';
     }
 }

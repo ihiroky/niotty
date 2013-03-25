@@ -16,6 +16,9 @@ public class CodecBufferDeque implements Iterable<CodecBuffer>, BufferSink {
 
     private static final int INITIAL_GROUP_CAPACITY = 4; // actually 8 in ArrayDeque.
 
+    public CodecBufferDeque() {
+    }
+
     public CodecBufferDeque addLast(CodecBuffer encodeBuffer) {
         deque_.addLast(encodeBuffer);
         return this;

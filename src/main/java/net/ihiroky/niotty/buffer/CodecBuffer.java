@@ -380,9 +380,10 @@ public interface CodecBuffer extends BufferSink {
 
     /**
      * Creates new {@code DecodeBuffer} that shares this buffer's base content.
-     * The position of the new {@code DecodeBuffer} is the one of the this buffer. So as limit.
-     * The two {@code DecodeBuffer}'s position and limit are independent.
-     * After this method is called, the position of this buffer increase {@code bytes}.
+     * The beginning of the new {@code DecodeBuffer} is the one of the this buffer.
+     * The end of the new {@code DecodeBuffer} is the {@code beginning + bytes}.
+     * The two {@code DecodeBuffer}'s beginning and end are independent.
+     * After this method is called, the beginning of this buffer increases {@code bytes}.
      *
      * @param bytes size of content to slice
      * @throws IllegalArgumentException if {@code bytes} exceeds this buffer's remaining.
