@@ -20,11 +20,11 @@ public class FileBufferSink implements BufferSink {
     private final int priority_;
     private final boolean autoClose_;
 
-    FileBufferSink(FileChannel channel, long beginning, long end) {
-        this(channel, beginning, end, Buffers.DEFAULT_PRIORITY, true);
+    FileBufferSink(FileChannel channel, long beginning, long end, int priority) {
+        this(channel, beginning, end, priority, true);
     }
 
-    FileBufferSink(FileChannel channel, long beginning, long end, int priority, boolean autoClose) {
+    private FileBufferSink(FileChannel channel, long beginning, long end, int priority, boolean autoClose) {
         Objects.requireNonNull(channel, "channel");
         if (beginning < 0) {
             throw new IllegalArgumentException("beginning is negative.");

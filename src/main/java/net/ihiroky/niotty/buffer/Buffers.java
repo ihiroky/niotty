@@ -1,13 +1,18 @@
 package net.ihiroky.niotty.buffer;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.charset.CoderResult;
 import java.nio.charset.MalformedInputException;
 import java.nio.charset.UnmappableCharacterException;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 
 /**
- * Provides factory methods of {@link net.ihiroky.niotty.buffer.CodecBuffer} and utility method for this package.
+ * Provides factory methods of {@link net.ihiroky.niotty.buffer.CodecBuffer}
+ * {@link net.ihiroky.niotty.buffer.BufferSink} and utility method for this package.
  *
  * @author Hiroki Itoh
  */
@@ -103,7 +108,7 @@ public final class Buffers {
      * An invocation of this method behaves in exactly the same way as the invocation {@link #newCodecBuffer()}
      * if {@code priority < 0}.
      *
-     * @param priority buffer priority
+     * @param priority buffer priority to choose a write queue
      * @return the new {@code CodecBuffer}
      */
     public static CodecBuffer newPriorityCodecBuffer(int priority) {
@@ -116,7 +121,7 @@ public final class Buffers {
      * if {@code priority < 0}.
      *
      * @param initialCapacity the initial capacity of the new {@code CodecBuffer}
-     * @param priority buffer priority
+     * @param priority buffer priority to choose a write queue
      * @return the new {@code CodecBuffer}
      */
     public static CodecBuffer newPriorityCodecBuffer(int initialCapacity, int priority) {
@@ -133,7 +138,7 @@ public final class Buffers {
      * @param buffer the backed byte array
      * @param offset the offset of content in {@code buffer}
      * @param length the length of content in {@code buffer} from {@code offset}
-     * @param priority buffer priority
+     * @param priority buffer priority to choose a write queue
      * @return the new {@code DecodeBuffer}
      */
     public static CodecBuffer newPriorityCodecBuffer(byte[] buffer, int offset, int length, int priority) {
@@ -148,11 +153,42 @@ public final class Buffers {
      * {@link #newCodecBuffer(java.nio.ByteBuffer)} if {@code priority < 0}.
      *
      * @param byteBuffer the backed {@code ByteBuffer}
-     * @param priority buffer priority
+     * @param priority buffer priority to choose a write queue
      * @return the new {@code DecodeBuffer}
      */
     public static CodecBuffer newPriorityCodecBuffer(ByteBuffer byteBuffer, int priority) {
         return (priority < 0) ? newCodecBuffer(byteBuffer) : new PriorityByteBufferCodecBuffer(byteBuffer, priority);
+    }
+
+    /**
+     * Creates a new {@code BufferSink} which presents a file specified with a {@code path} and its range.
+     * The range in the file is between {@code beginning} byte and {@code end} byte.
+     * @param path the path to points the file
+     * @param beginning beginning byte of the range, from the head of the file (included)
+     * @param end end byte of the range, from head of the file (excluded)
+     * @return a new {@code BufferSink} which presents the file
+     * @throws IOException if failed to open the file
+     */
+    public static FileBufferSink newBufferSink(Path path, long beginning, long end) throws IOException {
+        FileChannel channel = FileChannel.open(path, StandardOpenOption.READ);
+        return new FileBufferSink(channel, beginning, end, DEFAULT_PRIORITY);
+    }
+
+    /**
+     * Creates a new {@code BufferSink} which presents a file specified with a {@code path} and its range.
+     * An invocation of this method behaves in exactly the same way as the invocation
+     * {@link #newBufferSink(java.nio.file.Path, long, long)} if {@code priority < 0}.
+     *
+     * @param path the path to points the file
+     * @param beginning beginning byte of the range, from the head of the file (included)
+     * @param end end byte of the range, from head of the file (excluded)
+     * @param priority buffer priority to choose a write queue
+     * @return a new {@code BufferSink} which presents the file
+     * @throws IOException if failed to open the file
+     */
+    public static FileBufferSink newBufferSink(Path path, long beginning, long end, int priority) throws IOException {
+        FileChannel channel = FileChannel.open(path, StandardOpenOption.READ);
+        return new FileBufferSink(channel, beginning, end, priority);
     }
 
     /**
@@ -168,11 +204,11 @@ public final class Buffers {
     /**
      * Creates a new {@code BufferSink} which holds a pair of {@code BufferSink}.
      * An invocation of this method behaves in exactly the same way as the invocation
-     * {@link #newCodecBuffer(java.nio.ByteBuffer)} if {@code priority < 0}.
+     * {@link #newBufferSink(BufferSink, BufferSink)} if {@code priority < 0}.
      *
      * @param car the former one of the pair
      * @param cdr the latter one of the pair
-     * @param priority buffer priority
+     * @param priority buffer priority to choose a write queue
      * @return a new prioritized {@code BufferSink} which holds a pair of {@code BufferSink}
      */
     public static BufferSink newBufferSink(BufferSink car, BufferSink cdr, int priority) {

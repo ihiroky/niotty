@@ -87,7 +87,7 @@ public class FileBufferSinkTest {
         when(outputChannel.write(Mockito.any(ByteBuffer.class))).thenAnswer(new TransferAll());
         when(outputChannel.isOpen()).thenReturn(true);
 
-        FileBufferSink sut = new FileBufferSink(channel_, 8, 24);
+        FileBufferSink sut = new FileBufferSink(channel_, 8, 24, Buffers.DEFAULT_PRIORITY);
         boolean actual = sut.transferTo(outputChannel, ByteBuffer.allocate(0));
 
         assertThat(actual, is(true));
@@ -101,7 +101,7 @@ public class FileBufferSinkTest {
         when(outputChannel.write(Mockito.any(ByteBuffer.class))).thenAnswer(new TransferPart(10));
         when(outputChannel.isOpen()).thenReturn(true);
 
-        FileBufferSink sut = new FileBufferSink(channel_, 0, 15);
+        FileBufferSink sut = new FileBufferSink(channel_, 0, 15, Buffers.DEFAULT_PRIORITY);
         boolean actual = sut.transferTo(outputChannel, ByteBuffer.allocate(0));
 
         assertThat(actual, is(false));
@@ -115,7 +115,7 @@ public class FileBufferSinkTest {
         when(outputChannel.write(Mockito.any(ByteBuffer.class))).thenThrow(new IOException());
         when(outputChannel.isOpen()).thenReturn(true);
 
-        FileBufferSink sut = new FileBufferSink(channel_, 0, 15);
+        FileBufferSink sut = new FileBufferSink(channel_, 0, 15, Buffers.DEFAULT_PRIORITY);
         try {
             sut.transferTo(outputChannel, ByteBuffer.allocate(0));
         } catch (IOException ioe) {
@@ -127,10 +127,10 @@ public class FileBufferSinkTest {
 
     @Test
     public void testPriority() throws Exception {
-        FileBufferSink sut = new FileBufferSink(channel_, 0, 10);
+        FileBufferSink sut = new FileBufferSink(channel_, 0, 10, Buffers.DEFAULT_PRIORITY);
         assertThat(sut.priority(), is(-1));
 
-        sut = new FileBufferSink(channel_, 0, 10, 0, true);
+        sut = new FileBufferSink(channel_, 0, 10, 0);
         assertThat(sut.priority(), is(0));
     }
 
@@ -144,7 +144,7 @@ public class FileBufferSinkTest {
                 .thenReturn(true).thenReturn(true).thenReturn(true);
         when(outputChannel.write(Mockito.any(ByteBuffer.class)))
                 .thenAnswer(all9).thenAnswer(all10).thenAnswer(allLeft);
-        FileBufferSink sut = new FileBufferSink(channel_, 0, 32, 0, true);
+        FileBufferSink sut = new FileBufferSink(channel_, 0, 32, 0);
 
         FileBufferSink sliced0 = sut.slice(9);
         sliced0.transferTo(outputChannel, ByteBuffer.allocate(0));
