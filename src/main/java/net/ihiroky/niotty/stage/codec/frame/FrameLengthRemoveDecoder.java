@@ -15,6 +15,14 @@ public class FrameLengthRemoveDecoder implements LoadStage<CodecBuffer, CodecBuf
     private int poolingFrameBytes_;
     private CodecBuffer pooling_;
 
+    /** Max length of 'frame length'; variable byte of int. */
+    private static final int MAX_FRAME_BYTE_LENGTH = 5;
+
+    /** End bit of variable byte. */
+    private static final int END_BIT = 0x80;
+
+    private static final int MARGIN = 16;
+
     public FrameLengthRemoveDecoder() {
         useSlice_ = false;
     }
@@ -30,7 +38,7 @@ public class FrameLengthRemoveDecoder implements LoadStage<CodecBuffer, CodecBuf
 
             // load frame length
             if (frameBytes == 0) {
-                input = readFully(input, FrameLengthPrependEncoder.MINIMUM_WHOLE_LENGTH);
+                input = readFrameLength(input);
                 if (input == null) {
                     return;
                 }
@@ -66,6 +74,30 @@ public class FrameLengthRemoveDecoder implements LoadStage<CodecBuffer, CodecBuf
         return b;
     }
 
+    private CodecBuffer readFrameLength(CodecBuffer input) {
+        if (pooling_ != null) {
+            pooling_.drainFrom(input);
+            if (pooling_.remainingBytes() >= MAX_FRAME_BYTE_LENGTH) {
+                CodecBuffer fulfilled = pooling_;
+                pooling_ = null;
+                return fulfilled;
+            }
+            return null;
+        }
+
+        int remainingBytes = input.remainingBytes();
+        if (remainingBytes >= MAX_FRAME_BYTE_LENGTH || (input.readByte(remainingBytes - 1) & END_BIT) != 0) {
+            return input;
+        }
+
+        if (remainingBytes > 0) {
+            CodecBuffer p = Buffers.newCodecBuffer(new byte[MAX_FRAME_BYTE_LENGTH + MARGIN], 0, 0);
+            p.drainFrom(input);
+            pooling_ = p;
+        }
+        return null;
+    }
+
     private CodecBuffer readFully(CodecBuffer input, int requiredLength) {
         if (pooling_ != null) {
             pooling_.drainFrom(input);
@@ -77,13 +109,16 @@ public class FrameLengthRemoveDecoder implements LoadStage<CodecBuffer, CodecBuf
             return null;
         }
 
-        if (input.remainingBytes() >= requiredLength) {
+        int remainingBytes = input.remainingBytes();
+        if (remainingBytes >= requiredLength) {
             return input;
         }
 
-        CodecBuffer p = Buffers.newCodecBuffer(new byte[requiredLength], 0, 0);
-        p.drainFrom(input);
-        pooling_ = p;
+        if (remainingBytes > 0) {
+            CodecBuffer p = Buffers.newCodecBuffer(new byte[requiredLength], 0, 0);
+            p.drainFrom(input);
+            pooling_ = p;
+        }
         return null;
     }
 

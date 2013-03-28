@@ -39,7 +39,7 @@ public class FrameLengthRemoveDecoderTest {
     }
 
     @Test
-    public void testLoadMessageEventOnce() throws Exception {
+    public void testLoad_MessageOnce() throws Exception {
         CodecBuffer input = Buffers.newCodecBuffer(data_, 0, dataLength_);
 
         sut_.load(context_, input);
@@ -56,7 +56,7 @@ public class FrameLengthRemoveDecoderTest {
     }
 
     @Test
-    public void testLoadMessageEventManyIncompletePacket() throws Exception {
+    public void testLoad_MessageManyIncompletePacket() throws Exception {
         // read first 4 byte
         sut_.load(context_, Buffers.newCodecBuffer(data_, 0, 4));
         assertThat(context_.getProceededMessageEventQueue().size(), is(0));
@@ -84,7 +84,7 @@ public class FrameLengthRemoveDecoderTest {
     }
 
     @Test
-    public void testLoadMessageManyPacketAndRemaining() throws Exception {
+    public void testLoad_MessagePacketAndRemaining() throws Exception {
         CodecBuffer encodeBuffer = Buffers.newCodecBuffer(40);
         for (int i = 0; i < 3; i++) {
             encodeBuffer.writeVariableByteInteger(12); // content length
@@ -115,7 +115,7 @@ public class FrameLengthRemoveDecoderTest {
     }
 
     @Test
-    public void testLoadMessageManyPacketAndNoRemaining() throws Exception {
+    public void testLoad_MessageManyPacketAndNoRemaining() throws Exception {
         CodecBuffer encodeBuffer = Buffers.newCodecBuffer(40);
         for (int i = 0; i < 3; i++) {
             encodeBuffer.writeVariableByteInteger(12); // content length
@@ -146,7 +146,7 @@ public class FrameLengthRemoveDecoderTest {
     @Test
     public void testLoadMessageManyPacketAndNoRemainingWithUseSlice() throws Exception {
         setUp(true);
-        testLoadMessageManyPacketAndNoRemaining();
+        testLoad_MessageManyPacketAndNoRemaining();
     }
 
 }

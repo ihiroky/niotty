@@ -26,7 +26,7 @@ public class FrameLengthPrependEncoderTest {
     }
 
     @Test
-    public void testProcessMessageEvent() throws Exception {
+    public void testProcess_Message() throws Exception {
         CodecBuffer input = Buffers.newCodecBuffer(10);
         input.writeBytes(new byte[5], 0, 5);
 
@@ -34,16 +34,5 @@ public class FrameLengthPrependEncoderTest {
 
         BufferSink actual = context_.getProceededMessageEvent().poll();
         assertThat(actual.remainingBytes(), is(6));
-    }
-
-    @Test
-    public void testProcessMessageEventLessThan5() throws Exception {
-        CodecBuffer input = Buffers.newCodecBuffer(10);
-        input.writeBytes(new byte[3], 0, 3);
-
-        sut_.store(context_, input);
-
-        BufferSink actual = context_.getProceededMessageEvent().poll();
-        assertThat(actual.remainingBytes(), is(5));
     }
 }
