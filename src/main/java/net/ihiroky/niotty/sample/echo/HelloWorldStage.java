@@ -1,4 +1,4 @@
-package net.ihiroky.niotty.sample;
+package net.ihiroky.niotty.sample.echo;
 
 import net.ihiroky.niotty.LoadStage;
 import net.ihiroky.niotty.LoadStageContext;
