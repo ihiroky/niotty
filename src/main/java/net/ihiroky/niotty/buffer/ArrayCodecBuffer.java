@@ -557,7 +557,7 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer implements CodecBuffer
      */
     @Override
     public ByteBuffer toByteBuffer() {
-        return ByteBuffer.wrap(buffer_, offset_, end_);
+        return ByteBuffer.wrap(buffer_, beginning_, (end_ - beginning_));
     }
 
     /**
