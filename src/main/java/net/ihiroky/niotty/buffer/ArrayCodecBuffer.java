@@ -72,6 +72,14 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer implements CodecBuffer
         buffer_[end_++] = (byte) value;
     }
 
+    @Override
+    public void writeByte(int position, int value) {
+        if (position < offset_ || position >= buffer_.length) {
+            throw new IndexOutOfBoundsException("position must be in [" + offset_ + ", " + buffer_.length + ")");
+        }
+        buffer_[position] = (byte) value;
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -243,6 +251,14 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer implements CodecBuffer
         end_ = startPosition - expectedLengthBytes;
         writeVariableByteInteger(outputLength);
         end_ = tmp;
+    }
+
+    @Override
+    public int readByte(int position) {
+        if (position < offset_ || position >= buffer_.length) {
+            throw new IndexOutOfBoundsException("position must be in [" + offset_ + ", " + buffer_.length + ")");
+        }
+        return buffer_[position] & CodecUtil.BYTE_MASK;
     }
 
     /**

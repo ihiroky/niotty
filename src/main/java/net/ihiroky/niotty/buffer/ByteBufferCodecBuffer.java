@@ -118,6 +118,17 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer implements CodecB
      * {@inheritDoc}
      */
     @Override
+    public void writeByte(int position, int value) {
+        if (position < 0 || position >= buffer_.capacity()) {
+            throw new IndexOutOfBoundsException("position must be in [0, " + buffer_.capacity() + ")");
+        }
+        buffer_.put(position, (byte) value);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void writeBytes(byte[] bytes, int offset, int length) {
         changeModeToWrite();
         ensureSpace(length);
@@ -262,6 +273,17 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer implements CodecB
         buffer_.position(startPosition - expectedLengthBytes);
         writeVariableByteInteger(outputLength);
         buffer_.position(tmp);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int readByte(int position) {
+        if (position < 0 || position >= buffer_.capacity()) {
+            throw new IndexOutOfBoundsException("position must be in [0, " + buffer_.capacity() + ")");
+        }
+        return buffer_.get(position);
     }
 
     /**

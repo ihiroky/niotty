@@ -48,6 +48,30 @@ public class CodecBufferTestAbstract {
         }
 
         @Test
+        public void testReadByteAbsoluteAtMinus1() throws Exception {
+            exceptionRule_.expect(IndexOutOfBoundsException.class);
+            sut_.readByte(-1);
+        }
+
+        @Test
+        public void testReadByteAbsoluteAtCapacityBytes() throws Exception {
+            exceptionRule_.expect(IndexOutOfBoundsException.class);
+            sut_.readByte(sut_.capacityBytes());
+        }
+
+        @Test
+        public void testWriteByteAbsoluteAtMinus1() throws Exception {
+            exceptionRule_.expect(IndexOutOfBoundsException.class);
+            sut_.writeByte(-1, 0);
+        }
+
+        @Test
+        public void testWriteByteAbsoluteAtCapacityBytes() throws Exception {
+            exceptionRule_.expect(IndexOutOfBoundsException.class);
+            sut_.writeByte(sut_.capacityBytes(), 0);
+        }
+
+        @Test
         public void testReadBytes() throws Exception {
             exceptionRule_.expect(RuntimeException.class);
             sut_.readBytes(new byte[1], 0, 1);
@@ -187,6 +211,13 @@ public class CodecBufferTestAbstract {
         public void testReadByte() throws Exception {
             for (int i = 0; i < 10; i++) {
                 assertThat(sut_.readByte(), is(i + 0x30));
+            }
+        }
+
+        @Test
+        public void testReadByteAbsolute() throws Exception {
+            for (int i = 0; i < 10; i++) {
+                assertThat(sut_.readByte(i), is(i + 0x30));
             }
         }
 
@@ -649,6 +680,15 @@ public class CodecBufferTestAbstract {
             assertThat(sut_.toArray()[0], is((byte) 10));
 
             sut_.writeByte(20);
+            assertThat(sut_.toArray()[1], is((byte) 20));
+        }
+
+        @Test
+        public void testWriteByteAbsolute() throws Exception {
+            sut_.writeByte(0, 10);
+            assertThat(sut_.toArray()[0], is((byte) 10));
+
+            sut_.writeByte(1, 20);
             assertThat(sut_.toArray()[1], is((byte) 20));
         }
 

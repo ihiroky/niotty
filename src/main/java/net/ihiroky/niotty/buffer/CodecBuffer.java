@@ -16,6 +16,10 @@ import java.nio.charset.CharsetEncoder;
  * by a difference between the beginning and the end, and space (writable) data size is calculated by the a difference
  * between the end and the capacity.
  * <p></p>
+ * Almost read and write methods are relative operation; the beginning and the end are changed by the operation.
+ * But {@link #readByte(int)} and {@link #writeByte(int, int)} are absolute operation; the beginning and
+ * the end are not changed.
+ * <p></p>
  * {@code CodecBuffer} supports primitive and string write and read operations. And supports a signed integer
  * encoding with variable length, signed VBC (Variable Byte Codes). The encoding has an end bit,
  * a sign bit and data bits. Each MSB per byte is the end bit. The end bit in last byte is 1, otherwise 0.
@@ -43,6 +47,15 @@ public interface CodecBuffer extends BufferSink {
      * @param value byte value
      */
     void writeByte(int value);
+
+    /**
+     * Writes a {@code value} as byte at a specified {@code position}.
+     * The value of the end is not changed.
+     *
+     * @param position index to write the {@code value}
+     * @param value byte value
+     */
+    void writeByte(int position, int value);
 
     /**
      * Writes a specified byte array.
@@ -158,6 +171,15 @@ public interface CodecBuffer extends BufferSink {
 
     /**
      * Reads a byte from the buffer.
+     *
+     * @param position index to read from
+     * @return a byte.
+     * @throws java.lang.RuntimeException if the beginning exceeds the end
+     */
+    int    readByte(int position);
+
+    /**
+     * Reads a byte from the buffer at a specified {@code position}.
      *
      * @return a byte.
      * @throws java.lang.RuntimeException if the beginning exceeds the end
