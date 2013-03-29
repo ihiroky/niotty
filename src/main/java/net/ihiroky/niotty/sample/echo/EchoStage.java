@@ -18,12 +18,12 @@ public class EchoStage implements LoadStage<String, Void> {
     @Override
     public void load(LoadStageContext<String, Void> context, String message) {
         logger_.info(message);
-        System.out.println(message + " from " + this.getClass().getName());
+        System.out.println(message + " (from " + this.getClass().getName() + ")");
         context.transport().write(message);
     }
 
     @Override
     public void load(LoadStageContext<String, Void> context, TransportStateEvent event) {
-        logger_.info(event.toString());
+        logger_.info("state: {}", event.toString());
     }
 }

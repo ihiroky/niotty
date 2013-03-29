@@ -1,9 +1,5 @@
 package net.ihiroky.niotty.nio;
 
-import net.ihiroky.niotty.TaskLoop;
-
-import java.nio.channels.SelectableChannel;
-
 /**
  * Created on 13/01/15, 17:07
  *
@@ -37,23 +33,5 @@ public class MessageIOSelectorPool extends AbstractSelectorPool<MessageIOSelecto
     @Override
     protected MessageIOSelector newEventLoop() {
         return new MessageIOSelector(readBufferSize_, writeBufferSize_, direct_);
-    }
-
-    @Override
-    public void register(final SelectableChannel channel, final int ops,
-                         final NioSocketTransport<MessageIOSelector> transport) {
-        MessageIOSelector target = searchLowMemberCountLoop();
-        if (target == null) {
-            throw new AssertionError("should not reach here.");
-        }
-        transport.addIOStage(target.ioStoreStage());
-        transport.setEventLoop(target);
-        target.offerTask(new TaskLoop.Task<MessageIOSelector>() {
-                @Override
-                public boolean execute(MessageIOSelector eventLoop) {
-                    eventLoop.register(channel, ops, transport);
-                    return true;
-                }
-        });
     }
 }

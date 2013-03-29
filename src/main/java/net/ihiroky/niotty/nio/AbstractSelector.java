@@ -3,6 +3,7 @@ package net.ihiroky.niotty.nio;
 import net.ihiroky.niotty.TaskLoop;
 import net.ihiroky.niotty.StoreStage;
 import net.ihiroky.niotty.StoreStageContext;
+import net.ihiroky.niotty.TransportState;
 import net.ihiroky.niotty.TransportStateEvent;
 import net.ihiroky.niotty.buffer.BufferSink;
 import org.slf4j.Logger;
@@ -22,32 +23,9 @@ import java.util.Set;
 public abstract class AbstractSelector<S extends AbstractSelector<S>> extends TaskLoop<S> {
 
     private Selector selector_;
+    private SelectorStoreStage<S> selectorStoreStage_ = new SelectorStoreStage<>();
 
     private Logger logger_ = LoggerFactory.getLogger(AbstractSelector.class);
-
-    static final StoreStage<BufferSink, Void> SELECTOR_STORE_STAGE = new StoreStage<BufferSink, Void>() {
-        @Override
-        public void store(StoreStageContext<BufferSink, Void> context, BufferSink input) {
-        }
-
-        @Override
-        public void store(StoreStageContext<BufferSink, Void> context, TransportStateEvent event) {
-            NioSocketTransport<?> transport = (NioSocketTransport<?>) context.transport();
-            Object value = event.value();
-            switch (event.state()) {
-                case ACCEPTED: // fall through
-                case CONNECTED: // fall through
-                case BOUND:
-                    if (value == null || Boolean.FALSE.equals(value)) {
-                        transport.closeSelectableChannel();
-                    }
-                    event.future().done();
-                    break;
-                default:
-                    break;
-            }
-        }
-    };
 
     @Override
     protected void onOpen() {
@@ -114,6 +92,7 @@ public abstract class AbstractSelector<S extends AbstractSelector<S>> extends Ta
         try {
             SelectionKey key = channel.register(selector_, ops, transport);
             transport.setSelectionKey(key);
+            transport.loadEvent(new TransportStateEvent(TransportState.INTEREST_OPS, ops));
             processingMemberCount_.incrementAndGet();
             logger_.debug("channel {} is registered to {}.", channel, Thread.currentThread());
         } catch (IOException ioe) {
@@ -121,19 +100,10 @@ public abstract class AbstractSelector<S extends AbstractSelector<S>> extends Ta
         }
     }
 
-    void register(SelectableChannel channel, int ops, TransportFutureAttachment<S> attachment) {
-        try {
-            SelectionKey key = channel.register(selector_, ops, attachment);
-            attachment.getTransport().setSelectionKey(key);
-            processingMemberCount_.incrementAndGet();
-            logger_.debug("channel {} is registered to {}.", channel, Thread.currentThread());
-        } catch (IOException ioe) {
-            logger_.warn("failed to register channel:" + channel, ioe);
-        }
-    }
-
-    void unregister(SelectionKey key) {
+    void unregister(SelectionKey key, NioSocketTransport<S> transport) {
+        int ops = key.interestOps();
         key.cancel();
+        transport.loadEvent(new TransportStateEvent(TransportState.INTEREST_OPS, ~ops));
         processingMemberCount_.decrementAndGet();
         logger_.debug("channel {} is unregistered from {}.", key.channel(), Thread.currentThread());
     }
@@ -142,7 +112,49 @@ public abstract class AbstractSelector<S extends AbstractSelector<S>> extends Ta
         return selector_.keys();
     }
 
-    public boolean isOpen() {
+    boolean isOpen() {
         return (selector_ != null) && selector_.isOpen();
+    }
+
+    StoreStage<BufferSink, Void> ioStoreStage() {
+        return selectorStoreStage_;
+    }
+
+    static class SelectorStoreStage<S extends AbstractSelector<S>> implements StoreStage<BufferSink, Void> {
+        @Override
+        public void store(StoreStageContext<BufferSink, Void> context, BufferSink input) {
+        }
+
+        @Override
+        public void store(StoreStageContext<BufferSink, Void> context, final TransportStateEvent event) {
+            @SuppressWarnings("unchecked")
+            final NioSocketTransport<S> transport = (NioSocketTransport<S>) context.transport();
+            switch (event.state()) {
+                case CONNECTED: // fall through
+                case BOUND:
+                    if (transport.isInLoopThread()) {
+                        close(transport, event);
+                    } else {
+                        transport.offerTask(new Task<S>() {
+                            @Override
+                            public boolean execute(S eventLoop) throws Exception {
+                                close(transport, event);
+                                return true;
+                            }
+                        });
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        private void close(NioSocketTransport<?> transport, TransportStateEvent event) {
+            Object value = event.value();
+            if (value == null || Boolean.FALSE.equals(value)) {
+                transport.closeSelectableChannel();
+            }
+            event.future().done();
+        }
     }
 }

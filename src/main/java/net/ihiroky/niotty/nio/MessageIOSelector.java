@@ -2,7 +2,6 @@ package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.StoreStage;
 import net.ihiroky.niotty.StoreStageContext;
-import net.ihiroky.niotty.TransportStateEvent;
 import net.ihiroky.niotty.buffer.BufferSink;
 import net.ihiroky.niotty.buffer.Buffers;
 import org.slf4j.Logger;
@@ -10,6 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.Iterator;
@@ -28,7 +28,7 @@ public class MessageIOSelector extends AbstractSelector<MessageIOSelector> {
 
     private static final int MIN_BUFFER_SIZE = 256;
 
-    private final StoreStage<BufferSink, Void> ioStoreStage_;
+    private final StoreStage<BufferSink, Void> messageIOStoreStage_;
 
     MessageIOSelector(int readBufferSize, int writeBufferSize, boolean direct) {
         if (readBufferSize < MIN_BUFFER_SIZE) {
@@ -41,7 +41,7 @@ public class MessageIOSelector extends AbstractSelector<MessageIOSelector> {
         }
         readBuffer_ = direct ? ByteBuffer.allocateDirect(readBufferSize) : ByteBuffer.allocate(readBufferSize);
         writeBuffer_ = direct ? ByteBuffer.allocateDirect(writeBufferSize) : ByteBuffer.allocate(writeBufferSize);
-        ioStoreStage_ = new IOStoreStage(writeBuffer_);
+        messageIOStoreStage_ = new MessageIOStoreStage(writeBuffer_);
     }
 
     @Override
@@ -65,10 +65,15 @@ public class MessageIOSelector extends AbstractSelector<MessageIOSelector> {
                     localByteBuffer.clear();
                     continue;
                 }
-            } catch (IOException ioe) {
+            } catch (ClosedByInterruptException ie) {
                 if (logger_.isDebugEnabled()) {
-                    logger_.debug("failed to read from transport:" + transport, ioe);
+                    logger_.debug("failed to read from transport by interruption:" + transport, ie);
                 }
+                transport.closeSelectableChannel();
+                localByteBuffer.clear();
+                continue;
+            } catch (IOException ioe) {
+                logger_.error("failed to read from transport:" + transport, ioe);
                 transport.closeSelectableChannel();
                 localByteBuffer.clear();
                 continue;
@@ -80,17 +85,18 @@ public class MessageIOSelector extends AbstractSelector<MessageIOSelector> {
         }
     }
 
+    @Override
     public StoreStage<BufferSink, Void> ioStoreStage() {
-        return ioStoreStage_;
+        return messageIOStoreStage_;
     }
 
-    private static class IOStoreStage implements StoreStage<BufferSink, Void> {
+    private static class MessageIOStoreStage extends SelectorStoreStage<MessageIOSelector> {
 
         private final ByteBuffer writeBuffer_;
 
-        static Logger logger_ = LoggerFactory.getLogger(IOStoreStage.class);
+        static Logger logger_ = LoggerFactory.getLogger(MessageIOStoreStage.class);
 
-        IOStoreStage(ByteBuffer writeBuffer) {
+        MessageIOStoreStage(ByteBuffer writeBuffer) {
             writeBuffer_ = writeBuffer;
         }
 
@@ -108,11 +114,6 @@ public class MessageIOSelector extends AbstractSelector<MessageIOSelector> {
                     }
                 });
             }
-        }
-
-        @Override
-        public void store(StoreStageContext<BufferSink, Void> context, TransportStateEvent event) {
-            AbstractSelector.SELECTOR_STORE_STAGE.store(context, event);
         }
 
         public boolean flush(NioClientSocketTransport transport, ByteBuffer writeBuffer) {

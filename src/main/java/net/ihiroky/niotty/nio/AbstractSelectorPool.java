@@ -12,32 +12,19 @@ import java.nio.channels.SelectableChannel;
  */
 public abstract class AbstractSelectorPool<S extends AbstractSelector<S>> extends TaskLoopGroup<S> {
 
-    public void register(final SelectableChannel channel, final int ops,
-                         final TransportFutureAttachment<S> attachment) {
-        S target = searchLowMemberCountLoop();
-        if (target != null) {
-            attachment.getTransport().setEventLoop(target);
-            target.offerTask(new TaskLoop.Task<S>() {
-                @Override
-                public boolean execute(S eventLoop) {
-                    eventLoop.register(channel, ops, attachment);
-                    return true;
-                }
-            });
-        }
-    }
-
     public void register(final SelectableChannel channel, final int ops, final NioSocketTransport<S> transport) {
         S target = searchLowMemberCountLoop();
-        if (target != null) {
-            transport.setEventLoop(target);
-            target.offerTask(new TaskLoop.Task<S>() {
-                @Override
-                public boolean execute(S eventLoop) {
-                    eventLoop.register(channel, ops, transport);
-                    return true;
-                }
-            });
+        if (target == null) {
+            throw new AssertionError("should not reach here.");
         }
+        transport.addIOStage(target.ioStoreStage());
+        transport.setEventLoop(target);
+        target.offerTask(new TaskLoop.Task<S>() {
+            @Override
+            public boolean execute(S eventLoop) {
+                eventLoop.register(channel, ops, transport);
+                return true;
+            }
+        });
     }
 }

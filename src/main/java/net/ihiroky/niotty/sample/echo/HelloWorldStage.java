@@ -16,7 +16,7 @@ public class HelloWorldStage implements LoadStage<String, Void> {
     @Override
     public void load(LoadStageContext<String, Void> context, String message) {
         logger_.info(message);
-        System.out.println(message + " from " + this.getClass().getName());
+        System.out.println(message + " (from " + this.getClass().getName() + ")");
     }
 
     @Override
@@ -26,10 +26,12 @@ public class HelloWorldStage implements LoadStage<String, Void> {
                 if (event.value() != null) {
                     logger_.info(event.toString());
                     context.transport().write("Hello World.");
+                } else {
+                    logger_.info("state: {}", event.toString());
                 }
                 break;
             default:
-                logger_.info("unexpected state: {}", event.toString());
+                logger_.info("state: {}", event.toString());
 
         }
     }

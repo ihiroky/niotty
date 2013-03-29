@@ -39,6 +39,9 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
             serverChannel.configureBlocking(false);
             config.applySocketOptions(serverChannel);
 
+            // set up StoreStage for selector referenced at bind/close operation.
+            setUpPipelines(processor.getName(), config.getPipelineInitializer());
+
             this.config_ = config;
             this.serverChannel_ = serverChannel;
             this.processor_ = processor;
@@ -87,6 +90,7 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
     @Override
     public void bind(SocketAddress socketAddress) throws IOException {
         serverChannel_.bind(socketAddress, config_.getBacklog());
+        loadEvent(new TransportStateEvent(TransportState.BOUND, socketAddress));
         processor_.getAcceptSelectorPool().register(serverChannel_, SelectionKey.OP_ACCEPT, this);
     }
 
@@ -98,7 +102,12 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
     @Override
     public TransportFuture close() {
         if (getEventLoop() != null) {
-            return closeSelectableChannelLater();
+            return closeSelectableChannelLater(TransportState.BOUND);
+        }
+        try {
+            serverChannel_.close();
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
         }
         return new SucceededTransportFuture(this);
     }
@@ -119,11 +128,11 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
 
         NioClientSocketTransport child =
                 new NioClientSocketTransport(config_, processor_.getName(), (SocketChannel) channel);
+        child.loadEvent(new TransportStateEvent(TransportState.CONNECTED, remoteAddress));
         processor_.getMessageIOSelectorPool().register(channel, SelectionKey.OP_READ, child);
         childAggregate_.add(child);
 
         getTransportListener().onConnect(child, remoteAddress);
-        child.loadEventLater(new TransportStateEvent(TransportState.ACCEPTED, remoteAddress));
     }
 
     @Override

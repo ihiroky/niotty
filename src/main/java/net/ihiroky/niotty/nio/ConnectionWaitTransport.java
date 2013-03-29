@@ -1,5 +1,6 @@
 package net.ihiroky.niotty.nio;
 
+import net.ihiroky.niotty.DefaultTransportFuture;
 import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.buffer.BufferSink;
 
@@ -13,13 +14,19 @@ import java.net.SocketAddress;
 public class ConnectionWaitTransport extends NioSocketTransport<ConnectSelector> {
 
     private NioClientSocketTransport transport_;
+    private final DefaultTransportFuture future_;
 
-    ConnectionWaitTransport(NioClientSocketTransport transport) {
+    ConnectionWaitTransport(NioClientSocketTransport transport, DefaultTransportFuture future) {
         transport_ = transport;
+        future_ = future;
     }
 
     NioClientSocketTransport transport() {
         return transport_;
+    }
+
+    DefaultTransportFuture getFuture() {
+        return future_;
     }
 
     @Override

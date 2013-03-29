@@ -35,11 +35,10 @@ public class EchoMain {
     }
 
     public static void main(String[] args) {
-
-
+        new EchoMain().execute(args);
     }
 
-    private void execute() {
+    private void execute(String[] args) {
         final int port = 10000;
         final int lastWaitMillis = 500;
 

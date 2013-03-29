@@ -2,9 +2,10 @@ package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.AbstractTransport;
 import net.ihiroky.niotty.DefaultTransportFuture;
-import net.ihiroky.niotty.TaskLoop;
 import net.ihiroky.niotty.SucceededTransportFuture;
 import net.ihiroky.niotty.TransportFuture;
+import net.ihiroky.niotty.TransportState;
+import net.ihiroky.niotty.TransportStateEvent;
 
 import java.io.IOException;
 import java.nio.channels.SelectableChannel;
@@ -30,21 +31,14 @@ public abstract class NioSocketTransport<S extends AbstractSelector<S>> extends 
         this.key_ = key;
     }
 
-    TransportFuture closeSelectableChannelLater() {
+    TransportFuture closeSelectableChannelLater(TransportState transportState) {
         S selector = getEventLoop();
         if (selector == null) {
             closePipelines();
             return new SucceededTransportFuture(this);
         }
         final DefaultTransportFuture future = new DefaultTransportFuture(this);
-        selector.offerTask(new TaskLoop.Task<S>() {
-            @Override
-            public boolean execute(S eventLoop) throws Exception {
-                closeSelectableChannel();
-                future.done();
-                return true;
-            }
-        });
+        executeStore(new TransportStateEvent(transportState, null, future));
         return future;
     }
 
@@ -52,15 +46,21 @@ public abstract class NioSocketTransport<S extends AbstractSelector<S>> extends 
         closePipelines();
         if (key_ != null) {
             SelectableChannel channel = key_.channel();
-            getEventLoop().unregister(key_); // decrement register count
+            getEventLoop().unregister(key_, this); // decrement register count
             key_.cancel();
             try {
                 channel.close();
-            } catch (IOException ignored) {
+            } catch (IOException e) {
+                e.printStackTrace();
             }
             getTransportListener().onClose(this);
+            executeLoad(new TransportStateEvent(TransportState.CONNECTED, null));
         }
         return new SucceededTransportFuture(this);
+    }
+
+    void loadEvent(final TransportStateEvent event) {
+        executeLoad(event);
     }
 
     protected final SelectionKey getSelectionKey() {

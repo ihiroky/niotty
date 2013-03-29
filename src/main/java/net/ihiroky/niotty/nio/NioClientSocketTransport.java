@@ -1,11 +1,11 @@
 package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.DefaultTransportFuture;
-import net.ihiroky.niotty.TaskLoop;
 import net.ihiroky.niotty.FailedTransportFuture;
 import net.ihiroky.niotty.SucceededTransportFuture;
+import net.ihiroky.niotty.TaskLoop;
 import net.ihiroky.niotty.TransportFuture;
-import net.ihiroky.niotty.TransportStateEvent;
+import net.ihiroky.niotty.TransportState;
 import net.ihiroky.niotty.buffer.BufferSink;
 
 import java.io.IOException;
@@ -93,8 +93,7 @@ public class NioClientSocketTransport extends NioSocketTransport<MessageIOSelect
                 return new SucceededTransportFuture(this);
             }
             DefaultTransportFuture future = new DefaultTransportFuture(this);
-            connector_.register(clientChannel_, SelectionKey.OP_CONNECT,
-                    new TransportFutureAttachment<>(new ConnectionWaitTransport(this), future));
+            connector_.register(clientChannel_, SelectionKey.OP_CONNECT, new ConnectionWaitTransport(this, future));
             return future;
         } catch (IOException ioe) {
             return new FailedTransportFuture(this, ioe);
@@ -103,7 +102,7 @@ public class NioClientSocketTransport extends NioSocketTransport<MessageIOSelect
 
     @Override
     public TransportFuture close() {
-        return isInLoopThread() ? closeSelectableChannel() : closeSelectableChannelLater();
+        return isInLoopThread() ? closeSelectableChannel() : closeSelectableChannelLater(TransportState.CONNECTED);
     }
 
     @Override
@@ -165,16 +164,6 @@ public class NioClientSocketTransport extends NioSocketTransport<MessageIOSelect
 
     void loadEvent(Object message) {
         executeLoad(message);
-    }
-
-    void loadEventLater(final TransportStateEvent event) {
-        offerTask(new TaskLoop.Task<MessageIOSelector>() {
-            @Override
-            public boolean execute(MessageIOSelector eventLoop) throws Exception {
-                executeLoad(event);
-                return true;
-            }
-        });
     }
 
     void fireOnConnect() {

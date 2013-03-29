@@ -6,10 +6,8 @@ package net.ihiroky.niotty;
  * @author Hiroki Itoh
  */
 public enum TransportState {
-    OPEN,
     BOUND,
     CONNECTED,
-    ACCEPTED,
     INTEREST_OPS,
     STALE,
     RECOVERED,
