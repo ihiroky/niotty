@@ -1,6 +1,5 @@
 package net.ihiroky.niotty.buffer;
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
@@ -462,14 +461,11 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer implements CodecBuffer
             writeBuffer.put(buffer_, beginning_, readyToWrite);
             writeBuffer.flip();
             int writeBytes = channel.write(writeBuffer);
-            // Write operation is failed.
-            if (writeBytes == -1) {
-                throw new EOFException();
-            }
             remaining -= writeBytes;
             // Some bytes remains in writeBuffer. Stop this round
             if (writeBytes < readyToWrite) {
-                beginning_ += readyToWrite;
+                beginning_ += writeBytes;
+                writeBuffer.clear();
                 return false;
             }
             writeBuffer.clear();

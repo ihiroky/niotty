@@ -13,7 +13,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  */
 public class SimpleWriteQueue implements WriteQueue {
 
-    private boolean existsPreviousData_;
     private Queue<BufferSink> queue_;
     private int lastFlushedBytes_;
 
@@ -34,26 +33,6 @@ public class SimpleWriteQueue implements WriteQueue {
     FlushStatus flushTo(WritableByteChannel channel, ByteBuffer writeBuffer, int limitBytes) throws IOException {
         int flushedBytes = 0;
 
-        if (existsPreviousData_) {
-            limitBytes -= writeBuffer.remaining();
-            if (limitBytes < 0) {
-                lastFlushedBytes_ = 0;
-                return FlushStatus.SKIP;
-            }
-            int written = channel.write(writeBuffer);
-            if (written == -1) {
-                lastFlushedBytes_ = 0;
-                throw new IOException("end of stream.");
-            }
-            if (writeBuffer.hasRemaining()) {
-                lastFlushedBytes_ = written;
-                return FlushStatus.FLUSHING;
-            }
-            existsPreviousData_ = false;
-            flushedBytes += written;
-            writeBuffer.clear();
-        }
-
         for (;;) {
             BufferSink pendingBuffer = queue_.peek();
             if (pendingBuffer == null) {
@@ -68,18 +47,13 @@ public class SimpleWriteQueue implements WriteQueue {
             }
             if (pendingBuffer.transferTo(channel, writeBuffer)) {
                 flushedBytes += beforeTransfer;
-                writeBuffer.clear();
                 queue_.poll();
                 if (flushedBytes >= limitBytes) {
                     lastFlushedBytes_ = flushedBytes;
                     return queue_.isEmpty() ? FlushStatus.FLUSHED : FlushStatus.FLUSHING;
                 }
             } else {
-                existsPreviousData_ = true;
-                lastFlushedBytes_ = flushedBytes + (beforeTransfer - writeBuffer.remaining());
-                if (pendingBuffer.remainingBytes() == 0) {
-                    queue_.poll();
-                }
+                lastFlushedBytes_ = flushedBytes + (beforeTransfer - pendingBuffer.remainingBytes());
                 return FlushStatus.FLUSHING;
             }
         }

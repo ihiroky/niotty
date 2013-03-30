@@ -10,7 +10,6 @@ import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
 
@@ -172,34 +171,6 @@ public class SimpleWriteQueueTest {
     }
 
     @Test
-    public void testFlushToOnceRemainingAndRetryUnexpectedEOF() throws Exception {
-        WritableByteChannel channel = mock(WritableByteChannel.class);
-        when(channel.write(Mockito.any(ByteBuffer.class))).thenAnswer(new Answer<Integer>() {
-            @Override
-            public Integer answer(InvocationOnMock invocation) throws Throwable {
-                ByteBuffer bb = (ByteBuffer) invocation.getArguments()[0];
-                bb.position(8);
-                return 8;
-            }
-        }).then(new Answer<Integer>() {
-            @Override
-            public Integer answer(InvocationOnMock invocation) throws Throwable {
-                return -1;
-            }
-        });
-        byte[] data = new byte[] {
-                '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'
-        };
-        sut_.offer(Buffers.newCodecBuffer(data, 0, data.length));
-        WriteQueue.FlushStatus status = sut_.flushTo(channel, writeBuffer_);
-        assertThat(status, is(WriteQueue.FlushStatus.FLUSHING));
-        assertThat(sut_.lastFlushedBytes(), is(8));
-
-        exceptionRule_.expect(IOException.class);
-        exceptionRule_.expectMessage("end of stream.");
-        sut_.flushTo(channel, writeBuffer_);
-    }
-
     public void testFlushToOnceRemainingAndRetryFlushing() throws Exception {
         WritableByteChannel channel = mock(WritableByteChannel.class);
         when(channel.write(Mockito.any(ByteBuffer.class))).thenAnswer(new Answer<Integer>() {

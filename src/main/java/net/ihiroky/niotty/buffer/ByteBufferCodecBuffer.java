@@ -1,6 +1,5 @@
 package net.ihiroky.niotty.buffer;
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
@@ -444,28 +443,43 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer implements CodecB
     public boolean transferTo(WritableByteChannel channel, ByteBuffer writeBuffer) throws IOException {
         changeModeToRead();
 
-        ByteBuffer localByteBuffer = buffer_;
-        int remaining = localByteBuffer.remaining();
+        ByteBuffer myBuffer = buffer_;
+        if (myBuffer.isDirect()) {
+            return transferDirectTo(channel, myBuffer);
+        }
+        int remaining = myBuffer.remaining();
+        int limit = buffer_.limit();
         while (remaining > 0) {
-            int limit = buffer_.limit();
             int space = writeBuffer.remaining();
             int readyToWrite = (remaining <= space) ? remaining : space;
-            localByteBuffer.limit(localByteBuffer.position() + readyToWrite);
-            writeBuffer.put(localByteBuffer);
+            myBuffer.limit(myBuffer.position() + readyToWrite);
+            writeBuffer.put(myBuffer);
             writeBuffer.flip();
             int writeBytes = channel.write(writeBuffer);
-            if (writeBytes == -1) {
-                localByteBuffer.limit(limit);
-                throw new EOFException();
-            }
             // Some bytes remains in writeBuffer. Stop this round.
             if (writeBytes < readyToWrite) {
-                localByteBuffer.limit(limit);
+                myBuffer.limit(limit);
+                myBuffer.position(limit - remaining + writeBytes);
+                writeBuffer.clear();
                 return false;
             }
             // Write all bytes in writeBuffer.
             remaining -= writeBytes;
             writeBuffer.clear();
+        }
+        clear();
+        return true;
+    }
+
+    private boolean transferDirectTo(WritableByteChannel channel, ByteBuffer myBuffer) throws IOException {
+        int remaining = myBuffer.remaining();
+        if (remaining == 0) {
+            return true;
+        }
+        int writeBytes = channel.write(myBuffer);
+        // Some bytes remains in writeBuffer. Stop this round.
+        if (writeBytes < remaining) {
+            return false;
         }
         clear();
         return true;

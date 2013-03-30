@@ -5,7 +5,6 @@ import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
@@ -104,18 +103,9 @@ public class CodecBufferDequeTest {
         boolean result = sut_.transferTo(channel, writeBuffer);
 
         assertThat(result, is(false));
-        assertThat(sut_.remainingBytes(), is(0)); // last one byte is put in writeBuffer;
-        assertThat(writeBuffer.remaining(), is(1));
+        assertThat(sut_.remainingBytes(), is(1)); // last one byte is put in writeBuffer;
+        assertThat(writeBuffer.remaining(), is(32));
         verify(channel, times(2)).write(writeBuffer);
-    }
-
-    @Test(expected = EOFException.class)
-    public void testTransferToEOF() throws Exception {
-        ByteBuffer writeBuffer = ByteBuffer.allocate(dataLength_);
-        WritableByteChannel channel = mock(WritableByteChannel.class);
-        when(channel.write(writeBuffer)).thenReturn(-1);
-
-        sut_.transferTo(channel, writeBuffer);
     }
 
     @Test(expected = IOException.class)

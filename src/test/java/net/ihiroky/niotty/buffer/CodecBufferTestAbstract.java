@@ -8,7 +8,6 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.mockito.stubbing.OngoingStubbing;
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
@@ -1009,7 +1008,7 @@ public class CodecBufferTestAbstract {
         }
 
         @Test
-        public void testTransferToNotEnoughWrite() throws Exception {
+        public void testTransferTo_NotEnoughWrite() throws Exception {
             ByteBuffer buffer = ByteBuffer.allocateDirect(dataLength_);
             WritableByteChannel channel = mock(WritableByteChannel.class);
             when(channel.write(buffer)).thenAnswer(new Answer<Object>() {
@@ -1027,18 +1026,8 @@ public class CodecBufferTestAbstract {
             boolean result = sut_.transferTo(channel, buffer);
 
             assertThat(result, is(false));
-            assertThat(sut_.remainingBytes(), is(0));
-            assertThat(buffer.remaining(), is(1));
-            verify(channel, times(1)).write(buffer);
-        }
-
-        @Test(expected = EOFException.class)
-        public void testTransferToEOF() throws Exception {
-            ByteBuffer buffer = ByteBuffer.allocate(dataLength_);
-            WritableByteChannel channel = mock(WritableByteChannel.class);
-            when(channel.write(buffer)).thenReturn(-1);
-
-            sut_.transferTo(channel, buffer);
+            assertThat(sut_.remainingBytes(), is(1));
+            assertThat(buffer.remaining(), is(32));
             verify(channel, times(1)).write(buffer);
         }
 
