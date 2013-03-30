@@ -45,11 +45,11 @@ public abstract class AbstractSelector<S extends AbstractSelector<S>> extends Ta
     }
 
     @Override
-    protected void process(int timeout) throws Exception {
+    protected void process(int waitTimeMillis) throws Exception {
         int selected;
-        if (timeout > 0) {
-            selected = selector_.select(timeout);
-        } else if (timeout == 0) {
+        if (waitTimeMillis > 0) {
+            selected = selector_.select(waitTimeMillis);
+        } else if (waitTimeMillis == 0) {
             selected = selector_.selectNow();
         } else { // if (timeout < 0) {
             selected = selector_.select();
@@ -137,9 +137,9 @@ public abstract class AbstractSelector<S extends AbstractSelector<S>> extends Ta
                     } else {
                         transport.offerTask(new Task<S>() {
                             @Override
-                            public boolean execute(S eventLoop) throws Exception {
+                            public int execute(S eventLoop) throws Exception {
                                 close(transport, event);
-                                return true;
+                                return 0;
                             }
                         });
                     }

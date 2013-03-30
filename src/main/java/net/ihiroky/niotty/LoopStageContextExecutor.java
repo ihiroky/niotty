@@ -63,9 +63,9 @@ public class LoopStageContextExecutor extends TaskLoop<LoopStageContextExecutor>
     public <I> void execute(final StageContext<I, ?> context, final I input) {
         offerTask(new Task<LoopStageContextExecutor>() {
             @Override
-            public boolean execute(LoopStageContextExecutor eventLoop) throws Exception {
+            public int execute(LoopStageContextExecutor eventLoop) throws Exception {
                 context.fire(input);
-                return true;
+                return 0;
             }
         });
     }
@@ -74,9 +74,9 @@ public class LoopStageContextExecutor extends TaskLoop<LoopStageContextExecutor>
     public <I> void execute(final StageContext<I, ?> context, final TransportStateEvent event) {
         offerTask(new Task<LoopStageContextExecutor>() {
             @Override
-            public boolean execute(LoopStageContextExecutor eventLoop) throws Exception {
+            public int execute(LoopStageContextExecutor eventLoop) throws Exception {
                 context.fire(event);
-                return true;
+                return 0;
             }
         });
     }

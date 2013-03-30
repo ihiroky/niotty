@@ -27,8 +27,6 @@ public abstract class TaskLoop<L extends TaskLoop<L>> implements Runnable, Compa
 
     private Logger logger_ = LoggerFactory.getLogger(TaskLoop.class);
 
-    private static final int TIMEOUT_TASK_RETRY = 100;
-    private static final int TIMEOUT_NOW = 0;
     private static final int TIMEOUT_NO_LIMIT = -1;
 
     protected TaskLoop() {
@@ -64,17 +62,17 @@ public abstract class TaskLoop<L extends TaskLoop<L>> implements Runnable, Compa
 
     public void run() {
         Queue<Task<L>> taskBuffer = new LinkedList<Task<L>>();
-        int timeout = 0;
+        int waitTimeMillis = 0;
         try {
             while (thread_ != null) {
                 try {
-                    process(timeout);
+                    process(waitTimeMillis);
                 } catch (Exception e) {
                     if (thread_ != null) {
                         logger_.warn("[run] process failed.", e);
                     }
                 }
-                timeout = processTasks(taskQueue_, taskBuffer);
+                waitTimeMillis = processTasks(taskQueue_, taskBuffer);
             }
         } finally {
             Queue<Task<L>> queue = taskQueue_;
@@ -89,14 +87,19 @@ public abstract class TaskLoop<L extends TaskLoop<L>> implements Runnable, Compa
 
     private int processTasks(Queue<Task<L>> queue, Queue<Task<L>> buffer) {
         @SuppressWarnings("unchecked") L loop = (L) this;
+        int minWaitTimeMillis = Integer.MAX_VALUE;
         for (Task<L> task;;) {
             task = queue.poll();
             if (task == null) {
                 break;
             }
             try {
-                if (!task.execute(loop)) {
+                int waitTimeMillis = task.execute(loop);
+                if (waitTimeMillis > 0) {
                     buffer.offer(task);
+                    if (minWaitTimeMillis > waitTimeMillis) {
+                        minWaitTimeMillis = waitTimeMillis;
+                    }
                 }
             } catch (Exception e) {
                 if (thread_ != null) {
@@ -104,10 +107,13 @@ public abstract class TaskLoop<L extends TaskLoop<L>> implements Runnable, Compa
                 }
             }
         }
-        int timeout = buffer.isEmpty() ? TIMEOUT_NO_LIMIT : TIMEOUT_TASK_RETRY;
-        queue.addAll(buffer);
-        buffer.clear();
-        return timeout;
+        if (minWaitTimeMillis == Integer.MAX_VALUE) {
+            return TIMEOUT_NO_LIMIT;
+        } else {
+            queue.addAll(buffer);
+            buffer.clear();
+            return minWaitTimeMillis;
+        }
     }
 
     public int processingMemberCount() {
@@ -130,11 +136,11 @@ public abstract class TaskLoop<L extends TaskLoop<L>> implements Runnable, Compa
 
     protected abstract void onOpen();
     protected abstract void onClose();
-    protected abstract void process(int timeout) throws Exception;
+    protected abstract void process(int waitTimeMillis) throws Exception;
     protected abstract void wakeUp();
 
     public interface Task<L extends TaskLoop<L>> {
-        boolean execute(L eventLoop) throws Exception;
+        int execute(L eventLoop) throws Exception;
     }
 
     private static class EmptyQueue extends AbstractQueue<Object> {

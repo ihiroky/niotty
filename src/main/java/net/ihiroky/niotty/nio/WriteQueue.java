@@ -66,21 +66,13 @@ public interface WriteQueue {
         /**
          * The result of data in the {@code WriteQueue} is remaining but not flushed because of some limitation.
          */
-        SKIP(-1),
-        ;
+        SKIP(1);
 
-        int waitTimeMillis_;
+        /** a wait time for I/O round operation. */
+        final int waitTimeMillis_;
 
         private FlushStatus(int waitTimeMillis) {
             waitTimeMillis_ = waitTimeMillis;
-        }
-
-        /**
-         * Returns a wait time for I/O round operation.
-         * @return a wait time for I/O round operation
-         */
-        public int waitTimeMillis() {
-            return waitTimeMillis_;
         }
     }
 }

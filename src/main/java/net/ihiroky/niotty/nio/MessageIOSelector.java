@@ -109,21 +109,21 @@ public class MessageIOSelector extends AbstractSelector<MessageIOSelector> {
             } else {
                 transport.offerTask(new Task<MessageIOSelector>() {
                     @Override
-                    public boolean execute(MessageIOSelector eventLoop) throws Exception {
+                    public int execute(MessageIOSelector eventLoop) throws Exception {
                         return flush(transport, writeBuffer_);
                     }
                 });
             }
         }
 
-        public boolean flush(NioClientSocketTransport transport, ByteBuffer writeBuffer) {
+        public int flush(NioClientSocketTransport transport, ByteBuffer writeBuffer) {
             try {
                 return transport.flush(writeBuffer);
             } catch (IOException ioe) {
                 logger_.error("failed to flush buffer to " + transport, ioe);
                 transport.closeSelectableChannel();
             }
-            return true;
+            return 0;
         }
     }
 }

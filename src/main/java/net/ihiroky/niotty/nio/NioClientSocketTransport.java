@@ -67,9 +67,9 @@ public class NioClientSocketTransport extends NioSocketTransport<MessageIOSelect
         } else {
             offerTask(new TaskLoop.Task<MessageIOSelector>() {
                 @Override
-                public boolean execute(MessageIOSelector eventLoop) throws Exception {
+                public int execute(MessageIOSelector eventLoop) throws Exception {
                     writeBufferSink(buffer);
-                    return true;
+                    return 0;
                 }
             });
         }
@@ -156,10 +156,10 @@ public class NioClientSocketTransport extends NioSocketTransport<MessageIOSelect
         writeQueue_.offer(buffer);
     }
 
-    boolean flush(ByteBuffer byteBuffer) throws IOException {
+    int flush(ByteBuffer byteBuffer) throws IOException {
         WritableByteChannel channel = (WritableByteChannel) getSelectionKey().channel();
         WriteQueue.FlushStatus status = writeQueue_.flushTo(channel, byteBuffer);
-        return status == WriteQueue.FlushStatus.FLUSHED;
+        return status.waitTimeMillis_;
     }
 
     void loadEvent(Object message) {

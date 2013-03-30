@@ -21,9 +21,9 @@ public abstract class AbstractSelectorPool<S extends AbstractSelector<S>> extend
         transport.setEventLoop(target);
         target.offerTask(new TaskLoop.Task<S>() {
             @Override
-            public boolean execute(S eventLoop) {
+            public int execute(S eventLoop) {
                 eventLoop.register(channel, ops, transport);
-                return true;
+                return 0;
             }
         });
     }
