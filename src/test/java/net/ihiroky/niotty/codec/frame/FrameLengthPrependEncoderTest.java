@@ -1,4 +1,4 @@
-package net.ihiroky.niotty.stage.codec.frame;
+package net.ihiroky.niotty.codec.frame;
 
 import net.ihiroky.niotty.StoreStageContextMock;
 import net.ihiroky.niotty.buffer.BufferSink;

@@ -11,10 +11,10 @@ import net.ihiroky.niotty.nio.NioClientSocketConfig;
 import net.ihiroky.niotty.nio.NioClientSocketProcessor;
 import net.ihiroky.niotty.nio.NioServerSocketConfig;
 import net.ihiroky.niotty.nio.NioServerSocketProcessor;
-import net.ihiroky.niotty.sample.StringDecoder;
-import net.ihiroky.niotty.sample.StringEncoder;
-import net.ihiroky.niotty.stage.codec.frame.FrameLengthPrependEncoder;
-import net.ihiroky.niotty.stage.codec.frame.FrameLengthRemoveDecoder;
+import net.ihiroky.niotty.codec.string.StringDecoder;
+import net.ihiroky.niotty.codec.string.StringEncoder;
+import net.ihiroky.niotty.codec.frame.FrameLengthPrependEncoder;
+import net.ihiroky.niotty.codec.frame.FrameLengthRemoveDecoder;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
