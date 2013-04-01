@@ -11,38 +11,38 @@ import net.ihiroky.niotty.TransportStateEvent;
  */
 public class FrameLengthRemoveDecoder implements LoadStage<CodecBuffer, CodecBuffer> {
 
-    private final boolean useSlice_;
     private int poolingFrameBytes_;
     private CodecBuffer pooling_;
 
-    /** Max length of 'frame length'; variable byte of int. */
-    private static final int MAX_FRAME_BYTE_LENGTH = 5;
-
-    /** End bit of variable byte. */
-    private static final int END_BIT = 0x80;
-
-    private static final int MARGIN = 16;
-
-    public FrameLengthRemoveDecoder() {
-        useSlice_ = false;
-    }
-
-    public FrameLengthRemoveDecoder(boolean useSlice) {
-        this.useSlice_ = useSlice;
-    }
-
     @Override
     public void load(LoadStageContext<CodecBuffer, CodecBuffer> context, CodecBuffer input) {
-        for (;;) {
+        while (input.remainingBytes() > 0) {
             int frameBytes = poolingFrameBytes_;
 
             // load frame length
             if (frameBytes == 0) {
-                input = readFrameLength(input);
-                if (input == null) {
+                if (input.remainingBytes() < FrameLengthPrependEncoder.SHORT_BYTES) {
                     return;
                 }
-                frameBytes = input.readVariableByteInteger();
+                int length = input.readShort() & FrameLengthPrependEncoder.MASK_TWO_BYTES;
+                if (length >= 0) { // length < Short.MAX_VALUE
+                    frameBytes = length;
+                } else {
+                    if (input.remainingBytes() < FrameLengthPrependEncoder.SHORT_BYTES) {
+                        poolingFrameBytes_ = length; // negative
+                        return;
+                    }
+                    int upper = length & ~FrameLengthPrependEncoder.INT_FLAG;
+                    int lower = input.readShort() & FrameLengthPrependEncoder.MASK_TWO_BYTES;
+                    frameBytes = (upper << FrameLengthPrependEncoder.SHIFT_TWO_BYTES) | lower;
+                }
+            } else if (frameBytes < 0) {
+                if (input.remainingBytes() < FrameLengthPrependEncoder.SHORT_BYTES) {
+                    return;
+                }
+                int upper = poolingFrameBytes_ & ~FrameLengthPrependEncoder.INT_FLAG;
+                int lower = input.readShort() & FrameLengthPrependEncoder.MASK_TWO_BYTES;
+                frameBytes = (upper << FrameLengthPrependEncoder.SHIFT_TWO_BYTES) | lower;
             }
 
             // load frame
@@ -53,13 +53,7 @@ public class FrameLengthRemoveDecoder implements LoadStage<CodecBuffer, CodecBuf
             }
 
             poolingFrameBytes_ = 0;
-            if (output.remainingBytes() == frameBytes) {
-                context.proceed(output);
-                return;
-            }
-            // if (output.remainingBytes() > frameBytes) {
-            CodecBuffer frame = useSlice_ ? output.slice(frameBytes) : copy(output, frameBytes);
-            context.proceed(frame);
+            context.proceed(output);
         }
     }
 
@@ -68,40 +62,10 @@ public class FrameLengthRemoveDecoder implements LoadStage<CodecBuffer, CodecBuf
         context.proceed(event);
     }
 
-    private CodecBuffer copy(CodecBuffer output, int bytes) {
-        CodecBuffer b = Buffers.newCodecBuffer(bytes);
-        b.drainFrom(output, bytes);
-        return b;
-    }
-
-    private CodecBuffer readFrameLength(CodecBuffer input) {
-        if (pooling_ != null) {
-            pooling_.drainFrom(input);
-            if (pooling_.remainingBytes() >= MAX_FRAME_BYTE_LENGTH) {
-                CodecBuffer fulfilled = pooling_;
-                pooling_ = null;
-                return fulfilled;
-            }
-            return null;
-        }
-
-        int remainingBytes = input.remainingBytes();
-        if (remainingBytes >= MAX_FRAME_BYTE_LENGTH || (input.readByte(remainingBytes - 1) & END_BIT) != 0) {
-            return input;
-        }
-
-        if (remainingBytes > 0) {
-            CodecBuffer p = Buffers.newCodecBuffer(new byte[MAX_FRAME_BYTE_LENGTH + MARGIN], 0, 0);
-            p.drainFrom(input);
-            pooling_ = p;
-        }
-        return null;
-    }
-
     private CodecBuffer readFully(CodecBuffer input, int requiredLength) {
         if (pooling_ != null) {
-            pooling_.drainFrom(input);
-            if (pooling_.remainingBytes() >= requiredLength) {
+            pooling_.drainFrom(input, requiredLength - pooling_.remainingBytes());
+            if (pooling_.remainingBytes() == requiredLength) {
                 CodecBuffer fulfilled = pooling_;
                 pooling_ = null;
                 return fulfilled;
@@ -111,14 +75,16 @@ public class FrameLengthRemoveDecoder implements LoadStage<CodecBuffer, CodecBuf
 
         int remainingBytes = input.remainingBytes();
         if (remainingBytes >= requiredLength) {
-            return input;
-        }
-
-        if (remainingBytes > 0) {
             CodecBuffer p = Buffers.newCodecBuffer(new byte[requiredLength], 0, 0);
-            p.drainFrom(input);
-            pooling_ = p;
+            p.drainFrom(input, requiredLength);
+            return p;
         }
+        if (remainingBytes == 0) {
+            return null;
+        }
+        CodecBuffer p = Buffers.newCodecBuffer(new byte[requiredLength], 0, 0);
+        p.drainFrom(input, requiredLength);
+        pooling_ = p;
         return null;
     }
 

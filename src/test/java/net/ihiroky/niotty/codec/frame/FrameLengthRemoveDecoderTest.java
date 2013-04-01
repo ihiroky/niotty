@@ -23,14 +23,10 @@ public class FrameLengthRemoveDecoderTest {
 
     @Before
     public void setUp() {
-        setUp(false);
-    }
-
-    private void setUp(boolean useSlice) {
-        sut_ = new FrameLengthRemoveDecoder(useSlice);
+        sut_ = new FrameLengthRemoveDecoder();
         context_ = new LoadStageContextMock<>(sut_);
         CodecBuffer encodeBuffer = Buffers.newCodecBuffer(32);
-        encodeBuffer.writeVariableByteInteger(12); // length header + contents
+        encodeBuffer.writeShort((short) 12);
         encodeBuffer.writeInt(1);
         encodeBuffer.writeInt(2);
         encodeBuffer.writeInt(3);
@@ -46,7 +42,6 @@ public class FrameLengthRemoveDecoderTest {
 
         Queue<CodecBuffer> queue = context_.getProceededMessageEventQueue();
         CodecBuffer output = queue.poll();
-        assertThat(output.remainingBytes(), is(12));
         assertThat(output.readInt(), is(1));
         assertThat(output.readInt(), is(2));
         assertThat(output.readInt(), is(3));
@@ -57,24 +52,25 @@ public class FrameLengthRemoveDecoderTest {
 
     @Test
     public void testLoad_MessageManyIncompletePacket() throws Exception {
-        // read first 4 byte
-        sut_.load(context_, Buffers.newCodecBuffer(data_, 0, 4));
+        // read first 1 byte
+        CodecBuffer b = Buffers.newCodecBuffer(data_, 0, 1);
+        sut_.load(context_, b);
         assertThat(context_.getProceededMessageEventQueue().size(), is(0));
-        assertThat(sut_.getPooling().remainingBytes(), is(4));
+        assertThat(sut_.getPooling(), is(nullValue()));
         assertThat(sut_.getPoolingFrameBytes(), is(0));
+        assertThat(b.remainingBytes(), is(1));
 
         // prepend length field is read
-        sut_.load(context_, Buffers.newCodecBuffer(data_, 4, 1));
+        sut_.load(context_, Buffers.newCodecBuffer(data_, 0, 2));
         assertThat(context_.getProceededMessageEventQueue().size(), is(0));
-        assertThat(sut_.getPooling().remainingBytes(), is(4));
+        assertThat(sut_.getPooling(), is(nullValue()));
         assertThat(sut_.getPoolingFrameBytes(), is(12));
 
         // read remaining
-        sut_.load(context_, Buffers.newCodecBuffer(data_, 5, 8));
+        sut_.load(context_, Buffers.newCodecBuffer(data_, 2, 12));
         Queue<CodecBuffer> queue = context_.getProceededMessageEventQueue();
 
         CodecBuffer output = queue.poll();
-        assertThat(output.remainingBytes(), is(12));
         assertThat(output.readInt(), is(1));
         assertThat(output.readInt(), is(2));
         assertThat(output.readInt(), is(3));
@@ -84,16 +80,16 @@ public class FrameLengthRemoveDecoderTest {
     }
 
     @Test
-    public void testLoad_MessagePacketAndRemaining() throws Exception {
+    public void testLoad_MessageManyPacketAndRemaining() throws Exception {
         CodecBuffer encodeBuffer = Buffers.newCodecBuffer(40);
         for (int i = 0; i < 3; i++) {
-            encodeBuffer.writeVariableByteInteger(12); // content length
+            encodeBuffer.writeShort((short) 12); // content length
             encodeBuffer.writeInt(1);
             encodeBuffer.writeInt(2);
             encodeBuffer.writeInt(3);
         }
-        // remaining 4 bytes
-        encodeBuffer.writeVariableByteInteger(12);
+        // remaining 5 bytes
+        encodeBuffer.writeShort((short) 12);
         encodeBuffer.writeBytes(new byte[3], 0, 3);
         data_ = encodeBuffer.toArray();
         dataLength_ = encodeBuffer.remainingBytes();
@@ -110,15 +106,15 @@ public class FrameLengthRemoveDecoderTest {
         }
         assertThat(queue.size(), is(0));
         assertThat(input.remainingBytes(), is(0));
-        assertThat(sut_.getPooling().remainingBytes(), is(4)); // less than MINIMUM_WHOLE_LENGTH
-        assertThat(sut_.getPoolingFrameBytes(), is(0));
+        assertThat(sut_.getPooling().remainingBytes(), is(3));
+        assertThat(sut_.getPoolingFrameBytes(), is(12));
     }
 
     @Test
     public void testLoad_MessageManyPacketAndNoRemaining() throws Exception {
         CodecBuffer encodeBuffer = Buffers.newCodecBuffer(40);
         for (int i = 0; i < 3; i++) {
-            encodeBuffer.writeVariableByteInteger(12); // content length
+            encodeBuffer.writeShort((short) 12); // content length
             encodeBuffer.writeInt(1);
             encodeBuffer.writeInt(2);
             encodeBuffer.writeInt(3);
@@ -144,9 +140,27 @@ public class FrameLengthRemoveDecoderTest {
     }
 
     @Test
-    public void testLoadMessageManyPacketAndNoRemainingWithUseSlice() throws Exception {
-        setUp(true);
-        testLoad_MessageManyPacketAndNoRemaining();
-    }
+    public void testLoad_MessageLargeInput() throws Exception {
+        FrameLengthRemoveDecoder sut = new FrameLengthRemoveDecoder();
+        CodecBuffer wholeInput = Buffers.newCodecBuffer(8192);
+        for (int i = 0; i < 30; i++) {
+            CodecBuffer buffer = Buffers.newPriorityCodecBuffer(1024, -((i + 1) % 2));
+            for (int j = 0; j < 256; j++) {
+                buffer.writeInt(i);
+            }
+            wholeInput.writeShort((short) (4 * 256));
+            wholeInput.drainFrom(buffer);
+        }
 
+        while (wholeInput.remainingBytes() > 0) {
+            CodecBuffer input = Buffers.newCodecBuffer(8192);
+            input.drainFrom(wholeInput, 8192);
+            sut.load(context_, input);
+        }
+        for (int i = 0; i < 30; i++) {
+            CodecBuffer b = context_.getProceededMessageEventQueue().poll();
+            assertThat(b.readInt(), is(i));
+        }
+        assertThat(context_.getProceededMessageEventQueue().isEmpty(), is(true));
+    }
 }

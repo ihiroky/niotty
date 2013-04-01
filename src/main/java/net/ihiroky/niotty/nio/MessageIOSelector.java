@@ -81,7 +81,11 @@ public class MessageIOSelector extends AbstractSelector<MessageIOSelector> {
 
             localByteBuffer.flip();
             transport.loadEvent(Buffers.newCodecBuffer(localByteBuffer));
-            localByteBuffer.clear();
+            if (localByteBuffer.remaining() == 0) {
+                localByteBuffer.clear();
+            } else {
+                localByteBuffer.compact();
+            }
         }
     }
 

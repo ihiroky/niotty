@@ -56,7 +56,7 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer implements CodecBuffer
     void ensureSpace(int space) {
         int capacity = buffer_.length;
         int required = end_ + space;
-        if (required >= capacity) {
+        if (required > capacity) {
             int twice = capacity * EXPAND_MULTIPLIER;
             buffer_ = Arrays.copyOf(buffer_, (required >= twice) ? required : twice);
         }

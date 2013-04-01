@@ -26,13 +26,35 @@ public class FrameLengthPrependEncoderTest {
     }
 
     @Test
-    public void testProcess_Message() throws Exception {
+    public void testStore_Message() throws Exception {
         CodecBuffer input = Buffers.newCodecBuffer(10);
         input.writeBytes(new byte[5], 0, 5);
 
         sut_.store(context_, input);
 
         BufferSink actual = context_.getProceededMessageEvent().poll();
-        assertThat(actual.remainingBytes(), is(6));
+        assertThat(actual.remainingBytes(), is(7));
+    }
+
+    @Test
+    public void testStore_MessageLength32767() throws Exception {
+        CodecBuffer input = Buffers.newCodecBuffer(Short.MAX_VALUE);
+        input.writeBytes(new byte[Short.MAX_VALUE], 0, Short.MAX_VALUE);
+
+        sut_.store(context_, input);
+
+        BufferSink actual = context_.getProceededMessageEvent().poll();
+        assertThat(actual.remainingBytes(), is(Short.MAX_VALUE + 2));
+    }
+
+    @Test
+    public void testStore_MessageLength32768() throws Exception {
+        CodecBuffer input = Buffers.newCodecBuffer(Short.MAX_VALUE + 1);
+        input.writeBytes(new byte[Short.MAX_VALUE + 1], 0, Short.MAX_VALUE + 1);
+
+        sut_.store(context_, input);
+
+        BufferSink actual = context_.getProceededMessageEvent().poll();
+        assertThat(actual.remainingBytes(), is((Short.MAX_VALUE + 1) + 4));
     }
 }

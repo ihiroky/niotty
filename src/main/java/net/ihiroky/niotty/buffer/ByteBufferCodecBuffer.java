@@ -94,7 +94,7 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer implements CodecB
         ByteBuffer bb = buffer_;
         int current = bb.capacity();
         int required = bb.position() + space;
-        if (required >= current) {
+        if (required > current) {
             int twice = current * EXPAND_MULTIPLIER;
             ByteBuffer t = ByteBuffer.allocate((required >= twice) ? required : twice);
             bb.flip();
@@ -670,6 +670,7 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer implements CodecB
      */
     @Override
     public String toString() {
+        syncBeginEnd();
         return "(beginning:" + beginning_ + ", end:" + end_ + ", capacity:" + buffer_.capacity()
                 + ", priority:" + priority() + ')';
     }
