@@ -193,10 +193,7 @@ public abstract class AbstractCodecBuffer implements CodecBuffer {
             value |= (long) (b & CodecUtil.VB_MASK_BIT7) << shift;
             shift += CodecUtil.VB_BIT_IN_BYTE;
         }
-        // if the value is 0 and and the b is 0x02 with sign bit, then Long.MIN_VALUE
-        if (value == 0 && b == (CodecUtil.VB_END_BIT | CodecUtil.VB_LONG_MIN_LAST)) {
-            return Long.MIN_VALUE;
-        }
+        // -Long.MIN_VALUE == Long.MIN_VALUE
         value |= (long) (b & CodecUtil.VB_MASK_BIT7) << shift;
         return isPositiveOrZero ? value : -value;
     }
@@ -220,10 +217,7 @@ public abstract class AbstractCodecBuffer implements CodecBuffer {
             value |= (b & CodecUtil.VB_MASK_BIT7) << shift;
             shift += CodecUtil.VB_BIT_IN_BYTE;
         }
-        // if the value is 0 and and the b is 0x02 with sign bit, then Long.MIN_VALUE
-        if (value == 0 && b == (CodecUtil.VB_END_BIT | CodecUtil.VB_INT_MIN_LAST)) {
-            return Integer.MIN_VALUE;
-        }
+        // -Integer.MIN_VALUE == Integer.MIN_VALUE
         value |= (b & CodecUtil.VB_MASK_BIT7) << shift;
         return isPositiveOrZero ? value : -value;
     }

@@ -23,8 +23,6 @@ public final class CodecUtil {
     static final int BYTE_SHIFT6 = BYTE_SHIFT5 + BITS_PER_BYTE;
     static final int BYTE_SHIFT7 = BYTE_SHIFT6 + BITS_PER_BYTE;
 
-    static final int VB_LONGEST_LONG_BYTE = 10;
-    static final int VB_LONGEST_INT_BYTE = 5;
     static final int VB_BIT_IN_FIRST_BYTE = 6;
     static final int VB_BIT_IN_BYTE = 7;
     static final int VB_MASK_BIT6 = 0x3F;
