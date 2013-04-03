@@ -153,4 +153,15 @@ public class CodecBufferDequeTest {
                 .addLast(Buffers.newCodecBuffer(new byte[2], 0, 2));
         assertThat(sut.remainingBytes(), is(3));
     }
+
+    @Test
+    public void testDispose() throws Exception {
+        CodecBuffer b = spy(Buffers.newCodecBuffer(0));
+        doNothing().when(b).dispose();
+
+        sut_.addLast(b);
+        sut_.dispose();
+
+        verify(b, times(1)).dispose();
+    }
 }

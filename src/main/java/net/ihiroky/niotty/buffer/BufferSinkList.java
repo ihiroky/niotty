@@ -7,7 +7,7 @@ import java.util.Objects;
 
 /**
  * Holds a pair of {@link net.ihiroky.niotty.buffer.BufferSink}.
- * This class is also {@code BufferSink}.
+ * This class itself is also {@code BufferSink}.
  *
  * @author Hiroki Itoh
  */
@@ -53,5 +53,11 @@ public class BufferSinkList implements BufferSink {
     @Override
     public int priority() {
         return priority_;
+    }
+
+    @Override
+    public void dispose() {
+        car_.dispose();
+        cdr_.dispose();
     }
 }

@@ -50,6 +50,11 @@ public interface WriteQueue {
     int lastFlushedBytes();
 
     /**
+     * Clears elements in this queue.
+     */
+    void clear();
+
+    /**
      * Shows a result of
      * {@link net.ihiroky.niotty.nio.WriteQueue#flushTo(java.nio.channels.WritableByteChannel, java.nio.ByteBuffer)}.
      */

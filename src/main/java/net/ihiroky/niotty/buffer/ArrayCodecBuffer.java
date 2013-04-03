@@ -494,6 +494,13 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer implements CodecBuffer
      * {@inheritDoc}
      */
     @Override
+    public void dispose() {
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public int spaceBytes() {
         return buffer_.length - end_;
     }

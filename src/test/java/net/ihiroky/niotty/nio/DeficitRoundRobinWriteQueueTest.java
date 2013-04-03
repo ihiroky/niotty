@@ -1,5 +1,6 @@
 package net.ihiroky.niotty.nio;
 
+import net.ihiroky.niotty.buffer.BufferSink;
 import net.ihiroky.niotty.buffer.Buffers;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -207,5 +208,28 @@ public class DeficitRoundRobinWriteQueueTest {
         assertThat(sut.queueIndex(), is(-1));
         assertThat(sut.deficitCounter(0), is(8 - 7));
         assertThat(sut.deficitCounter(1), is(0)); // (queue 1) is empty at last.
+    }
+
+    @Test
+    public void testClear() throws Exception {
+        BufferSink bufferSink0 = mock(BufferSink.class);
+        doNothing().when(bufferSink0).dispose();
+        doReturn(-1).when(bufferSink0).priority();
+        BufferSink bufferSink1 = mock(BufferSink.class);
+        doNothing().when(bufferSink1).dispose();
+        doReturn(0).when(bufferSink1).priority();
+        BufferSink bufferSink2 = mock(BufferSink.class);
+        doNothing().when(bufferSink2).dispose();
+        doReturn(1).when(bufferSink2).priority();
+
+        DeficitRoundRobinWriteQueue sut = new DeficitRoundRobinWriteQueue(64, 100, 100);
+        sut.offer(bufferSink0);
+        sut.offer(bufferSink1);
+        sut.offer(bufferSink2);
+        sut.clear();
+
+        verify(bufferSink0, times(1)).dispose();
+        verify(bufferSink1, times(1)).dispose();
+        verify(bufferSink2, times(1)).dispose();
     }
 }

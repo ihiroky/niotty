@@ -28,5 +28,14 @@ public interface BufferSink {
      */
     int remainingBytes();
 
+    /**
+     * The value used by {@link net.ihiroky.niotty.nio.WriteQueue}.
+     * @return priority
+     */
     int priority();
+
+    /**
+     * Disposes resources managed in this class if exists.
+     */
+    void dispose();
 }

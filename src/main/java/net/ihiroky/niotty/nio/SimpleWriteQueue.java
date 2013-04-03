@@ -74,4 +74,12 @@ public class SimpleWriteQueue implements WriteQueue {
     public int lastFlushedBytes() {
         return lastFlushedBytes_;
     }
+
+    @Override
+    public void clear() {
+        for (BufferSink bufferSink : queue_) {
+            bufferSink.dispose();
+        }
+        queue_.clear();
+    }
 }

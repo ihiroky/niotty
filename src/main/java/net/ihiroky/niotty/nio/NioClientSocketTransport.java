@@ -169,4 +169,9 @@ public class NioClientSocketTransport extends NioSocketTransport<MessageIOSelect
     void fireOnConnect() {
         getTransportListener().onConnect(this, remoteAddress());
     }
+
+    @Override
+    void onCloseSelectableChannel() {
+        writeQueue_.clear();
+    }
 }

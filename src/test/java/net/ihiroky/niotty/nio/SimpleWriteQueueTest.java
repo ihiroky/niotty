@@ -1,5 +1,6 @@
 package net.ihiroky.niotty.nio;
 
+import net.ihiroky.niotty.buffer.BufferSink;
 import net.ihiroky.niotty.buffer.Buffers;
 import org.hamcrest.CoreMatchers;
 import org.junit.Before;
@@ -201,4 +202,14 @@ public class SimpleWriteQueueTest {
         verify(channel, times(2)).write(Mockito.any(ByteBuffer.class));
     }
 
+    @Test
+    public void testClear() throws Exception {
+        BufferSink bufferSink = mock(BufferSink.class);
+        doNothing().when(bufferSink).dispose();
+        sut_.offer(bufferSink);
+
+        sut_.clear();
+
+        verify(bufferSink, times(1)).dispose();
+    }
 }

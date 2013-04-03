@@ -177,4 +177,13 @@ public class FileBufferSinkTest {
         actual.get(actualBytes);
         assertThat("content", actualBytes, is(expected));
     }
+
+    @Test
+    public void testDispose() throws Exception {
+        FileBufferSink sut = new FileBufferSink(channel_, 0, 10, 0);
+
+        sut.dispose();
+
+        assertThat(channel_.isOpen(), is(false));
+    }
 }

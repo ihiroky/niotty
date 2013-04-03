@@ -213,6 +213,14 @@ public class DeficitRoundRobinWriteQueue implements WriteQueue {
         return lastFlushedBytes_;
     }
 
+    @Override
+    public void clear() {
+        baseQueue_.clear();
+        for (SimpleWriteQueue queue : weightedQueueList_) {
+            queue.clear();
+        }
+    }
+
     int baseQueueLimit() {
         return baseQueueLimit_;
     }

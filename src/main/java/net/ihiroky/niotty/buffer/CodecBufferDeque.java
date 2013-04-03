@@ -73,4 +73,12 @@ public class CodecBufferDeque implements Iterable<CodecBuffer>, BufferSink {
     public int priority() {
         return Buffers.DEFAULT_PRIORITY;
     }
+
+    @Override
+    public void dispose() {
+        for (BufferSink bufferSink : deque_) {
+            bufferSink.dispose();
+        }
+        deque_.clear();
+    }
 }

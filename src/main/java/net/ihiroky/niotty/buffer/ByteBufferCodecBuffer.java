@@ -500,6 +500,10 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer implements CodecB
     }
 
     @Override
+    public void dispose() {
+    }
+
+    @Override
     public int spaceBytes() {
         syncBeginEnd();
         return buffer_.capacity() - end_;

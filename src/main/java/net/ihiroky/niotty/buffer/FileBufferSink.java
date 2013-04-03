@@ -18,13 +18,13 @@ public class FileBufferSink implements BufferSink {
     private long beginning_;
     private final long end_;
     private final int priority_;
-    private final boolean autoClose_;
+    private final boolean autoDispose_;
 
     FileBufferSink(FileChannel channel, long beginning, long end, int priority) {
         this(channel, beginning, end, priority, true);
     }
 
-    private FileBufferSink(FileChannel channel, long beginning, long end, int priority, boolean autoClose) {
+    private FileBufferSink(FileChannel channel, long beginning, long end, int priority, boolean autoDispose) {
         Objects.requireNonNull(channel, "channel");
         if (beginning < 0) {
             throw new IllegalArgumentException("beginning is negative.");
@@ -39,17 +39,7 @@ public class FileBufferSink implements BufferSink {
         beginning_ = beginning;
         end_ = end;
         priority_ = priority;
-        autoClose_ = autoClose;
-    }
-
-    private void close() {
-        if (autoClose_) {
-            try {
-                channel_.close();
-            } catch (IOException ioe) {
-                ioe.printStackTrace();
-            }
-        }
+        autoDispose_ = autoDispose;
     }
 
     private void closeAndThrow(RuntimeException e) {
@@ -75,10 +65,14 @@ public class FileBufferSink implements BufferSink {
             if (transferred < remaining) {
                 return false;
             }
-            close();
+            if (autoDispose_) {
+                dispose();
+            }
             return true;
         } catch (IOException ioe) {
-            close();
+            if (autoDispose_) {
+                dispose();
+            }
             throw ioe;
         }
     }
@@ -99,6 +93,15 @@ public class FileBufferSink implements BufferSink {
     @Override
     public int priority() {
         return priority_;
+    }
+
+    @Override
+    public void dispose() {
+        try {
+            channel_.close();
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
+        }
     }
 
     /**
@@ -135,7 +138,7 @@ public class FileBufferSink implements BufferSink {
     @Override
     public String toString() {
         return "(beginning:" + beginning_ + ", end:" + end_
-                + ", channel:" + channel_ + ", autoClose:" + autoClose_
+                + ", channel:" + channel_ + ", autoClose:" + autoDispose_
                 + ", priority:" + priority_
                 + ')';
     }

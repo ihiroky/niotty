@@ -26,12 +26,12 @@ public abstract class NioSocketTransport<S extends AbstractSelector<S>> extends 
         return (key_ != null) ? key_.channel().toString() : "unregistered";
     }
 
-    void setSelectionKey(SelectionKey key) {
+    final void setSelectionKey(SelectionKey key) {
         Objects.requireNonNull(key, "key");
         this.key_ = key;
     }
 
-    TransportFuture closeSelectableChannelLater(TransportState transportState) {
+    final TransportFuture closeSelectableChannelLater(TransportState transportState) {
         S selector = getEventLoop();
         if (selector == null) {
             closePipelines();
@@ -42,7 +42,8 @@ public abstract class NioSocketTransport<S extends AbstractSelector<S>> extends 
         return future;
     }
 
-    TransportFuture closeSelectableChannel() {
+    final TransportFuture closeSelectableChannel() {
+        onCloseSelectableChannel();
         closePipelines();
         if (key_ != null) {
             SelectableChannel channel = key_.channel();
@@ -59,11 +60,14 @@ public abstract class NioSocketTransport<S extends AbstractSelector<S>> extends 
         return new SucceededTransportFuture(this);
     }
 
-    void loadEvent(final TransportStateEvent event) {
+    void onCloseSelectableChannel() {
+    }
+
+    final void loadEvent(final TransportStateEvent event) {
         executeLoad(event);
     }
 
-    protected final SelectionKey getSelectionKey() {
+    final SelectionKey getSelectionKey() {
         return key_;
     }
 }
