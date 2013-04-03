@@ -88,6 +88,6 @@ public class NioServerSocketConfig extends TransportConfig {
     }
 
     public WriteQueue newWriteQueue() {
-        return writeQueueFactory_.newriteQueue();
+        return writeQueueFactory_.newWriteQueue();
     }
 }

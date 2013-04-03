@@ -107,7 +107,7 @@ public class SimpleWriteQueueTest {
         sut_.offer(Buffers.newCodecBuffer(data, 0, data.length));
         WriteQueue.FlushStatus status = sut_.flushTo(channel, writeBuffer_, data.length);
 
-        assertThat(status, is(WriteQueue.FlushStatus.FLUSHING));
+        assertThat(status, is(WriteQueue.FlushStatus.SKIP));
         assertThat(sut_.lastFlushedBytes(), is(data.length));
         verify(channel, times(1)).write(Mockito.any(ByteBuffer.class));
     }

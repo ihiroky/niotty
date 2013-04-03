@@ -69,7 +69,7 @@ public class NioClientSocketTransport extends NioSocketTransport<MessageIOSelect
                 @Override
                 public int execute(MessageIOSelector eventLoop) throws Exception {
                     writeBufferSink(buffer);
-                    return 0;
+                    return TaskLoop.TIMEOUT_NO_LIMIT;
                 }
             });
         }

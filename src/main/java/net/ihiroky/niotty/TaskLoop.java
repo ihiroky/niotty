@@ -27,7 +27,8 @@ public abstract class TaskLoop<L extends TaskLoop<L>> implements Runnable, Compa
 
     private Logger logger_ = LoggerFactory.getLogger(TaskLoop.class);
 
-    private static final int TIMEOUT_NO_LIMIT = -1;
+    public static final int TIMEOUT_NO_LIMIT = -1;
+    public static final int TIMEOUT_NOW = 0;
 
     protected TaskLoop() {
         taskQueue_ = new ConcurrentLinkedQueue<>();
@@ -95,7 +96,7 @@ public abstract class TaskLoop<L extends TaskLoop<L>> implements Runnable, Compa
             }
             try {
                 int waitTimeMillis = task.execute(loop);
-                if (waitTimeMillis > 0) {
+                if (waitTimeMillis >= 0) {
                     buffer.offer(task);
                     if (minWaitTimeMillis > waitTimeMillis) {
                         minWaitTimeMillis = waitTimeMillis;

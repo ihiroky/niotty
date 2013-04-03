@@ -9,6 +9,8 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
+ * Implementation of {@link net.ihiroky.niotty.nio.WriteQueue} using single queue.
+ *
  * @author Hiroki Itoh
  */
 public class SimpleWriteQueue implements WriteQueue {
@@ -16,7 +18,7 @@ public class SimpleWriteQueue implements WriteQueue {
     private Queue<BufferSink> queue_;
     private int lastFlushedBytes_;
 
-    public SimpleWriteQueue() {
+    SimpleWriteQueue() {
         queue_ = new ConcurrentLinkedQueue<>();
     }
 
@@ -50,7 +52,7 @@ public class SimpleWriteQueue implements WriteQueue {
                 queue_.poll();
                 if (flushedBytes >= limitBytes) {
                     lastFlushedBytes_ = flushedBytes;
-                    return queue_.isEmpty() ? FlushStatus.FLUSHED : FlushStatus.FLUSHING;
+                    return queue_.isEmpty() ? FlushStatus.FLUSHED : FlushStatus.SKIP;
                 }
             } else {
                 lastFlushedBytes_ = flushedBytes + (beforeTransfer - pendingBuffer.remainingBytes());

@@ -11,7 +11,7 @@ public class SimpleWriteQueueFactory implements WriteQueueFactory {
      * {@inheritDoc}
      */
     @Override
-    public WriteQueue newriteQueue() {
+    public WriteQueue newWriteQueue() {
         return new SimpleWriteQueue();
     }
 }

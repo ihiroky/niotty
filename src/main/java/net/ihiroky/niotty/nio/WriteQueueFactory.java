@@ -9,5 +9,5 @@ public interface WriteQueueFactory {
      * Instantiates a new {@link net.ihiroky.niotty.nio.WriteQueue}.
      * @return the new {@code WriteQueue}
      */
-    WriteQueue newriteQueue();
+    WriteQueue newWriteQueue();
 }

@@ -108,16 +108,12 @@ public class MessageIOSelector extends AbstractSelector<MessageIOSelector> {
         public void store(StoreStageContext<BufferSink, Void> context, BufferSink input) {
             final NioClientSocketTransport transport = (NioClientSocketTransport) context.transport();
             transport.writeBufferSink(input);
-            if (transport.isInLoopThread()) {
-                flush(transport, writeBuffer_);
-            } else {
-                transport.offerTask(new Task<MessageIOSelector>() {
-                    @Override
-                    public int execute(MessageIOSelector eventLoop) throws Exception {
-                        return flush(transport, writeBuffer_);
-                    }
-                });
-            }
+            transport.offerTask(new Task<MessageIOSelector>() {
+                @Override
+                public int execute(MessageIOSelector eventLoop) throws Exception {
+                    return flush(transport, writeBuffer_);
+                }
+            });
         }
 
         public int flush(NioClientSocketTransport transport, ByteBuffer writeBuffer) {

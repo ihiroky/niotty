@@ -70,7 +70,7 @@ public class NioClientSocketConfig extends TransportConfig {
     }
 
     WriteQueue newWriteQueue() {
-        return writeQueueFactory_.newriteQueue();
+        return writeQueueFactory_.newWriteQueue();
     }
 
     public void setSendBufferSize(int sendBufferSize) {

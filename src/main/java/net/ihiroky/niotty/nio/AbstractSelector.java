@@ -139,7 +139,7 @@ public abstract class AbstractSelector<S extends AbstractSelector<S>> extends Ta
                             @Override
                             public int execute(S eventLoop) throws Exception {
                                 close(transport, event);
-                                return 0;
+                                return TaskLoop.TIMEOUT_NO_LIMIT;
                             }
                         });
                     }

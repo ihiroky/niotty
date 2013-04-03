@@ -65,7 +65,7 @@ public class LoopStageContextExecutor extends TaskLoop<LoopStageContextExecutor>
             @Override
             public int execute(LoopStageContextExecutor eventLoop) throws Exception {
                 context.fire(input);
-                return 0;
+                return TIMEOUT_NO_LIMIT;
             }
         });
     }
@@ -76,7 +76,7 @@ public class LoopStageContextExecutor extends TaskLoop<LoopStageContextExecutor>
             @Override
             public int execute(LoopStageContextExecutor eventLoop) throws Exception {
                 context.fire(event);
-                return 0;
+                return TIMEOUT_NO_LIMIT;
             }
         });
     }
