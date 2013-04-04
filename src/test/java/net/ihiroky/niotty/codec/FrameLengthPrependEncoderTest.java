@@ -1,9 +1,10 @@
-package net.ihiroky.niotty.codec.frame;
+package net.ihiroky.niotty.codec;
 
 import net.ihiroky.niotty.StoreStageContextMock;
 import net.ihiroky.niotty.buffer.BufferSink;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.CodecBuffer;
+import net.ihiroky.niotty.codec.FrameLengthPrependEncoder;
 import org.junit.Before;
 import org.junit.Test;
 

@@ -13,8 +13,8 @@ import net.ihiroky.niotty.nio.NioServerSocketConfig;
 import net.ihiroky.niotty.nio.NioServerSocketProcessor;
 import net.ihiroky.niotty.codec.string.StringDecoder;
 import net.ihiroky.niotty.codec.string.StringEncoder;
-import net.ihiroky.niotty.codec.frame.FrameLengthPrependEncoder;
-import net.ihiroky.niotty.codec.frame.FrameLengthRemoveDecoder;
+import net.ihiroky.niotty.codec.FrameLengthPrependEncoder;
+import net.ihiroky.niotty.codec.FrameLengthRemoveDecoder;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;

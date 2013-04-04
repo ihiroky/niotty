@@ -1,4 +1,4 @@
-package net.ihiroky.niotty.codec.frame;
+package net.ihiroky.niotty.codec;
 
 import net.ihiroky.niotty.LoadStage;
 import net.ihiroky.niotty.LoadStageContext;

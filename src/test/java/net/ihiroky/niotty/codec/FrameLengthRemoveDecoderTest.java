@@ -1,8 +1,9 @@
-package net.ihiroky.niotty.codec.frame;
+package net.ihiroky.niotty.codec;
 
 import net.ihiroky.niotty.LoadStageContextMock;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.CodecBuffer;
+import net.ihiroky.niotty.codec.FrameLengthRemoveDecoder;
 import org.junit.Before;
 import org.junit.Test;
 
