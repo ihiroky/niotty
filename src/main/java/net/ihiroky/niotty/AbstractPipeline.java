@@ -34,26 +34,6 @@ public abstract class AbstractPipeline<S> implements Pipeline<S> {
         head_ = head;
     }
 
-    protected Pipeline<S> add(StageContext<Object, Object> newContext) {
-        Objects.requireNonNull(newContext, "newContext");
-
-        if (head_.next() == TERMINAL) {
-            head_.setNext(newContext);
-            newContext.setNext(TERMINAL);
-            return this;
-        } else {
-            for (StageContextIterator i = new StageContextIterator(head_); i.hasNext();) {
-                StageContext<Object, Object> context = i.next();
-                if (context.next() == TERMINAL) {
-                    newContext.setNext(TERMINAL);
-                    context.setNext(newContext);
-                    break;
-                }
-            }
-        }
-        return this;
-    }
-
     @Override
     public Pipeline<S> add(StageKey key, S stage) {
         return add(key, stage, null);
@@ -64,19 +44,24 @@ public abstract class AbstractPipeline<S> implements Pipeline<S> {
         Objects.requireNonNull(key, "key");
         Objects.requireNonNull(stage, "stage");
 
-        if (head_.next() == TERMINAL) {
-            StageContext<Object, Object> newContext = createContext(key, stage, pool);
-            head_.setNext(newContext);
-            newContext.setNext(TERMINAL);
-            return this;
-        } else {
-            for (StageContextIterator i = new StageContextIterator(head_); i.hasNext();) {
-                StageContext<Object, Object> context = i.next();
-                if (context.next() == TERMINAL) {
-                    StageContext<Object, Object> newContext = createContext(key, stage, pool);
-                    newContext.setNext(TERMINAL);
-                    context.setNext(newContext);
-                    break;
+        synchronized (head_) {
+            if (head_.next() == TERMINAL) {
+                StageContext<Object, Object> newContext = createContext(key, stage, pool);
+                head_.setNext(newContext);
+                newContext.setNext(TERMINAL);
+                return this;
+            } else {
+                for (StageContextIterator i = new StageContextIterator(head_); i.hasNext();) {
+                    StageContext<Object, Object> context = i.next();
+                    if (context.key().equals(key)) {
+                        throw new IllegalArgumentException("key " + key + " already exists.");
+                    }
+                    if (context.next() == TERMINAL) {
+                        StageContext<Object, Object> newContext = createContext(key, stage, pool);
+                        newContext.setNext(TERMINAL);
+                        context.setNext(newContext);
+                        break;
+                    }
                 }
             }
         }
@@ -94,17 +79,28 @@ public abstract class AbstractPipeline<S> implements Pipeline<S> {
         Objects.requireNonNull(key, "key");
         Objects.requireNonNull(stage, "stage");
 
-        for (StageContextIterator i = new StageContextIterator(head_); i.hasNext();) {
-            StageContext<Object, Object> context = i.next();
-            if (context.key().equals(baseKey)) {
-                StageContext<Object, Object> prev = i.prev();
+        synchronized (head_) {
+            StageContext<Object, Object> prev = null;
+            StageContext<Object, Object> target = null;
+            for (StageContextIterator i = new StageContextIterator(head_); i.hasNext();) {
+                StageContext<Object, Object> context = i.next();
+                StageKey ikey = context.key();
+                if (ikey.equals(key)) {
+                    throw new IllegalArgumentException("key " + key + " already exists.");
+                }
+                if (ikey.equals(baseKey)) {
+                    prev = i.prev();
+                    target = context;
+                }
+            }
+            if (target != null) {
                 StageContext<Object, Object> newContext = createContext(key, stage, pool);
-                newContext.setNext(context);
+                newContext.setNext(target);
                 prev.setNext(newContext);
                 return this;
             }
         }
-        throw new NoSuchElementException();
+        throw new NoSuchElementException("baseKey " + baseKey + " is not found.");
     }
 
     @Override
@@ -118,33 +114,45 @@ public abstract class AbstractPipeline<S> implements Pipeline<S> {
         Objects.requireNonNull(key, "key");
         Objects.requireNonNull(stage, "stage");
 
-        for (StageContextIterator i = new StageContextIterator(head_); i.hasNext();) {
-            StageContext<Object, Object> context = i.next();
-            if (context.key().equals(baseKey)) {
-                StageContext<Object, Object> next = context.next();
+        synchronized (head_) {
+            StageContext<Object, Object> target = null;
+            for (StageContextIterator i = new StageContextIterator(head_); i.hasNext();) {
+                StageContext<Object, Object> context = i.next();
+                StageKey ikey = context.key();
+                if (ikey.equals(key)) {
+                    throw new IllegalArgumentException("key " + key + " already exists.");
+                }
+                if (ikey.equals(baseKey)) {
+                    target = context;
+                }
+            }
+            if (target != null) {
+                StageContext<Object, Object> next = target.next();
                 StageContext<Object, Object> newContext = createContext(key, stage, pool);
                 newContext.setNext(next);
-                context.setNext(newContext);
+                target.setNext(newContext);
                 return this;
             }
         }
-        throw new NoSuchElementException();
+        throw new NoSuchElementException("baseKey " + baseKey + " is not found.");
     }
 
     @Override
     public Pipeline<S> remove(StageKey key) {
         Objects.requireNonNull(key, "key");
 
-        for (StageContextIterator i = new StageContextIterator(head_); i.hasNext();) {
-            StageContext<Object, Object> context = i.next();
-            if (context.key().equals(key)) {
-                StageContext<Object, Object> prev = i.prev();
-                prev.setNext(context.next());
-                context.close();
-                return this;
+        synchronized (head_) {
+            for (StageContextIterator i = new StageContextIterator(head_); i.hasNext();) {
+                StageContext<Object, Object> context = i.next();
+                if (context.key().equals(key)) {
+                    StageContext<Object, Object> prev = i.prev();
+                    prev.setNext(context.next());
+                    context.close();
+                    return this;
+                }
             }
         }
-        throw new NoSuchElementException();
+        throw new NoSuchElementException("key " + key + " is not found.");
     }
 
     @Override
@@ -158,19 +166,30 @@ public abstract class AbstractPipeline<S> implements Pipeline<S> {
         Objects.requireNonNull(newKey, "newKey");
         Objects.requireNonNull(newStage, "newStage");
 
-        for (StageContextIterator i = new StageContextIterator(head_); i.hasNext();) {
-            StageContext<Object, Object> context = i.next();
-            if (context.key().equals(oldKey)) {
-                StageContext<Object, Object> prev = i.prev();
-                StageContext<Object, Object> next = context.next();
+        synchronized (head_) {
+            StageContext<Object, Object> prev = null;
+            StageContext<Object, Object> target = null;
+            for (StageContextIterator i = new StageContextIterator(head_); i.hasNext();) {
+                StageContext<Object, Object> context = i.next();
+                StageKey ikey = context.key();
+                if (ikey.equals(newKey)) {
+                    throw new IllegalArgumentException("newKey " + newKey + " already exists.");
+                }
+                if (ikey.equals(oldKey)) {
+                    prev = i.prev();
+                    target = context;
+                }
+            }
+            if (target != null) {
+                StageContext<Object, Object> next = target.next();
                 StageContext<Object, Object> newContext = createContext(newKey, newStage, pool);
                 newContext.setNext(next);
                 prev.setNext(newContext);
-                context.close();
+                target.close();
                 return this;
             }
         }
-        throw new NoSuchElementException();
+        throw new NoSuchElementException("oldKey " + oldKey + " is not found.");
     }
 
     protected abstract StageContext<Object, Object> createContext(StageKey key, S stage, StageContextExecutorPool pool);

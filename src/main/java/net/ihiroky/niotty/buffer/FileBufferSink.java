@@ -58,6 +58,9 @@ public class FileBufferSink implements BufferSink {
      */
     @Override
     public boolean transferTo(WritableByteChannel channel, ByteBuffer writeBuffer) throws IOException {
+
+        // should dispose myself for sliced FileBufferSink.
+
         try {
             long remaining = end_ - beginning_;
             long transferred = channel_.transferTo(beginning_, remaining, channel);
