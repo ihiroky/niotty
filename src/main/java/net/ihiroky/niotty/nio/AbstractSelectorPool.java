@@ -1,7 +1,7 @@
 package net.ihiroky.niotty.nio;
 
-import net.ihiroky.niotty.EventLoop;
-import net.ihiroky.niotty.EventLoopGroup;
+import net.ihiroky.niotty.TaskLoop;
+import net.ihiroky.niotty.TaskLoopGroup;
 
 import java.nio.channels.SelectableChannel;
 
@@ -10,28 +10,21 @@ import java.nio.channels.SelectableChannel;
  *
  * @author Hiroki Itoh
  */
-public abstract class AbstractSelectorPool<S extends AbstractSelector<S>> extends EventLoopGroup<S> {
+public abstract class AbstractSelectorPool<S extends AbstractSelector<S>> extends TaskLoopGroup<S> {
 
-    public void register(final NioSocketTransport<S> transport, final SelectableChannel channel, final int ops) {
-        int min = Integer.MAX_VALUE;
-        AbstractSelector<S> target = null;
-        for (AbstractSelector<S> loop : eventLoops()) {
-            int registered = loop.getRegisteredCount();
-            if (registered < min) {
-                min = registered;
-                target = loop;
+    public void register(final SelectableChannel channel, final int ops, final NioSocketTransport<S> transport) {
+        S target = searchLowMemberCountLoop();
+        if (target == null) {
+            throw new AssertionError("should not reach here.");
+        }
+        transport.addIOStage(target.ioStoreStage());
+        transport.setEventLoop(target);
+        target.offerTask(new TaskLoop.Task<S>() {
+            @Override
+            public int execute(S eventLoop) {
+                eventLoop.register(channel, ops, transport);
+                return TaskLoop.TIMEOUT_NO_LIMIT;
             }
-        }
-        if (target != null) {
-            transport.setSelector(target);
-            target.offerTask(new EventLoop.Task<S>() {
-                @Override
-                public boolean execute(S eventLoop) {
-                    eventLoop.register(transport, channel, ops);
-                    return true;
-                }
-            });
-        }
-
+        });
     }
 }

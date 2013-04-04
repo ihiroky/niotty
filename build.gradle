@@ -1,9 +1,9 @@
 apply plugin: 'java'
 apply plugin: 'idea'
 
-defaultTasks 'clean', 'assemble'
+defaultTasks 'clean', 'test'
 
-version = '1.0'
+version = '0.1'
 project.ext['rootPackage'] = 'net.ihiroky.niotty'
 def jdkVersion = 1.7
 def encoding = 'UTF-8'
@@ -24,4 +24,5 @@ dependencies {
     compile 'org.slf4j:slf4j-api:1.+'
     runtime 'ch.qos.logback:logback-classic:1.+'
     testCompile 'junit:junit:4.+'
+    testCompile 'org.mockito:mockito-core:1.9.+'
 }

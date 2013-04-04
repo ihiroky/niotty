@@ -1,5 +1,8 @@
 package net.ihiroky.niotty;
 
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
 import java.net.SocketAddress;
 
 /**
@@ -9,9 +12,18 @@ import java.net.SocketAddress;
  */
 public interface Transport {
 
-    void bind(SocketAddress localAddress);
-    void connect(SocketAddress remoteAddress);
-    void close();
+    void bind(SocketAddress local) throws IOException;
+    TransportFuture connect(SocketAddress remote);
+    TransportFuture close();
+    void join(InetAddress group, NetworkInterface networkInterface) throws IOException;
+    void join(InetAddress group, NetworkInterface networkInterface, InetAddress source) throws IOException;
     void write(Object message);
-    Transport getParent();
+    void write(Object message, SocketAddress remote);
+    void addListener(TransportListener listener);
+    void removeListener(TransportListener listener);
+    SocketAddress localAddress();
+    SocketAddress remoteAddress();
+    boolean isOpen();
+    Object attach(Object attachment);
+    Object attachment();
 }

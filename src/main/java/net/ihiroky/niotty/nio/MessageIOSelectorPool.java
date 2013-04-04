@@ -7,27 +7,31 @@ package net.ihiroky.niotty.nio;
  */
 public class MessageIOSelectorPool extends AbstractSelectorPool<MessageIOSelector> {
 
-    private int readBufferSize;
-    private boolean direct;
+    private int readBufferSize_;
+    private int writeBufferSize_;
+    private boolean direct_;
+
+    private static final int DEFAULT_BUFFER_SIZE = 8192;
 
     public MessageIOSelectorPool() {
-        readBufferSize = 8192;
-        direct = false;
+        readBufferSize_ = DEFAULT_BUFFER_SIZE;
+        writeBufferSize_ = DEFAULT_BUFFER_SIZE;
+        direct_ = false;
     }
 
     public void setReadBufferSize(int size) {
-        if (readBufferSize <= 0) {
+        if (readBufferSize_ <= 0) {
             throw new IllegalArgumentException("readBufferSize must be positive.");
         }
-        readBufferSize = size;
+        readBufferSize_ = size;
     }
 
     public void setDirect(boolean on) {
-        this.direct = on;
+        this.direct_ = on;
     }
 
     @Override
-    protected MessageIOSelector createEventLoop() {
-        return new MessageIOSelector(readBufferSize, direct);
+    protected MessageIOSelector newEventLoop() {
+        return new MessageIOSelector(readBufferSize_, writeBufferSize_, direct_);
     }
 }

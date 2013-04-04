@@ -5,7 +5,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.net.ServerSocket;
+import java.net.SocketOption;
+import java.net.StandardSocketOptions;
+import java.nio.channels.ServerSocketChannel;
 import java.util.Objects;
 
 /**
@@ -15,135 +17,77 @@ import java.util.Objects;
  */
 public class NioServerSocketConfig extends TransportConfig {
 
-    private int backlog;
-    private int numberOfAcceptThread;
-    private int numberOfMessageIOThread;
-    private int childReadBufferSize;
-    private boolean direct;
-    private int ppConnectionTime;
-    private int ppLatency;
-    private int ppBandwidth;
-    private int receiveBufferSize;
-    private boolean reuseAddress;
-    private int soTimeout;
+    private int backlog_;
+    private int receiveBufferSize_;
+    private boolean reuseAddress_;
+    private WriteQueueFactory writeQueueFactory_;
 
-    private Logger logger = LoggerFactory.getLogger(NioServerSocketTransport.class);
+    private Logger logger_ = LoggerFactory.getLogger(NioServerSocketTransport.class);
 
-    NioServerSocketConfig() {
-        backlog = 50;
-        childReadBufferSize = 8192;
-        direct = false;
-        numberOfAcceptThread = 1;
-        numberOfMessageIOThread = Math.min(Runtime.getRuntime().availableProcessors() / 2, 2);
-        reuseAddress = true;
+    public NioServerSocketConfig() {
+        backlog_ = 50;
+        reuseAddress_ = true;
+        writeQueueFactory_ = new SimpleWriteQueueFactory();
     }
 
-    void applySocketOptions(ServerSocket s) {
-        Objects.requireNonNull(s, "s");
-
-        if (ppConnectionTime > 0 || ppLatency > 0 || ppBandwidth > 0) {
-            s.setPerformancePreferences(ppConnectionTime, ppLatency, ppBandwidth);
-        }
-        if (receiveBufferSize > 0) {
-            try {
-                s.setReceiveBufferSize(receiveBufferSize);
-                logger.info("{}'s receiveBufferSize: {}", s, s.getReceiveBufferSize());
-            } catch (IOException ioe) {
-                throw new RuntimeException("failed to set ReceiveBufferSize", ioe);
-            }
-        }
+    private <T> void setOption(ServerSocketChannel channel, SocketOption<T> option, T value) {
         try {
-            s.setReuseAddress(reuseAddress);
-            logger.info("{}'s reuseAddress: {}", s, s.getReuseAddress());
+            channel.setOption(option, value);
         } catch (IOException ioe) {
-            throw new RuntimeException("failed to set ReuseAddress", ioe);
+            throw new RuntimeException("failed to set socket option:" + option + " value:" + value + " for:" + channel);
         }
-        if (soTimeout > 0) {
-            try {
-                s.setSoTimeout(soTimeout);
-                logger.info("{}'s soTimeout: {}", s, s.getSoTimeout());
-            } catch (IOException ioe) {
-                throw new RuntimeException("failed to set SoTimeout", ioe);
-            }
+    }
+
+    private <T> void logOptionValue(ServerSocketChannel channel, SocketOption<T> option) {
+        try {
+            logger_.info("{}'s {}: {}", channel, option, channel.getOption(option));
+        } catch (IOException ioe) {
+            throw new RuntimeException("failed to set socket option:" + option + " for:" + channel);
         }
+    }
+
+    void applySocketOptions(ServerSocketChannel channel) {
+        Objects.requireNonNull(channel, "s");
+
+        if (receiveBufferSize_ > 0) {
+            setOption(channel, StandardSocketOptions.SO_RCVBUF, receiveBufferSize_);
+        }
+        setOption(channel, StandardSocketOptions.SO_REUSEADDR, reuseAddress_);
+
+        logOptionValue(channel, StandardSocketOptions.SO_RCVBUF);
+        logOptionValue(channel, StandardSocketOptions.SO_REUSEADDR);
     }
 
     public void setBacklog(int n) {
-        backlog = n;
+        backlog_ = n;
     }
 
     public int getBacklog() {
-        return backlog;
-    }
-
-    public void setPerformancePreferences(int connectionTime, int latency, int bandwidth) {
-        ppConnectionTime = connectionTime;
-        ppLatency = latency;
-        ppBandwidth = bandwidth;
+        return backlog_;
     }
 
     public void setReceiveBufferSize(int size) {
-        receiveBufferSize = size;
+        receiveBufferSize_ = size;
     }
 
     public int getRecieveBufferSize() {
-        return receiveBufferSize;
+        return receiveBufferSize_;
     }
 
     public void setReuseAddress(boolean on) {
-        reuseAddress = on;
+        reuseAddress_ = on;
     }
 
     public boolean getReuseAddress() {
-        return reuseAddress;
+        return reuseAddress_;
     }
 
-    public void setSoTimeout(int timeout) {
-        soTimeout = timeout;
+    public void setWriteQueueFactory(WriteQueueFactory writeQueueFactory) {
+        Objects.requireNonNull(writeQueueFactory, "writeQueueFactory");
+        this.writeQueueFactory_ = writeQueueFactory;
     }
 
-    public int getSoTimeout() {
-        return soTimeout;
-    }
-
-    public void setNumberOfAcceptThread(int n) {
-        if (n <= 0) {
-            throw new IllegalArgumentException("n must be positive.");
-        }
-        numberOfAcceptThread = n;
-    }
-
-    public int getNumberOfAcceptThread() {
-        return numberOfAcceptThread;
-    }
-
-    public void setNumberOfMessageIOThread(int n) {
-        if (n <= 0) {
-            throw new IllegalArgumentException("n must be positive.");
-        }
-        numberOfMessageIOThread = n;
-    }
-
-    public int getNumberOfMessageIOThread() {
-        return numberOfMessageIOThread;
-    }
-
-    public void setChildReadBufferSize(int s) {
-        if (s <= 0) {
-            throw new IllegalArgumentException("s must be positive.");
-        }
-        childReadBufferSize = s;
-    }
-
-    public int getChildReadBufferSize() {
-        return childReadBufferSize;
-    }
-
-    public void setDirect(boolean on) {
-        direct = on;
-    }
-
-    public boolean isDirect() {
-        return direct;
+    public WriteQueue newWriteQueue() {
+        return writeQueueFactory_.newWriteQueue();
     }
 }

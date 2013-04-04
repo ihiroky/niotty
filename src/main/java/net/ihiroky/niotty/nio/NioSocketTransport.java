@@ -1,7 +1,11 @@
 package net.ihiroky.niotty.nio;
 
-import net.ihiroky.niotty.EventLoop;
-import net.ihiroky.niotty.Transport;
+import net.ihiroky.niotty.AbstractTransport;
+import net.ihiroky.niotty.DefaultTransportFuture;
+import net.ihiroky.niotty.SucceededTransportFuture;
+import net.ihiroky.niotty.TransportFuture;
+import net.ihiroky.niotty.TransportState;
+import net.ihiroky.niotty.TransportStateEvent;
 
 import java.io.IOException;
 import java.nio.channels.SelectableChannel;
@@ -10,63 +14,60 @@ import java.util.Objects;
 
 /**
  * Created on 13/01/11, 13:40
- *
+ * TODO fire TransportStateEvent on closed
  * @author Hiroki Itoh
  */
-public abstract class NioSocketTransport<S extends AbstractSelector<S>> implements Transport {
+public abstract class NioSocketTransport<S extends AbstractSelector<S>> extends AbstractTransport<S> {
 
-    private AbstractSelector<S> selector;
-    private SelectionKey key;
+    private SelectionKey key_;
 
     @Override
     public String toString() {
-        return (key != null) ? key.channel().toString() : "unregistered";
+        return (key_ != null) ? key_.channel().toString() : "unregistered";
     }
 
-    void setSelector(AbstractSelector<S> selector) {
-        Objects.requireNonNull(selector, "selector");
-        this.selector = selector;
-    }
-
-    void setSelectionKey(SelectionKey key) {
+    final void setSelectionKey(SelectionKey key) {
         Objects.requireNonNull(key, "key");
-        this.key = key;
+        this.key_ = key;
     }
 
-    void unregisterLater() {
-        if (selector != null) {
-            selector.offerTask(new EventLoop.Task<S>() {
-                @Override
-                public boolean execute(S eventLoop) {
-                    eventLoop.unregister(NioSocketTransport.this, key.channel(), key.interestOps());
-                    return true;
-                }
-            });
+    final TransportFuture closeSelectableChannelLater(TransportState transportState) {
+        S selector = getEventLoop();
+        if (selector == null) {
+            closePipelines();
+            return new SucceededTransportFuture(this);
         }
+        final DefaultTransportFuture future = new DefaultTransportFuture(this);
+        executeStore(new TransportStateEvent(transportState, null, future));
+        return future;
     }
 
-    void closeLater() {
-        if (selector != null) {
-            selector.close(this);
-        }
-    }
-
-    void closeSelectableChannel() {
-        if (key != null) {
-            SelectableChannel channel = key.channel();
-            key.cancel();
+    final TransportFuture closeSelectableChannel() {
+        onCloseSelectableChannel();
+        closePipelines();
+        if (key_ != null) {
+            SelectableChannel channel = key_.channel();
+            getEventLoop().unregister(key_, this); // decrement register count
+            key_.cancel();
             try {
                 channel.close();
-            } catch (IOException ignored) {
+            } catch (IOException e) {
+                e.printStackTrace();
             }
+            getTransportListener().onClose(this);
+            executeLoad(new TransportStateEvent(TransportState.CONNECTED, null));
         }
+        return new SucceededTransportFuture(this);
     }
 
-    protected final AbstractSelector<S> getSelector() {
-        return selector;
+    void onCloseSelectableChannel() {
     }
 
-    protected final SelectionKey getSelectionKey() {
-        return key;
+    final void loadEvent(final TransportStateEvent event) {
+        executeLoad(event);
+    }
+
+    final SelectionKey getSelectionKey() {
+        return key_;
     }
 }
