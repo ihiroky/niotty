@@ -45,7 +45,7 @@ public abstract class NioSocketTransport<S extends AbstractSelector<S>> extends 
     final TransportFuture closeSelectableChannel() {
         onCloseSelectableChannel();
         closePipelines();
-        if (key_ != null) {
+        if (key_ != null && key_.isValid()) {
             SelectableChannel channel = key_.channel();
             getEventLoop().unregister(key_, this); // decrement register count
             key_.cancel();
