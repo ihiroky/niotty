@@ -184,6 +184,20 @@ public class CodecBufferTestAbstract {
             exceptionRule_.expect(IllegalArgumentException.class);
             sut_.slice(1);
         }
+
+        @Test
+        public void testIndexOf_SingleByte() throws Exception {
+            assertThat(sut_.indexOf(0, 0), is(-1));
+            assertThat(sut_.indexOf(0, 1), is(-1));
+            assertThat(sut_.indexOf(0, -1), is(-1));
+        }
+
+        @Test
+        public void testIndexOf_MultiByte() throws Exception {
+            assertThat(sut_.indexOf(new byte[0], 0), is(-1));
+            assertThat(sut_.indexOf(new byte[0], 1), is(-1));
+            assertThat(sut_.indexOf(new byte[0], -1), is(-1));
+        }
     }
 
     public static abstract class AbstractReadTests {
@@ -644,6 +658,133 @@ public class CodecBufferTestAbstract {
             exceptionRule_.expect(IllegalArgumentException.class);
             sut_.slice(51);
         }
+
+        @Test
+        public void testIndexOf_SingleByteHit() throws Exception {
+            sut_.readByte(); // increment position
+            int i = sut_.indexOf('0', 0);
+            assertThat(i, is(9));
+        }
+
+        @Test
+        public void testIndexOf_SingleByteAtTailHit() throws Exception {
+            sut_.readByte(); // increment position
+            int i = sut_.indexOf('9', 48);
+            assertThat(i, is(48));
+        }
+
+        @Test
+        public void testIndexOf_SingleByteNotHit() throws Exception {
+            sut_.readByte(); // increment position
+            int i = sut_.indexOf('0', 48);
+            assertThat(i, is(-1));
+        }
+
+        @Test
+        public void testIndexOf_SingleByteOutOfBound() throws Exception {
+            sut_.readByte(); // increment position
+            int i = sut_.indexOf('9', 49);
+            assertThat(i, is(-1));
+        }
+
+        @Test
+        public void testLastIndexOf_SingleByteHit() throws Exception {
+            sut_.readByte(); // increment position
+            int i = sut_.lastIndexOf('9', 10);
+            assertThat(i, is(8));
+        }
+
+        @Test
+        public void testLastIndexOf_SingleByteAtHeadHit() throws Exception {
+            sut_.readByte(); // increment position
+            int i = sut_.lastIndexOf('1', 0);
+            assertThat(i, is(0));
+        }
+
+        @Test
+        public void testLastIndexOf_SingleByteNotHit() throws Exception {
+            sut_.readByte(); // increment position
+            int i = sut_.lastIndexOf('0', 0);
+            assertThat(i, is(-1));
+        }
+
+        @Test
+        public void testLastIndexOf_SingleByteOutOfBound() throws Exception {
+            sut_.readByte(); // increment position
+            int i = sut_.lastIndexOf('0', -1);
+            assertThat(i, is(-1));
+        }
+
+        @Test
+        public void testIndexOf_MultiByteFromHit() throws Exception {
+            sut_.readByte(); // increment position
+            int i = sut_.indexOf(new byte[]{'9', '0'}, 10);
+            assertThat(i, is(18));
+        }
+
+        @Test
+        public void testIndexOf_MultiByteAtTailHit() throws Exception {
+            sut_.readByte(); // increment position
+            int i = sut_.indexOf(new byte[]{'8', '9'}, 47);
+            assertThat(i, is(47));
+        }
+
+        @Test
+        public void testIndexOf_MultiByteFromNotHit() throws Exception {
+            sut_.readByte(); // increment position
+            int i = sut_.indexOf(new byte[]{'9', '0'}, 47);
+            assertThat(i, is(-1));
+        }
+
+        @Test
+        public void testIndexOf_MultiByteFromTailButTargetIsOutOfBound() throws Exception {
+            sut_.readByte(); // increment position
+            int i = sut_.indexOf(new byte[]{'9', '0'}, 48);
+            assertThat(i, is(-1));
+        }
+
+        @Test
+        public void testIndexOf_MultiByteFromOutOfBound() throws Exception {
+            sut_.readByte(); // increment position
+            int i = sut_.indexOf(new byte[]{'0', '1'}, 49);
+            assertThat(i, is(-1));
+        }
+
+        @Test
+        public void testLastIndexOf_MultiByteHit() throws Exception {
+            sut_.readByte(); // increment position
+            int i = sut_.lastIndexOf(new byte[]{'8', '9'}, 47);
+            assertThat(i, is(47));
+        }
+
+        @Test
+        public void testLastIndexOf_MultiByteAtHeadHit() throws Exception {
+            sut_.readByte(); // increment position
+            int i = sut_.lastIndexOf(new byte[]{'1', '2'}, 9);
+            assertThat(i, is(0));
+        }
+
+        @Test
+        public void testLastIndexOf_MultiByteAtNotHit() throws Exception {
+            sut_.readByte(); // increment position
+            int i = sut_.lastIndexOf(new byte[]{'0', '1'}, 8);
+            assertThat(i, is(-1));
+        }
+
+        @Test
+        public void testLastIndexOf_MultiByteAtHeadButTargetIsOutOfBound() throws Exception {
+            sut_.readByte(); // increment position
+            int i = sut_.lastIndexOf(new byte[]{'0', '1'}, 1);
+            assertThat(i, is(-1));
+        }
+
+        @Test
+        public void testLastIndexOf_MultiByteFromOutOfBound() throws Exception {
+            sut_.readByte(); // increment position
+            int i = sut_.lastIndexOf(new byte[]{'0', '1'}, 0);
+            assertThat(i, is(-1));
+        }
+
     }
 
     public static abstract class AbstractWriteTests {

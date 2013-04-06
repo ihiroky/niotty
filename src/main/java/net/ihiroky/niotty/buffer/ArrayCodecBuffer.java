@@ -602,6 +602,111 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer implements CodecBuffer
         return offset_;
     }
 
+    @Override
+    public int indexOf(int b, int fromIndex) {
+        byte bb = (byte) b;
+        int end = end_;
+
+        if (fromIndex < 0) {
+            fromIndex = 0;
+        }
+        int fromIndexInContent = fromIndex + beginning_;
+        if (fromIndexInContent >= end) {
+            return -1;
+        }
+
+        byte[] buffer = buffer_;
+        for (int i = fromIndexInContent; i < end; i++) {
+            if (buffer[i] == bb) {
+                return i - beginning_;
+            }
+        }
+        return -1;
+    }
+
+    @Override
+    public int indexOf(byte[] b, int fromIndex) {
+        if (b == null || b.length == 0) {
+            return -1;
+        }
+
+        int end = end_;
+        if (fromIndex < 0) {
+            fromIndex = 0;
+        }
+        int fromIndexInContent = fromIndex + beginning_;
+        if (fromIndexInContent >= end) {
+            return -1;
+        }
+
+        byte[] buffer = buffer_;
+        int e = end - b.length;
+        for (int i = fromIndexInContent; i <= e; i++) {
+            if (buffer[i] != b[0]) {
+                continue;
+            }
+            for (int bi = 1; bi < b.length; bi++) {
+                if (buffer[i + bi] == b[bi]) {
+                    return i - beginning_;
+                }
+            }
+        }
+        return -1;
+    }
+
+    @Override
+    public int lastIndexOf(int b, int fromIndex) {
+        byte bb = (byte) b;
+        int beginning = beginning_;
+        int end = end_;
+
+        int fromIndexInContent = fromIndex + beginning;
+        if (fromIndexInContent < beginning) {
+            return -1;
+        }
+        if (fromIndexInContent >= end) {
+            fromIndexInContent = end - 1;
+        }
+
+
+        byte[] buffer = buffer_;
+        for (int i = fromIndexInContent; i >= beginning; i--) {
+            if (buffer[i] == bb) {
+                return i - beginning;
+            }
+        }
+        return -1;
+    }
+
+    @Override
+    public int lastIndexOf(byte[] b, int fromIndex) {
+        if (b == null || b.length == 0 || fromIndex < 0) {
+            return -1;
+        }
+
+        int beginning = beginning_;
+        int end = end_;
+        int fromIndexInContent = fromIndex + beginning;
+        if (fromIndexInContent > end - b.length) {
+            fromIndexInContent = end - b.length;
+        }
+
+
+        byte[] buffer = buffer_;
+        BUFFER_LOOP: for (int i = fromIndexInContent; i >= beginning; i--) {
+            if (buffer[i] != b[0]) {
+                continue;
+            }
+            for (int bi = 1; bi < b.length; bi++) {
+                if (buffer[i + bi] != b[bi]) {
+                    continue BUFFER_LOOP;
+                }
+            }
+            return i - beginning;
+        }
+        return -1;
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -667,7 +772,8 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer implements CodecBuffer
      */
     @Override
     public String toString() {
-        return "(beginning:" + beginning_ + ", end:" + end_ + ", capacity:" + buffer_.length
+        return ArrayCodecBuffer.class.getName()
+                + "(beginning:" + beginning_ + ", end:" + end_ + ", capacity:" + buffer_.length
                 + ", priority:" + priority() + ')';
     }
 }

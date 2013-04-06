@@ -158,7 +158,6 @@ public class DeficitRoundRobinWriteQueue implements WriteQueue {
                 }
                 queueIndex_ = i;
                 lastFlushedBytes_ = flushedBytes;
-                logger_.debug("queue {} left:", i, q.size());
                 return status;
             } else if (status == FlushStatus.SKIP) {
                 existsSkipped = true;

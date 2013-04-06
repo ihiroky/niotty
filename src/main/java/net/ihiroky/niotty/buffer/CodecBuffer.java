@@ -458,4 +458,60 @@ public interface CodecBuffer extends BufferSink {
      * @throws UnsupportedOperationException if this buffer is not backed by a byte array
      */
     int arrayOffset();
+
+    /**
+     * Returns the index within this buffer of the first occurrence of a specified byte,
+     * starting the search at a specified index and to the ascending direction.
+     * There is no restriction on the value of fromIndex. If it is negative, it has the same effect
+     * as if it were zero: this entire buffer may be searched. If it is greater than the length of this buffer,
+     * it has the same effect as if it were equal to the length of this buffer: -1 is returned.
+     *
+     * @param b the byte to be searched
+     * @param fromIndex the index to start the search from
+     * @return the index of the first occurrence of the {@code b} in this buffer that is greater than
+     * or equal to {@code fromIndex}, or -1 if the {@code b} does not occur.
+     */
+    int indexOf(int b, int fromIndex);
+
+    /**
+     * Returns the index within this buffer of the first occurrence of specified bytes,
+     * starting the search at a specified index and to the ascending direction.
+     * There is no restriction on the value of fromIndex. If it is negative, it has the same effect
+     * as if it were zero: this entire buffer may be searched. If it is greater than the length of this buffer,
+     * it has the same effect as if it were equal to the length of this buffer: -1 is returned.
+     *
+     * @param b the bytes to be searched
+     * @param fromIndex the index to start the search from
+     * @return the index of the first occurrence of the {@code b} in this buffer that is greater than
+     * or equal to {@code fromIndex}, or -1 if the {@code b} does not occur.
+     */
+    int indexOf(byte[] b, int fromIndex);
+
+    /**
+     * Returns the index within this buffer of the first occurrence of a specified byte,
+     * starting the search at a specified index and to the descending direction .
+     * There is no restriction on the value of fromIndex. If it is greater than or equal to the length of this buffer,
+     * it has the same effect as if it were equal to one less than the length of this buffer:
+     * this entire buffer may be searched. If it is negative, it has the same effect as if it were -1: -1 is returned.
+     *
+     * @param b the byte to be searched
+     * @param fromIndex the index to start the search from
+     * @return the index of the first occurrence of the {@code b} in this buffer that is greater than
+     * or equal to {@code fromIndex}, or -1 if the {@code b} does not occur.
+     */
+    int lastIndexOf(int b, int fromIndex);
+
+    /**
+     * Returns the index within this buffer of the first occurrence of specified bytes,
+     * starting the search at a specified index and to the descending direction.
+     * There is no restriction on the value of fromIndex. If it is greater than or equal to the length of this buffer,
+     * it has the same effect as if it were equal to one less than the length of this buffer:
+     * this entire buffer may be searched. If it is negative, it has the same effect as if it were -1: -1 is returned.
+     *
+     * @param b the bytes to be searched
+     * @param fromIndex the index to start the search from
+     * @return the index of the first occurrence of the {@code b} in this buffer that is greater than
+     * or equal to {@code fromIndex}, or -1 if the {@code b} does not occur.
+     */
+    int lastIndexOf(byte[] b, int fromIndex);
 }

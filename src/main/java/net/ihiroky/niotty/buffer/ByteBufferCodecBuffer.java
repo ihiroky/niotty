@@ -645,6 +645,121 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer implements CodecB
         return buffer_.arrayOffset();
     }
 
+    @Override
+    public int indexOf(int b, int fromIndex) {
+        changeModeToRead();
+        if (fromIndex < 0) {
+            fromIndex = 0;
+        }
+        int fromIndexInContent = fromIndex + beginning_;
+        if (fromIndexInContent >= end_) {
+            return -1;
+        }
+
+        int bb = (byte) b;
+        int beginning = beginning_;
+        ByteBuffer buffer = buffer_;
+        buffer.position(fromIndexInContent);
+        int count = buffer.limit() - fromIndexInContent;
+        // relative get is faster than absolute get, maybe.
+        for (int i = 0; i < count; i++) {
+            if (buffer.get() == bb) {
+                buffer.position(beginning);
+                return fromIndex + i;
+            }
+        }
+        buffer.position(beginning);
+        return -1;
+    }
+
+    @Override
+    public int indexOf(byte[] b, int fromIndex) {
+        if (b == null || b.length == 0) {
+            return -1;
+        }
+
+        changeModeToRead();
+        if (fromIndex < 0) {
+            fromIndex = 0;
+        }
+        int fromIndexInContent = fromIndex + beginning_;
+        if (fromIndexInContent > end_ - b.length) {
+            return -1;
+        }
+
+        int beginning = beginning_;
+        ByteBuffer buffer = buffer_;
+        buffer.position(fromIndexInContent);
+        int count = buffer.limit() - fromIndexInContent - (b.length - 1);
+        // relative get is faster than absolute get, maybe.
+        BUFFER_LOOP: for (int i = 0; i < count; i++) {
+            if (buffer.get() != b[0]) {
+                continue;
+            }
+            for (int bi = 1; bi < b.length; bi++) {
+                if (buffer.get() != b[bi]) {
+                    buffer.position(fromIndexInContent + i);
+                    continue BUFFER_LOOP;
+                }
+            }
+            buffer.position(beginning);
+            return fromIndex + i;
+        }
+        buffer.position(beginning_);
+        return -1;
+    }
+
+    @Override
+    public int lastIndexOf(int b, int fromIndex) {
+        if (fromIndex < 0) {
+            return -1;
+        }
+
+        changeModeToRead();
+        int beginning = beginning_;
+        int fromIndexInContent = fromIndex + beginning;
+        if (fromIndexInContent >= end_) {
+            fromIndexInContent = end_ - 1;
+        }
+
+        byte bb = (byte) b;
+        ByteBuffer buffer = buffer_;
+        for (int i = fromIndexInContent; i >= beginning; i--) {
+            if (buffer.get(i) == bb) {
+                return i - beginning;
+            }
+        }
+        return -1;
+    }
+
+    @Override
+    public int lastIndexOf(byte[] b, int fromIndex) {
+        if (b == null || b.length == 0 || fromIndex < 0) {
+            return -1;
+        }
+
+        changeModeToRead();
+        int beginning = beginning_;
+        int fromIndexInContent = fromIndex + beginning;
+        if (fromIndexInContent >= end_ - b.length) {
+            fromIndexInContent = end_ - b.length;
+        }
+
+        ByteBuffer buffer = buffer_;
+        BUFFER_LOOP: for (int i = fromIndexInContent; i >= beginning; i--) {
+            if (buffer.get(i) != b[0]) {
+                continue;
+            }
+            for (int bi = 1; bi < b.length; bi++) {
+                if (buffer.get(i + bi) != b[bi]) {
+                    continue BUFFER_LOOP;
+                }
+            }
+            return i - beginning;
+        }
+        return -1;
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -675,7 +790,8 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer implements CodecB
     @Override
     public String toString() {
         syncBeginEnd();
-        return "(beginning:" + beginning_ + ", end:" + end_ + ", capacity:" + buffer_.capacity()
+        return ByteBufferCodecBuffer.class.getName()
+                + "(beginning:" + beginning_ + ", end:" + end_ + ", capacity:" + buffer_.capacity()
                 + ", priority:" + priority() + ')';
     }
 }
