@@ -194,10 +194,9 @@ public interface CodecBuffer extends BufferSink {
      *               must be non-negative and less than or equal to {@code length}
      * @param length maximum number of bytes to be written into the {@code bytes};
      *               must be non-negative and less than or equal to {@code bytes.length - offset}
-     * @throws java.lang.RuntimeException if the beginning exceeds the end,
-     *         or {@code offset} or {@code length} is invalid for the buffer
+     * @return the total number of byte read into the {@code bytes}
      */
-    void   readBytes(byte[] bytes, int offset, int length);
+    int   readBytes(byte[] bytes, int offset, int length);
 
     /**
      * Reads bytes from the buffer.
@@ -205,8 +204,9 @@ public interface CodecBuffer extends BufferSink {
      * all. If not, the {@code byteBuffer} is filled with the part of this buffer data.
      *
      * @param byteBuffer a {@code ByteBuffer} into which is data is written
+     * @return the total number of byte read into the {@code bytes}
      */
-    void   readBytes(ByteBuffer byteBuffer);
+    int   readBytes(ByteBuffer byteBuffer);
 
     /**
      * Reads specified end of bytes. The result is stored in {@code int} with right aligned big endian.

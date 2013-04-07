@@ -275,25 +275,31 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer implements CodecBuffer
      * {@inheritDoc}
      */
     @Override
-    public void readBytes(byte[] bytes, int offset, int length) {
-        int beginning = beginning_;
-        if (beginning + length > end_) {
-            throw new IndexOutOfBoundsException("beginning exceeds end if " + length + " byte is read.");
+    public int readBytes(byte[] bytes, int offset, int length) {
+        if (bytes.length < offset + length) {
+            throw new IllegalArgumentException(
+                    "length of bytes is too short to read " + length + " bytes from offset " + offset + ".");
         }
-        System.arraycopy(buffer_, beginning, bytes, offset, length);
-        beginning_ += length;
+        int beginning = beginning_;
+        int remaining = end_ - beginning;
+        int read = (length <= remaining) ? length : remaining;
+        System.arraycopy(buffer_, beginning, bytes, offset, read);
+        beginning_ += read;
+        return read;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void readBytes(ByteBuffer byteBuffer) {
+    public int readBytes(ByteBuffer byteBuffer) {
         int space = byteBuffer.remaining();
-        int remaining = remainingBytes();
+        int beginning = beginning_;
+        int remaining = end_ - beginning;
         int read = (space <= remaining) ? space : remaining;
         byteBuffer.put(buffer_, beginning_, read);
         beginning_ += read;
+        return read;
     }
 
     /**
@@ -420,6 +426,7 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer implements CodecBuffer
             CoderResult cr = charsetDecoder.decode(input, output, true);
             if (!cr.isError() && !cr.isOverflow()) {
                 beginning_ = input.position();
+                charsetDecoder.flush(output);
                 break;
             }
             if (cr.isOverflow()) {

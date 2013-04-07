@@ -10,6 +10,8 @@ public final class CodecUtil {
     }
 
     static final int BYTE_MASK = 0xFF;
+    static final int SHORT_MASK = 0xFFFF;
+    static final long INT_MASK = 0xFFFFFFFFL;
     static final int CHAR_BYTES = Character.SIZE / Byte.SIZE;
     static final int SHORT_BYTES = Short.SIZE / Byte.SIZE;
     static final int INT_BYTES = Integer.SIZE / Byte.SIZE;

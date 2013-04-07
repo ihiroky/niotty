@@ -72,8 +72,10 @@ public class CodecBufferTestAbstract {
 
         @Test
         public void testReadBytes() throws Exception {
-            exceptionRule_.expect(RuntimeException.class);
-            sut_.readBytes(new byte[1], 0, 1);
+            byte[] b = new byte[]{-1};
+            int read = sut_.readBytes(b, 0, b.length);
+            assertThat(read, is(0));
+            assertThat(b[0], is((byte) -1));
         }
 
         @Test
@@ -342,8 +344,13 @@ public class CodecBufferTestAbstract {
         public void testReadBytesUnderflow() throws Exception {
             int remaining = sut_.remainingBytes();
             byte[] data = new byte[remaining + 10];
-            exceptionRule_.expect(RuntimeException.class);
-            sut_.readBytes(data, 0, data.length);
+
+            int read = sut_.readBytes(data, 0, data.length);
+
+            assertThat(read, is(remaining));
+            assertThat(data[0], is((byte) '0'));
+            assertThat(data[49], is((byte) '9'));
+            assertThat(data[50], is((byte) 0));
         }
 
         @Test

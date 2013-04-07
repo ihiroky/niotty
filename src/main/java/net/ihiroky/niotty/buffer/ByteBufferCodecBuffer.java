@@ -298,27 +298,37 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer implements CodecB
      * {@inheritDoc}
      */
     @Override
-    public void readBytes(byte[] bytes, int offset, int length) {
+    public int readBytes(byte[] bytes, int offset, int length) {
+        if (bytes.length < offset + length) {
+            throw new IllegalArgumentException(
+                    "length of bytes is too short to read " + length + " bytes from offset " + offset + ".");
+        }
         changeModeToRead();
-        buffer_.get(bytes, offset, length);
+        ByteBuffer myBuffer = buffer_;
+        int remaining = myBuffer.remaining();
+        int read = (length >= remaining) ? remaining : length;
+        myBuffer.get(bytes, offset, read);
+        return read;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void readBytes(ByteBuffer byteBuffer) {
+    public int readBytes(ByteBuffer byteBuffer) {
         changeModeToRead();
         ByteBuffer myBuffer = buffer_;
         int space = byteBuffer.remaining();
-        if (space >= myBuffer.remaining()) {
+        int remaining = myBuffer.remaining();
+        if (space >= remaining) {
             byteBuffer.put(myBuffer);
-            return;
+            return remaining;
         }
         int limit = myBuffer.limit();
         myBuffer.limit(myBuffer.position() + space);
         byteBuffer.put(myBuffer);
         myBuffer.limit(limit);
+        return space;
     }
 
     /**
@@ -408,6 +418,7 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer implements CodecB
             CoderResult cr = charsetDecoder.decode(input, output, true);
             if (!cr.isError() && !cr.isOverflow()) {
                 input.limit(limit);
+                charsetDecoder.flush(output);
                 break;
             }
             if (cr.isOverflow()) {
