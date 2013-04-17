@@ -1,8 +1,7 @@
 package net.ihiroky.niotty.buffer;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.WritableByteChannel;
+import java.nio.channels.GatheringByteChannel;
 import java.util.Objects;
 
 /**
@@ -29,13 +28,46 @@ public class BufferSinkList implements BufferSink {
         priority_ = priority;
     }
 
-    /**
-     * Writes data in the pair which is given order at the constructor.
-     * {@inheritDoc}
-     */
     @Override
-    public boolean transferTo(WritableByteChannel channel, ByteBuffer writeBuffer) throws IOException {
-        return car_.transferTo(channel, writeBuffer) && cdr_.transferTo(channel, writeBuffer);
+    public boolean transferTo(GatheringByteChannel channel) throws IOException {
+        return car_.transferTo(channel) && cdr_.transferTo(channel);
+    }
+
+    @Override
+    public BufferSinkList addFirst(CodecBuffer buffer) {
+        car_.addFirst(buffer);
+        return this;
+    }
+
+    @Override
+    public BufferSinkList addLast(CodecBuffer buffer) {
+        cdr_.addLast(buffer);
+        return this;
+    }
+
+    @Override
+    public BufferSink slice(int bytes) {
+        int carRemaining = car_.remainingBytes();
+        int cdrRemaining = cdr_.remainingBytes();
+        if (bytes < 0 || bytes > carRemaining + cdrRemaining) {
+            throw new IllegalArgumentException("Invalid input " + bytes + ". "
+                    + (carRemaining + cdrRemaining) + " byte remains.");
+        }
+        BufferSink carSliced = null;
+        if (carRemaining > 0) {
+            if (carRemaining >= bytes) {
+                return car_.slice(bytes);
+            }
+            carSliced = car_.slice(carRemaining);
+            bytes -= carRemaining;
+        }
+
+        if (cdrRemaining > 0) {
+            return (carSliced != null) ? Buffers.newBufferSink(carSliced, cdr_.slice(bytes)) : cdr_.slice(bytes);
+        }
+
+        // empty && bytes == 0
+        return Buffers.newCodecBuffer(0, priority_);
     }
 
     /**
@@ -59,5 +91,13 @@ public class BufferSinkList implements BufferSink {
     public void dispose() {
         car_.dispose();
         cdr_.dispose();
+    }
+
+    BufferSink car() {
+        return car_;
+    }
+
+    BufferSink cdr() {
+        return cdr_;
     }
 }

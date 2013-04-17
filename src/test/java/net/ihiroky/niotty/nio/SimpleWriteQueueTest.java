@@ -12,7 +12,7 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import java.nio.ByteBuffer;
-import java.nio.channels.WritableByteChannel;
+import java.nio.channels.GatheringByteChannel;
 
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
@@ -37,7 +37,7 @@ public class SimpleWriteQueueTest {
 
     @Test
     public void testFlushToEmpty() throws Exception {
-        WritableByteChannel channel = mock(WritableByteChannel.class);
+        GatheringByteChannel channel = mock(GatheringByteChannel.class);
         WriteQueue.FlushStatus status = sut_.flushTo(channel, writeBuffer_);
         assertThat(status, is(WriteQueue.FlushStatus.FLUSHED));
         verify(channel, never()).write(Mockito.any(ByteBuffer.class));
@@ -45,7 +45,7 @@ public class SimpleWriteQueueTest {
 
     @Test
     public void testFlushToOnce() throws Exception {
-        WritableByteChannel channel = mock(WritableByteChannel.class);
+        GatheringByteChannel channel = mock(GatheringByteChannel.class);
         when(channel.write(Mockito.any(ByteBuffer.class))).thenAnswer(new Answer<Integer>() {
             @Override
             public Integer answer(InvocationOnMock invocation) throws Throwable {
@@ -68,7 +68,7 @@ public class SimpleWriteQueueTest {
 
     @Test
     public void testFlushToOnceLazyLimitedLastElement() throws Exception {
-        WritableByteChannel channel = mock(WritableByteChannel.class);
+        GatheringByteChannel channel = mock(GatheringByteChannel.class);
         when(channel.write(Mockito.any(ByteBuffer.class))).thenAnswer(new Answer<Integer>() {
             @Override
             public Integer answer(InvocationOnMock invocation) throws Throwable {
@@ -91,7 +91,7 @@ public class SimpleWriteQueueTest {
 
     @Test
     public void testFlushToOnceLazyLimitedNotLastElement() throws Exception {
-        WritableByteChannel channel = mock(WritableByteChannel.class);
+        GatheringByteChannel channel = mock(GatheringByteChannel.class);
         when(channel.write(Mockito.any(ByteBuffer.class))).thenAnswer(new Answer<Integer>() {
             @Override
             public Integer answer(InvocationOnMock invocation) throws Throwable {
@@ -115,7 +115,7 @@ public class SimpleWriteQueueTest {
 
     @Test
     public void testFlushToOnceRemaining() throws Exception {
-        WritableByteChannel channel = mock(WritableByteChannel.class);
+        GatheringByteChannel channel = mock(GatheringByteChannel.class);
         when(channel.write(Mockito.any(ByteBuffer.class))).thenAnswer(new Answer<Integer>() {
             @Override
             public Integer answer(InvocationOnMock invocation) throws Throwable {
@@ -138,7 +138,7 @@ public class SimpleWriteQueueTest {
 
     @Test
     public void testFlushToOnceRemainingAndRetryFlushed() throws Exception {
-        WritableByteChannel channel = mock(WritableByteChannel.class);
+        GatheringByteChannel channel = mock(GatheringByteChannel.class);
         when(channel.write(Mockito.any(ByteBuffer.class))).thenAnswer(new Answer<Integer>() {
             @Override
             public Integer answer(InvocationOnMock invocation) throws Throwable {
@@ -173,7 +173,7 @@ public class SimpleWriteQueueTest {
 
     @Test
     public void testFlushToOnceRemainingAndRetryFlushing() throws Exception {
-        WritableByteChannel channel = mock(WritableByteChannel.class);
+        GatheringByteChannel channel = mock(GatheringByteChannel.class);
         when(channel.write(Mockito.any(ByteBuffer.class))).thenAnswer(new Answer<Integer>() {
             @Override
             public Integer answer(InvocationOnMock invocation) throws Throwable {

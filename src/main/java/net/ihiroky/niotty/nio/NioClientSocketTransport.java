@@ -14,9 +14,9 @@ import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.GatheringByteChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
-import java.nio.channels.WritableByteChannel;
 import java.util.Objects;
 
 /**
@@ -157,7 +157,7 @@ public class NioClientSocketTransport extends NioSocketTransport<MessageIOSelect
     }
 
     int flush(ByteBuffer byteBuffer) throws IOException {
-        WritableByteChannel channel = (WritableByteChannel) getSelectionKey().channel();
+        GatheringByteChannel channel = (GatheringByteChannel) getSelectionKey().channel();
         WriteQueue.FlushStatus status = writeQueue_.flushTo(channel, byteBuffer);
         return status.waitTimeMillis_;
     }

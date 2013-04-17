@@ -3,7 +3,6 @@ package net.ihiroky.niotty.codec;
 import net.ihiroky.niotty.LoadStageContextMock;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.CodecBuffer;
-import net.ihiroky.niotty.codec.FrameLengthRemoveDecoder;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -145,7 +144,7 @@ public class FrameLengthRemoveDecoderTest {
         FrameLengthRemoveDecoder sut = new FrameLengthRemoveDecoder();
         CodecBuffer wholeInput = Buffers.newCodecBuffer(8192);
         for (int i = 0; i < 30; i++) {
-            CodecBuffer buffer = Buffers.newPriorityCodecBuffer(1024, -((i + 1) % 2));
+            CodecBuffer buffer = Buffers.newCodecBuffer(1024, -((i + 1) % 2));
             for (int j = 0; j < 256; j++) {
                 buffer.writeInt(i);
             }

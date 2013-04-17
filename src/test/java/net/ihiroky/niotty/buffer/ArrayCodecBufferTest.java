@@ -3,6 +3,8 @@ package net.ihiroky.niotty.buffer;
 import org.junit.experimental.runners.Enclosed;
 import org.junit.runner.RunWith;
 
+import java.nio.ByteBuffer;
+
 /**
  * @author Hiroki Itoh
  */
@@ -39,6 +41,18 @@ public class ArrayCodecBufferTest {
         @Override
         protected CodecBuffer createCodecBuffer(byte[] buffer, int offset, int length) {
             return new ArrayCodecBuffer(buffer, offset, length);
+        }
+    }
+
+    public static class StructureChangeTests extends CodecBufferTestAbstract.AbstractStructureChangeTests {
+        @Override
+        protected CodecBuffer createCodecBuffer(byte[] data, int offset, int length) {
+            return new ArrayCodecBuffer(data, offset, length);
+        }
+
+        @Override
+        protected CodecBuffer createDirectCodecBuffer(ByteBuffer directBuffer) {
+            return new ByteBufferCodecBuffer(directBuffer);
         }
     }
 }

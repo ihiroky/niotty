@@ -6,7 +6,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.WritableByteChannel;
+import java.nio.channels.GatheringByteChannel;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -111,12 +111,12 @@ public class DeficitRoundRobinWriteQueue implements WriteQueue {
     }
 
     @Override
-    public FlushStatus flushTo(WritableByteChannel channel, ByteBuffer writeBuffer) throws IOException {
+    public FlushStatus flushTo(GatheringByteChannel channel, ByteBuffer writeBuffer) throws IOException {
         return flushTo(channel, writeBuffer, 0);
     }
 
     private FlushStatus flushTo(
-            WritableByteChannel channel, ByteBuffer writeBuffer, int previousFlushedByte) throws IOException {
+            GatheringByteChannel channel, ByteBuffer writeBuffer, int previousFlushedByte) throws IOException {
         int baseQuantum = 0;
         int flushedBytes = previousFlushedByte;
         int queueIndex = queueIndex_;

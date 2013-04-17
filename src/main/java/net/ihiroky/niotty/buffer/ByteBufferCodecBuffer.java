@@ -3,7 +3,7 @@ package net.ihiroky.niotty.buffer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
-import java.nio.channels.WritableByteChannel;
+import java.nio.channels.GatheringByteChannel;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CharsetEncoder;
@@ -91,14 +91,17 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer implements CodecB
      * @param space the size of byte to be written
      */
     void ensureSpace(int space) {
+        syncBeginEnd();
         ByteBuffer bb = buffer_;
-        int current = bb.capacity();
-        int required = bb.position() + space;
-        if (required > current) {
-            int twice = current * EXPAND_MULTIPLIER;
-            ByteBuffer t = ByteBuffer.allocate((required >= twice) ? required : twice);
-            bb.flip();
+        int mySpace = buffer_.capacity() - end_;
+        if (space > mySpace) {
+            int remaining = end_ - beginning_;
+            int newCapacity = Math.max(remaining + space, remaining * EXPAND_MULTIPLIER);
+            ByteBuffer t = ByteBuffer.allocate(newCapacity);
+            bb.position(beginning_).limit(end_);
             t.put(bb);
+            beginning_ = 0;
+            end_ = t.position();
             buffer_ = t;
         }
     }
@@ -111,17 +114,6 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer implements CodecB
         changeModeToWrite();
         ensureSpace(1);
         buffer_.put((byte) value);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void writeByte(int position, int value) {
-        if (position < 0 || position >= buffer_.capacity()) {
-            throw new IndexOutOfBoundsException("position must be in [0, " + buffer_.capacity() + ")");
-        }
-        buffer_.put(position, (byte) value);
     }
 
     /**
@@ -141,28 +133,6 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer implements CodecB
         changeModeToWrite();
         ensureSpace(byteBuffer.remaining());
         buffer_.put(byteBuffer);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void writeBytes4(int bits, int bytes) {
-        if (bytes < 0 || bytes > CodecUtil.INT_BYTES) {
-            throw new IllegalArgumentException("bytes must be in int bytes.");
-        }
-        writeBytes8RangeUnchecked(bits, bytes);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void writeBytes8(long bits, int bytes) {
-        if (bytes < 0 || bytes > CodecUtil.LONG_BYTES) {
-            throw new IllegalArgumentException("bytes must be in long bytes.");
-        }
-        writeBytes8RangeUnchecked(bits, bytes);
     }
 
     /**
@@ -242,8 +212,12 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer implements CodecB
         ByteBuffer output = buffer_;
         for (;;) {
             CoderResult cr = charsetEncoder.encode(input, output, true);
-            if (!cr.isError() && !cr.isOverflow()) {
-                break;
+            if (cr.isUnderflow()) {
+                cr = charsetEncoder.flush(output);
+                if (cr.isUnderflow()) {
+                    charsetEncoder.reset();
+                    break;
+                }
             }
             if (cr.isOverflow()) {
                 ensureSpace((int) (charsetEncoder.averageBytesPerChar() * input.remaining() + 1));
@@ -272,17 +246,6 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer implements CodecB
         buffer_.position(startPosition - expectedLengthBytes);
         writeVariableByteInteger(outputLength);
         buffer_.position(tmp);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int readByte(int position) {
-        if (position < 0 || position >= buffer_.capacity()) {
-            throw new IndexOutOfBoundsException("position must be in [0, " + buffer_.capacity() + ")");
-        }
-        return buffer_.get(position);
     }
 
     /**
@@ -329,40 +292,6 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer implements CodecB
         byteBuffer.put(myBuffer);
         myBuffer.limit(limit);
         return space;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int readBytes4(int bytes) {
-        if (bytes < 0 || bytes > CodecUtil.INT_BYTES) {
-            throw new IllegalArgumentException("bytes must be in [0, 4].");
-        }
-
-        changeModeToRead();
-        int decoded = 0;
-        for (int i = 0; i < bytes; i++) {
-            decoded = (decoded << CodecUtil.BITS_PER_BYTE) | (buffer_.get() & CodecUtil.BYTE_MASK);
-        }
-        return decoded;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public long readBytes8(int bytes) {
-        if (bytes < 0 || bytes > CodecUtil.LONG_BYTES) {
-            throw new IllegalArgumentException("bytes must be in [0, 8].");
-        }
-
-        changeModeToRead();
-        long decoded = 0L;
-        for (int i = 0; i < bytes; i++) {
-            decoded = (decoded << CodecUtil.BITS_PER_BYTE) | (buffer_.get() & CodecUtil.BYTE_MASK);
-        }
-        return decoded;
     }
 
     /**
@@ -416,10 +345,13 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer implements CodecB
         input.limit(input.position() + bytes);
         for (;;) {
             CoderResult cr = charsetDecoder.decode(input, output, true);
-            if (!cr.isError() && !cr.isOverflow()) {
-                input.limit(limit);
-                charsetDecoder.flush(output);
-                break;
+            if (cr.isUnderflow()) {
+                cr = charsetDecoder.flush(output);
+                if (cr.isUnderflow()) {
+                    input.limit(limit);
+                    charsetDecoder.reset();
+                    break;
+                }
             }
             if (cr.isOverflow()) {
                 output = Buffers.expand(output, charsPerByte, input.remaining());
@@ -451,49 +383,83 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer implements CodecB
     }
 
     @Override
-    public boolean transferTo(WritableByteChannel channel, ByteBuffer writeBuffer) throws IOException {
+    public boolean transferTo(GatheringByteChannel channel) throws IOException {
         changeModeToRead();
 
-        ByteBuffer myBuffer = buffer_;
-        if (myBuffer.isDirect()) {
-            return transferDirectTo(channel, myBuffer);
-        }
-        int remaining = myBuffer.remaining();
-        int limit = buffer_.limit();
-        while (remaining > 0) {
-            int space = writeBuffer.remaining();
-            int readyToWrite = (remaining <= space) ? remaining : space;
-            myBuffer.limit(myBuffer.position() + readyToWrite);
-            writeBuffer.put(myBuffer);
-            writeBuffer.flip();
-            int writeBytes = channel.write(writeBuffer);
-            // Some bytes remains in writeBuffer. Stop this round.
-            if (writeBytes < readyToWrite) {
-                myBuffer.limit(limit);
-                myBuffer.position(limit - remaining + writeBytes);
-                writeBuffer.clear();
-                return false;
-            }
-            // Write all bytes in writeBuffer.
-            remaining -= writeBytes;
-            writeBuffer.clear();
-        }
-        clear();
-        return true;
-    }
-
-    private boolean transferDirectTo(WritableByteChannel channel, ByteBuffer myBuffer) throws IOException {
-        int remaining = myBuffer.remaining();
+        int remaining = buffer_.remaining();
         if (remaining == 0) {
             return true;
         }
-        int writeBytes = channel.write(myBuffer);
-        // Some bytes remains in writeBuffer. Stop this round.
-        if (writeBytes < remaining) {
-            return false;
+        int writeBytes = channel.write(buffer_);
+        return writeBytes == remaining;
+    }
+
+    @Override
+    public ByteBufferCodecBuffer addFirst(CodecBuffer buffer) {
+        Objects.requireNonNull(buffer, "buffer");
+        int inputSize = buffer.remainingBytes();
+        if (inputSize == 0) {
+            return this;
         }
-        clear();
-        return true;
+
+        changeModeToRead();
+        ByteBuffer b = buffer_;
+        ByteBuffer inputBuffer = buffer.toByteBuffer();
+        int position = b.position();
+
+        int beginning;
+        if (position > inputSize) {
+            beginning = position - inputBuffer.remaining();
+        } else {
+            int remaining = b.remaining();
+            int newCapacity = Math.max(remaining * EXPAND_MULTIPLIER, remaining + inputSize);
+            b = ByteBuffer.allocate(newCapacity);
+            b.position(inputSize);
+            b.put(buffer_);
+            b.position(0);
+            b.limit(inputSize + remaining);
+            buffer_ = b;
+            end_ = inputSize + remaining;
+            beginning = 0;
+        }
+
+        b.position(beginning);
+        b.put(inputBuffer);
+        b.position(beginning);
+        return this;
+    }
+
+    @Override
+    public ByteBufferCodecBuffer addLast(CodecBuffer buffer) {
+        Objects.requireNonNull(buffer, "buffer");
+        int inputSize = buffer.remainingBytes();
+        if (inputSize == 0) {
+            return this;
+        }
+
+        syncBeginEnd();
+        ByteBuffer inputBuffer = buffer.toByteBuffer();
+        int backSpace = buffer_.capacity() - end_;
+        if (inputSize > backSpace) {
+            changeModeToRead();
+            int remaining = buffer_.remaining();
+            int frontSpace = beginning_;
+            int required = inputSize - backSpace;
+            if (frontSpace >= required) {
+                buffer_.compact().flip();
+                beginning_ = buffer_.position();
+                end_ = buffer_.limit();
+            } else {
+                ByteBuffer t = ByteBuffer.allocate(Math.max(remaining * EXPAND_MULTIPLIER, remaining + inputSize));
+                t.put(buffer_).flip();
+                buffer_ = t;
+                beginning_ = 0;
+                end_ = remaining;
+            }
+        }
+        changeModeToWrite();
+        buffer_.put(inputBuffer);
+        return this;
     }
 
     /**
@@ -785,13 +751,6 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer implements CodecB
         sliced.limit(bytes);
         bb.position(bb.position() + bytes);
         return new ByteBufferCodecBuffer(sliced);
-    }
-
-    @Override
-    public CodecBuffer compact() {
-        changeModeToRead();
-        buffer_.compact();
-        return this;
     }
 
     /**

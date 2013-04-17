@@ -8,7 +8,7 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import java.nio.ByteBuffer;
-import java.nio.channels.WritableByteChannel;
+import java.nio.channels.GatheringByteChannel;
 
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
@@ -57,7 +57,7 @@ public class DeficitRoundRobinWriteQueueTest {
     @Test
     public void testFlushTo_Base() throws Exception {
         DeficitRoundRobinWriteQueue sut = new DeficitRoundRobinWriteQueue(32);
-        WritableByteChannel channel = mock(WritableByteChannel.class);
+        GatheringByteChannel channel = mock(GatheringByteChannel.class);
         when(channel.write(Mockito.any(ByteBuffer.class))).thenAnswer(new FlushAllAnswer());
         byte[] data = new byte[] {
                 '0', '1', '2', '3'
@@ -74,15 +74,15 @@ public class DeficitRoundRobinWriteQueueTest {
     @Test
     public void testFlushTo_BaseIsFlushing() throws Exception {
         DeficitRoundRobinWriteQueue sut = new DeficitRoundRobinWriteQueue(32, 100, 50, 25);
-        WritableByteChannel channel = mock(WritableByteChannel.class);
+        GatheringByteChannel channel = mock(GatheringByteChannel.class);
         when(channel.write(Mockito.any(ByteBuffer.class))).thenAnswer(new FlushSizeAnswer(4));
         byte[] data = new byte[] {
                 '0', '1', '2', '3', '4', '5', '6', '7'
         };
 
         sut.offer(Buffers.newCodecBuffer(data, 0, data.length));
-        sut.offer(Buffers.newPriorityCodecBuffer(data, 0, data.length, 0));
-        sut.offer(Buffers.newPriorityCodecBuffer(data, 0, data.length, 2));
+        sut.offer(Buffers.newCodecBuffer(data, 0, data.length, 0));
+        sut.offer(Buffers.newCodecBuffer(data, 0, data.length, 2));
         WriteQueue.FlushStatus status = sut.flushTo(channel, ByteBuffer.allocate(16));
 
         assertThat(status, is(WriteQueue.FlushStatus.FLUSHING));
@@ -96,7 +96,7 @@ public class DeficitRoundRobinWriteQueueTest {
     @Test
     public void testFlushTo_DeficitCounterGetsZeroIfQueueIsEmpty() throws Exception {
         DeficitRoundRobinWriteQueue sut = new DeficitRoundRobinWriteQueue(32, 100, 50);
-        WritableByteChannel channel = mock(WritableByteChannel.class);
+        GatheringByteChannel channel = mock(GatheringByteChannel.class);
         when(channel.write(Mockito.any(ByteBuffer.class))).thenAnswer(new FlushAllAnswer());
         byte[] data = new byte[] {
                 '0', '1', '2', '3', '4', '5', '6', '7'
@@ -105,7 +105,7 @@ public class DeficitRoundRobinWriteQueueTest {
         sut.deficitCounter(1, 100);
 
         sut.offer(Buffers.newCodecBuffer(data, 0, data.length));
-        sut.offer(Buffers.newPriorityCodecBuffer(data, 0, data.length / 2, 0));
+        sut.offer(Buffers.newCodecBuffer(data, 0, data.length / 2, 0));
         WriteQueue.FlushStatus status = sut.flushTo(channel, ByteBuffer.allocate(32));
 
         assertThat(status, is(WriteQueue.FlushStatus.FLUSHED));
@@ -118,7 +118,7 @@ public class DeficitRoundRobinWriteQueueTest {
     @Test
     public void testFlushTo_DoNotFlushToPartiallyIfDeficitCounterIsShort() throws Exception {
         DeficitRoundRobinWriteQueue sut = new DeficitRoundRobinWriteQueue(32, 100, 50);
-        WritableByteChannel channel = mock(WritableByteChannel.class);
+        GatheringByteChannel channel = mock(GatheringByteChannel.class);
         when(channel.write(Mockito.any(ByteBuffer.class))).thenAnswer(new FlushAllAnswer());
         byte[] data = new byte[] {
                 '0', '1', '2', '3', '4', '5', '6', '7'
@@ -127,8 +127,8 @@ public class DeficitRoundRobinWriteQueueTest {
         sut.deficitCounter(1, 6);
 
         sut.offer(Buffers.newCodecBuffer(data, 0, data.length / 2));
-        sut.offer(Buffers.newPriorityCodecBuffer(data, 0, data.length, 0));
-        sut.offer(Buffers.newPriorityCodecBuffer(data, 0, data.length, 1));
+        sut.offer(Buffers.newCodecBuffer(data, 0, data.length, 0));
+        sut.offer(Buffers.newCodecBuffer(data, 0, data.length, 1));
         WriteQueue.FlushStatus status = sut.flushTo(channel, ByteBuffer.allocate(32));
 
         assertThat(status, is(WriteQueue.FlushStatus.SKIP));
@@ -141,7 +141,7 @@ public class DeficitRoundRobinWriteQueueTest {
     @Test
     public void testFlushTo_PriorityQueueIsFlushing() throws Exception {
         DeficitRoundRobinWriteQueue sut = new DeficitRoundRobinWriteQueue(64, 100, 50);
-        WritableByteChannel channel = mock(WritableByteChannel.class);
+        GatheringByteChannel channel = mock(GatheringByteChannel.class);
         when(channel.write(Mockito.any(ByteBuffer.class)))
                 .thenAnswer(new FlushAllAnswer())
                 .thenAnswer(new FlushSizeAnswer(3))
@@ -153,8 +153,8 @@ public class DeficitRoundRobinWriteQueueTest {
         sut.deficitCounter(1, 0);
 
         sut.offer(Buffers.newCodecBuffer(data, 0, data.length));
-        sut.offer(Buffers.newPriorityCodecBuffer(data, 0, data.length, 0));
-        sut.offer(Buffers.newPriorityCodecBuffer(data, 0, data.length, 1));
+        sut.offer(Buffers.newCodecBuffer(data, 0, data.length, 0));
+        sut.offer(Buffers.newCodecBuffer(data, 0, data.length, 1));
         WriteQueue.FlushStatus status = sut.flushTo(channel, ByteBuffer.allocate(32));
 
         assertThat(status, is(WriteQueue.FlushStatus.FLUSHING));
@@ -167,7 +167,7 @@ public class DeficitRoundRobinWriteQueueTest {
     @Test
     public void testFlushTo_UseRoundBonusIfBaseQueueIsEmpty() throws Exception {
         DeficitRoundRobinWriteQueue sut = new DeficitRoundRobinWriteQueue(64, 100, 50);
-        WritableByteChannel channel = mock(WritableByteChannel.class);
+        GatheringByteChannel channel = mock(GatheringByteChannel.class);
         when(channel.write(Mockito.any(ByteBuffer.class))).thenAnswer(new FlushAllAnswer());
         byte[] data = new byte[] {
                 '0', '1', '2', '3', '4', '5', '6', '7'
@@ -175,8 +175,8 @@ public class DeficitRoundRobinWriteQueueTest {
         sut.deficitCounter(0, 0);
         sut.deficitCounter(1, 0);
 
-        sut.offer(Buffers.newPriorityCodecBuffer(data, 0, data.length, 0));
-        sut.offer(Buffers.newPriorityCodecBuffer(data, 0, data.length, 1));
+        sut.offer(Buffers.newCodecBuffer(data, 0, data.length, 0));
+        sut.offer(Buffers.newCodecBuffer(data, 0, data.length, 1));
         WriteQueue.FlushStatus status = sut.flushTo(channel, ByteBuffer.allocate(32));
 
         assertThat(status, is(WriteQueue.FlushStatus.FLUSHED));
@@ -189,7 +189,7 @@ public class DeficitRoundRobinWriteQueueTest {
     @Test
     public void testFlushTo_RecursiveCallIfQueueIndexIsNotMinus1() throws Exception {
         DeficitRoundRobinWriteQueue sut = new DeficitRoundRobinWriteQueue(64, 100, 50);
-        WritableByteChannel channel = mock(WritableByteChannel.class);
+        GatheringByteChannel channel = mock(GatheringByteChannel.class);
         when(channel.write(Mockito.any(ByteBuffer.class))).thenAnswer(new FlushAllAnswer());
         byte[] data = new byte[] {
                 '0', '1', '2', '3', '4', '5', '6', '7'
@@ -199,8 +199,8 @@ public class DeficitRoundRobinWriteQueueTest {
         sut.deficitCounter(1, 8);
 
         sut.offer(Buffers.newCodecBuffer(data, 0, data.length));
-        sut.offer(Buffers.newPriorityCodecBuffer(data, 0, data.length - 1, 0)); // only 7 byte
-        sut.offer(Buffers.newPriorityCodecBuffer(data, 0, data.length, 1)); // flush first
+        sut.offer(Buffers.newCodecBuffer(data, 0, data.length - 1, 0)); // only 7 byte
+        sut.offer(Buffers.newCodecBuffer(data, 0, data.length, 1)); // flush first
         WriteQueue.FlushStatus status = sut.flushTo(channel, ByteBuffer.allocate(32));
 
         assertThat(status, is(WriteQueue.FlushStatus.FLUSHED));

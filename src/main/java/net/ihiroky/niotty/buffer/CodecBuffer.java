@@ -16,10 +16,6 @@ import java.nio.charset.CharsetEncoder;
  * by a difference between the beginning and the end, and space (writable) data size is calculated by the a difference
  * between the end and the capacity.
  * <p></p>
- * Almost read and write methods are relative operation; the beginning and the end are changed by the operation.
- * But {@link #readByte(int)} and {@link #writeByte(int, int)} are absolute operation; the beginning and
- * the end are not changed.
- * <p></p>
  * {@code CodecBuffer} supports primitive and string write and read operations. And supports a signed integer
  * encoding with variable length, signed VBC (Variable Byte Codes). The encoding has an end bit,
  * a sign bit and data bits. Each MSB per byte is the end bit. The end bit in last byte is 1, otherwise 0.
@@ -49,15 +45,6 @@ public interface CodecBuffer extends BufferSink {
     void writeByte(int value);
 
     /**
-     * Writes a {@code value} as byte at a specified {@code position}.
-     * The value of the end is not changed.
-     *
-     * @param position index to write the {@code value}
-     * @param value byte value
-     */
-    void writeByte(int position, int value);
-
-    /**
      * Writes a specified byte array.
      *
      * @param bytes the byte array to be written
@@ -74,24 +61,6 @@ public interface CodecBuffer extends BufferSink {
      * @param byteBuffer the byte buffer to be written
      */
     void writeBytes(ByteBuffer byteBuffer);
-
-    /**
-     * Writes a specified {@code bits}, which byte size is specified {@code bytes}. The {@code bits} is right-aligned,
-     * and is written into this buffer with big endian.
-     *
-     * @param bits the set of bit to be written
-     * @param bytes byte size of the {@code bits}; must be non-positive and less than or equal to 4
-     */
-    void writeBytes4(int bits, int bytes);
-
-    /**
-     * Writes a specified {@code bits}, which byte size is specified {@code bytes}. The {@code bits} is right-aligned,
-     * and is written into this buffer with big endian.
-     *
-     * @param bits the set of bit to be written
-     * @param bytes byte size of the {@code bits}; must be non-positive and less than or equal to 8
-     */
-    void writeBytes8(long bits, int bytes);
 
     /**
      * Writes a specified short {@code value}. The value is written into this buffer with two byte big endian.
@@ -170,15 +139,6 @@ public interface CodecBuffer extends BufferSink {
     void writeString(CharsetEncoder charsetEncoder, String s);
 
     /**
-     * Reads a byte from the buffer.
-     *
-     * @param position index to read from
-     * @return a byte.
-     * @throws java.lang.RuntimeException if the beginning exceeds the end
-     */
-    int    readByte(int position);
-
-    /**
      * Reads a byte from the buffer at a specified {@code position}.
      *
      * @return a byte.
@@ -207,30 +167,6 @@ public interface CodecBuffer extends BufferSink {
      * @return the total number of byte read into the {@code bytes}
      */
     int   readBytes(ByteBuffer byteBuffer);
-
-    /**
-     * Reads specified end of bytes. The result is stored in {@code int} with right aligned big endian.
-     * The buffer has {@code [0x30, 0x31, 0x32]} and call readBytes4(2), its result is 0x3031.
-     * This method can return data up to 4 byte.
-     *
-     * @param bytes end of bytes to be read
-     * @return int value which holds result bytes.
-     * @throws IllegalArgumentException if the {@code bytes} is negative or more than 4 byte
-     * @throws java.lang.RuntimeException if the remaining data in the buffer is less than {@code byte}
-     */
-    int    readBytes4(int bytes);
-
-    /**
-     * Reads specified end of bytes. The result is stored in {@code int} with right aligned big endian.
-     * The buffer has {@code [0x30, 0x31, 0x32]} and call readBytes8(2), its result is 0x3031 of long.
-     * This method can return data up to 8 byte.
-     *
-     * @param bytes end of bytes to be read
-     * @return long value which holds result bytes.
-     * @throws IllegalArgumentException if the {@code bytes} is negative or more than 8 byte
-     * @throws java.lang.RuntimeException if the remaining data in the buffer is less than {@code byte}
-     */
-    long   readBytes8(int bytes);
 
     /**
      * Reads char value from the buffer.
@@ -400,25 +336,8 @@ public interface CodecBuffer extends BufferSink {
      */
     int drainFrom(CodecBuffer buffer, int bytes);
 
-    /**
-     * Creates new {@code DecodeBuffer} that shares this buffer's base content.
-     * The beginning of the new {@code DecodeBuffer} is the one of the this buffer.
-     * The end of the new {@code DecodeBuffer} is the {@code beginning + bytes}.
-     * The two {@code DecodeBuffer}'s beginning and end are independent.
-     * After this method is called, the beginning of this buffer increases {@code bytes}.
-     *
-     * @param bytes size of content to slice
-     * @throws IllegalArgumentException if {@code bytes} exceeds this buffer's remaining.
-     * @return the new {@code DecodeBuffer}
-     */
+    @Override
     CodecBuffer slice(int bytes);
-
-    /**
-     * Shrinks unusable region; from index 0 to the beginning. The byte at the beginning is copied into the index 0,
-     * the byte at beginning + 1 and the end - 1 is copied into end - 1 - beginning.
-     * @return this {@code CodecBuffer}
-     */
-    CodecBuffer compact();
 
     /**
      * Clears this buffer. The the beginning and the end is set to 0.

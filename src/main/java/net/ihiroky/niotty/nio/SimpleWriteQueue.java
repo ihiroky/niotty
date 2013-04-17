@@ -4,6 +4,7 @@ import net.ihiroky.niotty.buffer.BufferSink;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.GatheringByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -28,11 +29,11 @@ public class SimpleWriteQueue implements WriteQueue {
     }
 
     @Override
-    public FlushStatus flushTo(WritableByteChannel channel, ByteBuffer writeBuffer) throws IOException {
+    public FlushStatus flushTo(GatheringByteChannel channel, ByteBuffer writeBuffer) throws IOException {
         return flushTo(channel, writeBuffer, Integer.MAX_VALUE);
     }
 
-    FlushStatus flushTo(WritableByteChannel channel, ByteBuffer writeBuffer, int limitBytes) throws IOException {
+    FlushStatus flushTo(GatheringByteChannel channel, ByteBuffer writeBuffer, int limitBytes) throws IOException {
         int flushedBytes = 0;
 
         for (;;) {
@@ -47,7 +48,7 @@ public class SimpleWriteQueue implements WriteQueue {
                 lastFlushedBytes_ = flushedBytes;
                 return FlushStatus.SKIP;
             }
-            if (pendingBuffer.transferTo(channel, writeBuffer)) {
+            if (pendingBuffer.transferTo(channel)) {
                 flushedBytes += beforeTransfer;
                 queue_.poll();
                 if (flushedBytes >= limitBytes) {

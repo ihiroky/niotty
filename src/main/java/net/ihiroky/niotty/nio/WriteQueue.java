@@ -5,6 +5,7 @@ import net.ihiroky.niotty.buffer.BufferSink;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.GatheringByteChannel;
 import java.nio.channels.WritableByteChannel;
 
 /**
@@ -28,7 +29,7 @@ public interface WriteQueue {
      * @throws IOException if I/O error occurs
      * @see {@link net.ihiroky.niotty.nio.WriteQueue.FlushStatus}
      */
-    FlushStatus flushTo(WritableByteChannel channel, ByteBuffer writeBuffer) throws IOException;
+    FlushStatus flushTo(GatheringByteChannel channel, ByteBuffer writeBuffer) throws IOException;
 
     /**
      * Returns the number of elements in this queue.

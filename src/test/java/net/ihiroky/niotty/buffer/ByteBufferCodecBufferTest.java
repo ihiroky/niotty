@@ -43,4 +43,17 @@ public class ByteBufferCodecBufferTest {
             return new ByteBufferCodecBuffer(ByteBuffer.wrap(buffer, offset, length));
         }
     }
+
+    public static class StructureChangeTests extends CodecBufferTestAbstract.AbstractStructureChangeTests {
+
+        @Override
+        protected CodecBuffer createCodecBuffer(byte[] data, int offset, int length) {
+            return new ByteBufferCodecBuffer(ByteBuffer.wrap(data, offset, length));
+        }
+
+        @Override
+        protected CodecBuffer createDirectCodecBuffer(ByteBuffer directBuffer) {
+            return new ByteBufferCodecBuffer(directBuffer);
+        }
+    }
 }
