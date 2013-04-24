@@ -1,6 +1,5 @@
 package net.ihiroky.niotty.nio;
 
-import net.ihiroky.niotty.TransportConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,7 +14,7 @@ import java.util.Objects;
  *
  * @author Hiroki Itoh
  */
-public class NioClientSocketConfig extends TransportConfig {
+public class NioClientSocketConfig {
 
     private int sendBufferSize_;
     private int receiveBufferSize_;

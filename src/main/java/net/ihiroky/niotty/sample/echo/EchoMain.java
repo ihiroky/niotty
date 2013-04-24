@@ -43,12 +43,42 @@ public class EchoMain {
         final int lastWaitMillis = 500;
 
         NioServerSocketProcessor server = new NioServerSocketProcessor();
+        server.setPipelineComposer(new PipelineComposer() {
+            @Override
+            public void compose(LoadPipeline loadPipeline, StorePipeline storePipeline) {
+                loadPipeline.add(MyStageKey.LOAD_FRAMING, new FrameLengthRemoveDecoder())
+                        .add(MyStageKey.LOAD_DECODE, new StringDecoder())
+                        .add(MyStageKey.LOAD_APPLICATION, new EchoStage());
+                storePipeline.add(MyStageKey.STORE_ENCODE, new StringEncoder())
+                        .add(MyStageKey.STORE_FRAMING, new FrameLengthPrependEncoder());
+            }
+        });
         NioClientSocketProcessor client = new NioClientSocketProcessor();
+        client.setPipelineComposer(new PipelineComposer() {
+            @Override
+            public void compose(LoadPipeline loadPipeline, StorePipeline storePipeline) {
+                loadPipeline.add(MyStageKey.LOAD_FRAMING, new FrameLengthRemoveDecoder())
+                        .add(MyStageKey.LOAD_DECODE, new StringDecoder())
+                        .add(MyStageKey.LOAD_APPLICATION, new HelloWorldStage());
+                storePipeline.add(MyStageKey.STORE_ENCODE, new StringEncoder())
+                        .add(MyStageKey.STORE_FRAMING, new FrameLengthPrependEncoder());
+            }
+        });
+
         server.start();
         client.start();
 
-        Transport serverTransport = createServerTransport(server);
-        Transport clientTransport = createClientTransport(client);
+        final Transport serverTransport = server.createTransport(new NioServerSocketConfig());
+        serverTransport.addListener(new TransportListener() {
+            @Override
+            public void onConnect(Transport transport, SocketAddress remoteAddress) {
+                serverTransport.write("new Transport " + transport + " is accepted on " + Thread.currentThread());
+            }
+            @Override
+            public void onClose(Transport transport) {
+            }
+        });
+        Transport clientTransport = client.createTransport(new NioClientSocketConfig());
 
         try {
             serverTransport.bind(new InetSocketAddress(port));
@@ -67,47 +97,5 @@ public class EchoMain {
             client.stop();
             server.stop();
         }
-    }
-
-    private Transport createServerTransport(NioServerSocketProcessor server) {
-        NioServerSocketConfig serverConfig = new NioServerSocketConfig();
-        serverConfig.setPipelineInitializer(new PipelineComposer() {
-            @Override
-            public void compose(LoadPipeline loadPipeline, StorePipeline storePipeline) {
-                loadPipeline.add(MyStageKey.LOAD_FRAMING, new FrameLengthRemoveDecoder())
-                        .add(MyStageKey.LOAD_DECODE, new StringDecoder())
-                        .add(MyStageKey.LOAD_APPLICATION, new EchoStage());
-                storePipeline.add(MyStageKey.STORE_ENCODE, new StringEncoder())
-                        .add(MyStageKey.STORE_FRAMING, new FrameLengthPrependEncoder());
-            }
-        });
-
-        final Transport serverTransport = server.createTransport(serverConfig);
-        serverTransport.addListener(new TransportListener() {
-            @Override
-            public void onConnect(Transport transport, SocketAddress remoteAddress) {
-                serverTransport.write("new Transport " + transport + " is accepted on " + Thread.currentThread());
-            }
-            @Override
-            public void onClose(Transport transport) {
-            }
-        });
-
-        return serverTransport;
-    }
-
-    private Transport createClientTransport(NioClientSocketProcessor client) {
-        NioClientSocketConfig clientConfig = new NioClientSocketConfig();
-        clientConfig.setPipelineInitializer(new PipelineComposer() {
-            @Override
-            public void compose(LoadPipeline loadPipeline, StorePipeline storePipeline) {
-                loadPipeline.add(MyStageKey.LOAD_FRAMING, new FrameLengthRemoveDecoder())
-                        .add(MyStageKey.LOAD_DECODE, new StringDecoder())
-                        .add(MyStageKey.LOAD_APPLICATION, new HelloWorldStage());
-                storePipeline.add(MyStageKey.STORE_ENCODE, new StringEncoder())
-                        .add(MyStageKey.STORE_FRAMING, new FrameLengthPrependEncoder());
-            }
-        });
-        return client.createTransport(clientConfig);
     }
 }

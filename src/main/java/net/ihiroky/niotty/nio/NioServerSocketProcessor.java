@@ -1,6 +1,7 @@
 package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.NameCountThreadFactory;
+import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.Processor;
 
 import java.util.Objects;
@@ -14,6 +15,7 @@ public class NioServerSocketProcessor implements Processor<NioServerSocketTransp
 
     private AcceptSelectorPool acceptSelectorPool_;
     private MessageIOSelectorPool messageIOSelectorPool_;
+    private PipelineComposer pipelineComposer_;
     private int readBufferSize_;
     private int writeBufferSize_;
     private boolean useDirectBuffer_;
@@ -33,6 +35,7 @@ public class NioServerSocketProcessor implements Processor<NioServerSocketTransp
     public NioServerSocketProcessor() {
         acceptSelectorPool_ = new AcceptSelectorPool();
         messageIOSelectorPool_ = new MessageIOSelectorPool();
+        pipelineComposer_ = PipelineComposer.empty();
 
         numberOfAcceptThread_ = DEFAULT_NUMBER_OF_ACCEPT_THREAD;
         numberOfMessageIOThread_ = DEFAULT_NUMBER_OF_MESSAGE_IO_THREAD;
@@ -54,11 +57,18 @@ public class NioServerSocketProcessor implements Processor<NioServerSocketTransp
     public synchronized void stop() {
         acceptSelectorPool_.close();
         messageIOSelectorPool_.close();
+        pipelineComposer_.close();
     }
 
     @Override
-    public String getName() {
+    public String name() {
         return name_;
+    }
+
+    @Override
+    public void setPipelineComposer(PipelineComposer composer) {
+        Objects.requireNonNull(composer, "composer");
+        pipelineComposer_ = composer;
     }
 
     @Override
@@ -109,6 +119,10 @@ public class NioServerSocketProcessor implements Processor<NioServerSocketTransp
 
     MessageIOSelectorPool getMessageIOSelectorPool() {
         return messageIOSelectorPool_;
+    }
+
+    PipelineComposer getPipelineComposer() {
+        return pipelineComposer_;
     }
 
     int getReadBufferSize() {

@@ -26,17 +26,43 @@ public class FileMain {
         new FileMain().execute(args);
     }
 
+    private enum Key implements StageKey {
+        LOAD_FILE,
+        STRING_DECODER,
+        STRING_ENCODER,
+        FRAMING,
+        DUMP_FILE,
+    }
+
     private void execute(String[] args) {
         int serverPort = 10000;
 
+        final Waiter waiter = new Waiter();
         NioServerSocketProcessor serverProcessor = new NioServerSocketProcessor();
+        serverProcessor.setPipelineComposer(new PipelineComposer() {
+            @Override
+            public void compose(LoadPipeline loadPipeline, StorePipeline storePipeline) {
+                loadPipeline.add(Key.FRAMING, new FrameLengthRemoveDecoder())
+                        .add(Key.STRING_DECODER, new StringDecoder())
+                        .add(Key.LOAD_FILE, new FileLoadStage());
+                storePipeline.add(Key.FRAMING, new FrameLengthPrependEncoder());
+            }
+        });
         NioClientSocketProcessor clientProcessor = new NioClientSocketProcessor();
+        clientProcessor.setPipelineComposer(new PipelineComposer() {
+            @Override
+            public void compose(LoadPipeline loadPipeline, StorePipeline storePipeline) {
+                loadPipeline.add(Key.FRAMING, new FrameLengthRemoveDecoder())
+                        .add(Key.DUMP_FILE, new FileDumpStage(waiter));
+                storePipeline.add(Key.STRING_ENCODER, new StringEncoder())
+                        .add(Key.FRAMING, new FrameLengthPrependEncoder());
+            }
+        });
         serverProcessor.start();
         clientProcessor.start();
 
-        Waiter waiter = new Waiter();
-        Transport serverTransport = serverProcessor.createTransport(createServerConfig());
-        Transport clientTransport = clientProcessor.createTransport(createClientConfig(waiter));
+        Transport serverTransport = serverProcessor.createTransport(new NioServerSocketConfig());
+        Transport clientTransport = clientProcessor.createTransport(new NioClientSocketConfig());
         try {
             serverTransport.bind(new InetSocketAddress(serverPort));
             TransportFuture connectFuture = clientTransport.connect(new InetSocketAddress("localhost", serverPort));
@@ -53,41 +79,5 @@ public class FileMain {
             clientProcessor.stop();
             serverProcessor.stop();
         }
-    }
-
-    private enum Key implements StageKey {
-        LOAD_FILE,
-        STRING_DECODER,
-        STRING_ENCODER,
-        FRAMING,
-        DUMP_FILE,
-    }
-
-    private NioServerSocketConfig createServerConfig() {
-        NioServerSocketConfig config = new NioServerSocketConfig();
-        config.setPipelineInitializer(new PipelineComposer() {
-            @Override
-            public void compose(LoadPipeline loadPipeline, StorePipeline storePipeline) {
-                loadPipeline.add(Key.FRAMING, new FrameLengthRemoveDecoder())
-                        .add(Key.STRING_DECODER, new StringDecoder())
-                        .add(Key.LOAD_FILE, new FileLoadStage());
-                storePipeline.add(Key.FRAMING, new FrameLengthPrependEncoder());
-            }
-        });
-        return config;
-    }
-
-    private NioClientSocketConfig createClientConfig(final Waiter waiter) {
-        NioClientSocketConfig config = new NioClientSocketConfig();
-        config.setPipelineInitializer(new PipelineComposer() {
-            @Override
-            public void compose(LoadPipeline loadPipeline, StorePipeline storePipeline) {
-                loadPipeline.add(Key.FRAMING, new FrameLengthRemoveDecoder())
-                        .add(Key.DUMP_FILE, new FileDumpStage(waiter));
-                storePipeline.add(Key.STRING_ENCODER, new StringEncoder())
-                        .add(Key.FRAMING, new FrameLengthPrependEncoder());
-            }
-        });
-        return config;
     }
 }

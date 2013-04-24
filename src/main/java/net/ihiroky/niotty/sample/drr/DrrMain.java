@@ -10,7 +10,6 @@ import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.CodecBuffer;
 import net.ihiroky.niotty.codec.FrameLengthPrependEncoder;
 import net.ihiroky.niotty.codec.FrameLengthRemoveDecoder;
-import net.ihiroky.niotty.nio.DeficitRoundRobinWriteQueueFactory;
 import net.ihiroky.niotty.nio.NioClientSocketConfig;
 import net.ihiroky.niotty.nio.NioClientSocketProcessor;
 import net.ihiroky.niotty.nio.NioServerSocketConfig;
@@ -27,15 +26,37 @@ public class DrrMain {
         new DrrMain().execute(args);
     }
 
+    private enum MyStageKey implements StageKey {
+        GENERATOR,
+        REPORTER,
+        FRAMING,
+    }
+
     private void execute(String[] args) {
         final int serverPort = 10000;
 
         NioServerSocketProcessor serverProcessor = new NioServerSocketProcessor();
+        serverProcessor.setPipelineComposer(new PipelineComposer() {
+            @Override
+            public void compose(LoadPipeline loadPipeline, StorePipeline storePipeline) {
+                loadPipeline.add(MyStageKey.FRAMING, new FrameLengthRemoveDecoder())
+                        .add(MyStageKey.GENERATOR, new NumberGenerator());
+                storePipeline.add(MyStageKey.FRAMING, new FrameLengthPrependEncoder());
+            }
+        });
         NioClientSocketProcessor clientProcessor = new NioClientSocketProcessor();
+        clientProcessor.setPipelineComposer(new PipelineComposer() {
+            @Override
+            public void compose(LoadPipeline loadPipeline, StorePipeline storePipeline) {
+                loadPipeline.add(MyStageKey.FRAMING, new FrameLengthRemoveDecoder())
+                        .add(MyStageKey.REPORTER, new EvenOddReporter());
+                storePipeline.add(MyStageKey.FRAMING, new FrameLengthPrependEncoder());
+            }
+        });
         serverProcessor.start();
         clientProcessor.start();
-        Transport serverTransport = createServerTransport(serverProcessor);
-        Transport clientTransport = createClientTransport(clientProcessor);
+        Transport serverTransport = serverProcessor.createTransport(new NioServerSocketConfig());
+        Transport clientTransport = clientProcessor.createTransport(new NioClientSocketConfig());
         try {
             InetSocketAddress endpoint = new InetSocketAddress(serverPort);
             serverTransport.bind(endpoint);
@@ -54,38 +75,5 @@ public class DrrMain {
             clientProcessor.stop();
             serverProcessor.stop();
         }
-    }
-
-    private enum MyStageKey implements StageKey {
-        GENERATOR,
-        REPORTER,
-        FRAMING,
-    }
-
-    private Transport createServerTransport(NioServerSocketProcessor processor) {
-        NioServerSocketConfig config = new NioServerSocketConfig();
-        config.setPipelineInitializer(new PipelineComposer() {
-            @Override
-            public void compose(LoadPipeline loadPipeline, StorePipeline storePipeline) {
-                loadPipeline.add(MyStageKey.FRAMING, new FrameLengthRemoveDecoder())
-                        .add(MyStageKey.GENERATOR, new NumberGenerator());
-                storePipeline.add(MyStageKey.FRAMING, new FrameLengthPrependEncoder());
-            }
-        });
-        config.setWriteQueueFactory(new DeficitRoundRobinWriteQueueFactory(4096, 0.5f));
-        return processor.createTransport(config);
-    }
-
-    private Transport createClientTransport(NioClientSocketProcessor processor) {
-        NioClientSocketConfig config = new NioClientSocketConfig();
-        config.setPipelineInitializer(new PipelineComposer() {
-            @Override
-            public void compose(LoadPipeline loadPipeline, StorePipeline storePipeline) {
-                loadPipeline.add(MyStageKey.FRAMING, new FrameLengthRemoveDecoder())
-                        .add(MyStageKey.REPORTER, new EvenOddReporter());
-                storePipeline.add(MyStageKey.FRAMING, new FrameLengthPrependEncoder());
-            }
-        });
-        return processor.createTransport(config);
     }
 }

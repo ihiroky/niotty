@@ -5,9 +5,10 @@ package net.ihiroky.niotty;
  *
  * @author Hiroki Itoh
  */
-public interface Processor<T extends Transport, C extends TransportConfig> {
+public interface Processor<T extends Transport, C> {
     void start();
     void stop();
-    String getName();
+    String name();
+    void setPipelineComposer(PipelineComposer composer);
     T createTransport(C config);
 }

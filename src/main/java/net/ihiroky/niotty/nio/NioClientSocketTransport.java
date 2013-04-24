@@ -2,6 +2,7 @@ package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.DefaultTransportFuture;
 import net.ihiroky.niotty.FailedTransportFuture;
+import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.SucceededTransportFuture;
 import net.ihiroky.niotty.TaskLoop;
 import net.ihiroky.niotty.TransportFuture;
@@ -28,8 +29,10 @@ public class NioClientSocketTransport extends NioSocketTransport<MessageIOSelect
     private final ConnectSelectorPool connector_;
     private final WriteQueue writeQueue_;
 
-    NioClientSocketTransport(NioClientSocketConfig config, String name, ConnectSelectorPool connector) {
+    NioClientSocketTransport(
+            NioClientSocketConfig config, PipelineComposer composer, String name, ConnectSelectorPool connector) {
         Objects.requireNonNull(config, "config");
+        Objects.requireNonNull(composer, "composer");
         Objects.requireNonNull(name, "name");
         Objects.requireNonNull(connector, "connector");
 
@@ -38,7 +41,7 @@ public class NioClientSocketTransport extends NioSocketTransport<MessageIOSelect
             clientChannel.configureBlocking(false);
             config.applySocketOptions(clientChannel);
 
-            setUpPipelines(name, config.getPipelineInitializer());
+            setUpPipelines(name, composer);
 
             clientChannel_ = clientChannel;
             connector_ = connector;
@@ -48,12 +51,14 @@ public class NioClientSocketTransport extends NioSocketTransport<MessageIOSelect
         }
     }
 
-    NioClientSocketTransport(NioServerSocketConfig config, String name, SocketChannel child) {
+    NioClientSocketTransport(
+            NioServerSocketConfig config, PipelineComposer composer, String name, SocketChannel child) {
         Objects.requireNonNull(config, "config");
+        Objects.requireNonNull(composer, "composer");
         Objects.requireNonNull(name, "name");
         Objects.requireNonNull(child, "child");
 
-        setUpPipelines(name, config.getPipelineInitializer());
+        setUpPipelines(name, composer);
 
         clientChannel_ = child;
         connector_ = null;

@@ -1,6 +1,7 @@
 package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.NameCountThreadFactory;
+import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.Processor;
 
 import java.util.Objects;
@@ -14,6 +15,7 @@ public class NioClientSocketProcessor implements Processor<NioClientSocketTransp
 
     private ConnectSelectorPool connectSelectorPool_;
     private MessageIOSelectorPool messageIOSelectorPool_;
+    private PipelineComposer pipelineComposer_;
     private String name_;
     private int numberOfConnectThread_;
     private int numberOfMessageIOThread_;
@@ -32,6 +34,8 @@ public class NioClientSocketProcessor implements Processor<NioClientSocketTransp
     public NioClientSocketProcessor() {
         messageIOSelectorPool_ = new MessageIOSelectorPool();
         connectSelectorPool_ = new ConnectSelectorPool(messageIOSelectorPool_);
+        pipelineComposer_ = PipelineComposer.empty();
+
         name_ = "NioClientSocket";
         numberOfConnectThread_ = DEFAULT_NUMBER_OF_CONNECT_THREAD;
         numberOfMessageIOThread_ = DEFAULT_NUMBER_OF_MESSAGE_IO_THREAD;
@@ -42,7 +46,7 @@ public class NioClientSocketProcessor implements Processor<NioClientSocketTransp
 
     @Override
     public NioClientSocketTransport createTransport(NioClientSocketConfig config) {
-        return new NioClientSocketTransport(config, name_, connectSelectorPool_);
+        return new NioClientSocketTransport(config, pipelineComposer_, name_, connectSelectorPool_);
     }
 
     @Override
@@ -57,11 +61,18 @@ public class NioClientSocketProcessor implements Processor<NioClientSocketTransp
     public void stop() {
         messageIOSelectorPool_.close();
         connectSelectorPool_.close();
+        pipelineComposer_.close();
     }
 
     @Override
-    public String getName() {
+    public String name() {
         return name_;
+    }
+
+    @Override
+    public void setPipelineComposer(PipelineComposer composer) {
+        Objects.requireNonNull(composer, "composer");
+        pipelineComposer_ = composer;
     }
 
     public void setName(String name) {

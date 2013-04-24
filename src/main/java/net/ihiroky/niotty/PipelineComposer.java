@@ -15,8 +15,26 @@ public abstract class PipelineComposer {
 
     private static final int INITIAL_CAPACITY = 3;
 
+    private static final PipelineComposer EMPTY = new PipelineComposer(0) {
+        @Override
+        protected void addCloseable(Closeable closeable) {
+            throw new UnsupportedOperationException();
+        }
+        @Override
+        public void compose(LoadPipeline loadPipeline, StorePipeline storePipeline) {
+        }
+    };
+
+    public static PipelineComposer empty() {
+        return EMPTY;
+    }
+
     protected PipelineComposer() {
-        closeableList_ = new ArrayList<>(INITIAL_CAPACITY);
+        this(3);
+    }
+
+    protected PipelineComposer(int initialCapacity) {
+        closeableList_ = new ArrayList<>(initialCapacity);
     }
 
     protected void addCloseable(Closeable closeable) {
