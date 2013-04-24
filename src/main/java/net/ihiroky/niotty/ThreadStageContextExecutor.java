@@ -11,15 +11,15 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * @author Hiroki Itoh
  */
-public class LoopStageContextExecutor extends TaskLoop<LoopStageContextExecutor> implements StageContextExecutor {
+public class ThreadStageContextExecutor extends TaskLoop<ThreadStageContextExecutor> implements StageContextExecutor {
 
     private final Lock lock_;
     private final Condition condition_;
     private final AtomicBoolean signaled_;
     private final Set<StageContext<?, ?>> contextSet_;
-    private final LoopStageContextExecutorPool pool_;
+    private final ThreadStageContextExecutorPool pool_;
 
-    public LoopStageContextExecutor(LoopStageContextExecutorPool pool) {
+    public ThreadStageContextExecutor(ThreadStageContextExecutorPool pool) {
         lock_ = new ReentrantLock();
         condition_ = lock_.newCondition();
         signaled_ = new AtomicBoolean();
@@ -61,9 +61,9 @@ public class LoopStageContextExecutor extends TaskLoop<LoopStageContextExecutor>
 
     @Override
     public <I> void execute(final StageContext<I, ?> context, final I input) {
-        offerTask(new Task<LoopStageContextExecutor>() {
+        offerTask(new Task<ThreadStageContextExecutor>() {
             @Override
-            public int execute(LoopStageContextExecutor eventLoop) throws Exception {
+            public int execute(ThreadStageContextExecutor eventLoop) throws Exception {
                 context.fire(input);
                 return TIMEOUT_NO_LIMIT;
             }
@@ -72,9 +72,9 @@ public class LoopStageContextExecutor extends TaskLoop<LoopStageContextExecutor>
 
     @Override
     public <I> void execute(final StageContext<I, ?> context, final TransportStateEvent event) {
-        offerTask(new Task<LoopStageContextExecutor>() {
+        offerTask(new Task<ThreadStageContextExecutor>() {
             @Override
-            public int execute(LoopStageContextExecutor eventLoop) throws Exception {
+            public int execute(ThreadStageContextExecutor eventLoop) throws Exception {
                 context.fire(event);
                 return TIMEOUT_NO_LIMIT;
             }
@@ -88,7 +88,7 @@ public class LoopStageContextExecutor extends TaskLoop<LoopStageContextExecutor>
 
     @Override
     public void close(StageContext<?, ?> context) {
-        synchronized (pool_.allocationLock()) {
+        synchronized (pool_.assignLock()) {
             contextSet_.remove(context);
         }
         processingMemberCount_.decrementAndGet();
@@ -96,7 +96,7 @@ public class LoopStageContextExecutor extends TaskLoop<LoopStageContextExecutor>
 
     /**
      * Adds a specified {@code StageContext} to the context set.
-     * This method must be called by {@link LoopStageContextExecutorPool} only.
+     * This method can be called by {@link ThreadStageContextExecutorPool} only.
      *
      * @param context the {@code StageContext} to be added
      * @return true if the context set does not contains the {@code context}
@@ -108,7 +108,7 @@ public class LoopStageContextExecutor extends TaskLoop<LoopStageContextExecutor>
 
     /**
      * Returns true if the context set contains a specified {@code StageContext}.
-     * This method must be called by {@link LoopStageContextExecutorPool} only.
+     * This method can be called by {@link ThreadStageContextExecutorPool} only.
      *
      * @param context the {@code StageContext} to be checked
      * @return true if the context set contains a specified {@code StageContext}.
