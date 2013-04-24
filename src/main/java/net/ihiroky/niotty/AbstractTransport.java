@@ -30,11 +30,11 @@ abstract public class AbstractTransport<L extends TaskLoop<L>> implements Transp
         transportListener_ = NULL_LISTENER;
     }
 
-    protected void setUpPipelines(String baseName, PipelineInitializer pipelineInitializer) {
+    protected void setUpPipelines(String baseName, PipelineComposer pipelineComposer) {
 
         DefaultLoadPipeline loadPipeline = new DefaultLoadPipeline(baseName, this);
         DefaultStorePipeline storePipeline = new DefaultStorePipeline(baseName, this);
-        pipelineInitializer.setUpPipeline(loadPipeline, storePipeline);
+        pipelineComposer.compose(loadPipeline, storePipeline);
 
         loadPipeline.verifyStageType();
         storePipeline.verifyStageType();
@@ -59,8 +59,8 @@ abstract public class AbstractTransport<L extends TaskLoop<L>> implements Transp
         storePipeline_.execute(stateEvent);
     }
 
-    public final void resetPipelines(PipelineInitializer initializer) {
-        Objects.requireNonNull(initializer, "initializer");
+    public final void resetPipelines(PipelineComposer composer) {
+        Objects.requireNonNull(composer, "composer");
 
         // use the same lock object as listener to save memory footprint.
         synchronized (this) {
@@ -68,7 +68,7 @@ abstract public class AbstractTransport<L extends TaskLoop<L>> implements Transp
             DefaultStorePipeline oldStorePipeline = storePipeline_;
             DefaultLoadPipeline loadPipelineCopy = oldLoadPipeline.createCopy();
             DefaultStorePipeline storePipelineCopy = oldStorePipeline.createCopy();
-            initializer.setUpPipeline(loadPipelineCopy, storePipelineCopy);
+            composer.compose(loadPipelineCopy, storePipelineCopy);
 
             StoreStage<BufferSink, Void> ioStage = oldStorePipeline.searchIOStage();
             if (ioStage != null) {

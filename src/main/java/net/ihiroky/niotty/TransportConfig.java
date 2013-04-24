@@ -9,22 +9,22 @@ import java.util.Objects;
  */
 public class TransportConfig {
 
-    private volatile PipelineInitializer pipelineInitializer_ = EMPTY;
+    private volatile PipelineComposer pipelineComposer_ = EMPTY;
 
-    private static final PipelineInitializer EMPTY = new EmptyPipelineInitializer();
+    private static final PipelineComposer EMPTY = new EmptyPipelineComposer();
 
-    public PipelineInitializer getPipelineInitializer() {
-        return pipelineInitializer_;
+    public PipelineComposer getPipelineInitializer() {
+        return pipelineComposer_;
     }
 
-    public void setPipelineInitializer(PipelineInitializer pipelineInitializer) {
-        Objects.requireNonNull(pipelineInitializer, "pipelineInitializer");
-        this.pipelineInitializer_ = pipelineInitializer;
+    public void setPipelineInitializer(PipelineComposer pipelineComposer) {
+        Objects.requireNonNull(pipelineComposer, "pipelineComposer");
+        this.pipelineComposer_ = pipelineComposer;
     }
 
-    private static class EmptyPipelineInitializer implements PipelineInitializer {
+    private static class EmptyPipelineComposer extends PipelineComposer {
         @Override
-        public void setUpPipeline(LoadPipeline loadPipeline, StorePipeline storePipeline) {
+        public void compose(LoadPipeline loadPipeline, StorePipeline storePipeline) {
         }
     }
 }

@@ -21,6 +21,6 @@ public final class DefaultStageContextExecutorPool implements StageContextExecut
     }
 
     @Override
-    public void shutdown() {
+    public void close() {
     }
 }

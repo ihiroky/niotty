@@ -1,7 +1,7 @@
 package net.ihiroky.niotty.sample.file;
 
 import net.ihiroky.niotty.LoadPipeline;
-import net.ihiroky.niotty.PipelineInitializer;
+import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.StageKey;
 import net.ihiroky.niotty.StorePipeline;
 import net.ihiroky.niotty.Transport;
@@ -65,9 +65,9 @@ public class FileMain {
 
     private NioServerSocketConfig createServerConfig() {
         NioServerSocketConfig config = new NioServerSocketConfig();
-        config.setPipelineInitializer(new PipelineInitializer() {
+        config.setPipelineInitializer(new PipelineComposer() {
             @Override
-            public void setUpPipeline(LoadPipeline loadPipeline, StorePipeline storePipeline) {
+            public void compose(LoadPipeline loadPipeline, StorePipeline storePipeline) {
                 loadPipeline.add(Key.FRAMING, new FrameLengthRemoveDecoder())
                         .add(Key.STRING_DECODER, new StringDecoder())
                         .add(Key.LOAD_FILE, new FileLoadStage());
@@ -79,9 +79,9 @@ public class FileMain {
 
     private NioClientSocketConfig createClientConfig(final Waiter waiter) {
         NioClientSocketConfig config = new NioClientSocketConfig();
-        config.setPipelineInitializer(new PipelineInitializer() {
+        config.setPipelineInitializer(new PipelineComposer() {
             @Override
-            public void setUpPipeline(LoadPipeline loadPipeline, StorePipeline storePipeline) {
+            public void compose(LoadPipeline loadPipeline, StorePipeline storePipeline) {
                 loadPipeline.add(Key.FRAMING, new FrameLengthRemoveDecoder())
                         .add(Key.DUMP_FILE, new FileDumpStage(waiter));
                 storePipeline.add(Key.STRING_ENCODER, new StringEncoder())

@@ -57,7 +57,7 @@ public final class ThreadStageContextExecutorPool
     }
 
     @Override
-    public void shutdown() {
+    public void close() {
         synchronized (assignLock_) {
             if (state_ == State.OPEN) {
                 super.close();

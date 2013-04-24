@@ -3,7 +3,7 @@ package net.ihiroky.niotty;
 /**
  * @author Hiroki Itoh
  */
-public interface StageContextExecutorPool {
+public interface StageContextExecutorPool extends Cloneable {
     StageContextExecutor assign(StageContext<?, ?> context);
-    void shutdown();
+    void close();
 }

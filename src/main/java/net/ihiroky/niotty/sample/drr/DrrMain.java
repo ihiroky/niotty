@@ -1,7 +1,7 @@
 package net.ihiroky.niotty.sample.drr;
 
 import net.ihiroky.niotty.LoadPipeline;
-import net.ihiroky.niotty.PipelineInitializer;
+import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.StageKey;
 import net.ihiroky.niotty.StorePipeline;
 import net.ihiroky.niotty.Transport;
@@ -64,9 +64,9 @@ public class DrrMain {
 
     private Transport createServerTransport(NioServerSocketProcessor processor) {
         NioServerSocketConfig config = new NioServerSocketConfig();
-        config.setPipelineInitializer(new PipelineInitializer() {
+        config.setPipelineInitializer(new PipelineComposer() {
             @Override
-            public void setUpPipeline(LoadPipeline loadPipeline, StorePipeline storePipeline) {
+            public void compose(LoadPipeline loadPipeline, StorePipeline storePipeline) {
                 loadPipeline.add(MyStageKey.FRAMING, new FrameLengthRemoveDecoder())
                         .add(MyStageKey.GENERATOR, new NumberGenerator());
                 storePipeline.add(MyStageKey.FRAMING, new FrameLengthPrependEncoder());
@@ -78,9 +78,9 @@ public class DrrMain {
 
     private Transport createClientTransport(NioClientSocketProcessor processor) {
         NioClientSocketConfig config = new NioClientSocketConfig();
-        config.setPipelineInitializer(new PipelineInitializer() {
+        config.setPipelineInitializer(new PipelineComposer() {
             @Override
-            public void setUpPipeline(LoadPipeline loadPipeline, StorePipeline storePipeline) {
+            public void compose(LoadPipeline loadPipeline, StorePipeline storePipeline) {
                 loadPipeline.add(MyStageKey.FRAMING, new FrameLengthRemoveDecoder())
                         .add(MyStageKey.REPORTER, new EvenOddReporter());
                 storePipeline.add(MyStageKey.FRAMING, new FrameLengthPrependEncoder());
