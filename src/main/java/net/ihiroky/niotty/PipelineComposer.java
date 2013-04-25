@@ -1,6 +1,5 @@
 package net.ihiroky.niotty;
 
-import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -11,13 +10,13 @@ import java.util.List;
  */
 public abstract class PipelineComposer {
 
-    private List<Closeable> closeableList_;
+    private List<AutoCloseable> closeableList_;
 
     private static final int INITIAL_CAPACITY = 3;
 
     private static final PipelineComposer EMPTY = new PipelineComposer(0) {
         @Override
-        protected void addCloseable(Closeable closeable) {
+        protected void addCloseable(AutoCloseable closeable) {
             throw new UnsupportedOperationException();
         }
         @Override
@@ -30,19 +29,19 @@ public abstract class PipelineComposer {
     }
 
     protected PipelineComposer() {
-        this(3);
+        this(INITIAL_CAPACITY);
     }
 
     protected PipelineComposer(int initialCapacity) {
         closeableList_ = new ArrayList<>(initialCapacity);
     }
 
-    protected void addCloseable(Closeable closeable) {
+    protected void addCloseable(AutoCloseable closeable) {
         closeableList_.add(closeable);
     }
 
     public void close() {
-        for (Closeable closeable : closeableList_) {
+        for (AutoCloseable closeable : closeableList_) {
             try {
                 closeable.close();
             } catch (Throwable t) {
