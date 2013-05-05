@@ -10,25 +10,64 @@ import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CoderResult;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * @author Hiroki Itoh
  */
-public abstract class AbstractCompositeCodecBuffer extends AbstractCodecBuffer implements CodecBuffer {
+public class CodecBufferList extends AbstractCodecBuffer implements CodecBuffer {
 
-    private List<CodecBuffer> buffers_ = new ArrayList<>(INITIAL_GROUP_CAPACITY);
+    private List<CodecBuffer> buffers_;
+    private CodecBufferFactory allocator_;
     private int beginningBufferIndex_;
     private int endBufferIndex_;
     private int priority_;
 
-    private static final int INITIAL_GROUP_CAPACITY = 4; // actually 8 in ArrayDeque.
+    private static final int INITIAL_BUFFERS_CAPACITY = 4;
+    private static final int MAX_BUFFER_COUNT = 1024;
+    private static final CodecBuffer EMPTY_BUFFER = new ArrayCodecBuffer(0);
 
-    public AbstractCompositeCodecBuffer() {
-        priority_ = Buffers.DEFAULT_PRIORITY;
+    private CodecBufferList(CodecBufferFactory allocator, int priority) {
+        buffers_ = new ArrayList<>(INITIAL_BUFFERS_CAPACITY);
+        allocator_ = allocator;
+        priority_ = priority;
+        endBufferIndex_ = -1;
     }
 
-    public AbstractCompositeCodecBuffer(int priority) {
+    CodecBufferList(CodecBufferFactory allocator, int priority, CodecBuffer buffer0, CodecBuffer... buffers) {
+        Objects.requireNonNull(allocator, "allocator");
+        Objects.requireNonNull(buffer0, "buffer0");
+        Objects.requireNonNull(buffers, "buffers");
+        if (buffers.length >= MAX_BUFFER_COUNT) {
+            throw new IllegalArgumentException("length of buffers must be less than " + MAX_BUFFER_COUNT + ".");
+        }
+
+        List<CodecBuffer> list = new ArrayList<>(Math.max(INITIAL_BUFFERS_CAPACITY, buffers.length + 1));
+        list.add(buffer0.slice());
+        int end = 0;
+        for (int i = 0; i < buffers.length; i++) {
+            CodecBuffer b = buffers[i];
+            if (b.remainingBytes() > 0) {
+                end = i + 1;
+            }
+            list.add(b.slice());
+        }
+        buffers_ = list;
+        allocator_ = allocator;
         priority_ = priority;
+        endBufferIndex_ = end;
+    }
+
+    int beginningBufferIndex() {
+        return beginningBufferIndex_;
+    }
+
+    int endBufferIndex() {
+        return endBufferIndex_;
+    }
+
+    int sizeOfBuffers() {
+        return buffers_.size();
     }
 
     @Override
@@ -41,15 +80,15 @@ public abstract class AbstractCompositeCodecBuffer extends AbstractCodecBuffer i
                 break;
             }
         }
-        if (offset == end) {
+        if (offset == end && buffers.get(offset).remainingBytes() == 0) {
             return true;
         }
-        ByteBuffer[] byteBuffers = new ByteBuffer[end - offset];
-        for (int i = offset; i < end; i++) {
+        ByteBuffer[] byteBuffers = new ByteBuffer[end - offset + 1];
+        for (int i = offset; i <= end; i++) {
             byteBuffers[i - offset] = buffers.get(i).toByteBuffer();
         }
         channel.write(byteBuffers, 0, byteBuffers.length);
-        for (int i = offset; i < end; i++) {
+        for (int i = offset; i <= end; i++) {
             ByteBuffer byteBuffer = byteBuffers[i - offset];
             buffers.get(i).beginning(byteBuffer.position());
             if (byteBuffer.hasRemaining()) {
@@ -60,25 +99,65 @@ public abstract class AbstractCompositeCodecBuffer extends AbstractCodecBuffer i
     }
 
     @Override
-    public AbstractCompositeCodecBuffer addFirst(CodecBuffer buffer) {
-        buffers_.add(0, buffer);
+    public CodecBufferList addFirst(CodecBuffer buffer) {
+        if (buffer == null) {
+            throw new IllegalArgumentException("buffer must not be null.");
+        }
+
+        int beginning = beginningBufferIndex_;
+        while (beginning <= endBufferIndex_
+                && buffers_.get(beginning).remainingBytes() == 0) {
+            beginning = ++beginningBufferIndex_;
+        }
+
+        buffers_.add(beginning, buffer.slice());
+        endBufferIndex_++;
         return this;
     }
 
     @Override
-    public AbstractCompositeCodecBuffer addLast(CodecBuffer buffer) {
-        buffers_.add(buffer);
+    public CodecBufferList addLast(CodecBuffer buffer) {
+        if (buffer == null) {
+            throw new IllegalArgumentException("buffer must not be null.");
+        }
+
+        int end = endBufferIndex_;
+        while (end >= beginningBufferIndex_
+                && buffers_.get(end).remainingBytes() == 0) {
+            end--;
+        }
+
+        // TODO duplicate buffer to independent of beginning / end index.
+        int size = buffers_.size();
+        if (end == size - 1) { // end is the last index ?
+            buffers_.add(buffer.slice());
+            endBufferIndex_++;
+        } else if (end >= 0) {
+            buffers_.add(++end, buffer.slice());
+            endBufferIndex_ = end;
+        } else { // if (end == -1) { // all buffer between beginning and end are empty.
+            buffers_.add(buffer.slice());
+            endBufferIndex_ = (buffer.remainingBytes() > 0) ? size : beginningBufferIndex_;
+        }
         return this;
     }
 
     private CodecBuffer appendNewCodecBuffer(CodecBuffer endBuffer, int expectedMinSize) {
-        CodecBuffer buffer = newCodecBuffer(Math.max(endBuffer.capacityBytes() * 2, expectedMinSize));
+        if (buffers_.size() >= MAX_BUFFER_COUNT) {
+            throw new IllegalStateException("the size of buffers reaches maximum: " + MAX_BUFFER_COUNT);
+        }
+        CodecBuffer buffer = allocator_.newCodecBuffer(Math.max(endBuffer.capacityBytes() * 2, expectedMinSize));
+
+        // TODO duplicate buffer to independent of beginning / end index.
         buffers_.add(buffer);
         endBufferIndex_++;
         return buffer;
     }
 
-    protected abstract CodecBuffer newCodecBuffer(int capacity);
+    private CodecBuffer nextBuffer(CodecBuffer current, int required) {
+        return (endBufferIndex_ + 1 == buffers_.size())
+                ? appendNewCodecBuffer(current, required) : buffers_.get(++endBufferIndex_);
+    }
 
     @Override
     public void writeByte(int value) {
@@ -97,27 +176,28 @@ public abstract class AbstractCompositeCodecBuffer extends AbstractCodecBuffer i
             buffer.writeBytes(bytes, offset, length);
             return;
         }
-        int writeBytesInNewBuffer = length - space;
-        CodecBuffer newBuffer = appendNewCodecBuffer(buffer, writeBytesInNewBuffer);
         buffer.writeBytes(bytes, offset, space);
-        newBuffer.writeBytes(bytes, offset + space, writeBytesInNewBuffer);
+
+        length -= space;
+        CodecBuffer newBuffer = appendNewCodecBuffer(buffer, length);
+        newBuffer.writeBytes(bytes, offset + space, length);
     }
 
     @Override
     public void writeBytes(ByteBuffer byteBuffer) {
         CodecBuffer buffer = buffers_.get(endBufferIndex_);
         int space = buffer.spaceBytes();
-        int remaining = byteBuffer.remaining();
-        if (space >= remaining) {
+        if (space >= byteBuffer.remaining()) {
             buffer.writeBytes(byteBuffer);
             return;
         }
-        int writeBytesInNewBuffer = remaining - space;
-        CodecBuffer newBuffer = appendNewCodecBuffer(buffer, writeBytesInNewBuffer);
         int limit = byteBuffer.limit();
         byteBuffer.limit(byteBuffer.position() + space);
         buffer.writeBytes(byteBuffer);
         byteBuffer.limit(limit);
+
+        int writeBytesInNewBuffer = byteBuffer.remaining();
+        CodecBuffer newBuffer = appendNewCodecBuffer(buffer, writeBytesInNewBuffer);
         newBuffer.writeBytes(byteBuffer);
     }
 
@@ -128,9 +208,8 @@ public abstract class AbstractCompositeCodecBuffer extends AbstractCodecBuffer i
             buffer.writeShort(value);
             return;
         }
-        CodecBuffer newBuffer = appendNewCodecBuffer(buffer, CodecUtil.SHORT_BYTES);
-        buffer.writeByte(value >>> CodecUtil.BYTE_SHIFT1);
-        newBuffer.writeByte(value & CodecUtil.BYTE_MASK);
+        CodecBuffer nextBuffer = nextBuffer(buffer, CodecUtil.SHORT_BYTES);
+        nextBuffer.writeShort(value);
     }
 
     @Override
@@ -140,9 +219,8 @@ public abstract class AbstractCompositeCodecBuffer extends AbstractCodecBuffer i
             buffer.writeChar(value);
             return;
         }
-        CodecBuffer newBuffer = appendNewCodecBuffer(buffer, CodecUtil.SHORT_BYTES);
-        buffer.writeByte(value >>> CodecUtil.BYTE_SHIFT1);
-        newBuffer.writeByte(value & CodecUtil.BYTE_MASK);
+        CodecBuffer newBuffer = nextBuffer(buffer, CodecUtil.CHAR_BYTES);
+        newBuffer.writeChar(value);
     }
 
     @Override
@@ -159,57 +237,46 @@ public abstract class AbstractCompositeCodecBuffer extends AbstractCodecBuffer i
     @Override
     public void writeLong(long value) {
         CodecBuffer buffer = buffers_.get(endBufferIndex_);
-        if (buffer.spaceBytes() >= CodecUtil.INT_BYTES) {
+        if (buffer.spaceBytes() >= CodecUtil.LONG_BYTES) {
             buffer.writeLong(value);
             return;
         }
         writeInt((int) (value >>> CodecUtil.BYTE_SHIFT4));
-        writeInt((int) (value & CodecUtil.INT_BYTES));
+        writeInt((int) (value & CodecUtil.INT_MASK));
     }
 
     @Override
-    public void writeString(CharsetEncoder charsetEncoder, String s) {
-        if (s == null) {
-            throw new NullPointerException("s must not be null.");
-        }
+    public void writeString(String s, CharsetEncoder encoder) {
+        Objects.requireNonNull(s, "s");
+        Objects.requireNonNull(encoder, "encoder");
 
-        if (StringCache.writeEmptyOrOneCharAscii(this, charsetEncoder, s)) {
-            return;
-        }
-
-        // TODO ここのVBCはunsignedにしたい unsigned int 版 VBC
-        final int maxVariableBytesLength = 5;
         CodecBuffer buffer = buffers_.get(endBufferIndex_);
-        if (buffer.spaceBytes() < maxVariableBytesLength) {
-            buffer = appendNewCodecBuffer(buffer, maxVariableBytesLength);
-        }
-        CodecBuffer firstBuffer = buffer;
-        int firstPosition = firstBuffer.end();
-        firstBuffer.end(buffer.end() + maxVariableBytesLength);
-
         CharBuffer input = CharBuffer.wrap(s);
         ByteBuffer output = buffer.toByteBuffer();
-        int startPosition = output.position();
-        int outputLength = 0;
+        output.position(output.limit());
+        output.limit(output.capacity());
         for (;;) {
-            CoderResult cr = charsetEncoder.encode(input, output, true);
+            CoderResult cr = encoder.encode(input, output, true);
             if (cr.isUnderflow()) {
-                cr = charsetEncoder.flush(output);
+                cr = encoder.flush(output);
                 if (cr.isUnderflow()) {
                     buffer.end(output.position());
-                    outputLength += output.position() - startPosition;
-                    charsetEncoder.reset();
+                    encoder.reset();
                     break;
                 }
                 // jump ot overflow operation.
             }
             if (cr.isOverflow()) {
                 buffer.end(output.position());
-                outputLength += output.position() - startPosition;
-                buffer = appendNewCodecBuffer(
-                        buffer, (int) (charsetEncoder.averageBytesPerChar() * input.remaining() + 1));
+                if (endBufferIndex_ + 1 == buffers_.size()) {
+                    buffer = appendNewCodecBuffer(
+                            buffer, Buffers.outputByteBufferSize(encoder, input.remaining()));
+                } else {
+                    buffer = buffers_.get(++endBufferIndex_);
+                }
                 output = buffer.toByteBuffer();
-                startPosition = output.position();
+                output.position(output.limit());
+                output.limit(output.capacity());
                 continue;
             }
             if (cr.isError()) {
@@ -221,18 +288,13 @@ public abstract class AbstractCompositeCodecBuffer extends AbstractCodecBuffer i
                 }
             }
         }
-        int variableBytesLength = CodecUtil.variableByteLength(outputLength);
-        int end = firstBuffer.end();
-        firstBuffer.end(firstPosition + (maxVariableBytesLength - variableBytesLength));
-        firstBuffer.writeVariableByteInteger(outputLength);
-        firstBuffer.end(end);
     }
 
     private CodecBuffer nextReadBufferOrNull() {
         CodecBuffer buffer = buffers_.get(beginningBufferIndex_);
         while (buffer.remainingBytes() == 0) {
             if (beginningBufferIndex_ >= endBufferIndex_) {
-                throw new IndexOutOfBoundsException("No data remains.");
+                return null;
             }
             buffer = buffers_.get(++beginningBufferIndex_);
         }
@@ -337,27 +399,26 @@ public abstract class AbstractCompositeCodecBuffer extends AbstractCodecBuffer i
     }
 
     @Override
-    public String readString(CharsetDecoder charsetDecoder, int bytes) {
-        String cached = StringCache.getCachedValue(this, charsetDecoder, bytes);
+    public String readString(CharsetDecoder decoder, int bytes) {
+        String cached = StringCache.getCachedValue(this, decoder, bytes);
         if (cached != null) {
             return cached;
         }
 
-        float charsPerByte = charsetDecoder.averageCharsPerByte();
         CodecBuffer buffer = nextReadBuffer();
         ByteBuffer input = buffer.toByteBuffer();
-        CharBuffer output = CharBuffer.allocate(Buffers.outputCharBufferSize(charsPerByte, bytes));
+        CharBuffer output = CharBuffer.allocate(Buffers.outputCharBufferSize(decoder, bytes));
         int currentRemaining = input.remaining();
         boolean endOfInput = currentRemaining >= bytes;
         int previousRemaining = 0;
         for (;;) {
-            CoderResult cr = charsetDecoder.decode(input, output, endOfInput);
+            CoderResult cr = decoder.decode(input, output, endOfInput);
             if (cr.isUnderflow()) {
                 if (endOfInput) {
-                    cr = charsetDecoder.flush(output);
+                    cr = decoder.flush(output);
                     if (cr.isUnderflow()) {
                         buffer.beginning(input.position() - previousRemaining);
-                        charsetDecoder.reset();
+                        decoder.reset();
                         break;
                     }
                     // jump to overflow operation.
@@ -369,9 +430,9 @@ public abstract class AbstractCompositeCodecBuffer extends AbstractCodecBuffer i
                     if (remaining == 0) {
                         input = buffer.toByteBuffer();
                     } else {
-                        input = ByteBuffer.allocate(remaining + buffer.remainingBytes());
-                        input.put(input).put(buffer.toByteBuffer());
-                        input.flip();
+                        ByteBuffer newInput = ByteBuffer.allocate(remaining + buffer.remainingBytes());
+                        newInput.put(input).put(buffer.toByteBuffer()).flip();
+                        input = newInput;
                     }
                     bytes -= currentRemaining - remaining;
                     currentRemaining = input.remaining();
@@ -380,7 +441,7 @@ public abstract class AbstractCompositeCodecBuffer extends AbstractCodecBuffer i
                 }
             }
             if (cr.isOverflow()) {
-                output = Buffers.expand(output, charsPerByte, input.remaining());
+                output = Buffers.expand(output, decoder, input.remaining());
                 continue;
             }
             if (cr.isError()) {
@@ -389,7 +450,7 @@ public abstract class AbstractCompositeCodecBuffer extends AbstractCodecBuffer i
             }
         }
         output.flip();
-        return StringCache.toString(output, charsetDecoder);
+        return StringCache.toString(output, decoder);
     }
 
     @Override
@@ -402,18 +463,17 @@ public abstract class AbstractCompositeCodecBuffer extends AbstractCodecBuffer i
             left -= buffer.skipBytes(left);
             if (bytes >= 0) {
                 if (bufferIndex == endBufferIndex_) {
-                    beginningBufferIndex_ = bufferIndex;
                     break;
                 }
                 bufferIndex++;
             } else {
                 if (bufferIndex == 0) {
-                    beginningBufferIndex_ = bufferIndex;
                     break;
                 }
                 bufferIndex--;
             }
         }
+        beginningBufferIndex_ = bufferIndex;
         return bytes - left;
     }
 
@@ -430,7 +490,7 @@ public abstract class AbstractCompositeCodecBuffer extends AbstractCodecBuffer i
         long sum = 0;
         List<CodecBuffer> buffers = buffers_;
         int end = endBufferIndex_;
-        for (int i = beginningBufferIndex_; i < end; i++) {
+        for (int i = beginningBufferIndex_; i <= end; i++) {
             sum += buffers.get(i).remainingBytes();
         }
         return sum;
@@ -490,7 +550,7 @@ public abstract class AbstractCompositeCodecBuffer extends AbstractCodecBuffer i
         List<CodecBuffer> buffer = buffers_;
         int endBufferIndex = endBufferIndex_;
         CodecBuffer target = null;
-        for (int bi = 0; bi < endBufferIndex; bi++) {
+        for (int bi = beginningBufferIndex_; bi <= endBufferIndex; bi++) {
             CodecBuffer b = buffer.get(bi);
             int c = b.capacityBytes();
             if (beginning < c) {
@@ -513,7 +573,7 @@ public abstract class AbstractCompositeCodecBuffer extends AbstractCodecBuffer i
         for (int i = beginningBufferIndex_; i < end; i++) {
             sum += buffers_.get(i).capacityBytes();
         }
-        sum += buffers_.get(end).remainingBytes();
+        sum += buffers_.get(end).end();
         return (sum <= Integer.MAX_VALUE) ? (int) sum : Integer.MAX_VALUE;
     }
 
@@ -550,26 +610,45 @@ public abstract class AbstractCompositeCodecBuffer extends AbstractCodecBuffer i
 
     @Override
     public int drainFrom(CodecBuffer buffer, int bytes) {
-        CodecBuffer b = buffers_.get(endBufferIndex_);
-        int space = b.spaceBytes();
-        if (space >= bytes) {
-            return b.drainFrom(buffer, bytes);
+        // TODO over int operation
+        int drainedBytes = 0;
+        CodecBuffer b = null;
+        List<CodecBuffer> buffers = buffers_;
+        int size = buffers.size();
+        int end = endBufferIndex_;
+        for (; end < size; end++) {
+            b = buffers.get(end);
+            int space = b.spaceBytes();
+            if (space >= (bytes - drainedBytes)) {
+                endBufferIndex_ = end;
+                return drainedBytes + b.drainFrom(buffer, (bytes - drainedBytes));
+            }
+            drainedBytes += b.drainFrom(buffer, space);
         }
-        int writeInNewBuffer = bytes - space;
+        if (b != null) {
+            endBufferIndex_ = end - 1;
+        } else {
+            b = buffers.get(endBufferIndex_);
+        }
+        int writeInNewBuffer = bytes - drainedBytes;
         CodecBuffer newBuffer = appendNewCodecBuffer(b, writeInNewBuffer);
-        b.drainFrom(buffer, space);
         newBuffer.drainFrom(buffer, writeInNewBuffer);
-        return bytes;
+        return bytes; // read all
     }
 
     @Override
     public CodecBuffer slice(int bytes) {
+        int wholeRemaining = remainingBytes();
+        if (bytes <= 0 || bytes > wholeRemaining) {
+            throw new IllegalArgumentException("Invalid input " + bytes + ". " + wholeRemaining + " byte remains.");
+        }
+
         CodecBuffer buffer = nextReadBuffer();
         int remaining = buffer.remainingBytes();
         if (remaining >= bytes) {
             return buffer.slice(bytes);
         }
-        AbstractCompositeCodecBuffer ccb = null; // TODO
+        CodecBufferList ccb = new CodecBufferList(allocator_, priority_);
         CodecBuffer sliced = buffer.slice(remaining);
         bytes -= remaining;
         ccb.addLast(sliced);
@@ -585,15 +664,36 @@ public abstract class AbstractCompositeCodecBuffer extends AbstractCodecBuffer i
             ccb.addLast(sliced);
             bytes -= remaining;
         }
-        return this;
+        return ccb;
+    }
+
+    @Override
+    public CodecBuffer slice() {
+        CodecBufferList sliced = new CodecBufferList(allocator_, priority_);
+        for (int i = beginningBufferIndex_; i <= endBufferIndex_; i++) {
+            sliced.addLast(buffers_.get(i));
+        }
+        return sliced;
+    }
+
+    @Override
+    public CodecBuffer duplicate() {
+        CodecBufferList duplicated = new CodecBufferList(allocator_, priority_);
+        duplicated.beginningBufferIndex_ = beginningBufferIndex_;
+        duplicated.endBufferIndex_ = endBufferIndex_;
+        for (CodecBuffer b : buffers_) {
+            duplicated.buffers_.add(b.duplicate());
+        }
+        return duplicated;
     }
 
     @Override
     public CodecBuffer clear() {
-        int size = buffers_.size();
         for (CodecBuffer b : buffers_) {
             b.clear();
         }
+        beginningBufferIndex_ = 0;
+        endBufferIndex_ = 0;
         return this;
     }
 
@@ -661,14 +761,18 @@ public abstract class AbstractCompositeCodecBuffer extends AbstractCodecBuffer i
         int end = endBufferIndex_;
         long offset = 0;
 
-        CodecBuffer buffer;
-        for (;;) {
-            buffer = buffers.get(begin++);
-            int remaining = buffer.remainingBytes();
+        CodecBuffer buffer = null;
+        while (begin <= end) {
+            CodecBuffer cb = buffers.get(begin++);
+            int remaining = cb.remainingBytes();
             if (remaining + offset >= fromIndex) {
+                buffer = cb;
                 break;
             }
             offset += remaining;
+        }
+        if (buffer == null) {
+            return -1;
         }
         int index = buffer.indexOf(b, (int) (fromIndex - offset));
         if (index != -1) {
@@ -697,17 +801,21 @@ public abstract class AbstractCompositeCodecBuffer extends AbstractCodecBuffer i
         int end = endBufferIndex_;
         long offset = 0;
 
-        CodecBuffer buffer;
-        for (;;) {
-            buffer = buffers.get(begin++);
-            int remaining = buffer.remainingBytes();
+        CodecBuffer buffer = null;
+        while (begin <= end) {
+            CodecBuffer cb = buffers.get(begin++);
+            int remaining = cb.remainingBytes();
             if (remaining + offset >= fromIndex) {
+                buffer = cb;
                 break;
             }
             if (begin > end) {
                 return -1;
             }
             offset += remaining;
+        }
+        if (buffer == null) {
+            return -1;
         }
         int index = buffer.indexOf(b, (int) (fromIndex - offset));
         if (index != -1) {
@@ -732,10 +840,10 @@ public abstract class AbstractCompositeCodecBuffer extends AbstractCodecBuffer i
         int end = endBufferIndex_;
         int offset = remainingBytes(); // TODO long
 
-        CodecBuffer buffer;
         if (fromIndex >= offset) {
-            fromIndex = (int) offset;
+            fromIndex = offset;
         }
+        CodecBuffer buffer;
         for (;;) {
             buffer = buffers.get(end--);
             offset -= buffer.remainingBytes();
@@ -771,7 +879,7 @@ public abstract class AbstractCompositeCodecBuffer extends AbstractCodecBuffer i
 
         CodecBuffer buffer;
         if (fromIndex >= offset) {
-            fromIndex = (int) offset;
+            fromIndex = offset;
         }
         for (;;) {
             buffer = buffers.get(end--);

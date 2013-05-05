@@ -128,15 +128,12 @@ public interface CodecBuffer extends BufferSink {
     void writeVariableByteLong(Long value);
 
     /**
-     * Writes a specified string using a specified {@code charsetEncoder}.
-     * At first, the encoded byte size is written using VBC, and then the encoded byte is written.
-     * If an {@code java.nio.charset.CharacterCodingException} happens, this method throws
-     * {@code java.lang.RuntimeException} which has {@code CharacterCodingException} as its cause.
+     * Writes a specified string as bytes with a specified {@code encoder}.
      *
-     * @param charsetEncoder encoder to encode the given string {@code s}.
      * @param s string to be written
+     * @param encoder encoder to convert the string {@code s} to bytes written into this buffer
      */
-    void writeString(CharsetEncoder charsetEncoder, String s);
+    void writeString(String s, CharsetEncoder encoder);
 
     /**
      * Reads a byte from the buffer at a specified {@code position}.
@@ -235,32 +232,19 @@ public interface CodecBuffer extends BufferSink {
     int readVariableByteInteger();
 
     /**
-     * Reads a string from the buffer using a specified {@code charsetDecoder}.
-     * At first, the encoded byte size is read using VBC, and then the encoded byte is read. The encoded byte is
-     * decoded by {@code charsetDecoder}. If some {@code java.nio.charset.CharacterCodingException} happens,
-     * this method throws {@code java.lang.RuntimeException} which has {@code CharacterCodingException} as its cause.
-     *
-     * @param charsetDecoder decoder to decode byte data
-     * @throws java.lang.RuntimeException if an error happens
-     * @return string value read from the buffer
-     */
-    String readString(CharsetDecoder charsetDecoder);
-
-    /**
-     * Reads a string from the buffer using a specified {@code charsetDecoder}.
+     * Reads a string from the buffer using a specified {@code decoder} to convert bytes into the string.
      * The string length of encoded byte format is given as {@code bytes}. If some
      * {@code java.nio.charset.CharacterCodingException} happens, this method throws
      * {@code java.lang.RuntimeException} which has {@code CharacterCodingException} as its cause.
      *
-     * @param charsetDecoder decoder to decode byte data
-     * @param bytes length of byte data to be decoded by {@code charsetDecoder}
-     * @throws java.lang.RuntimeException if an error happens
+     * @param decoder decoder to convert the buffer to a string.
+     * @param bytes length of byte data to be decoded by {@code decoder}
      * @return string value read from the buffer
      */
-    String readString(CharsetDecoder charsetDecoder, int bytes);
+    String readString(CharsetDecoder decoder, int bytes);
 
     /**
-     * Skips to read by specified size of byte of this buffer.
+     * Skips read bytes by specified size of byte of this buffer.
      *
      * The actual number of {@code n} of bytes to be skipped is the smaller of {@code bytes} and
      * {@link #remainingBytes()}, and {@code n - remainingBytes() >= 0}. The value {@code n} is added to the position
@@ -273,7 +257,7 @@ public interface CodecBuffer extends BufferSink {
 
     /**
      * Returns size of remaining data by byte.
-     * This is equals to difference between the limit and the current position.
+     * This is equals to difference between the beginning and the end.
      * @return size of remaining data by byte
      */
     int remainingBytes();
@@ -338,6 +322,10 @@ public interface CodecBuffer extends BufferSink {
 
     @Override
     CodecBuffer slice(int bytes);
+
+    CodecBuffer slice();
+
+    CodecBuffer duplicate();
 
     /**
      * Clears this buffer. The the beginning and the end is set to 0.

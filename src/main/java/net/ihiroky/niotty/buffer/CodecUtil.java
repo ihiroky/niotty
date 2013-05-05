@@ -39,10 +39,9 @@ public final class CodecUtil {
         if (value == Integer.MIN_VALUE) return 5;
 
         int magnitude = (value >= 0) ? value : -value;
-        int bits = VB_BIT_IN_FIRST_BYTE;
-        if (magnitude < (1 << bits)) return 1; // 6 bits
+        if (magnitude < (1 << VB_BIT_IN_FIRST_BYTE)) return 1; // 6 bits
 
-        bits += VB_BIT_IN_BYTE;
+        int bits = VB_BIT_IN_FIRST_BYTE + VB_BIT_IN_BYTE;
         if (magnitude < (1 << bits)) return 2; // 13 bits
 
         bits += VB_BIT_IN_BYTE;

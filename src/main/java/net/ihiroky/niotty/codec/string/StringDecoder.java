@@ -6,7 +6,8 @@ import net.ihiroky.niotty.TransportStateEvent;
 import net.ihiroky.niotty.buffer.CodecBuffer;
 
 import java.nio.charset.Charset;
-import java.nio.charset.CharsetDecoder;
+import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 
 /**
  * Created on 13/01/18, 14:12
@@ -15,21 +16,20 @@ import java.nio.charset.CharsetDecoder;
  */
 public class StringDecoder implements LoadStage<CodecBuffer, String> {
 
-    private final CharsetDecoder decoder_;
-
-    private static final Charset DEFAULT_CHARSET = Charset.forName("UTF-8");
+    private final Charset charset_;
 
     public StringDecoder() {
-        decoder_ = DEFAULT_CHARSET.newDecoder();
+        charset_ = StandardCharsets.UTF_8;
     }
 
     public StringDecoder(Charset charset) {
-        decoder_ = charset.newDecoder();
+        Objects.requireNonNull(charset, "charset");
+        charset_ = charset;
     }
 
     @Override
     public void load(LoadStageContext<CodecBuffer, String> context, CodecBuffer input) {
-        String s = input.readString(decoder_);
+        String s = input.readString(charset_.newDecoder(), input.remainingBytes());
         context.proceed(s);
     }
 

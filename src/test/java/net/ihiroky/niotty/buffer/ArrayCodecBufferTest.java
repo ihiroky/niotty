@@ -1,9 +1,11 @@
 package net.ihiroky.niotty.buffer;
 
+import org.junit.Test;
 import org.junit.experimental.runners.Enclosed;
 import org.junit.runner.RunWith;
 
-import java.nio.ByteBuffer;
+import static org.hamcrest.CoreMatchers.*;
+import static org.junit.Assert.*;
 
 /**
  * @author Hiroki Itoh
@@ -15,6 +17,17 @@ public class ArrayCodecBufferTest {
         @Override
         protected CodecBuffer createCodecBuffer() {
             return new ArrayCodecBuffer();
+        }
+
+        @Test
+        public void testSpaceBytes() throws Exception {
+            CodecBuffer sut = new ArrayCodecBuffer();
+            assertThat(sut.spaceBytes(), is(512));
+        }
+        @Test
+        public void testCapacityBytes() throws Exception {
+            CodecBuffer sut = new ArrayCodecBuffer();
+            assertThat(sut.capacityBytes(), is(512));
         }
     }
 
@@ -48,11 +61,6 @@ public class ArrayCodecBufferTest {
         @Override
         protected CodecBuffer createCodecBuffer(byte[] data, int offset, int length) {
             return new ArrayCodecBuffer(data, offset, length);
-        }
-
-        @Override
-        protected CodecBuffer createDirectCodecBuffer(ByteBuffer directBuffer) {
-            return new ByteBufferCodecBuffer(directBuffer);
         }
     }
 }

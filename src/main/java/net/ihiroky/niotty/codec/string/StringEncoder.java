@@ -9,6 +9,8 @@ import net.ihiroky.niotty.buffer.CodecBuffer;
 
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 
 /**
  * Created on 13/01/18, 12:59
@@ -17,22 +19,23 @@ import java.nio.charset.CharsetEncoder;
  */
 public class StringEncoder implements StoreStage<String, BufferSink> {
 
-    private final CharsetEncoder encoder_;
-
-    private static final Charset DEFAULT_CHARSET = Charset.forName("UTF-8");
+    private final Charset charset_;
 
     public StringEncoder() {
-        encoder_ = DEFAULT_CHARSET.newEncoder();
+        charset_ = StandardCharsets.UTF_8;
     }
 
     public StringEncoder(Charset charset) {
-        encoder_ = charset.newEncoder();
+        Objects.requireNonNull(charset, "charset");
+        charset_ = charset;
     }
 
     @Override
     public void store(StoreStageContext<String, BufferSink> context, String input) {
-        CodecBuffer buffer = Buffers.newCodecBuffer();
-        buffer.writeString(encoder_, input);
+        CharsetEncoder encoder = charset_.newEncoder();
+        float bytesPerChar = encoder.averageBytesPerChar();
+        CodecBuffer buffer = Buffers.newCodecBuffer(Math.round(bytesPerChar * input.length()));
+        buffer.writeString(input, encoder);
         context.proceed(buffer);
     }
 

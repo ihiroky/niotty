@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CoderResult;
 import java.nio.charset.MalformedInputException;
 import java.nio.charset.UnmappableCharacterException;
@@ -25,17 +27,31 @@ public final class Buffers {
     /** Default priority (no wait). */
     static final int DEFAULT_PRIORITY = -1;
 
-    static int outputByteBufferSize(float bytesPerChar, int chars) {
-        return (int) (bytesPerChar * chars) + 1;
+    private static final CodecBufferFactory ARRAY_CODEC_BUFFER_FACTORY = new CodecBufferFactory() {
+        @Override
+        public CodecBuffer newCodecBuffer(int bytes) {
+            return new ArrayCodecBuffer(bytes);
+        }
+    };
+
+    private static final CodecBufferFactory BYTE_ARRAY_CODEC_BUFFER_FACTORY = new CodecBufferFactory() {
+        @Override
+        public CodecBuffer newCodecBuffer(int bytes) {
+            return new ByteBufferCodecBuffer(bytes);
+        }
+    };
+
+    static int outputByteBufferSize(CharsetEncoder encoder, int chars) {
+        return (int) Math.max(encoder.averageBytesPerChar() * chars, encoder.maxBytesPerChar()) + 1;
     }
 
-    static int outputCharBufferSize(float charsPerByte, int bytes) {
-        return (int) (charsPerByte * bytes) + 1;
+    static int outputCharBufferSize(CharsetDecoder decoder, int bytes) {
+        return (int) Math.max(decoder.averageCharsPerByte() * bytes, decoder.maxCharsPerByte()) + 1;
     }
 
-    static CharBuffer expand(CharBuffer original, float charsPerByte, int remainingBytes) {
+    static CharBuffer expand(CharBuffer original, CharsetDecoder decoder, int remainingBytes) {
         CharBuffer t = CharBuffer.allocate(
-                original.capacity() + Buffers.outputCharBufferSize(charsPerByte, remainingBytes));
+                original.capacity() + Buffers.outputCharBufferSize(decoder, remainingBytes));
         original.flip();
         t.put(original);
         return t;
@@ -202,5 +218,50 @@ public final class Buffers {
      */
     public static BufferSink newBufferSink(BufferSink car, BufferSink cdr, int priority) {
         return new BufferSinkList(car, cdr, priority);
+    }
+
+    public static CodecBuffer newCodecBuffer(CodecBuffer buffer0, CodecBuffer...buffers) {
+        return new CodecBufferList(ARRAY_CODEC_BUFFER_FACTORY, DEFAULT_PRIORITY, buffer0, buffers);
+    }
+
+    public static CodecBuffer newCodecBuffer(CodecBufferFactory factory, CodecBuffer buffer0, CodecBuffer...buffers) {
+        return new CodecBufferList(factory, DEFAULT_PRIORITY, buffer0, buffers);
+    }
+
+    public static CodecBuffer newCodecBuffer(
+            CodecBufferFactory factory, int priority, CodecBuffer buffer0, CodecBuffer...buffers) {
+        return new CodecBufferList(factory, priority, buffer0, buffers);
+    }
+
+    public static CodecBufferFactory newArrayCodecBufferFactory() {
+        return ARRAY_CODEC_BUFFER_FACTORY;
+    }
+
+    public static CodecBufferFactory newArrayCodecBufferFactory(
+            int wholeBytes, int maxChunkBytes, boolean aggressive) {
+        final ByteArrayPool pool = new ByteArrayPool(wholeBytes, maxChunkBytes, aggressive);
+        return new CodecBufferFactory() {
+            ByteArrayPool pool_ = pool;
+            @Override
+            public CodecBuffer newCodecBuffer(int bytes) {
+                return new ArrayCodecBuffer(pool_, bytes);
+            }
+        };
+    }
+
+    public static CodecBufferFactory newByteBufferCodecBufferFactory() {
+        return BYTE_ARRAY_CODEC_BUFFER_FACTORY;
+    }
+
+    public static CodecBufferFactory newByteBufferCodecBufferFactory(
+            int wholeBytes, int maxChunkBytes, boolean direct, boolean aggressive) {
+        final ByteBufferPool pool = new ByteBufferPool(wholeBytes, maxChunkBytes, direct, aggressive);
+        return new CodecBufferFactory() {
+            ByteBufferPool pool_ = pool;
+            @Override
+            public CodecBuffer newCodecBuffer(int bytes) {
+                return new ByteBufferCodecBuffer(pool_, bytes);
+            }
+        };
     }
 }
