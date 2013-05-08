@@ -9,6 +9,7 @@ import java.util.Objects;
  * The implementation of {@link net.ihiroky.niotty.buffer.BufferSink} to write a file content
  * in a specified range to {@code java.nio.channels.WritableByteChannel} directly.
  *
+ * TODO use reference counting to close FileChannel
  * @author Hiroki Itoh
  */
 public class FileBufferSink implements BufferSink {
@@ -39,9 +40,8 @@ public class FileBufferSink implements BufferSink {
         priority_ = priority;
         autoDispose_ = autoDispose;
 
-        CodecBuffer empty = Buffers.newCodecBuffer(0, priority);
-        header_ = empty;
-        footer_ = empty;
+        header_ = Buffers.newCodecBuffer(0, priority);
+        footer_ = Buffers.newCodecBuffer(0, priority);
     }
 
     private void closeAndThrow(RuntimeException e) {

@@ -303,7 +303,7 @@ public interface CodecBuffer extends BufferSink {
     CodecBuffer end(int end);
 
     /**
-     * Drains from a specified {@code decodeBuffer}'s contents to this instance. The {@code decodeBuffer} is read
+     * Drains from a specified {@code buffer}'s contents to this instance. The {@code decodeBuffer} is read
      * by this instance and gets empty.
      *
      * @param buffer buffer which is drained from.
@@ -312,7 +312,7 @@ public interface CodecBuffer extends BufferSink {
     int drainFrom(CodecBuffer buffer);
 
     /**
-     * Drains from a specified {@code decodeBuffer}'s contents to this instance at most specified {@code bytes}.
+     * Drains from a specified {@code buffer}'s contents to this instance at most specified {@code bytes}.
      *
      * @param buffer buffer which is drained from.
      * @param bytes the number by byte to be transferred
@@ -323,8 +323,25 @@ public interface CodecBuffer extends BufferSink {
     @Override
     CodecBuffer slice(int bytes);
 
+    /**
+     * Creates a new buffer whose content is a shared subsequence of this buffer's content.
+     * The content of the new buffer will start at this buffer's current beginning.
+     * Changes to this buffer's content will be visible in the new buffer, and vice versa; the two buffers' beginning
+     * and end will be independent. The new buffer's beginning will be zero, its capacity and its end will be
+     * the number of bytes remaining in this buffer.
+     *
+     * @return the new buffer
+     */
     CodecBuffer slice();
 
+    /**
+     * Creates a new buffer that shares this buffer's content.
+     * The content of the new buffer will be that of this buffer. Changes to this buffer's content will be visible
+     * in the new buffer, and vice versa; the two buffers' beginning and end values will be independent.
+     * The new buffer's capacity, beginning and end values will be identical to those of this buffer.
+     *
+     * @return the new buffer
+     */
     CodecBuffer duplicate();
 
     /**

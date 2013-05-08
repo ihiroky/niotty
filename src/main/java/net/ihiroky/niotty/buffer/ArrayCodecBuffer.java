@@ -73,7 +73,7 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer implements CodecBuffer
             int minExpandBase = (beginning_ == 0) ? chunk_.size() : remaining;
             int newCapacity = Math.max(remaining + space, minExpandBase * EXPAND_MULTIPLIER);
             Chunk<byte[]> newChunk = chunk_.reallocate(newCapacity);
-            byte[] newBuffer = newChunk.retain();
+            byte[] newBuffer = newChunk.initialize();
             System.arraycopy(buffer_, beginning_, newBuffer, 0, remaining);
             beginning_ = 0;
             end_ = remaining;
