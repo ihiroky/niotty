@@ -37,19 +37,19 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer implements CodecB
     }
 
     ByteBufferCodecBuffer(int initialCapacity) {
-        this(ByteBufferAllocator.HEAP, initialCapacity);
+        this(ByteBufferChunkFactory.HEAP, initialCapacity);
     }
 
-    ByteBufferCodecBuffer(BufferAllocator<ByteBuffer> allocator, int initialCapacity) {
-        chunk_ = allocator.allocate(initialCapacity);
-        buffer_ = chunk_.buffer();
+    ByteBufferCodecBuffer(ChunkManager<ByteBuffer> allocator, int initialCapacity) {
+        chunk_ = allocator.newChunk(initialCapacity);
+        buffer_ = chunk_.initialize();
         mode_ = Mode.WRITE;
     }
 
     ByteBufferCodecBuffer(ByteBuffer buffer) {
         Objects.requireNonNull(buffer, "buffer");
-        chunk_ = new Chunk.ByteBufferChunk(buffer, ByteBufferAllocator.HEAP);
-        buffer_ = buffer;
+        chunk_ = new ByteBufferChunk(buffer, ByteBufferChunkFactory.HEAP);
+        buffer_ = chunk_.initialize();
         beginning_ = buffer.position();
         end_ = buffer.limit();
         mode_ = Mode.READ;
@@ -57,7 +57,7 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer implements CodecB
 
     private ByteBufferCodecBuffer(Chunk<ByteBuffer> chunk, int beginning, int end, Mode mode) {
         chunk_ = chunk;
-        buffer_ = chunk_.duplicate();
+        buffer_ = chunk.retain();
         beginning_ = beginning;
         end_ = end;
         mode_ = mode;
@@ -81,7 +81,7 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer implements CodecB
             beginning_ = buffer_.position();
         } else {
             mode_ = Mode.READ;
-            ByteBuffer b = chunk_.buffer();
+            ByteBuffer b = buffer_;
             end_ = b.position();
             b.position(beginning_);
             b.limit(end_);
@@ -113,13 +113,12 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer implements CodecB
         int remaining = end_ - beginning_;
         int minExpandBase = (beginning_ == 0) ? buffer_.capacity() : remaining;
         int newCapacity = Math.max(remaining + space, minExpandBase * EXPAND_MULTIPLIER);
-        Chunk<ByteBuffer> newChunk = chunk_.newChunk(newCapacity);
-        ByteBuffer newBuffer = newChunk.buffer();
+        Chunk<ByteBuffer> newChunk = chunk_.reallocate(newCapacity);
+        ByteBuffer newBuffer = newChunk.initialize();
         bb.position(beginning_).limit(end_);
         newBuffer.put(bb);
-        chunk_.release();
         beginning_ = 0;
-        end_ = newChunk.buffer().position();
+        end_ = newBuffer.position();
         chunk_ = newChunk;
         buffer_ = newBuffer;
     }
@@ -422,13 +421,12 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer implements CodecB
                 }
             } else {
                 int newCapacity = Math.max(remaining * EXPAND_MULTIPLIER, remaining + inputSize);
-                Chunk<ByteBuffer> newChunk = chunk_.newChunk(newCapacity);
-                b = newChunk.buffer();
+                Chunk<ByteBuffer> newChunk = chunk_.reallocate(newCapacity);
+                b = newChunk.initialize();
                 b.position(inputSize);
                 b.put(buffer_);
                 b.position(0);
                 b.limit(inputSize + remaining);
-                chunk_.release();
                 chunk_ = newChunk;
                 buffer_ = b;
             }
@@ -465,11 +463,10 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer implements CodecB
                 beginning_ = cb.position();
                 end_ = cb.limit();
             } else {
-                Chunk<ByteBuffer> newChunk = chunk_.newChunk(
+                Chunk<ByteBuffer> newChunk = chunk_.reallocate(
                         Math.max(remaining * EXPAND_MULTIPLIER, remaining + inputSize));
-                cb = newChunk.buffer();
+                cb = newChunk.initialize();
                 cb.put(buffer_).flip();
-                chunk_.release();
                 chunk_ = newChunk;
                 beginning_ = 0;
                 end_ = remaining;

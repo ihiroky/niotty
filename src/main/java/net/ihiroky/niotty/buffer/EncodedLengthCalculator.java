@@ -1,19 +1,16 @@
 package net.ihiroky.niotty.buffer;
 
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-
 /**
  * @author Hiroki Itoh
  */
 public enum EncodedLengthCalculator {
-    ASCII(StandardCharsets.US_ASCII) {
+    ASCII() {
         @Override
         public int calculateBytesLength(String s) {
             return s.length();
         }
     },
-    UTF_8(StandardCharsets.UTF_8) {
+    UTF_8() {
         @Override
         public int calculateBytesLength(String s) {
             int length = s.length();
@@ -32,12 +29,6 @@ public enum EncodedLengthCalculator {
             return bytes;
         }
     };
-
-    final Charset charset_;
-
-    EncodedLengthCalculator(Charset charset) {
-        charset_ = charset;
-    }
 
     /**
      * Returns the length of encoded bytes.

@@ -237,11 +237,10 @@ public final class Buffers {
         return ARRAY_CODEC_BUFFER_FACTORY;
     }
 
-    public static CodecBufferFactory newArrayCodecBufferFactory(
-            int wholeBytes, int maxChunkBytes, boolean aggressive) {
-        final ByteArrayPool pool = new ByteArrayPool(wholeBytes, maxChunkBytes, aggressive);
+    public static CodecBufferFactory newArrayCodecBufferFactory(int wholeBytes) {
+        final ArrayChunkPool pool = new ArrayChunkPool(wholeBytes);
         return new CodecBufferFactory() {
-            ByteArrayPool pool_ = pool;
+            ArrayChunkPool pool_ = pool;
             @Override
             public CodecBuffer newCodecBuffer(int bytes) {
                 return new ArrayCodecBuffer(pool_, bytes);
@@ -254,10 +253,10 @@ public final class Buffers {
     }
 
     public static CodecBufferFactory newByteBufferCodecBufferFactory(
-            int wholeBytes, int maxChunkBytes, boolean direct, boolean aggressive) {
-        final ByteBufferPool pool = new ByteBufferPool(wholeBytes, maxChunkBytes, direct, aggressive);
+            int wholeBytes, boolean direct) {
+        final ByteBufferChunkPool pool = new ByteBufferChunkPool(wholeBytes, direct);
         return new CodecBufferFactory() {
-            ByteBufferPool pool_ = pool;
+            ByteBufferChunkPool pool_ = pool;
             @Override
             public CodecBuffer newCodecBuffer(int bytes) {
                 return new ByteBufferCodecBuffer(pool_, bytes);
