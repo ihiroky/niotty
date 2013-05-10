@@ -19,6 +19,11 @@ public class PriorityByteBufferCodecBuffer extends ByteBufferCodecBuffer {
         priority_ = priority;
     }
 
+    PriorityByteBufferCodecBuffer(ChunkManager<ByteBuffer> manager, int initialCapacity, int priority) {
+        super(manager, initialCapacity);
+        priority_ = priority;
+    }
+
     PriorityByteBufferCodecBuffer(ByteBuffer byteBuffer, int priority) {
         super(byteBuffer);
         priority_ = priority;

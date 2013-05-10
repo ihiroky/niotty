@@ -32,12 +32,22 @@ public final class Buffers {
         public CodecBuffer newCodecBuffer(int bytes) {
             return new ArrayCodecBuffer(bytes);
         }
+
+        @Override
+        public CodecBuffer newCodecBuffer(int bytes, int priority) {
+            return (priority < 0) ? new ArrayCodecBuffer(bytes) : new PriorityArrayCodecBuffer(bytes, priority);
+        }
     };
 
     private static final CodecBufferFactory BYTE_ARRAY_CODEC_BUFFER_FACTORY = new CodecBufferFactory() {
         @Override
         public CodecBuffer newCodecBuffer(int bytes) {
             return new ByteBufferCodecBuffer(bytes);
+        }
+
+        @Override
+        public CodecBuffer newCodecBuffer(int bytes, int priority) {
+            return (priority < 0) ? new ArrayCodecBuffer(bytes) : new PriorityByteBufferCodecBuffer(bytes, priority);
         }
     };
 
@@ -245,6 +255,12 @@ public final class Buffers {
             public CodecBuffer newCodecBuffer(int bytes) {
                 return new ArrayCodecBuffer(pool_, bytes);
             }
+
+            @Override
+            public CodecBuffer newCodecBuffer(int bytes, int priority) {
+                return (priority < 0) ? new ArrayCodecBuffer(pool_, bytes)
+                        : new PriorityArrayCodecBuffer(pool_, bytes, priority);
+            }
         };
     }
 
@@ -260,6 +276,12 @@ public final class Buffers {
             @Override
             public CodecBuffer newCodecBuffer(int bytes) {
                 return new ByteBufferCodecBuffer(pool_, bytes);
+            }
+
+            @Override
+            public CodecBuffer newCodecBuffer(int bytes, int priority) {
+                return (priority < 0) ? new ByteBufferCodecBuffer(pool_, bytes)
+                        : new PriorityByteBufferCodecBuffer(pool_, bytes, priority);
             }
         };
     }

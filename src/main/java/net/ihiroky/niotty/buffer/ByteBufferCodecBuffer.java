@@ -40,8 +40,8 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer implements CodecB
         this(ByteBufferChunkFactory.heap(), initialCapacity);
     }
 
-    ByteBufferCodecBuffer(ChunkManager<ByteBuffer> allocator, int initialCapacity) {
-        chunk_ = allocator.newChunk(initialCapacity);
+    ByteBufferCodecBuffer(ChunkManager<ByteBuffer> manager, int initialCapacity) {
+        chunk_ = manager.newChunk(initialCapacity);
         buffer_ = chunk_.initialize();
         mode_ = Mode.WRITE;
     }

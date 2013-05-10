@@ -34,11 +34,11 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer implements CodecBuffer
         buffer_ = chunk_.initialize();
     }
 
-    ArrayCodecBuffer(ChunkManager<byte[]> allocator, int initialCapacity) {
+    ArrayCodecBuffer(ChunkManager<byte[]> manager, int initialCapacity) {
         if (initialCapacity < 0) {
             throw new IllegalArgumentException("initialCapacity must not be negative.");
         }
-        chunk_ = allocator.newChunk(initialCapacity);
+        chunk_ = manager.newChunk(initialCapacity);
         buffer_ = chunk_.initialize();
     }
 

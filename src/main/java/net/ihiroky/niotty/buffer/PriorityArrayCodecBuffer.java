@@ -17,6 +17,11 @@ public class PriorityArrayCodecBuffer extends ArrayCodecBuffer {
         priority_ = priority;
     }
 
+    PriorityArrayCodecBuffer(ChunkManager<byte[]> manager, int initialCapacity, int priority) {
+        super(manager, initialCapacity);
+        priority_ = priority;
+    }
+
     PriorityArrayCodecBuffer(byte[] buffer, int offset, int length, int priority) {
         super(buffer, offset, length);
         priority_ = priority;
