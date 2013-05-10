@@ -44,7 +44,7 @@ public class ArrayChunkPoolTest {
         int allocated2 = sut.allocatedBytes();
 
         assertThat(chunk0.manager(), is((ChunkManager<byte[]>) sut));
-        assertThat(chunk1.manager(), is((ChunkManager<byte[]>) ArrayChunkFactory.INSTANCE));
+        assertThat(chunk1.manager(), is((ChunkManager<byte[]>) ArrayChunkFactory.instance()));
         assertThat(chunk2.manager(), is((ChunkManager<byte[]>) sut));
         assertThat(allocated0, is(6));
         assertThat(allocated1, is(6));

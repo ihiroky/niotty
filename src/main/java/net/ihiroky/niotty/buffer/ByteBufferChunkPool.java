@@ -28,7 +28,7 @@ public class ByteBufferChunkPool extends ChunkPool<ByteBuffer> {
         ByteBufferChunk chunk;
         synchronized (whole_) {
             if (bytes > whole_.remaining()) {
-                chunk = new ByteBufferChunk(ByteBuffer.allocate(bytes), ByteBufferChunkFactory.HEAP);
+                chunk = new ByteBufferChunk(ByteBuffer.allocate(bytes), ByteBufferChunkFactory.heap());
             } else {
                 int limit = whole_.position() + bytes;
                 whole_.limit(limit);

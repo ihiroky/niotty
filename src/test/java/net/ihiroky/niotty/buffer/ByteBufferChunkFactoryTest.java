@@ -15,7 +15,7 @@ public class ByteBufferChunkFactoryTest {
 
     @Test
     public void testNewChunk_Heap() throws Exception {
-        ByteBufferChunkFactory sut = ByteBufferChunkFactory.HEAP;
+        ByteBufferChunkFactory sut = ByteBufferChunkFactory.heap();
 
         ByteBufferChunk chunk = sut.newChunk(10);
         ByteBuffer buffer = chunk.initialize();
@@ -28,7 +28,7 @@ public class ByteBufferChunkFactoryTest {
 
     @Test
     public void testNewChunk_Direct() throws Exception {
-        ByteBufferChunkFactory sut = ByteBufferChunkFactory.DIRECT;
+        ByteBufferChunkFactory sut = ByteBufferChunkFactory.direct();
 
         ByteBufferChunk chunk = sut.newChunk(10);
         ByteBuffer buffer = chunk.initialize();
@@ -41,8 +41,8 @@ public class ByteBufferChunkFactoryTest {
 
     @Test
     public void testRelease() throws Throwable {
-        ByteBufferChunk chunk = spy(new ByteBufferChunk(ByteBuffer.allocate(10), ByteBufferChunkFactory.HEAP));
-        ByteBufferChunkFactory.HEAP.release(chunk);
+        ByteBufferChunk chunk = spy(new ByteBufferChunk(ByteBuffer.allocate(10), ByteBufferChunkFactory.heap()));
+        ByteBufferChunkFactory.heap().release(chunk);
 
         verify(chunk, times(1)).clear();
     }

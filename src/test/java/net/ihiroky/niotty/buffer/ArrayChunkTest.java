@@ -20,7 +20,8 @@ public class ArrayChunkTest {
 
     @Before
     public void setUp() {
-        sut_ = new ArrayChunk(new byte[10], ArrayChunkFactory.INSTANCE);
+        sut_ = new ArrayChunk(new byte[10], ArrayChunkFactory.instance());
+        sut_.ready();
     }
 
     @Test
@@ -28,9 +29,9 @@ public class ArrayChunkTest {
         sut_.initialize();
 
         byte[] buffer0 = sut_.retain();
-        int retainCount0 = sut_.retainCount();
+        int retainCount0 = sut_.referenceCount();
         byte[] buffer1 = sut_.retain();
-        int retainCount1 = sut_.retainCount();
+        int retainCount1 = sut_.referenceCount();
 
         assertThat(buffer0, is(sut_.buffer_));
         assertThat(retainCount0, is(2));

@@ -10,11 +10,14 @@ abstract class AbstractChunk<E> implements Chunk<E> {
     protected final E buffer_;
     private final ChunkManager<E> manager_;
 
-    private volatile int retainCount_;
+    private volatile int referenceCount_;
 
     @SuppressWarnings({ "unchecked", "raw" })
     private static final AtomicIntegerFieldUpdater<AbstractChunk> RETAIN_COUNT_UPDATER =
-            AtomicIntegerFieldUpdater.newUpdater(AbstractChunk.class, "retainCount_");
+            AtomicIntegerFieldUpdater.newUpdater(AbstractChunk.class, "referenceCount_");
+
+    static final int UNUSABLE = 0;
+    static final int PRE_INITIALIZED = -1;
 
     private static final ChunkManager<?> NULL_MANAGER = new ChunkManager<Object>() {
         @Override
@@ -33,17 +36,21 @@ abstract class AbstractChunk<E> implements Chunk<E> {
     AbstractChunk(E buffer, ChunkManager<E> manager) {
         buffer_ = buffer;
         manager_ = (manager != null) ? manager : (ChunkManager<E>) NULL_MANAGER;
+        referenceCount_ = UNUSABLE;
     }
 
     @Override
     public E initialize() {
-        retainCount_ = 1;
+        if (!RETAIN_COUNT_UPDATER.compareAndSet(this, PRE_INITIALIZED, 1)) {
+            throw new IllegalStateException("this chunk is not in the pre-initialized state.");
+        }
+        referenceCount_ = 1;
         return buffer_;
     }
 
     int incrementRetainCount() {
         for (;;) {
-            int current = retainCount_;
+            int current = referenceCount_;
             if (current <= 0) {
                 throw new IllegalStateException("this chunk is already released or not initialized yet.");
             }
@@ -57,13 +64,13 @@ abstract class AbstractChunk<E> implements Chunk<E> {
     @Override
     public int release() {
         for (;;) {
-            int current = retainCount_;
+            int current = referenceCount_;
             if (current <= 0) {
                 throw new IllegalStateException("this chunk is already released or not initialized yet.");
             }
             int next = current - 1;
             if (RETAIN_COUNT_UPDATER.compareAndSet(this, current, next)) {
-                if (next == 0) {
+                if (next == UNUSABLE) {
                     manager_.release(this);
                 }
                 return next;
@@ -79,11 +86,20 @@ abstract class AbstractChunk<E> implements Chunk<E> {
     }
 
     @Override
-    public int retainCount() {
-        return retainCount_;
+    public int referenceCount() {
+        return referenceCount_;
     }
 
-    ChunkManager<E> manager() {
+    @Override
+    public void ready() {
+        if (!RETAIN_COUNT_UPDATER.compareAndSet(this, UNUSABLE, PRE_INITIALIZED)) {
+            throw new IllegalStateException("this chunk is not in the unusable state.");
+        }
+        referenceCount_ = PRE_INITIALIZED;
+    }
+
+    @Override
+    public ChunkManager<E> manager() {
         return manager_;
     }
 }

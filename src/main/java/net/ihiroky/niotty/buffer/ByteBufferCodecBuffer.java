@@ -37,7 +37,7 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer implements CodecB
     }
 
     ByteBufferCodecBuffer(int initialCapacity) {
-        this(ByteBufferChunkFactory.HEAP, initialCapacity);
+        this(ByteBufferChunkFactory.heap(), initialCapacity);
     }
 
     ByteBufferCodecBuffer(ChunkManager<ByteBuffer> allocator, int initialCapacity) {
@@ -48,7 +48,9 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer implements CodecB
 
     ByteBufferCodecBuffer(ByteBuffer buffer) {
         Objects.requireNonNull(buffer, "buffer");
-        chunk_ = new ByteBufferChunk(buffer, ByteBufferChunkFactory.HEAP);
+        ByteBufferChunk c = new ByteBufferChunk(buffer, ByteBufferChunkFactory.heap());
+        c.ready();
+        chunk_ = c;
         buffer_ = chunk_.initialize();
         beginning_ = buffer.position();
         end_ = buffer.limit();

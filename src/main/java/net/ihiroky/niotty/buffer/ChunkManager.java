@@ -3,9 +3,9 @@ package net.ihiroky.niotty.buffer;
 /**
  * @author Hiroki Itoh
  */
-public interface ChunkManager<E> extends AutoCloseable {
+public abstract class ChunkManager<E> implements AutoCloseable {
 
-    Chunk<E> newChunk(int bytes);
-    void release(Chunk<E> chunk);
-    void close();
+    public abstract Chunk<E> newChunk(int bytes);
+    protected abstract void release(Chunk<E> chunk);
+    public abstract void close();
 }

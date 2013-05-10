@@ -15,7 +15,7 @@ public class ArrayChunkFactoryTest {
 
     @Before
     public void setUp() {
-        sut_ = ArrayChunkFactory.INSTANCE;
+        sut_ = ArrayChunkFactory.instance();
     }
 
     @Test
@@ -26,7 +26,7 @@ public class ArrayChunkFactoryTest {
         Chunk<byte[]> chunk1 = sut_.newChunk(8);
 
         assertThat(chunk0.size(), is(8));
-        assertThat(chunk0.retainCount(), is(0));
+        assertThat(chunk0.referenceCount(), is(0));
         assertThat(chunk1.size(), is(8));
         assertThat(chunk0, is(not(sameInstance(chunk1))));
     }

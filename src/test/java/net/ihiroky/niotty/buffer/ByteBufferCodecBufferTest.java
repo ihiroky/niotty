@@ -49,7 +49,7 @@ public class ByteBufferCodecBufferTest {
 
         @Override
         protected CodecBuffer createCodecBuffer(int initialCapacity) {
-            return new ByteBufferCodecBuffer(ByteBufferChunkFactory.HEAP, initialCapacity);
+            return new ByteBufferCodecBuffer(ByteBufferChunkFactory.heap(), initialCapacity);
         }
     }
 

@@ -8,26 +8,40 @@ import java.nio.ByteBuffer;
 /**
  * @author Hiroki Itoh
  */
-public enum ByteBufferChunkFactory implements ChunkManager<ByteBuffer> {
+public abstract class ByteBufferChunkFactory extends ChunkManager<ByteBuffer> {
 
-    HEAP {
+    private static final ByteBufferChunkFactory HEAP = new ByteBufferChunkFactory() {
         @Override
         public ByteBufferChunk newChunk(int bytes) {
-            return new ByteBufferChunk(ByteBuffer.allocate(bytes), this);
+            ByteBufferChunk c = new ByteBufferChunk(ByteBuffer.allocate(bytes), this);
+            c.ready();
+            return c;
         }
-    },
-    DIRECT {
+    };
+
+    private static final ByteBufferChunkFactory DIRECT = new ByteBufferChunkFactory() {
         @Override
         public ByteBufferChunk newChunk(int bytes) {
-            return new ByteBufferChunk(ByteBuffer.allocateDirect(bytes), this);
+            ByteBufferChunk c = new ByteBufferChunk(ByteBuffer.allocateDirect(bytes), this);
+            c.ready();
+            return c;
         }
-    },
-    ;
+    };
 
     private Logger logger_ = LoggerFactory.getLogger(ByteBufferChunkFactory.class);
 
+    public static ByteBufferChunkFactory heap() {
+        return HEAP;
+    }
+
+    public static ByteBufferChunkFactory direct() {
+        return DIRECT;
+    }
+
+    public abstract ByteBufferChunk newChunk(int bytes);
+
     @Override
-    public void release(Chunk<ByteBuffer> chunk) {
+    protected void release(Chunk<ByteBuffer> chunk) {
         try {
             ((ByteBufferChunk) chunk).clear();
         } catch (Throwable t) {
@@ -38,6 +52,4 @@ public enum ByteBufferChunkFactory implements ChunkManager<ByteBuffer> {
     @Override
     public void close() {
     }
-
-    public abstract ByteBufferChunk newChunk(int bytes);
 }

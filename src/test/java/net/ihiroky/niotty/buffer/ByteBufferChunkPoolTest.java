@@ -46,7 +46,7 @@ public class ByteBufferChunkPoolTest {
 
             assertThat(chunk0.manager(), is((ChunkManager<ByteBuffer>) sut));
             assertThat(chunk0.buffer_.isDirect(), is(true));
-            assertThat(chunk1.manager(), is((ChunkManager<ByteBuffer>) ByteBufferChunkFactory.HEAP));
+            assertThat(chunk1.manager(), is((ChunkManager<ByteBuffer>) ByteBufferChunkFactory.heap()));
             assertThat(chunk1.buffer_.isDirect(), is(false));
             assertThat(chunk2.manager(), is((ChunkManager<ByteBuffer>) sut));
             assertThat(chunk2.buffer_.isDirect(), is(true));

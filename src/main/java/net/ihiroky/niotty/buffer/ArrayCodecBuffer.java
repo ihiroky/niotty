@@ -30,7 +30,7 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer implements CodecBuffer
         if (initialCapacity < 0) {
             throw new IllegalArgumentException("initialCapacity must not be negative.");
         }
-        chunk_ = ArrayChunkFactory.INSTANCE.newChunk(initialCapacity);
+        chunk_ = ArrayChunkFactory.instance().newChunk(initialCapacity);
         buffer_ = chunk_.initialize();
     }
 
@@ -47,8 +47,10 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer implements CodecBuffer
             throw new IndexOutOfBoundsException(
                     "offset + length (" + (beginning + length) + ") exceeds buffer capacity " + b.length);
         }
-        chunk_ = new ArrayChunk(b, ArrayChunkFactory.INSTANCE);
-        buffer_ = chunk_.initialize();
+        ArrayChunk c = new ArrayChunk(b, ArrayChunkFactory.instance());
+        c.ready();
+        chunk_ = c;
+        buffer_ = c.initialize();
         beginning_ = beginning;
         end_ = beginning + length;
     }

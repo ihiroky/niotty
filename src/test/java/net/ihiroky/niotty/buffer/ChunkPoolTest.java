@@ -52,12 +52,18 @@ public class ChunkPoolTest {
         Chunk<byte[]> c16 = sut_.newChunk(16);
         Chunk<byte[]> c17 = sut_.newChunk(17);
 
-        sut_.release(c7);
-        sut_.release(c8);
-        sut_.release(c9);
-        sut_.release(c15);
-        sut_.release(c16);
-        sut_.release(c17);
+        c7.initialize();
+        c7.release();
+        c8.initialize();
+        c8.release();
+        c9.initialize();
+        c9.release();
+        c15.initialize();
+        c15.release();
+        c16.initialize();
+        c16.release();
+        c17.initialize();
+        c17.release();
 
         Queue<Chunk<byte[]>>[] pools = sut_.pools();
         assertThat(pools[2].size(), is(0));
@@ -76,9 +82,11 @@ public class ChunkPoolTest {
     @Test
     public void testPool() throws Exception {
         Chunk<byte[]> c7 = sut_.newChunk(7);
-        sut_.release(c7);
+        c7.initialize();
+        c7.release();
         Chunk<byte[]> c8 = sut_.newChunk(8);
-        sut_.release(c8);
+        c8.initialize();
+        c8.release();
 
         assertThat(c7, is(sameInstance(c8)));
         assertThat(sut_.pools()[3].size(), is(1));
@@ -91,11 +99,26 @@ public class ChunkPoolTest {
 
         Chunk<byte[]> c7 = sut.newChunk(7);
         Chunk<byte[]> c8 = sut.newChunk(8);
-        sut.release(c7);
-        sut.release(c8);
+        c7.initialize();
+        c8.initialize();
+        c7.release();
+        c8.release();
         sut.close();
 
         assertThat(sut.pools()[3].size(), is(0));
         verify(sut, times(1)).dispose();
+    }
+
+    @Test
+    public void testCloes_ExceptionIfUsedChunkExists() throws Exception {
+        exceptionRule_.expect(IllegalStateException.class);
+        exceptionRule_.expectMessage("1 chunks are already in use.");
+
+        Chunk<byte[]> c0 = sut_.newChunk(10);
+        Chunk<byte[]> c1 = sut_.newChunk(10);
+        c0.initialize();
+        c0.release();
+
+        sut_.close();
     }
 }

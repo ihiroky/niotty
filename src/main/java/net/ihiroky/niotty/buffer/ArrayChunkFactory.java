@@ -3,17 +3,26 @@ package net.ihiroky.niotty.buffer;
 /**
  * @author Hiroki Itoh
  */
-public enum ArrayChunkFactory implements ChunkManager<byte[]> {
+public class ArrayChunkFactory extends ChunkManager<byte[]> {
 
-    INSTANCE;
+    private static final ArrayChunkFactory INSTANCE = new ArrayChunkFactory();
 
-    @Override
-    public Chunk<byte[]> newChunk(int bytes) {
-        return new ArrayChunk(new byte[bytes], this);
+    private ArrayChunkFactory() {
+    }
+
+    public static ArrayChunkFactory instance() {
+        return INSTANCE;
     }
 
     @Override
-    public void release(Chunk<byte[]> chunk) {
+    public Chunk<byte[]> newChunk(int bytes) {
+        ArrayChunk c = new ArrayChunk(new byte[bytes], this);
+        c.ready();
+        return c;
+    }
+
+    @Override
+    protected void release(Chunk<byte[]> chunk) {
     }
 
     @Override

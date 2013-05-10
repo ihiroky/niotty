@@ -15,7 +15,7 @@ public class PriorityByteBufferCodecBuffer extends ByteBufferCodecBuffer {
     }
 
     PriorityByteBufferCodecBuffer(int initialCapacity, int priority) {
-        super(ByteBufferChunkFactory.HEAP, initialCapacity);
+        super(ByteBufferChunkFactory.heap(), initialCapacity);
         priority_ = priority;
     }
 

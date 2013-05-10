@@ -22,18 +22,19 @@ public class ByteBufferChunkTest {
 
     @Before
     public void setUp() {
-        sut_ = new ByteBufferChunk(ByteBuffer.allocate(10), ByteBufferChunkFactory.HEAP);
+        sut_ = new ByteBufferChunk(ByteBuffer.allocate(10), ByteBufferChunkFactory.heap());
+        sut_.ready();
     }
 
     @Test
     public void testRetain() throws Exception {
         ByteBuffer b0 = sut_.initialize();
 
-        int retainCount0 = sut_.retainCount();
+        int retainCount0 = sut_.referenceCount();
         ByteBuffer b1 = sut_.retain();
-        int retainCount1 = sut_.retainCount();
+        int retainCount1 = sut_.referenceCount();
         ByteBuffer b2 = sut_.retain();
-        int retainCount2 = sut_.retainCount();
+        int retainCount2 = sut_.referenceCount();
 
         assertThat(retainCount0, is(1));
         assertThat(retainCount1, is(2));
@@ -60,7 +61,7 @@ public class ByteBufferChunkTest {
 
     @Test
     public void testClear() throws Throwable {
-        ByteBufferChunk sut = new ByteBufferChunk(ByteBuffer.allocateDirect(10), ByteBufferChunkFactory.DIRECT);
+        ByteBufferChunk sut = new ByteBufferChunk(ByteBuffer.allocateDirect(10), ByteBufferChunkFactory.direct());
 
         sut.clear();
     }

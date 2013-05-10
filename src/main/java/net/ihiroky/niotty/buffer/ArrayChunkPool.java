@@ -28,7 +28,7 @@ public class ArrayChunkPool extends ChunkPool<byte[]> {
             int current = allocatedBytes_;
             int next = current + bytes;
             if (next > maxPoolingBytes_) {
-                return new ArrayChunk(new byte[bytes], ArrayChunkFactory.INSTANCE);
+                return new ArrayChunk(new byte[bytes], ArrayChunkFactory.instance());
             }
             if (ALLOCATED_BYTES_UPDATER.compareAndSet(this, current, next)) {
                 return new ArrayChunk(new byte[bytes], this);

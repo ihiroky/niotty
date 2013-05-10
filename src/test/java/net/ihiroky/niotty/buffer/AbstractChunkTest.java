@@ -33,17 +33,38 @@ public class AbstractChunkTest {
                 return 1;
             }
         };
+        sut_.ready();
     }
 
     @Test
     public void testInitialize() throws Exception {
-        int retainCountBefore = sut_.retainCount();
+        int retainCountBefore = sut_.referenceCount();
         int buffer = sut_.initialize();
-        int retainCountAfter = sut_.retainCount();
+        int retainCountAfter = sut_.referenceCount();
 
-        assertThat(retainCountBefore, is(0));
+        assertThat(retainCountBefore, is(-1));
         assertThat(retainCountAfter, is(1));
         assertThat(buffer, is(0));
+    }
+
+    @Test
+    public void testInitialize_ExceptionIfAfterRelease() throws Exception {
+        exceptionRule_.expect(IllegalStateException.class);
+        exceptionRule_.expectMessage("this chunk is not in the pre-initialized state.");
+
+        sut_.initialize();
+        sut_.release();
+        sut_.initialize();
+    }
+
+    @Test
+    public void testInitialize_OkIfReleasedAndThenReady() throws Exception {
+        sut_.initialize();
+        sut_.release();
+        sut_.ready();
+        sut_.initialize();
+
+        assertThat(sut_.referenceCount(), is(1));
     }
 
     @Test
@@ -91,7 +112,7 @@ public class AbstractChunkTest {
 
         Chunk<Integer> newChunk = sut_.reallocate(-1);
 
-        assertThat(sut_.retainCount(), is(0));
+        assertThat(sut_.referenceCount(), is(0));
         verify(sut_.manager(), times(1)).newChunk(-1);
         verify(sut_.manager(), times(1)).release(sut_);
         assertThat(newChunk, is(not(sameInstance((Chunk<Integer>) sut_))));
