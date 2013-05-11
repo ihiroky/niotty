@@ -70,6 +70,11 @@ public class BufferSinkList implements BufferSink {
         return Buffers.newCodecBuffer(0, priority_);
     }
 
+    @Override
+    public BufferSinkList duplicate() {
+        return new BufferSinkList(car_.duplicate(), cdr_.duplicate(), priority_);
+    }
+
     /**
      * {@inheritDoc}
      */

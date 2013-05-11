@@ -202,6 +202,11 @@ public class FileBufferSink implements BufferSink {
         return Buffers.newCodecBuffer(0, priority_);
     }
 
+    @Override
+    public BufferSink duplicate() {
+        return new FileBufferSink(channel_, beginning_, end_, priority_, false);
+    }
+
     private BufferSink newSlicedBufferSink(BufferSink header, BufferSink content, BufferSink footer) {
         if (header == null) {
             if (content != null) {

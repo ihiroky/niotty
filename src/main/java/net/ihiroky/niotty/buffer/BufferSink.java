@@ -38,7 +38,7 @@ public interface BufferSink {
 
 
     /**
-     * Creates new {@code BufferSink} that shares the base content.
+     * Creates a new {@code BufferSink} that shares the base content.
      * The beginning of the new {@code BufferSink} is the one of the this instance.
      * The end of the new {@code BufferSink} is {@code beginning + bytes}.
      * The two {@code BufferSink}'s beginning and end are independent.
@@ -49,6 +49,16 @@ public interface BufferSink {
      * @return the new {@code BufferSink}
      */
     BufferSink slice(int bytes);
+
+    /**
+     * Creates a new {@code BufferSink} that shares the base content.
+     * The content of the new buffer will be that of this buffer. Changes to this buffer's content will be visible
+     * in the new buffer, and vice versa; the two {@code BufferSink}s' beginning and end values will be independent.
+     * The new buffer's beginning and end values will be identical to those of this buffer.
+     *
+     * @return the new {@code BufferSink}
+     */
+    BufferSink duplicate();
 
     /**
      * The byte size of remaining data in this instance.

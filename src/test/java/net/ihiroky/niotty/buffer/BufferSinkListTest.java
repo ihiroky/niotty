@@ -3,8 +3,13 @@ package net.ihiroky.niotty.buffer;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.mockito.Mockito;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
+import java.nio.ByteBuffer;
 import java.nio.channels.GatheringByteChannel;
+import java.util.Arrays;
 
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
@@ -175,5 +180,38 @@ public class BufferSinkListTest {
         assertThat(sliced.remainingBytes(), is(3));
         assertThat(car.remainingBytes(), is(0));
         assertThat(cdr.remainingBytes(), is(2));
+    }
+
+    public BufferSinkListTest() {
+        super();    //To change body of overridden methods use File | Settings | File Templates.
+    }
+
+    @Test
+    public void testDuplicate_Independent() throws Exception {
+        byte[] carData = new byte[2];
+        Arrays.fill(carData, (byte) 1);
+        BufferSink car = Buffers.newCodecBuffer(carData, 0, carData.length);
+        byte[] cdrData = new byte[3];
+        Arrays.fill(cdrData, (byte) 2);
+        BufferSink cdr = Buffers.newCodecBuffer(cdrData, 0, cdrData.length);
+        GatheringByteChannel channel = mock(GatheringByteChannel.class);
+        when(channel.write(Mockito.any(ByteBuffer.class))).thenAnswer(new Answer<Integer>() {
+             @Override
+            public Integer answer(InvocationOnMock invocation) throws Throwable {
+                 ByteBuffer buffer = (ByteBuffer) invocation.getArguments()[0];
+                 int remaining = buffer.remaining();
+                 buffer.limit(buffer.capacity());
+                 return remaining;
+            }
+        });
+
+        BufferSinkList sut = new BufferSinkList(car, cdr);
+        BufferSinkList duplicated = sut.duplicate();
+        sut.transferTo(channel);
+
+        assertThat(duplicated.remainingBytes(), is(2 + 3));
+        assertThat(sut.remainingBytes(), is(0));
+        assertThat(duplicated.car(), is(not(sameInstance(sut.car()))));
+        assertThat(duplicated.cdr(), is(not(sameInstance(sut.cdr()))));
     }
 }
