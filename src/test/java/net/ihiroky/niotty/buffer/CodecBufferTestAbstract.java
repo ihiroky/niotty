@@ -438,15 +438,16 @@ public class CodecBufferTestAbstract {
 
         @Test
         public void testSliceAndRead_ConfirmSharedContent() throws Exception {
-            byte[] buffer = new byte[5];
+            byte[] buffer = new byte[3];
             CodecBuffer input = Buffers.newCodecBuffer(new byte[]{'a', 'b'}, 0, 2);
 
             CodecBuffer sliced = sut_.slice(3);
+            sliced.end(1);
             sliced.drainFrom(input);
 
-            sliced.readBytes(buffer, 0, 5);
-            assertThat(buffer, is(new byte[]{'0', '1', '2', 'a', 'b'}));
-            sut_.readBytes(buffer, 0, 2);
+            sliced.readBytes(buffer, 0, buffer.length);
+            assertThat(buffer, is(new byte[]{'0', 'a', 'b'}));
+            sut_.beginning(1).readBytes(buffer, 0, 2);
             assertThat(Arrays.copyOf(buffer, 2), is(new byte[]{'a', 'b'}));
         }
 

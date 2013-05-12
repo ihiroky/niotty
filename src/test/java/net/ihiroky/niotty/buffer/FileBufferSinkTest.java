@@ -375,4 +375,80 @@ public class FileBufferSinkTest {
         assertThat(sut.footer(), is(added0));
         assertThat(sut.footer().toArray(), is(new byte[]{1, 1, -1, -1}));
     }
+
+    @Test
+    public void testSlice_ReferenceCount() throws Exception {
+        FileBufferSink sut = new FileBufferSink(channel_, 0, 10, 0);
+        CodecBufferFactory bufferFactory = Buffers.newByteBufferCodecBufferFactory(10, true);
+        ByteBufferCodecBuffer b0 = (ByteBufferCodecBuffer) bufferFactory.newCodecBuffer(5);
+        b0.writeBytes(new byte[5], 0, 5);
+        ByteBufferCodecBuffer b1 = (ByteBufferCodecBuffer) bufferFactory.newCodecBuffer(5);
+        b1.writeBytes(new byte[5], 0, 5);
+        sut.addFirst(b0);
+        sut.addLast(b1);
+
+        // first and second
+        BufferSink sliced0 = sut.slice(10);
+        assertThat(sut.referenceCount(), is(2));
+        assertThat(b0.chunk().referenceCount(), is(2));
+        assertThat(b1.chunk().referenceCount(), is(1));
+
+        // second and third
+        BufferSink sliced1 = sut.slice(10);
+        assertThat(sut.referenceCount(), is(3));
+        assertThat(b0.chunk().referenceCount(), is(2));
+        assertThat(b1.chunk().referenceCount(), is(2));
+
+        sliced0.dispose();
+        assertThat(sut.referenceCount(), is(2));
+        assertThat(b0.chunk().referenceCount(), is(1));
+        assertThat(b1.chunk().referenceCount(), is(2));
+
+        sliced1.dispose();
+        assertThat(sut.referenceCount(), is(1));
+        assertThat(b0.chunk().referenceCount(), is(1));
+        assertThat(b1.chunk().referenceCount(), is(1));
+
+        sut.dispose();
+        assertThat(sut.referenceCount(), is(0));
+        assertThat(b0.chunk().referenceCount(), is(0));
+        assertThat(b1.chunk().referenceCount(), is(0));
+    }
+
+    @Test
+    public void testDuplicate_ReferenceCount() throws Exception {
+        FileBufferSink sut = new FileBufferSink(channel_, 0, 10, 0);
+        CodecBufferFactory bufferFactory = Buffers.newByteBufferCodecBufferFactory(10, true);
+        ByteBufferCodecBuffer b0 = (ByteBufferCodecBuffer) bufferFactory.newCodecBuffer(5);
+        b0.writeBytes(new byte[5], 0, 5);
+        ByteBufferCodecBuffer b1 = (ByteBufferCodecBuffer) bufferFactory.newCodecBuffer(5);
+        b1.writeBytes(new byte[5], 0, 5);
+        sut.addFirst(b0);
+        sut.addLast(b1);
+
+        BufferSink d0 = sut.duplicate();
+        assertThat(sut.referenceCount(), is(2));
+        assertThat(b0.chunk().referenceCount(), is(2));
+        assertThat(b1.chunk().referenceCount(), is(2));
+
+        BufferSink d1 = sut.duplicate();
+        assertThat(sut.referenceCount(), is(3));
+        assertThat(b0.chunk().referenceCount(), is(3));
+        assertThat(b1.chunk().referenceCount(), is(3));
+
+        d0.dispose();
+        assertThat(sut.referenceCount(), is(2));
+        assertThat(b0.chunk().referenceCount(), is(2));
+        assertThat(b1.chunk().referenceCount(), is(2));
+
+        d1.dispose();
+        assertThat(sut.referenceCount(), is(1));
+        assertThat(b0.chunk().referenceCount(), is(1));
+        assertThat(b1.chunk().referenceCount(), is(1));
+
+        sut.dispose();
+        assertThat(sut.referenceCount(), is(0));
+        assertThat(b0.chunk().referenceCount(), is(0));
+        assertThat(b1.chunk().referenceCount(), is(0));
+    }
 }

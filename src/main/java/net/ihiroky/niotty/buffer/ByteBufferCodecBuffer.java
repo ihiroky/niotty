@@ -496,6 +496,7 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer implements CodecB
 
     @Override
     public void dispose() {
+        chunk_.release();
     }
 
     @Override
@@ -761,10 +762,9 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer implements CodecB
         if (bytes <= 0 || bytes > bb.remaining()) {
             throw new IllegalArgumentException("Invalid input " + bytes + ". " + bb.remaining() + " byte remains.");
         }
-        ByteBuffer sliced = bb.slice();
-        sliced.limit(bytes);
+        CodecBuffer sliced = new SlicedCodecBuffer(this, bytes);
         bb.position(bb.position() + bytes);
-        return new ByteBufferCodecBuffer(sliced);
+        return sliced;
     }
 
     @Override
@@ -788,5 +788,9 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer implements CodecB
         return ByteBufferCodecBuffer.class.getName()
                 + "(beginning:" + beginning_ + ", end:" + end_ + ", capacity:" + buffer_.capacity()
                 + ", priority:" + priority() + ')';
+    }
+
+    Chunk<ByteBuffer> chunk() {
+        return chunk_;
     }
 }

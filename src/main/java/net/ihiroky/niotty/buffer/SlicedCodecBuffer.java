@@ -26,13 +26,17 @@ public class SlicedCodecBuffer extends AbstractCodecBuffer {
         capacity_ = b.end();
     }
 
-    SlicedCodecBuffer(CodecBuffer base, int capacity) {
-        if (capacity > base.capacityBytes()) {
-            throw new IllegalArgumentException("capacity must be less than or equal base.capacityBytes().");
+    SlicedCodecBuffer(CodecBuffer base, int bytes) {
+        int beginning = base.beginning();
+        int capacity = beginning + bytes;
+        if (capacity > base.end()) {
+            throw new IllegalArgumentException("capacity must be less than or equal base.end().");
         }
+
         CodecBuffer b = base.duplicate();
+        b.end(capacity);
         base_ = b;
-        offset_ = b.beginning();
+        offset_ = beginning;
         capacity_ = capacity;
     }
 

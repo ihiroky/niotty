@@ -481,6 +481,7 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer implements CodecBuffer
      */
     @Override
     public void dispose() {
+        // TODO discuss whether flag to control the call chunk_.release only once is needed.
         chunk_.release();
     }
 
@@ -734,9 +735,9 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer implements CodecBuffer
         if (bytes <= 0 || bytes > remainingBytes()) {
             throw new IllegalArgumentException("Invalid input " + bytes + ". " + remainingBytes() + " byte remains.");
         }
-        int position = beginning_;
+        CodecBuffer sliced = new SlicedCodecBuffer(this, bytes);
         beginning_ += bytes;
-        return new ArrayCodecBuffer(buffer_, position, bytes);
+        return sliced;
     }
 
     @Override
@@ -758,5 +759,9 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer implements CodecBuffer
         return ArrayCodecBuffer.class.getName()
                 + "(beginning:" + beginning_ + ", end:" + end_ + ", capacity:" + buffer_.length
                 + ", priority:" + priority() + ')';
+    }
+
+    Chunk<byte[]> chunk() {
+        return chunk_;
     }
 }

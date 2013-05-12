@@ -4,12 +4,19 @@ import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.nio.channels.GatheringByteChannel;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * The implementation of {@link net.ihiroky.niotty.buffer.BufferSink} to write a file content
  * in a specified range to {@code java.nio.channels.WritableByteChannel} directly.
+ * The {@code FileBufferSink} has header and footer as {@link net.ihiroky.niotty.buffer.CodecBuffer},
+ * which are added by calling {@link #addFirst(CodecBuffer)} and {@link #addLast(CodecBuffer)}.
+ * A lifecycle of a file in the {@code FileBufferSink} is managed byte a reference counting.
+ * A reference count is incremented if new {@code FileBufferSink} is instantiated from a base {@code FileBufferSink},
+ * and decremented if {@link #dispose()} is called. The initial (first) value is 1.
+ * The file is closed when the value gets 0. A Lifecycle of header and footer is managed by themselves.
+ * If this instance is sliced, duplicated and disposed, they are also change states respectively.
  *
- * TODO use reference counting to close FileChannel
  * @author Hiroki Itoh
  */
 public class FileBufferSink implements BufferSink {
@@ -18,15 +25,16 @@ public class FileBufferSink implements BufferSink {
     private long beginning_;
     private final long end_;
     private final int priority_;
-    private final boolean autoDispose_;
     private CodecBuffer header_;
     private CodecBuffer footer_;
+    private final AtomicInteger referenceCount_;
 
     FileBufferSink(FileChannel channel, long beginning, long length, int priority) {
-        this(channel, beginning, length, priority, true);
+        this(channel, beginning, length, priority, null);
     }
 
-    private FileBufferSink(FileChannel channel, long beginning, long length, int priority, boolean autoDispose) {
+    private FileBufferSink(FileChannel channel, long beginning, long length, int priority,
+                           AtomicInteger referenceCount) {
         Objects.requireNonNull(channel, "channel");
         if (beginning < 0) {
             throw new IllegalArgumentException("beginning is negative.");
@@ -34,11 +42,20 @@ public class FileBufferSink implements BufferSink {
         if (length < 0) {
             throw new IllegalArgumentException("length is negative.");
         }
+
+        if (referenceCount != null) {
+            if (referenceCount.getAndIncrement() == 0) {
+                throw new IllegalStateException("reference count is already 0.");
+            }
+        } else {
+            referenceCount = new AtomicInteger(1);
+        }
+
         channel_ = channel;
         beginning_ = beginning;
         end_ = beginning + length;
         priority_ = priority;
-        autoDispose_ = autoDispose;
+        referenceCount_ = referenceCount;
 
         header_ = Buffers.newCodecBuffer(0, priority);
         footer_ = Buffers.newCodecBuffer(0, priority);
@@ -69,6 +86,7 @@ public class FileBufferSink implements BufferSink {
         if (beginning_ == end_) {
             return true;
         }
+
         try {
             long remaining = end_ - beginning_;
             long transferred = channel_.transferTo(beginning_, remaining, channel);
@@ -76,14 +94,10 @@ public class FileBufferSink implements BufferSink {
             if (transferred < remaining) {
                 return false;
             }
-            if (autoDispose_) {
-                dispose();
-            }
+            dispose();
             return true;
         } catch (IOException ioe) {
-            if (autoDispose_) {
-                dispose();
-            }
+            dispose();
             throw ioe;
         }
     }
@@ -135,10 +149,12 @@ public class FileBufferSink implements BufferSink {
     @Override
     public void dispose() {
         header_.dispose();
-        try {
-            channel_.close();
-        } catch (IOException ioe) {
-            ioe.printStackTrace();
+        if (referenceCount_.decrementAndGet() == 0) {
+            try {
+                channel_.close();
+            } catch (IOException ioe) {
+                ioe.printStackTrace();
+            }
         }
         footer_.dispose();
     }
@@ -181,10 +197,10 @@ public class FileBufferSink implements BufferSink {
             long b = beginning_;
             if (bytes <= contentRemaining) {
                 beginning_ += bytes;
-                contentSliced = new FileBufferSink(channel_, b, bytes, priority_, false);
+                contentSliced = new FileBufferSink(channel_, b, bytes, priority_, referenceCount_);
                 return (headerSliced == null) ? contentSliced : Buffers.newBufferSink(headerSliced, contentSliced);
             }
-            contentSliced = new FileBufferSink(channel_, b, end_, priority_, true);
+            contentSliced = new FileBufferSink(channel_, b, end_, priority_, referenceCount_);
             bytes -= contentRemaining;
             beginning_ = end_;
             if (bytes == 0) {
@@ -204,7 +220,8 @@ public class FileBufferSink implements BufferSink {
 
     @Override
     public BufferSink duplicate() {
-        return new FileBufferSink(channel_, beginning_, end_, priority_, false);
+        return new FileBufferSink(channel_, beginning_, end_, priority_, referenceCount_)
+                .addFirst(header_.duplicate()).addLast(footer_.duplicate());
     }
 
     private BufferSink newSlicedBufferSink(BufferSink header, BufferSink content, BufferSink footer) {
@@ -245,9 +262,17 @@ public class FileBufferSink implements BufferSink {
     @Override
     public String toString() {
         return "(beginning:" + beginning_ + ", end:" + end_
-                + ", channel:" + channel_ + ", autoClose:" + autoDispose_
+                + ", channel:" + channel_ + ", referenceCount" + referenceCount_.get()
                 + ", priority:" + priority_
                 + ')';
+    }
+
+    /**
+     * The reference count to control the lifecycle of this instance.
+     * @return the reference count
+     */
+    public int referenceCount() {
+        return referenceCount_.get();
     }
 
     CodecBuffer header() {
