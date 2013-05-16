@@ -11,14 +11,49 @@ if (!buildNumber) {
 }
 
 configurations {
+    doclet
     cobertura
 }
 
 dependencies {
+    doclet 'org.umlgraph:umlgraph:5.6'
     checkstyle 'com.puppycrawl.tools:checkstyle:5.6'
     findbugs 'com.google.code.findbugs:findbugs:+'
     pmd 'pmd:pmd:4.3'
     cobertura 'net.sourceforge.cobertura:cobertura:1.9.+'
+}
+
+task javadoc(overwrite: true) {
+    setDescription('Generates Javadoc API documentation with apiviz diagrams')
+    setGroup(JavaBasePlugin.DOCUMENTATION_GROUP)
+
+    doLast {
+        def javaFilePath = file('src/main/java')
+        if (javaFilePath.exists()) {
+            ant.javadoc(classpath: (configurations.runtime).asPath,
+                        sourcepath: file('src/main/java'),
+                        packagenames: '*',
+                        destdir: "${docsDir}/javadoc",
+                        locale: 'en_US',
+                        docletpath: configurations.doclet.asPath) {
+                doclet(name: 'org.umlgraph.doclet.UmlGraphDoc') {
+                    param(name: '-verbose')
+                    param(name: '-inferrel')
+                    param(name: '-inferdep')
+                    param(name: '-qualify')
+                    param(name: '-attributes')
+                    param(name: '-visibility')
+                    param(name: '-postfixpackage')
+                    param(name: '-hide', value: 'java.*')
+                    param(name: '-collpackages', value: 'java.util.*')
+                    param(name: '-nodefontsize', value: '9')
+                    param(name: '-nodefontpackagesize', value: '7')
+                    param(name: '-link', value: 'http://docs.oracle.com/javase/7/docs/jdk/api/javadoc/doclet/')
+                    param(name: '-link', value: 'http://docs.oracle.com/javase/7/docs/api/')
+                }
+            }
+        }
+    }
 }
 
 checkstyleMain.configFile = file('checkstyle/main.xml')
