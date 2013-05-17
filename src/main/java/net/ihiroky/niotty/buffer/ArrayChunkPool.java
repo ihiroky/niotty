@@ -3,18 +3,34 @@ package net.ihiroky.niotty.buffer;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 /**
+ * A implementation of {@link net.ihiroky.niotty.buffer.ChunkPool} which manages
+ * {@link net.ihiroky.niotty.buffer.ArrayChunk}. This class has maximum size to allocate the chunks.
+ * If total size of the pooled chunks exceeds the size, unpooled chunks are allocated.
+ * <p></p>
  * TODO MBean support
  * @author Hiroki Itoh
  */
 public class ArrayChunkPool extends ChunkPool<byte[]> {
 
-    // TODO support long
+    /**
+     * The total size of allocated chunks.
+     * TODO support long value.
+     */
     private volatile int allocatedBytes_;
+
+    /**
+     * The maximum total size of chunks which this pool can hold.
+     */
     private final int maxPoolingBytes_;
 
     private static final AtomicIntegerFieldUpdater<ArrayChunkPool> ALLOCATED_BYTES_UPDATER =
             AtomicIntegerFieldUpdater.newUpdater(ArrayChunkPool.class, "allocatedBytes_");
 
+    /**
+     * Constructs a new instance.
+     * @param maxPoolingBytes the maxPoolingBytes.
+     * @throws IllegalArgumentException if the maxPoolingBytes is not positive integer.
+     */
     ArrayChunkPool(int maxPoolingBytes) {
         if (maxPoolingBytes <= 0) {
             throw new IllegalArgumentException("maxPoolingBytes must be positive.");
@@ -36,6 +52,9 @@ public class ArrayChunkPool extends ChunkPool<byte[]> {
         }
     }
 
+    /**
+     * Does nothing.
+     */
     @Override
     protected void dispose() {
     }

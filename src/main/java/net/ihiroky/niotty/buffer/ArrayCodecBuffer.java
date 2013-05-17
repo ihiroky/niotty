@@ -43,6 +43,7 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer implements CodecBuffer
     }
 
     ArrayCodecBuffer(byte[] b, int beginning, int length) {
+        Objects.requireNonNull(b, "b");
         if (beginning + length > b.length) {
             throw new IndexOutOfBoundsException(
                     "offset + length (" + (beginning + length) + ") exceeds buffer capacity " + b.length);

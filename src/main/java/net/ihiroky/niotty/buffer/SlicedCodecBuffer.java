@@ -11,14 +11,32 @@ import java.nio.charset.CoderResult;
 import java.util.Objects;
 
 /**
+ * A {@link net.ihiroky.niotty.buffer.CodecBuffer} whose content is a shared subsequence of the specified
+ * {@code base}'s content.
+ * <p></p>
+ * The content of this object will start at this {@code base}'s current beginning. Changes to the content
+ * of the {@code base} will be visible in the object, and vice versa; the two object's beginning and end
+ * will be independent.
+ * <p></p>
+ * The new {@code SlicedCodecBuffer}'s beginning will be zero, its end and capacity will be the number of bytes
+ * remaining in the {@code base} buffer. The new one is not expandable.
  * @author Hiroki Itoh
  */
 public class SlicedCodecBuffer extends AbstractCodecBuffer {
 
+    /** the base {@code CodecBuffer}. */
     final CodecBuffer base_;
+
+    /** a offset value for the base's beginning. */
     final int offset_;
+
     final int capacity_; // fix capacity to avoid region over wrap.
 
+    /**
+     * Creates a new instance.
+     *
+     * @param base the base {@code CodecBuffer}.
+     */
     SlicedCodecBuffer(CodecBuffer base) {
         CodecBuffer b = base.duplicate();
         base_ = b;
@@ -26,6 +44,13 @@ public class SlicedCodecBuffer extends AbstractCodecBuffer {
         capacity_ = b.end();
     }
 
+    /**
+     * Creates a new instance.
+     *
+     * @param base the base {@code CodecBuffer}.
+     * @param bytes the data size by the bytes to be sliced.
+     * @throws IllegalArgumentException if the {@code bytes} is greater the remaining of the {@code base}.
+     */
     SlicedCodecBuffer(CodecBuffer base, int bytes) {
         int beginning = base.beginning();
         int capacity = beginning + bytes;

@@ -230,6 +230,15 @@ public final class Buffers {
         return new BufferSinkList(car, cdr, priority);
     }
 
+    /**
+     * Creates a new {@code CodecBuffer} which consists of the specified {@code buffer0} and {@code buffers}.
+     * The order of {@code CodecBuffer} in the new buffer is the argument order; the first is {@code buffer0},
+     * the second is {@code buffers[0]} and the third is {@code buffers[1]} and so on.
+     *
+     * @param buffer0 the first {@code CodecBuffer} in the new {@code CodecBuffer}.
+     * @param buffers the {@code CodecBuffer} after the {@code buffer0}.
+     * @return the new {@code CodecBuffer}.
+     */
     public static CodecBuffer newCodecBuffer(CodecBuffer buffer0, CodecBuffer...buffers) {
         return new CodecBufferList(ARRAY_CODEC_BUFFER_FACTORY, DEFAULT_PRIORITY, buffer0, buffers);
     }

@@ -5,17 +5,23 @@ import sun.nio.ch.DirectBuffer;
 import java.nio.ByteBuffer;
 
 /**
-* @author Hiroki Itoh
-*/
+ * A implementation of {@link net.ihiroky.niotty.buffer.Chunk} that holds an {@code ByteBuffer}.
+ * @author Hiroki Itoh
+ */
 public class ByteBufferChunk extends AbstractChunk<ByteBuffer> {
 
-    public ByteBufferChunk(ByteBuffer buffer, ChunkManager<ByteBuffer> allocator) {
-        super(buffer, allocator);
+    /**
+     * Constructs this instance.
+     * @param buffer the byte array to be managed by this instance
+     * @param manager the manager to manage this instance
+     */
+    public ByteBufferChunk(ByteBuffer buffer, ChunkManager<ByteBuffer> manager) {
+        super(buffer, manager);
     }
 
     @Override
     public ByteBuffer retain() {
-        incrementRetainCount();
+        incrementReferenceCount();
         return buffer_.duplicate();
     }
 
@@ -24,6 +30,10 @@ public class ByteBufferChunk extends AbstractChunk<ByteBuffer> {
         return buffer_.capacity();
     }
 
+    /**
+     * Clears the {@code ByteBuffer} which contains in this chunk if the {@code ByteBuffer} is the direct buffer.
+     * @throws Throwable
+     */
     void clear() throws Throwable {
         if (buffer_ instanceof DirectBuffer) {
             ((DirectBuffer) buffer_).cleaner().clean();

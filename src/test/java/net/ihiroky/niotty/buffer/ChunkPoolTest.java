@@ -110,9 +110,9 @@ public class ChunkPoolTest {
     }
 
     @Test
-    public void testCloes_ExceptionIfUsedChunkExists() throws Exception {
+    public void testClose_ExceptionIfUsedChunkExists() throws Exception {
         exceptionRule_.expect(IllegalStateException.class);
-        exceptionRule_.expectMessage("1 chunks are already in use.");
+        exceptionRule_.expectMessage("1 chunks are still in use.");
 
         Chunk<byte[]> c0 = sut_.newChunk(10);
         Chunk<byte[]> c1 = sut_.newChunk(10);

@@ -71,8 +71,8 @@ public class AbstractChunkTest {
     public void testIncrementRetainCount() throws Exception {
         sut_.initialize();
 
-        int retainCount0 = sut_.incrementRetainCount();
-        int retainCount1 = sut_.incrementRetainCount();
+        int retainCount0 = sut_.incrementReferenceCount();
+        int retainCount1 = sut_.incrementReferenceCount();
 
         assertThat(retainCount0, is(2));
         assertThat(retainCount1, is(3));
@@ -82,13 +82,13 @@ public class AbstractChunkTest {
     public void testIncrementCount_ExceptionIfRetainCountIsZero() throws Exception {
         exceptionRule_.expect(IllegalStateException.class);
         exceptionRule_.expectMessage("this chunk is already released or not initialized yet.");
-        sut_.incrementRetainCount();
+        sut_.incrementReferenceCount();
     }
 
     @Test
     public void testRelease() throws Exception {
         sut_.initialize();
-        sut_.incrementRetainCount();
+        sut_.incrementReferenceCount();
 
         int retainCount0 = sut_.release();
         int retainCount1 = sut_.release();

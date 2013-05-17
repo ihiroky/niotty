@@ -1,6 +1,9 @@
 package net.ihiroky.niotty.buffer;
 
 /**
+ * A factory class that creates {@link net.ihiroky.niotty.buffer.ArrayChunk}.
+ * Use {@link #instance()} to get an instance of this class.
+ *
  * @author Hiroki Itoh
  */
 public class ArrayChunkFactory extends ChunkManager<byte[]> {
@@ -10,6 +13,10 @@ public class ArrayChunkFactory extends ChunkManager<byte[]> {
     private ArrayChunkFactory() {
     }
 
+    /**
+     * Returns the instance.
+     * @return the instance.
+     */
     public static ArrayChunkFactory instance() {
         return INSTANCE;
     }
@@ -21,10 +28,17 @@ public class ArrayChunkFactory extends ChunkManager<byte[]> {
         return c;
     }
 
+    /**
+     * Does nothing.
+     * @param chunk the chunk which is obtained by {@code newChunk(int)}
+     */
     @Override
     protected void release(Chunk<byte[]> chunk) {
     }
 
+    /**
+     * Does nothing.
+     */
     @Override
     public void close() {
     }

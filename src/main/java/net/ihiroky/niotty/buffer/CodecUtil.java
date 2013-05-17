@@ -3,7 +3,7 @@ package net.ihiroky.niotty.buffer;
 /**
  * @author Hiroki Itoh
  */
-public final class CodecUtil {
+final class CodecUtil {
 
     private CodecUtil() {
         throw new AssertionError();

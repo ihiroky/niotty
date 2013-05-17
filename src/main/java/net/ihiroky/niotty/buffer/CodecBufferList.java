@@ -13,6 +13,13 @@ import java.util.List;
 import java.util.Objects;
 
 /**
+ * A {@link net.ihiroky.niotty.buffer.CodecBuffer} which consists of {@link net.ihiroky.niotty.buffer.CodecBuffer}s.
+ * <p></p>
+ * The {@link #addFirst(CodecBuffer)} and {@link #addLast(CodecBuffer)} add the argument into an internal list.
+ * The elements contained in the list is sliced when added to. So an expansion of each elements does not happen.
+ * This object allocates a new (unsliced) {@code CodecBuffer} and add it to the list if the object need expand
+ * its space. The maximum elements that can be held by the object is 1024.
+ *
  * @author Hiroki Itoh
  */
 public class CodecBufferList extends AbstractCodecBuffer implements CodecBuffer {
@@ -25,7 +32,6 @@ public class CodecBufferList extends AbstractCodecBuffer implements CodecBuffer 
 
     private static final int INITIAL_BUFFERS_CAPACITY = 4;
     private static final int MAX_BUFFER_COUNT = 1024;
-    private static final CodecBuffer EMPTY_BUFFER = new ArrayCodecBuffer(0);
 
     private CodecBufferList(CodecBufferFactory allocator, int priority) {
         buffers_ = new ArrayList<>(INITIAL_BUFFERS_CAPACITY);
@@ -146,9 +152,9 @@ public class CodecBufferList extends AbstractCodecBuffer implements CodecBuffer 
         if (buffers_.size() >= MAX_BUFFER_COUNT) {
             throw new IllegalStateException("the size of buffers reaches maximum: " + MAX_BUFFER_COUNT);
         }
-        CodecBuffer buffer = allocator_.newCodecBuffer(Math.max(endBuffer.capacityBytes() * 2, expectedMinSize));
+        CodecBuffer buffer = allocator_.newCodecBuffer(
+                Math.max(endBuffer.capacityBytes() * EXPAND_MULTIPLIER, expectedMinSize));
 
-        // TODO duplicate buffer to independent of beginning / end index.
         buffers_.add(buffer);
         endBufferIndex_++;
         return buffer;
@@ -486,6 +492,10 @@ public class CodecBufferList extends AbstractCodecBuffer implements CodecBuffer 
         return toNonNegativeInt(remainingBytesLong());
     }
 
+    /**
+     * Returns the size of remaining data by the byte as long type.
+     * @return the size of remaining data by the byte as long type.
+     */
     public long remainingBytesLong() {
         long sum = 0;
         List<CodecBuffer> buffers = buffers_;
@@ -501,6 +511,10 @@ public class CodecBufferList extends AbstractCodecBuffer implements CodecBuffer 
         return toNonNegativeInt(spaceBytesLong());
     }
 
+    /**
+     * Returns the size of space to be written data by the byte as long type.
+     * @return the size of space to be written data by the byte as long type.
+     */
     public long spaceBytesLong() {
         long sum = 0;
         int size = buffers_.size();
@@ -509,11 +523,16 @@ public class CodecBufferList extends AbstractCodecBuffer implements CodecBuffer 
         }
         return sum;
     }
+
     @Override
     public int capacityBytes() {
         return toNonNegativeInt(capacityBytesLong());
     }
 
+    /**
+     * Returns the capacity of this buffer by the byte as long type.
+     * @return the capacity of this buffer by the byte as long type.
+     */
     public long capacityBytesLong() {
         long sum = 0;
         for (CodecBuffer buffer : buffers_) {
@@ -527,6 +546,10 @@ public class CodecBufferList extends AbstractCodecBuffer implements CodecBuffer 
         return toNonNegativeInt(beginningLong());
     }
 
+    /**
+     * Returns the value of the beginning as long type.
+     * @return the value of the beginning as long type.
+     */
     public long beginningLong() {
         List<CodecBuffer> buffer = buffers_;
         int beginningBufferIndex = beginningBufferIndex_;
@@ -543,6 +566,10 @@ public class CodecBufferList extends AbstractCodecBuffer implements CodecBuffer 
         return beginningLong(beginning);
     }
 
+    /**
+     * Sets the value of the beginning as long type.
+     * {@inheritDoc}
+     */
     public CodecBuffer beginningLong(long beginning) {
         if (beginning < 0) {
             throw new IllegalArgumentException("beginning must be more than 0.");
@@ -568,13 +595,21 @@ public class CodecBufferList extends AbstractCodecBuffer implements CodecBuffer 
 
     @Override
     public int end() {
+        return toNonNegativeInt(endLong());
+    }
+
+    /**
+     * Returns the value of the end as long type.
+     * @return the value of the end as long type.
+     */
+    public long endLong() {
         long sum = 0;
         int end = endBufferIndex_;
         for (int i = beginningBufferIndex_; i < end; i++) {
             sum += buffers_.get(i).capacityBytes();
         }
         sum += buffers_.get(end).end();
-        return (sum <= Integer.MAX_VALUE) ? (int) sum : Integer.MAX_VALUE;
+        return sum;
     }
 
     @Override
@@ -582,13 +617,17 @@ public class CodecBufferList extends AbstractCodecBuffer implements CodecBuffer 
         return endLong(end);
     }
 
+    /**
+     * Sets the value of the end as long type.
+     * {@inheritDoc}
+     */
     public CodecBuffer endLong(long end) {
-        List<CodecBuffer> buffer = buffers_;
-        int size = buffer.size();
+        List<CodecBuffer> buffers = buffers_;
+        int size = buffers.size();
         CodecBuffer target = null;
         long index = 0;
         for (int bi = 0; bi < size; bi++) {
-            target = buffer.get(bi);
+            target = buffers.get(bi);
             if (end < index) {
                 break;
             }

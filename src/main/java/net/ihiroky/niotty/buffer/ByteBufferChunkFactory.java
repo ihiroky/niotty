@@ -6,6 +6,13 @@ import org.slf4j.LoggerFactory;
 import java.nio.ByteBuffer;
 
 /**
+ * A factory class that creates {@link net.ihiroky.niotty.buffer.ByteBufferChunk}.
+ * Use {@link #heap()} to get an instance which creates a heap {@code ByteBuffer}.
+ * If a direct {@code ByteBuffer} is needed, use {@link #direct()}.
+ * <p></p>
+ * This class does not provide a pooling feature, so unlimited use of the direct buffer allocation
+ * is not recommended. It probably cause an out of memory error.
+ *
  * @author Hiroki Itoh
  */
 public abstract class ByteBufferChunkFactory extends ChunkManager<ByteBuffer> {
@@ -30,14 +37,26 @@ public abstract class ByteBufferChunkFactory extends ChunkManager<ByteBuffer> {
 
     private Logger logger_ = LoggerFactory.getLogger(ByteBufferChunkFactory.class);
 
+    /**
+     * Returns the instance of this class that creates heap {@code ByteBufferChunk}.
+     * @return the instance of this class that creates heap {@code ByteBufferChunk}.
+     */
     public static ByteBufferChunkFactory heap() {
         return HEAP;
     }
 
+    /**
+     * Returns the instance of this class that creates direct {@code ByteBufferChunk}.
+     * @return the instance of this class that creates direct {@code ByteBufferChunk}.
+     */
     public static ByteBufferChunkFactory direct() {
         return DIRECT;
     }
 
+    /**
+     * {@inheritDoc}
+     * @return the chunk that has an {@code ByteBuffer}.
+     */
     public abstract ByteBufferChunk newChunk(int bytes);
 
     @Override
@@ -49,6 +68,9 @@ public abstract class ByteBufferChunkFactory extends ChunkManager<ByteBuffer> {
         }
     }
 
+    /**
+     * Does nothing.
+     */
     @Override
     public void close() {
     }

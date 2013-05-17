@@ -256,21 +256,21 @@ public interface CodecBuffer extends BufferSink {
     int skipBytes(int bytes);
 
     /**
-     * Returns size of remaining data by byte.
+     * Returns the size of remaining data by the byte.
      * This is equals to difference between the beginning and the end.
-     * @return size of remaining data by byte
+     * @return the size of remaining data by the byte
      */
     int remainingBytes();
 
     /**
-     * Returns the size of space to be written data in byte.
-     * @return the size of space to be written data in byte
+     * Returns the size of space to be written data by the byte.
+     * @return the size of space to be written data by the byte
      */
     int spaceBytes();
 
     /**
-     * Returns the capacity of this buffer.
-     * @return the capacity of this buffer
+     * Returns the capacity of this buffer by the byte.
+     * @return the capacity of this buffer by the byte
      */
     int capacityBytes();
 
