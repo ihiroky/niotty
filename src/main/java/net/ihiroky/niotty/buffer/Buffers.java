@@ -27,27 +27,29 @@ public final class Buffers {
     /** Default priority (no wait). */
     static final int DEFAULT_PRIORITY = -1;
 
+    static final int DEFAULT_CAPACITY = 512;
+
     private static final CodecBufferFactory ARRAY_CODEC_BUFFER_FACTORY = new CodecBufferFactory() {
         @Override
         public CodecBuffer newCodecBuffer(int bytes) {
-            return new ArrayCodecBuffer(bytes);
+            return new ArrayCodecBuffer(ArrayChunkFactory.instance(), bytes, DEFAULT_PRIORITY);
         }
 
         @Override
         public CodecBuffer newCodecBuffer(int bytes, int priority) {
-            return (priority < 0) ? new ArrayCodecBuffer(bytes) : new PriorityArrayCodecBuffer(bytes, priority);
+            return new ArrayCodecBuffer(ArrayChunkFactory.instance(), bytes, priority);
         }
     };
 
-    private static final CodecBufferFactory BYTE_ARRAY_CODEC_BUFFER_FACTORY = new CodecBufferFactory() {
+    private static final CodecBufferFactory BYTE_BUFFER_CODEC_BUFFER_FACTORY = new CodecBufferFactory() {
         @Override
         public CodecBuffer newCodecBuffer(int bytes) {
-            return new ByteBufferCodecBuffer(bytes);
+            return new ByteBufferCodecBuffer(ByteBufferChunkFactory.heap(), bytes, DEFAULT_PRIORITY);
         }
 
         @Override
         public CodecBuffer newCodecBuffer(int bytes, int priority) {
-            return (priority < 0) ? new ArrayCodecBuffer(bytes) : new PriorityByteBufferCodecBuffer(bytes, priority);
+            return new ByteBufferCodecBuffer(ByteBufferChunkFactory.heap(), bytes, priority);
         }
     };
 
@@ -85,7 +87,7 @@ public final class Buffers {
      * @return the new {@code CodecBuffer}.
      */
     public static CodecBuffer newCodecBuffer() {
-        return new ArrayCodecBuffer();
+        return new ArrayCodecBuffer(ArrayChunkFactory.instance(), DEFAULT_CAPACITY, DEFAULT_PRIORITY);
     }
 
     /**
@@ -98,7 +100,7 @@ public final class Buffers {
      * @return the new {@code CodecBuffer}
      */
     public static CodecBuffer newCodecBuffer(int initialCapacity) {
-        return new ArrayCodecBuffer(initialCapacity);
+        return new ArrayCodecBuffer(ArrayChunkFactory.instance(), initialCapacity, DEFAULT_PRIORITY);
     }
 
     /**
@@ -111,9 +113,7 @@ public final class Buffers {
      * @return the new {@code CodecBuffer}
      */
     public static CodecBuffer newCodecBuffer(int initialCapacity, int priority) {
-        return (priority < 0)
-                ? newCodecBuffer(initialCapacity)
-                : new PriorityArrayCodecBuffer(initialCapacity, priority);
+        return new ArrayCodecBuffer(ArrayChunkFactory.instance(), initialCapacity, priority);
     }
 
     /**
@@ -128,7 +128,7 @@ public final class Buffers {
      * @return the new {@code DecodeBuffer}
      */
     public static CodecBuffer newCodecBuffer(byte[] buffer, int beginning, int length) {
-        return new ArrayCodecBuffer(buffer, beginning, length);
+        return new ArrayCodecBuffer(buffer, beginning, length, DEFAULT_PRIORITY);
     }
 
     /**
@@ -143,9 +143,7 @@ public final class Buffers {
      * @return the new {@code DecodeBuffer}
      */
     public static CodecBuffer newCodecBuffer(byte[] buffer, int beginning, int length, int priority) {
-        return (priority < 0)
-                ? newCodecBuffer(buffer, beginning, length)
-                : new PriorityArrayCodecBuffer(buffer, beginning, length, priority);
+        return new ArrayCodecBuffer(buffer, beginning, length, priority);
     }
 
     /**
@@ -158,7 +156,7 @@ public final class Buffers {
      * @return the new {@code DecodeBuffer}
      */
     public static CodecBuffer newCodecBuffer(ByteBuffer byteBuffer) {
-        return new ByteBufferCodecBuffer(byteBuffer);
+        return new ByteBufferCodecBuffer(byteBuffer, DEFAULT_PRIORITY);
     }
 
     /**
@@ -171,7 +169,7 @@ public final class Buffers {
      * @return the new {@code DecodeBuffer}
      */
     public static CodecBuffer newCodecBuffer(ByteBuffer byteBuffer, int priority) {
-        return (priority < 0) ? newCodecBuffer(byteBuffer) : new PriorityByteBufferCodecBuffer(byteBuffer, priority);
+        return new ByteBufferCodecBuffer(byteBuffer, priority);
     }
 
     /**
@@ -262,19 +260,18 @@ public final class Buffers {
             ArrayChunkPool pool_ = pool;
             @Override
             public CodecBuffer newCodecBuffer(int bytes) {
-                return new ArrayCodecBuffer(pool_, bytes);
+                return new ArrayCodecBuffer(pool_, bytes, DEFAULT_PRIORITY);
             }
 
             @Override
             public CodecBuffer newCodecBuffer(int bytes, int priority) {
-                return (priority < 0) ? new ArrayCodecBuffer(pool_, bytes)
-                        : new PriorityArrayCodecBuffer(pool_, bytes, priority);
+                return new ArrayCodecBuffer(pool_, bytes, priority);
             }
         };
     }
 
     public static CodecBufferFactory newByteBufferCodecBufferFactory() {
-        return BYTE_ARRAY_CODEC_BUFFER_FACTORY;
+        return BYTE_BUFFER_CODEC_BUFFER_FACTORY;
     }
 
     public static CodecBufferFactory newByteBufferCodecBufferFactory(
@@ -284,13 +281,12 @@ public final class Buffers {
             ByteBufferChunkPool pool_ = pool;
             @Override
             public CodecBuffer newCodecBuffer(int bytes) {
-                return new ByteBufferCodecBuffer(pool_, bytes);
+                return new ByteBufferCodecBuffer(pool_, bytes, DEFAULT_PRIORITY);
             }
 
             @Override
             public CodecBuffer newCodecBuffer(int bytes, int priority) {
-                return (priority < 0) ? new ByteBufferCodecBuffer(pool_, bytes)
-                        : new PriorityByteBufferCodecBuffer(pool_, bytes, priority);
+                return new ByteBufferCodecBuffer(pool_, bytes, priority);
             }
         };
     }

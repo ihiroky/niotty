@@ -15,9 +15,13 @@ public class AbstractCodecBufferTest {
 
     private ArrayCodecBuffer sut_;
 
+    static AbstractCodecBuffer newInstance(byte[] data, int offset, int length) {
+        return new ArrayCodecBuffer(data, offset, length, Buffers.DEFAULT_PRIORITY);
+    }
+
     @Before
     public void setUp() {
-        sut_ = new ArrayCodecBuffer(0);
+        sut_ = new ArrayCodecBuffer(ArrayChunkFactory.instance(), 0, Buffers.DEFAULT_PRIORITY);
     }
 
     @Test
@@ -139,21 +143,21 @@ public class AbstractCodecBufferTest {
 
     @Test
     public void testReadVariableByteNumber0() throws Exception {
-        AbstractCodecBuffer sut = new ArrayCodecBuffer(new byte[]{(byte) 0x80}, 0, 1);
+        AbstractCodecBuffer sut = newInstance(new byte[]{(byte) 0x80}, 0, 1);
         Number actual = sut.readVariableByteNumber();
         assertThat(actual.intValue(), is(0));
     }
 
     @Test
     public void testReadVariableByteNumber1() throws Exception {
-        AbstractCodecBuffer sut = new ArrayCodecBuffer(new byte[]{(byte) 0x81}, 0, 1);
+        AbstractCodecBuffer sut = newInstance(new byte[]{(byte) 0x81}, 0, 1);
         Number actual = sut.readVariableByteNumber();
         assertThat(actual.intValue(), is(1));
     }
 
     @Test
     public void testReadVariableByteNumberMinus1() throws Exception {
-        AbstractCodecBuffer sut = new ArrayCodecBuffer(new byte[]{(byte) 0xc1}, 0, 1);
+        AbstractCodecBuffer sut = newInstance(new byte[]{(byte) 0xc1}, 0, 1);
         Number actual = sut.readVariableByteNumber();
         assertThat(actual.intValue(), is(-1));
     }
@@ -161,7 +165,7 @@ public class AbstractCodecBufferTest {
     @Test
     public void testReadVariableByteNumber229() throws Exception {
         byte[] data = new byte[]{0x25, (byte) 0x83};
-        AbstractCodecBuffer sut = new ArrayCodecBuffer(data, 0, data.length);
+        AbstractCodecBuffer sut = newInstance(data, 0, data.length);
         Number actual = sut.readVariableByteNumber();
         assertThat(actual.intValue(), is(0b11100101));
     }
@@ -169,14 +173,14 @@ public class AbstractCodecBufferTest {
     @Test
     public void testReadVariableByteNumberMinus229() throws Exception {
         byte[] data = new byte[]{0x65, (byte) 0x83};
-        AbstractCodecBuffer sut = new ArrayCodecBuffer(data, 0, data.length);
+        AbstractCodecBuffer sut = newInstance(data, 0, data.length);
         Number actual = sut.readVariableByteNumber();
         assertThat(actual.intValue(), is(-0b11100101));
     }
 
     @Test
     public void testReadVariableByteNumberNull() throws Exception {
-        AbstractCodecBuffer sut = new ArrayCodecBuffer(new byte[]{(byte) 0xc0}, 0, 1);
+        AbstractCodecBuffer sut = newInstance(new byte[]{(byte) 0xc0}, 0, 1);
         Number actual = sut.readVariableByteNumber();
         assertThat(actual, is(nullValue()));
     }
@@ -186,42 +190,42 @@ public class AbstractCodecBufferTest {
         byte[] data = new byte[] {
                 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, (byte) 0x82
         };
-        AbstractCodecBuffer sut = new ArrayCodecBuffer(data, 0, data.length);
+        AbstractCodecBuffer sut = newInstance(data, 0, data.length);
         Number actual = sut.readVariableByteNumber();
         assertThat(actual.longValue(), is(Long.MIN_VALUE));
     }
 
     @Test
     public void testReadVariableByteLong0() throws Exception {
-        AbstractCodecBuffer sut = new ArrayCodecBuffer(new byte[]{(byte) 0x80}, 0, 1);
+        AbstractCodecBuffer sut = newInstance(new byte[]{(byte) 0x80}, 0, 1);
         long actual = sut.readVariableByteLong();
         assertThat(actual, is(0L));
     }
 
     @Test
     public void testReadVariableByteLong1() throws Exception {
-        AbstractCodecBuffer sut = new ArrayCodecBuffer(new byte[]{(byte) 0x81}, 0, 1);
+        AbstractCodecBuffer sut = newInstance(new byte[]{(byte) 0x81}, 0, 1);
         long actual = sut.readVariableByteLong();
         assertThat(actual, is(1L));
     }
 
     @Test
     public void testReadVariableByteLongMinus0() throws Exception {
-        AbstractCodecBuffer sut = new ArrayCodecBuffer(new byte[]{(byte) 0xc0}, 0, 1);
+        AbstractCodecBuffer sut = newInstance(new byte[]{(byte) 0xc0}, 0, 1);
         long actual = sut.readVariableByteLong();
         assertThat(actual, is(0L));
     }
 
     @Test
     public void testReadVariableByteLongMinus1() throws Exception {
-        AbstractCodecBuffer sut = new ArrayCodecBuffer(new byte[]{(byte) 0xc1}, 0, 1);
+        AbstractCodecBuffer sut = newInstance(new byte[]{(byte) 0xc1}, 0, 1);
         long actual = sut.readVariableByteLong();
         assertThat(actual, is(-1L));
     }
 
     @Test
     public void testReadVariableByte_LongCast() throws Exception {
-        AbstractCodecBuffer sut = new ArrayCodecBuffer(
+        AbstractCodecBuffer sut = newInstance(
                 new byte[]{0x3F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, (byte) 0x81}, 0, 10);
         long actual = sut.readVariableByteLong();
         assertThat(actual, is(Long.MAX_VALUE));
@@ -229,7 +233,7 @@ public class AbstractCodecBufferTest {
 
     @Test
     public void testReadVariableByteLong_1024() throws Exception {
-        AbstractCodecBuffer sut = new ArrayCodecBuffer(new byte[]{0x00, (byte) 0x90}, 0, 2);
+        AbstractCodecBuffer sut = newInstance(new byte[]{0x00, (byte) 0x90}, 0, 2);
         long actual = sut.readVariableByteLong();
         assertThat(actual, is(1024L));
     }
@@ -239,42 +243,42 @@ public class AbstractCodecBufferTest {
         byte[] data = new byte[] {
                 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, (byte) 0x82,
         };
-        AbstractCodecBuffer sut = new ArrayCodecBuffer(data, 0, data.length);
+        AbstractCodecBuffer sut = newInstance(data, 0, data.length);
         long actual = sut.readVariableByteLong();
         assertThat(actual, is(Long.MIN_VALUE));
     }
 
     @Test
     public void testReadVariableByteInteger0() throws Exception {
-        AbstractCodecBuffer sut = new ArrayCodecBuffer(new byte[]{(byte) 0x80}, 0, 1);
+        AbstractCodecBuffer sut = newInstance(new byte[]{(byte) 0x80}, 0, 1);
         int actual = sut.readVariableByteInteger();
         assertThat(actual, is(0));
     }
 
     @Test
     public void testReadVariableByteInteger1() throws Exception {
-        AbstractCodecBuffer sut = new ArrayCodecBuffer(new byte[]{(byte) 0x81}, 0, 1);
+        AbstractCodecBuffer sut = newInstance(new byte[]{(byte) 0x81}, 0, 1);
         int actual = sut.readVariableByteInteger();
         assertThat(actual, is(1));
     }
 
     @Test
     public void testReadVariableByteIntegerMinus0() throws Exception {
-        AbstractCodecBuffer sut = new ArrayCodecBuffer(new byte[]{(byte) 0xc0}, 0, 1);
+        AbstractCodecBuffer sut = newInstance(new byte[]{(byte) 0xc0}, 0, 1);
         int actual = sut.readVariableByteInteger();
         assertThat(actual, is(0));
     }
 
     @Test
     public void testReadVariableByteIntegerMinus1() throws Exception {
-        AbstractCodecBuffer sut = new ArrayCodecBuffer(new byte[]{(byte) 0xc1}, 0, 1);
+        AbstractCodecBuffer sut = newInstance(new byte[]{(byte) 0xc1}, 0, 1);
         int actual = sut.readVariableByteInteger();
         assertThat(actual, is(-1));
     }
 
     @Test
     public void testReadVariableByteInteger_1024() throws Exception {
-        AbstractCodecBuffer sut = new ArrayCodecBuffer(new byte[]{0x00, (byte) 0x90}, 0, 2);
+        AbstractCodecBuffer sut = newInstance(new byte[]{0x00, (byte) 0x90}, 0, 2);
         int actual = sut.readVariableByteInteger();
         assertThat(actual, is(1024));
     }
@@ -284,7 +288,7 @@ public class AbstractCodecBufferTest {
         byte[] data = new byte[] {
                 0x40, 0x00, 0x00, 0x00, (byte) 0x90,
         };
-        AbstractCodecBuffer sut = new ArrayCodecBuffer(data, 0, data.length);
+        AbstractCodecBuffer sut = newInstance(data, 0, data.length);
         int actual = sut.readVariableByteInteger();
         assertThat(actual, is(Integer.MIN_VALUE));
     }

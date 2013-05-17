@@ -421,7 +421,7 @@ public class CodecBufferTestAbstract {
         @Test
         public void testArrayOffset() throws Exception {
             assertThat(sut_.arrayOffset(), is(0));
-            assertThat(new ArrayCodecBuffer(new byte[1], 1, 0).arrayOffset(), is(0));
+            assertThat(new ArrayCodecBuffer(new byte[1], 1, 0, Buffers.DEFAULT_PRIORITY).arrayOffset(), is(0));
         }
 
         @Test
@@ -914,7 +914,7 @@ public class CodecBufferTestAbstract {
             byte[] a = new byte[6];
             Arrays.fill(a, (byte) 'a');
             sut_.clear();
-            int drained = sut_.drainFrom(new ArrayCodecBuffer(a, 0, a.length));
+            int drained = sut_.drainFrom(new ArrayCodecBuffer(a, 0, a.length, Buffers.DEFAULT_PRIORITY));
             assertThat(drained, is(6));
             assertThat(sut_.remainingBytes(), is(6));
             assertThat(sut_.capacityBytes(), is(8));
@@ -922,7 +922,7 @@ public class CodecBufferTestAbstract {
             // drain 3 bytes
             byte[] b = new byte[3];
             Arrays.fill(b, (byte) 'b');
-            drained = sut_.drainFrom(new ArrayCodecBuffer(b, 0, b.length));
+            drained = sut_.drainFrom(new ArrayCodecBuffer(b, 0, b.length, Buffers.DEFAULT_PRIORITY));
             assertThat(drained, is(3));
             assertThat(sut_.remainingBytes(), is(9));
             assertThat(sut_.capacityBytes(), is(16)); // twice of the capacity
@@ -930,7 +930,7 @@ public class CodecBufferTestAbstract {
             // drain 24 bytes
             byte[] c = new byte[24];
             Arrays.fill(c, (byte) 'c');
-            drained = sut_.drainFrom(new ArrayCodecBuffer(c, 0, c.length));
+            drained = sut_.drainFrom(new ArrayCodecBuffer(c, 0, c.length, Buffers.DEFAULT_PRIORITY));
             assertThat(drained, is(24));
             assertThat(sut_.remainingBytes(), is(33));
             assertThat(sut_.capacityBytes(), is(33)); // required size
@@ -954,7 +954,7 @@ public class CodecBufferTestAbstract {
         public void testDrainFromWithLimit() throws Exception {
             byte[] a = new byte[6];
             Arrays.fill(a, (byte) 'a');
-            CodecBuffer input = new ArrayCodecBuffer(a, 0, a.length);
+            CodecBuffer input = new ArrayCodecBuffer(a, 0, a.length, Buffers.DEFAULT_PRIORITY);
             sut_.clear();
 
             // drain 5 bytes.
@@ -1052,7 +1052,7 @@ public class CodecBufferTestAbstract {
         protected CodecBuffer createDirectCodecBuffer(byte[] data, int offset, int length) {
             ByteBuffer buffer = ByteBuffer.allocateDirect(length);
             buffer.put(data, offset, length).flip();
-            return new ByteBufferCodecBuffer(buffer);
+            return new ByteBufferCodecBuffer(buffer, Buffers.DEFAULT_PRIORITY);
         }
 
         @Test

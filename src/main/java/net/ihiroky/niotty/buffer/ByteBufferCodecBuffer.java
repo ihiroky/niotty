@@ -20,6 +20,7 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer implements CodecB
     private ByteBuffer buffer_;
     private int beginning_;
     private int end_;
+    private int priority_;
     private Mode mode_;
 
     /**
@@ -33,20 +34,17 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer implements CodecB
     }
 
     ByteBufferCodecBuffer() {
-        this(DEFAULT_CAPACITY);
+        this(ByteBufferChunkFactory.heap(), Buffers.DEFAULT_CAPACITY, Buffers.DEFAULT_PRIORITY);
     }
 
-    ByteBufferCodecBuffer(int initialCapacity) {
-        this(ByteBufferChunkFactory.heap(), initialCapacity);
-    }
-
-    ByteBufferCodecBuffer(ChunkManager<ByteBuffer> manager, int initialCapacity) {
+    ByteBufferCodecBuffer(ChunkManager<ByteBuffer> manager, int initialCapacity, int priority) {
         chunk_ = manager.newChunk(initialCapacity);
         buffer_ = chunk_.initialize();
         mode_ = Mode.WRITE;
+        priority_ = priority;
     }
 
-    ByteBufferCodecBuffer(ByteBuffer buffer) {
+    ByteBufferCodecBuffer(ByteBuffer buffer, int priority) {
         Objects.requireNonNull(buffer, "buffer");
         ByteBufferChunk c = new ByteBufferChunk(buffer, ByteBufferChunkFactory.heap());
         c.ready();
@@ -54,15 +52,17 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer implements CodecB
         buffer_ = chunk_.initialize();
         beginning_ = buffer.position();
         end_ = buffer.limit();
+        priority_ = priority;
         mode_ = Mode.READ;
     }
 
-    private ByteBufferCodecBuffer(Chunk<ByteBuffer> chunk, int beginning, int end, Mode mode) {
-        chunk_ = chunk;
-        buffer_ = chunk.retain();
-        beginning_ = beginning;
-        end_ = end;
-        mode_ = mode;
+    private ByteBufferCodecBuffer(ByteBufferCodecBuffer b) {
+        chunk_ = b.chunk_;
+        buffer_ = b.chunk_.retain();
+        beginning_ = b.beginning_;
+        end_ = b.end_;
+        mode_ = b.mode_;
+        priority_ = b.priority_;
     }
 
     private void changeModeToWrite() {
@@ -491,7 +491,7 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer implements CodecB
 
     @Override
     public int priority() {
-        return Buffers.DEFAULT_PRIORITY;
+        return priority_;
     }
 
     @Override
@@ -775,7 +775,7 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer implements CodecB
     @Override
     public CodecBuffer duplicate() {
         syncBeginEnd();
-        return new ByteBufferCodecBuffer(chunk_, beginning_, end_, mode_);
+        return new ByteBufferCodecBuffer(this);
     }
 
     /**

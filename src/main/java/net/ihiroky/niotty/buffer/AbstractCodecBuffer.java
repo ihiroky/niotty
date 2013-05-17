@@ -7,7 +7,6 @@ package net.ihiroky.niotty.buffer;
 public abstract class AbstractCodecBuffer implements CodecBuffer {
 
     protected static final int EXPAND_MULTIPLIER = 2;
-    protected static final int DEFAULT_CAPACITY = 512;
 
     /**
      * Writes {@code Long.MIN_VALUE} with signed VBC.

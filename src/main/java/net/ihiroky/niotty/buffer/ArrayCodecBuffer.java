@@ -21,28 +21,23 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer implements CodecBuffer
     private byte[] buffer_;
     private int beginning_;
     private int end_;
+    private int priority_;
 
     ArrayCodecBuffer() {
-        this(DEFAULT_CAPACITY);
+        this(ArrayChunkFactory.instance(), Buffers.DEFAULT_CAPACITY, Buffers.DEFAULT_PRIORITY);
     }
 
-    ArrayCodecBuffer(int initialCapacity) {
-        if (initialCapacity < 0) {
-            throw new IllegalArgumentException("initialCapacity must not be negative.");
-        }
-        chunk_ = ArrayChunkFactory.instance().newChunk(initialCapacity);
-        buffer_ = chunk_.initialize();
-    }
-
-    ArrayCodecBuffer(ChunkManager<byte[]> manager, int initialCapacity) {
+    ArrayCodecBuffer(ChunkManager<byte[]> manager, int initialCapacity, int priority) {
+        Objects.requireNonNull(manager, "manager");
         if (initialCapacity < 0) {
             throw new IllegalArgumentException("initialCapacity must not be negative.");
         }
         chunk_ = manager.newChunk(initialCapacity);
         buffer_ = chunk_.initialize();
+        priority_ = priority;
     }
 
-    ArrayCodecBuffer(byte[] b, int beginning, int length) {
+    ArrayCodecBuffer(byte[] b, int beginning, int length, int priority) {
         Objects.requireNonNull(b, "b");
         if (beginning + length > b.length) {
             throw new IndexOutOfBoundsException(
@@ -54,13 +49,15 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer implements CodecBuffer
         buffer_ = c.initialize();
         beginning_ = beginning;
         end_ = beginning + length;
+        priority_ = priority;
     }
 
-    private ArrayCodecBuffer(Chunk<byte[]> chunk, int beginning, int end) {
-        chunk_ = chunk;
-        buffer_ = chunk.retain();
-        beginning_ = beginning;
-        end_ = end;
+    private ArrayCodecBuffer(ArrayCodecBuffer b) {
+        chunk_ = b.chunk_;
+        buffer_ = b.chunk_.retain();
+        beginning_ = b.beginning_;
+        end_ = b.end_;
+        priority_ = b.priority_;
     }
 
     /**
@@ -474,7 +471,7 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer implements CodecBuffer
      */
     @Override
     public int priority() {
-        return Buffers.DEFAULT_PRIORITY;
+        return priority_;
     }
 
     /**
@@ -748,7 +745,7 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer implements CodecBuffer
 
     @Override
     public CodecBuffer duplicate() {
-        return new ArrayCodecBuffer(chunk_, beginning_, end_);
+        return new ArrayCodecBuffer(this);
     }
 
     /**

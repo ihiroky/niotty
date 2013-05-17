@@ -36,7 +36,7 @@ public class CodecBufferListTest {
         @Override
         protected CodecBuffer createCodecBuffer(byte[] buffer, int offset, int length) {
             return new CodecBufferList(Buffers.newArrayCodecBufferFactory(),
-                    Buffers.DEFAULT_PRIORITY, new ArrayCodecBuffer(buffer, offset, length));
+                    Buffers.DEFAULT_PRIORITY, Buffers.newCodecBuffer(buffer, offset, length));
         }
 
         @Test
@@ -45,8 +45,8 @@ public class CodecBufferListTest {
             byte[] data1 = new byte[]{'1', '1', '1'};
             CodecBufferList sut = new CodecBufferList(
                     Buffers.newArrayCodecBufferFactory(), Buffers.DEFAULT_PRIORITY,
-                    new ArrayCodecBuffer(data0, 0, data0.length),
-                    new ArrayCodecBuffer(data1, 0, data1.length));
+                    Buffers.newCodecBuffer(data0, 0, data0.length),
+                    Buffers.newCodecBuffer(data1, 0, data1.length));
 
             byte[] actualData = new byte[6];
             int actualRead = sut.readBytes(actualData, 0, actualData.length);
@@ -65,8 +65,8 @@ public class CodecBufferListTest {
             byte[] data1 = new byte[]{'1', '1', '1'};
             CodecBufferList sut = new CodecBufferList(
                     Buffers.newArrayCodecBufferFactory(), Buffers.DEFAULT_PRIORITY,
-                    new ByteBufferCodecBuffer(ByteBuffer.wrap(data0, 0, data0.length)),
-                    new ByteBufferCodecBuffer(ByteBuffer.wrap(data1, 0, data1.length)));
+                    Buffers.newCodecBuffer(ByteBuffer.wrap(data0, 0, data0.length)),
+                    Buffers.newCodecBuffer(ByteBuffer.wrap(data1, 0, data1.length)));
 
             byte[] actualData = new byte[6];
             int actualRead = sut.readBytes(actualData, 0, actualData.length);
@@ -85,8 +85,8 @@ public class CodecBufferListTest {
             byte[] data = new byte[]{(byte) (c >> 8), (byte) (c & 0xFF)};
             CodecBufferList sut = new CodecBufferList(
                     Buffers.newArrayCodecBufferFactory(), Buffers.DEFAULT_PRIORITY,
-                    new ArrayCodecBuffer(data, 0, 1),
-                    new ArrayCodecBuffer(data, 1, 1));
+                    Buffers.newCodecBuffer(data, 0, 1),
+                    Buffers.newCodecBuffer(data, 1, 1));
 
             char actual = sut.readChar();
 
@@ -103,8 +103,8 @@ public class CodecBufferListTest {
             byte[] data = new byte[]{(byte) (s >> 8), (byte) (s & 0xFF)};
             CodecBufferList sut = new CodecBufferList(
                     Buffers.newArrayCodecBufferFactory(), Buffers.DEFAULT_PRIORITY,
-                    new ArrayCodecBuffer(data, 0, 1),
-                    new ArrayCodecBuffer(data, 1, 1));
+                    Buffers.newCodecBuffer(data, 0, 1),
+                    Buffers.newCodecBuffer(data, 1, 1));
 
             short actual = sut.readShort();
 
@@ -122,7 +122,7 @@ public class CodecBufferListTest {
                     (byte) (i >>> 24), (byte) ((i >>> 16) | 0xFF), (byte) ((i >>> 8) | 0xFF), (byte) (i & 0xFF)};
             CodecBufferList sut = new CodecBufferList(
                     Buffers.newArrayCodecBufferFactory(), Buffers.DEFAULT_PRIORITY,
-                    new ArrayCodecBuffer(data, 0, 3),new ArrayCodecBuffer(data, 1, 1));
+                    Buffers.newCodecBuffer(data, 0, 3), Buffers.newCodecBuffer(data, 1, 1));
 
             int actual = sut.readInt();
 
@@ -142,8 +142,8 @@ public class CodecBufferListTest {
                     (byte) ((v >>> 8) | 0xFF), (byte) (v & 0xFF)};
             CodecBufferList sut = new CodecBufferList(
                     Buffers.newArrayCodecBufferFactory(), Buffers.DEFAULT_PRIORITY,
-                    new ArrayCodecBuffer(data, 0, 7),
-                    new ArrayCodecBuffer(data, 1, 1));
+                    Buffers.newCodecBuffer(data, 0, 7),
+                    Buffers.newCodecBuffer(data, 1, 1));
 
             long actual = sut.readLong();
 
@@ -160,9 +160,9 @@ public class CodecBufferListTest {
             byte[] data = s.getBytes("UTF-8");
             CodecBufferList sut = new CodecBufferList(
                     Buffers.newArrayCodecBufferFactory(), Buffers.DEFAULT_PRIORITY,
-                    new ArrayCodecBuffer(data, 0, 4),
-                    new ArrayCodecBuffer(data, 4, 4),
-                    new ArrayCodecBuffer(data, 8, 2));
+                    Buffers.newCodecBuffer(data, 0, 4),
+                    Buffers.newCodecBuffer(data, 4, 4),
+                    Buffers.newCodecBuffer(data, 8, 2));
 
             String actual = sut.readString(StandardCharsets.UTF_8.newDecoder(), data.length);
 
@@ -181,8 +181,8 @@ public class CodecBufferListTest {
             Arrays.fill(data1, (byte) 2);
             CodecBufferList sut = new CodecBufferList(
                     Buffers.newArrayCodecBufferFactory(), Buffers.DEFAULT_PRIORITY,
-                    new ArrayCodecBuffer(data0, 0, 5),
-                    new ArrayCodecBuffer(data1, 0, 5));
+                    Buffers.newCodecBuffer(data0, 0, 5),
+                    Buffers.newCodecBuffer(data1, 0, 5));
 
             int first = sut.skipBytes(8);
             int firstBeginning = sut.beginning();
@@ -228,9 +228,9 @@ public class CodecBufferListTest {
             Arrays.fill(data2, (byte) 3);
             CodecBufferList sut = new CodecBufferList(
                     Buffers.newArrayCodecBufferFactory(), Buffers.DEFAULT_PRIORITY,
-                    new ArrayCodecBuffer(data0, 0, data0.length),
-                    new ArrayCodecBuffer(data1, 0, data1.length),
-                    new ArrayCodecBuffer(data2, 0, data2.length));
+                    Buffers.newCodecBuffer(data0, 0, data0.length),
+                    Buffers.newCodecBuffer(data1, 0, data1.length),
+                    Buffers.newCodecBuffer(data2, 0, data2.length));
 
             CodecBuffer actual = sut.slice(8);
 
@@ -251,8 +251,8 @@ public class CodecBufferListTest {
             Arrays.fill(data1, (byte) 2);
             CodecBufferList sut = new CodecBufferList(
                     Buffers.newArrayCodecBufferFactory(), Buffers.DEFAULT_PRIORITY,
-                    new ArrayCodecBuffer(data0, 0, data0.length),
-                    new ArrayCodecBuffer(data1, 0, data1.length));
+                    Buffers.newCodecBuffer(data0, 0, data0.length),
+                    Buffers.newCodecBuffer(data1, 0, data1.length));
 
             CodecBuffer actual = sut.slice(2);
 
@@ -267,8 +267,8 @@ public class CodecBufferListTest {
 
         @Test
         public void testClear() throws Exception {
-            ArrayCodecBuffer b0 = new ArrayCodecBuffer(new byte[3], 1, 1);
-            ArrayCodecBuffer b1 = new ArrayCodecBuffer(new byte[3], 1, 1);
+            CodecBuffer b0 = Buffers.newCodecBuffer(new byte[3], 1, 1);
+            CodecBuffer b1 = Buffers.newCodecBuffer(new byte[3], 1, 1);
             CodecBufferList sut = new CodecBufferList(
                     Buffers.newArrayCodecBufferFactory(), Buffers.DEFAULT_PRIORITY, b0, b1);
 
@@ -300,7 +300,7 @@ public class CodecBufferListTest {
             Arrays.fill(data0, (byte) 1);
             CodecBufferList sut = new CodecBufferList(
                     Buffers.newArrayCodecBufferFactory(), Buffers.DEFAULT_PRIORITY,
-                    new ArrayCodecBuffer(data0, 0, data0.length));
+                    Buffers.newCodecBuffer(data0, 0, data0.length));
             byte[] data1 = new byte[6];
             Arrays.fill(data1, (byte) 2);
             byte[] data2 = new byte[4];
@@ -325,7 +325,7 @@ public class CodecBufferListTest {
             Arrays.fill(data0, (byte) 1);
             CodecBufferList sut = new CodecBufferList(
                     Buffers.newArrayCodecBufferFactory(), Buffers.DEFAULT_PRIORITY,
-                    new ArrayCodecBuffer(data0, 0, data0.length));
+                    Buffers.newCodecBuffer(data0, 0, data0.length));
             byte[] data1 = new byte[2];
             Arrays.fill(data1, (byte) 2);
             byte[] data2 = new byte[6];
@@ -349,7 +349,7 @@ public class CodecBufferListTest {
             Arrays.fill(data0, (byte) 1);
             CodecBufferList sut = new CodecBufferList(
                     Buffers.newArrayCodecBufferFactory(), Buffers.DEFAULT_PRIORITY,
-                    new ArrayCodecBuffer(data0, 0, data0.length));
+                    Buffers.newCodecBuffer(data0, 0, data0.length));
             byte[] data1 = new byte[6];
             Arrays.fill(data1, (byte) 2);
             byte[] data2 = new byte[4];
@@ -380,7 +380,7 @@ public class CodecBufferListTest {
             Arrays.fill(data0, (byte) 1);
             CodecBufferList sut = new CodecBufferList(
                     Buffers.newArrayCodecBufferFactory(), Buffers.DEFAULT_PRIORITY,
-                    new ArrayCodecBuffer(data0, 0, data0.length));
+                    Buffers.newCodecBuffer(data0, 0, data0.length));
             byte[] data1 = new byte[2];
             Arrays.fill(data1, (byte) 2);
             byte[] data2 = new byte[6];
@@ -404,7 +404,7 @@ public class CodecBufferListTest {
             Arrays.fill(data0, (byte) 1);
             CodecBufferList sut = new CodecBufferList(
                     Buffers.newArrayCodecBufferFactory(), Buffers.DEFAULT_PRIORITY,
-                    new ArrayCodecBuffer(data0, 0, data0.length));
+                    Buffers.newCodecBuffer(data0, 0, data0.length));
 
             sut.writeByte(2); // capacity gets 1 + 2
             sut.writeShort((short) -1); // new buffer allocated if one byte space exists
@@ -425,7 +425,7 @@ public class CodecBufferListTest {
             Arrays.fill(data0, (byte) 1);
             CodecBufferList sut = new CodecBufferList(
                     Buffers.newArrayCodecBufferFactory(), Buffers.DEFAULT_PRIORITY,
-                    new ArrayCodecBuffer(data0, 0, data0.length));
+                    Buffers.newCodecBuffer(data0, 0, data0.length));
 
             sut.writeByte(2); // capacity gets 2 + 4
             sut.writeShort((short) -1);
@@ -446,7 +446,7 @@ public class CodecBufferListTest {
             Arrays.fill(data0, (byte) 1);
             CodecBufferList sut = new CodecBufferList(
                     Buffers.newArrayCodecBufferFactory(), Buffers.DEFAULT_PRIORITY,
-                    new ArrayCodecBuffer(data0, 0, data0.length));
+                    Buffers.newCodecBuffer(data0, 0, data0.length));
 
             sut.writeByte(2); // capacity gets 1 + 2
             sut.writeChar(Character.MAX_VALUE); // new buffer allocated if one byte space exists
@@ -467,7 +467,7 @@ public class CodecBufferListTest {
             Arrays.fill(data0, (byte) 1);
             CodecBufferList sut = new CodecBufferList(
                     Buffers.newArrayCodecBufferFactory(), Buffers.DEFAULT_PRIORITY,
-                    new ArrayCodecBuffer(data0, 0, data0.length));
+                    Buffers.newCodecBuffer(data0, 0, data0.length));
 
             sut.writeByte(2); // capacity gets 2 + 4
             sut.writeChar(Character.MAX_VALUE);
@@ -488,7 +488,7 @@ public class CodecBufferListTest {
             Arrays.fill(data0, (byte) 1);
             CodecBufferList sut = new CodecBufferList(
                     Buffers.newArrayCodecBufferFactory(), Buffers.DEFAULT_PRIORITY,
-                    new ArrayCodecBuffer(data0, 0, data0.length));
+                    Buffers.newCodecBuffer(data0, 0, data0.length));
 
             sut.writeInt(-1);
 
@@ -507,7 +507,7 @@ public class CodecBufferListTest {
             Arrays.fill(data0, (byte) 1);
             CodecBufferList sut = new CodecBufferList(
                     Buffers.newArrayCodecBufferFactory(), Buffers.DEFAULT_PRIORITY,
-                    new ArrayCodecBuffer(data0, 0, data0.length));
+                    Buffers.newCodecBuffer(data0, 0, data0.length));
 
             sut.writeByte(2); // capacity gets 3 + 6
             sut.writeInt(-1);
@@ -528,7 +528,7 @@ public class CodecBufferListTest {
             Arrays.fill(data0, (byte) 1);
             CodecBufferList sut = new CodecBufferList(
                     Buffers.newArrayCodecBufferFactory(), Buffers.DEFAULT_PRIORITY,
-                    new ArrayCodecBuffer(data0, 0, data0.length));
+                    Buffers.newCodecBuffer(data0, 0, data0.length));
 
             sut.writeLong(-1L);
 
@@ -547,7 +547,7 @@ public class CodecBufferListTest {
             Arrays.fill(data0, (byte) 1);
             CodecBufferList sut = new CodecBufferList(
                     Buffers.newArrayCodecBufferFactory(), Buffers.DEFAULT_PRIORITY,
-                    new ArrayCodecBuffer(data0, 0, data0.length));
+                    Buffers.newCodecBuffer(data0, 0, data0.length));
 
             sut.writeByte(2); // capacity gets 5 + 10
             sut.writeLong(-1L);
@@ -566,7 +566,7 @@ public class CodecBufferListTest {
         public void testWriteString_BetweenCodecBuffer() throws Exception {
             CodecBufferList sut = new CodecBufferList(
                     Buffers.newArrayCodecBufferFactory(), Buffers.DEFAULT_PRIORITY,
-                    new ArrayCodecBuffer(0));
+                    Buffers.newCodecBuffer(0));
             String s = "0123456789";
 
             sut.writeString(s, StandardCharsets.UTF_8.newEncoder());
@@ -590,7 +590,7 @@ public class CodecBufferListTest {
         public void setUp() {
             byte[] data = new byte[32];
             Arrays.fill(data, (byte) '0');
-            sut_ = Buffers.newCodecBuffer(new ArrayCodecBuffer(data, 0, data.length));
+            sut_ = Buffers.newCodecBuffer(Buffers.newCodecBuffer(data, 0, data.length));
             dataLength_ = data.length;
         }
 
@@ -651,10 +651,10 @@ public class CodecBufferListTest {
         public void testDrainFrom_AllBetweenBuffers() throws Exception {
             CodecBufferList sut = new CodecBufferList(
                     Buffers.newArrayCodecBufferFactory(), Buffers.DEFAULT_PRIORITY,
-                    new ArrayCodecBuffer(3), new ArrayCodecBuffer(3));
+                    Buffers.newCodecBuffer(3), Buffers.newCodecBuffer(3));
             byte[] drainedBytes = new byte[10];
             Arrays.fill(drainedBytes, (byte) 1);
-            CodecBuffer drained = new ArrayCodecBuffer(drainedBytes, 0, drainedBytes.length);
+            CodecBuffer drained = Buffers.newCodecBuffer(drainedBytes, 0, drainedBytes.length);
 
             int actualBytes = sut.drainFrom(drained);
 
@@ -669,10 +669,10 @@ public class CodecBufferListTest {
         public void testDrainFrom_LimitedBetweenBuffers() throws Exception {
             CodecBufferList sut = new CodecBufferList(
                     Buffers.newArrayCodecBufferFactory(), Buffers.DEFAULT_PRIORITY,
-                    new ArrayCodecBuffer(new byte[3], 0, 3));
+                    Buffers.newCodecBuffer(new byte[3], 0, 3));
             byte[] drainedBytes = new byte[10];
             Arrays.fill(drainedBytes, (byte) 1);
-            CodecBuffer drained = new ArrayCodecBuffer(drainedBytes, 0, drainedBytes.length);
+            CodecBuffer drained = Buffers.newCodecBuffer(drainedBytes, 0, drainedBytes.length);
 
             int actualBytes = sut.drainFrom(drained, 6);
 
@@ -690,11 +690,11 @@ public class CodecBufferListTest {
 
         protected CodecBufferList createCodecBuffer(byte[] data, int offset, int length) {
             return new CodecBufferList(Buffers.newArrayCodecBufferFactory(),
-                    Buffers.DEFAULT_PRIORITY, new ArrayCodecBuffer(data, offset, length));
+                    Buffers.DEFAULT_PRIORITY, Buffers.newCodecBuffer(data, offset, length));
         }
 
         protected CodecBuffer createDirectCodecBuffer(ByteBuffer directBuffer) {
-            return new ByteBufferCodecBuffer(directBuffer);
+            return Buffers.newCodecBuffer(directBuffer);
         }
 
         @Test
