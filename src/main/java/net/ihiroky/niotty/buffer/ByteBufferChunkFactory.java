@@ -19,7 +19,7 @@ public abstract class ByteBufferChunkFactory extends ChunkManager<ByteBuffer> {
 
     private static final ByteBufferChunkFactory HEAP = new ByteBufferChunkFactory() {
         @Override
-        public ByteBufferChunk newChunk(int bytes) {
+        protected ByteBufferChunk newChunk(int bytes) {
             ByteBufferChunk c = new ByteBufferChunk(ByteBuffer.allocate(bytes), this);
             c.ready();
             return c;
@@ -28,7 +28,7 @@ public abstract class ByteBufferChunkFactory extends ChunkManager<ByteBuffer> {
 
     private static final ByteBufferChunkFactory DIRECT = new ByteBufferChunkFactory() {
         @Override
-        public ByteBufferChunk newChunk(int bytes) {
+        protected ByteBufferChunk newChunk(int bytes) {
             ByteBufferChunk c = new ByteBufferChunk(ByteBuffer.allocateDirect(bytes), this);
             c.ready();
             return c;
@@ -57,7 +57,7 @@ public abstract class ByteBufferChunkFactory extends ChunkManager<ByteBuffer> {
      * {@inheritDoc}
      * @return the chunk that has an {@code ByteBuffer}.
      */
-    public abstract ByteBufferChunk newChunk(int bytes);
+    protected abstract ByteBufferChunk newChunk(int bytes);
 
     @Override
     protected void release(Chunk<ByteBuffer> chunk) {

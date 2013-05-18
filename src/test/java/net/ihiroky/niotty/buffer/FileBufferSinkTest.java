@@ -16,7 +16,9 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.GatheringByteChannel;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
@@ -27,8 +29,8 @@ import static org.mockito.Mockito.*;
  */
 public class FileBufferSinkTest {
 
-    private File file_;
     private FileChannel channel_;
+    private List<ByteBufferChunkPool> closeableList;
 
     @Rule
     public TemporaryFolder temporaryFolderRule_ = new TemporaryFolder();
@@ -38,18 +40,22 @@ public class FileBufferSinkTest {
 
     @Before
     public void setUp() throws Exception {
-        file_ = temporaryFolderRule_.newFile();
-        channel_ = FileChannel.open(file_.toPath(), StandardOpenOption.READ, StandardOpenOption.WRITE);
+        File file = temporaryFolderRule_.newFile();
+        channel_ = FileChannel.open(file.toPath(), StandardOpenOption.READ, StandardOpenOption.WRITE);
         byte[] data = new byte[32];
         for (int i = 0; i < data.length; i++) {
             data[i] = (byte) i;
         }
         channel_.write(ByteBuffer.wrap(data));
         channel_.position(0);
+        closeableList = new ArrayList<>();
     }
 
     @After
     public void tearDown() throws Exception {
+        for (AutoCloseable closeable : closeableList) {
+            closeable.close();
+        }
         channel_.close();
     }
 
@@ -379,10 +385,11 @@ public class FileBufferSinkTest {
     @Test
     public void testSlice_ReferenceCount() throws Exception {
         FileBufferSink sut = new FileBufferSink(channel_, 0, 10, 0);
-        CodecBufferFactory bufferFactory = Buffers.newByteBufferCodecBufferFactory(10, true);
-        ByteBufferCodecBuffer b0 = (ByteBufferCodecBuffer) bufferFactory.newCodecBuffer(5);
+        ByteBufferChunkPool pool = new ByteBufferChunkPool(10, true);
+        closeableList.add(pool);
+        ByteBufferCodecBuffer b0 = (ByteBufferCodecBuffer) Buffers.newCodecBuffer(pool, 5);
         b0.writeBytes(new byte[5], 0, 5);
-        ByteBufferCodecBuffer b1 = (ByteBufferCodecBuffer) bufferFactory.newCodecBuffer(5);
+        ByteBufferCodecBuffer b1 = (ByteBufferCodecBuffer) Buffers.newCodecBuffer(pool, 5);
         b1.writeBytes(new byte[5], 0, 5);
         sut.addFirst(b0);
         sut.addLast(b1);
@@ -418,10 +425,11 @@ public class FileBufferSinkTest {
     @Test
     public void testDuplicate_ReferenceCount() throws Exception {
         FileBufferSink sut = new FileBufferSink(channel_, 0, 10, 0);
-        CodecBufferFactory bufferFactory = Buffers.newByteBufferCodecBufferFactory(10, true);
-        ByteBufferCodecBuffer b0 = (ByteBufferCodecBuffer) bufferFactory.newCodecBuffer(5);
+        ByteBufferChunkPool pool = new ByteBufferChunkPool(10, true);
+        closeableList.add(pool);
+        ByteBufferCodecBuffer b0 = (ByteBufferCodecBuffer) Buffers.newCodecBuffer(pool, 5);
         b0.writeBytes(new byte[5], 0, 5);
-        ByteBufferCodecBuffer b1 = (ByteBufferCodecBuffer) bufferFactory.newCodecBuffer(5);
+        ByteBufferCodecBuffer b1 = (ByteBufferCodecBuffer) Buffers.newCodecBuffer(pool, 5);
         b1.writeBytes(new byte[5], 0, 5);
         sut.addFirst(b0);
         sut.addLast(b1);

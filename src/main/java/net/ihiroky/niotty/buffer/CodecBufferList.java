@@ -17,7 +17,7 @@ import java.util.Objects;
  * <p></p>
  * The {@link #addFirst(CodecBuffer)} and {@link #addLast(CodecBuffer)} add the argument into an internal list.
  * The elements contained in the list is sliced when added to. So an expansion of each elements does not happen.
- * This object allocates a new (unsliced) {@code CodecBuffer} and add it to the list if the object need expand
+ * This object allocates a new unsliced heap {@code CodecBuffer} and add it to the list if the object need expand
  * its space. The maximum elements that can be held by the object is 1024.
  *
  * @author Hiroki Itoh
@@ -25,7 +25,6 @@ import java.util.Objects;
 public class CodecBufferList extends AbstractCodecBuffer implements CodecBuffer {
 
     private List<CodecBuffer> buffers_;
-    private CodecBufferFactory allocator_;
     private int beginningBufferIndex_;
     private int endBufferIndex_;
     private int priority_;
@@ -33,15 +32,13 @@ public class CodecBufferList extends AbstractCodecBuffer implements CodecBuffer 
     private static final int INITIAL_BUFFERS_CAPACITY = 4;
     private static final int MAX_BUFFER_COUNT = 1024;
 
-    private CodecBufferList(CodecBufferFactory allocator, int priority) {
+    private CodecBufferList(int priority) {
         buffers_ = new ArrayList<>(INITIAL_BUFFERS_CAPACITY);
-        allocator_ = allocator;
         priority_ = priority;
         endBufferIndex_ = -1;
     }
 
-    CodecBufferList(CodecBufferFactory allocator, int priority, CodecBuffer buffer0, CodecBuffer... buffers) {
-        Objects.requireNonNull(allocator, "allocator");
+    CodecBufferList(int priority, CodecBuffer buffer0, CodecBuffer... buffers) {
         Objects.requireNonNull(buffer0, "buffer0");
         Objects.requireNonNull(buffers, "buffers");
         if (buffers.length >= MAX_BUFFER_COUNT) {
@@ -59,7 +56,6 @@ public class CodecBufferList extends AbstractCodecBuffer implements CodecBuffer 
             list.add(b.slice());
         }
         buffers_ = list;
-        allocator_ = allocator;
         priority_ = priority;
         endBufferIndex_ = end;
     }
@@ -152,7 +148,7 @@ public class CodecBufferList extends AbstractCodecBuffer implements CodecBuffer 
         if (buffers_.size() >= MAX_BUFFER_COUNT) {
             throw new IllegalStateException("the size of buffers reaches maximum: " + MAX_BUFFER_COUNT);
         }
-        CodecBuffer buffer = allocator_.newCodecBuffer(
+        CodecBuffer buffer = Buffers.newCodecBuffer(
                 Math.max(endBuffer.capacityBytes() * EXPAND_MULTIPLIER, expectedMinSize));
 
         buffers_.add(buffer);
@@ -687,7 +683,7 @@ public class CodecBufferList extends AbstractCodecBuffer implements CodecBuffer 
         if (remaining >= bytes) {
             return buffer.slice(bytes);
         }
-        CodecBufferList ccb = new CodecBufferList(allocator_, priority_);
+        CodecBufferList ccb = new CodecBufferList(priority_);
         CodecBuffer sliced = buffer.slice(remaining);
         bytes -= remaining;
         ccb.addLast(sliced);
@@ -708,7 +704,7 @@ public class CodecBufferList extends AbstractCodecBuffer implements CodecBuffer 
 
     @Override
     public CodecBuffer slice() {
-        CodecBufferList sliced = new CodecBufferList(allocator_, priority_);
+        CodecBufferList sliced = new CodecBufferList(priority_);
         for (int i = beginningBufferIndex_; i <= endBufferIndex_; i++) {
             sliced.addLast(buffers_.get(i));
         }
@@ -717,7 +713,7 @@ public class CodecBufferList extends AbstractCodecBuffer implements CodecBuffer 
 
     @Override
     public CodecBuffer duplicate() {
-        CodecBufferList duplicated = new CodecBufferList(allocator_, priority_);
+        CodecBufferList duplicated = new CodecBufferList(priority_);
         duplicated.beginningBufferIndex_ = beginningBufferIndex_;
         duplicated.endBufferIndex_ = endBufferIndex_;
         for (CodecBuffer b : buffers_) {

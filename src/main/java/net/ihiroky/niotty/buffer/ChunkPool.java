@@ -9,13 +9,13 @@ import java.util.concurrent.atomic.AtomicInteger;
  * An {@link net.ihiroky.niotty.buffer.ChunkManager} that holds available {@link net.ihiroky.niotty.buffer.Chunk}s
  * in a pool and provides it as necessary from the pool.
  * <p></p>
- * Call {@link #newChunk(int)} to obtain an available chunk. If the chunk is finish using,
+ * Call {@link ChunkManager#newChunk(int)} to obtain an available chunk. If the chunk is finish using,
  * then call {@link #release(Chunk)} to return the chunk. The pool can have size limit to allocate chunks.
  * {@code ChunkPool} may provides unpooled chunks which is not managed by the {@code ChunkPool}
  * when the size breaks the limit.
  * <p></p>
  * The capacity size of chunks is a minimum power of tow that is larger than the specified value
- * in {@link #newChunk(int)}.
+ * in {@link ChunkManager#newChunk(int)}.
  *
  * @param <E> the content type in the chunk
  * @author Hiroki Itoh
@@ -45,12 +45,13 @@ public abstract class ChunkPool<E> extends ChunkManager<E> {
     }
 
     /**
-     * Returns the chunk from the pool. The chunk may be unppoled when the size limit exists.
+     * Returns the chunk from the pool. The chunk may be unpooled when the size limit exists.
+     *
      * @param bytes a size of the chunk in byte.
      * @return the chunk.
      */
     @Override
-    public Chunk<E> newChunk(int bytes) {
+    protected Chunk<E> newChunk(int bytes) {
         int normalizedBytes = powerOfTwoGreaterThanOrEquals(bytes);
         int queue = Integer.numberOfTrailingZeros(normalizedBytes);
         Queue<Chunk<E>> pool = pools_[queue];

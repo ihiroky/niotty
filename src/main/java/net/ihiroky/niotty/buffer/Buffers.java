@@ -29,30 +29,6 @@ public final class Buffers {
 
     static final int DEFAULT_CAPACITY = 512;
 
-    private static final CodecBufferFactory ARRAY_CODEC_BUFFER_FACTORY = new CodecBufferFactory() {
-        @Override
-        public CodecBuffer newCodecBuffer(int bytes) {
-            return new ArrayCodecBuffer(ArrayChunkFactory.instance(), bytes, DEFAULT_PRIORITY);
-        }
-
-        @Override
-        public CodecBuffer newCodecBuffer(int bytes, int priority) {
-            return new ArrayCodecBuffer(ArrayChunkFactory.instance(), bytes, priority);
-        }
-    };
-
-    private static final CodecBufferFactory BYTE_BUFFER_CODEC_BUFFER_FACTORY = new CodecBufferFactory() {
-        @Override
-        public CodecBuffer newCodecBuffer(int bytes) {
-            return new ByteBufferCodecBuffer(ByteBufferChunkFactory.heap(), bytes, DEFAULT_PRIORITY);
-        }
-
-        @Override
-        public CodecBuffer newCodecBuffer(int bytes, int priority) {
-            return new ByteBufferCodecBuffer(ByteBufferChunkFactory.heap(), bytes, priority);
-        }
-    };
-
     static int outputByteBufferSize(CharsetEncoder encoder, int chars) {
         return (int) Math.max(encoder.averageBytesPerChar() * chars, encoder.maxBytesPerChar()) + 1;
     }
@@ -82,8 +58,8 @@ public final class Buffers {
 
     /**
      * Creates a new {@code CodecBuffer} which has initial capacity 512.
-     * The new {@code CodecBuffer} has no content to read. An invocation of this method behaves
-     * in exactly the same way as the invocation {@code newCodecBuffer(512)}
+     * The new {@code CodecBuffer} has no content to read.
+     *
      * @return the new {@code CodecBuffer}.
      */
     public static CodecBuffer newCodecBuffer() {
@@ -92,9 +68,7 @@ public final class Buffers {
 
     /**
      * Creates a new {@code CodecBuffer} which has initial capacity {@code initialCapacity}.
-     * The new {@code CodecBuffer} has no content to read. An invocation of this method of the form
-     * {@code newCodecBuffer(n)} behaves in exactly the same way as the invocation
-     * {@code newCodecBuffer(new byte[n], 0, 0)}.
+     * The new {@code CodecBuffer} has no content to read.
      *
      * @param initialCapacity the initial capacity of the new {@code CodecBuffer}.
      * @return the new {@code CodecBuffer}
@@ -105,8 +79,6 @@ public final class Buffers {
 
     /**
      * Creates a new {@code CodecBuffer} which has initial capacity {@code initialCapacity} with a specified priority.
-     * An invocation of this method behaves in exactly the same way as the invocation {@link #newCodecBuffer(int)}
-     * if {@code priority < 0}.
      *
      * @param initialCapacity the initial capacity of the new {@code CodecBuffer}
      * @param priority buffer priority to choose a write queue
@@ -147,13 +119,43 @@ public final class Buffers {
     }
 
     /**
+     * Creates a new {@code CodecBuffer} which has initial capacity {@code initialCapacity}.
+     * The new {@code CodecBuffer} has no content to read.
+     * <p></p>
+     * An allocation of the new buffer's content is controlled by a specified {@code chunkPool}.
+     *
+     * @param chunkPool the object which controls the allocation of the new buffer's content.
+     * @param initialCapacity the initial capacity of the new {@code CodecBuffer}.
+     * @return the new {@code CodecBuffer}
+     */
+    public static CodecBuffer newCodecBuffer(ArrayChunkPool chunkPool, int initialCapacity) {
+        return new ArrayCodecBuffer(chunkPool, initialCapacity, DEFAULT_PRIORITY);
+    }
+
+    /**
+     * Creates a new {@code CodecBuffer} which has initial capacity {@code initialCapacity} with a specified priority.
+     * An invocation of this method behaves in exactly the same way as the invocation
+     * {@link #newCodecBuffer(ArrayChunkPool, int)} if {@code priority < 0}.
+     * <p></p>
+     * An allocation of the new buffer's content is controlled by a specified {@code manager}.
+     *
+     * @param chunkPool the object which controls the allocation of the new buffer's content.
+     * @param initialCapacity the initial capacity of the new {@code CodecBuffer}
+     * @param priority buffer priority to choose a write queue
+     * @return the new {@code CodecBuffer}
+     */
+    public static CodecBuffer newCodecBuffer(ArrayChunkPool chunkPool, int initialCapacity, int priority) {
+        return new ArrayCodecBuffer(chunkPool, initialCapacity, priority);
+    }
+
+    /**
      * Creates a new {@code CodecBuffer} which is backed by a specified byte buffer.
      *
-     * If some data is written into the {@code DecodeBuffer}, then the backed {@code ByteBuffer} is also modified
-     * and vice versa. The new {@code DecodeBuffer}'s beginning is buffer' position and end is buffer's limit.
+     * If some data is written into the {@code CodecBuffer}, then the backed {@code ByteBuffer} is also modified
+     * and vice versa. The new {@code CodecBuffer}'s beginning is buffer' position and end is buffer's limit.
      *
      * @param byteBuffer the backed {@code ByteBuffer}
-     * @return the new {@code DecodeBuffer}
+     * @return the new {@code CodecBuffer}
      */
     public static CodecBuffer newCodecBuffer(ByteBuffer byteBuffer) {
         return new ByteBufferCodecBuffer(byteBuffer, DEFAULT_PRIORITY);
@@ -170,6 +172,38 @@ public final class Buffers {
      */
     public static CodecBuffer newCodecBuffer(ByteBuffer byteBuffer, int priority) {
         return new ByteBufferCodecBuffer(byteBuffer, priority);
+    }
+
+    /**
+     * Creates a new {@code CodecBuffer} which is backed by a specified byte buffer.
+     *
+     * If some data is written into the {@code DecodeBuffer}, then the backed {@code ByteBuffer} is also modified
+     * and vice versa. The new {@code DecodeBuffer}'s beginning is buffer' position and end is buffer's limit.
+     * <p></p>
+     * An allocation of the new buffer's content is controlled by a specified {@code chunkPool}.
+     *
+     * @param chunkPool the object which controls the allocation of the new buffer's content.
+     * @param initialCapacity the initial capacity of the new {@code CodecBuffer}.
+     * @return the new {@code CodecBuffer}
+     */
+    public static CodecBuffer newCodecBuffer(ByteBufferChunkPool chunkPool, int initialCapacity) {
+        return new ByteBufferCodecBuffer(chunkPool, initialCapacity, DEFAULT_PRIORITY);
+    }
+
+    /**
+     * Creates a new {@code CodecBuffer} which is backed by a specified byte buffer.
+     * An invocation of this method behaves in exactly the same way as the invocation
+     * {@link #newCodecBuffer(java.nio.ByteBuffer)} if {@code priority < 0}.
+     * <p></p>
+     * An allocation of the new buffer's content is controlled by a specified {@code chunkPool}.
+     *
+     * @param chunkPool the object which controls the allocation of the new buffer's content.
+     * @param initialCapacity the initial capacity of the new {@code CodecBuffer}
+     * @param priority buffer priority to choose a write queue
+     * @return the new {@code DecodeBuffer}
+     */
+    public static CodecBuffer newCodecBuffer(ByteBufferChunkPool chunkPool, int initialCapacity, int priority) {
+        return new ByteBufferCodecBuffer(chunkPool, initialCapacity, priority);
     }
 
     /**
@@ -231,63 +265,17 @@ public final class Buffers {
     /**
      * Creates a new {@code CodecBuffer} which consists of the specified {@code buffer0} and {@code buffers}.
      * The order of {@code CodecBuffer} in the new buffer is the argument order; the first is {@code buffer0},
-     * the second is {@code buffers[0]} and the third is {@code buffers[1]} and so on.
+     * the second is {@code buffers[0]} and the third is {@code buffers[1]} and so on. These buffers will be
+     * sliced when added to the new buffer.
+     * <p></p>
+     * The new buffer allocates a new {@code CodecBuffer} in the heap if the object needs more space
+     * on write operations. The maximum elements that can be held by the object is 1024.
      *
      * @param buffer0 the first {@code CodecBuffer} in the new {@code CodecBuffer}.
      * @param buffers the {@code CodecBuffer} after the {@code buffer0}.
      * @return the new {@code CodecBuffer}.
      */
     public static CodecBuffer newCodecBuffer(CodecBuffer buffer0, CodecBuffer...buffers) {
-        return new CodecBufferList(ARRAY_CODEC_BUFFER_FACTORY, DEFAULT_PRIORITY, buffer0, buffers);
-    }
-
-    public static CodecBuffer newCodecBuffer(CodecBufferFactory factory, CodecBuffer buffer0, CodecBuffer...buffers) {
-        return new CodecBufferList(factory, DEFAULT_PRIORITY, buffer0, buffers);
-    }
-
-    public static CodecBuffer newCodecBuffer(
-            CodecBufferFactory factory, int priority, CodecBuffer buffer0, CodecBuffer...buffers) {
-        return new CodecBufferList(factory, priority, buffer0, buffers);
-    }
-
-    public static CodecBufferFactory newArrayCodecBufferFactory() {
-        return ARRAY_CODEC_BUFFER_FACTORY;
-    }
-
-    public static CodecBufferFactory newArrayCodecBufferFactory(int wholeBytes) {
-        final ArrayChunkPool pool = new ArrayChunkPool(wholeBytes);
-        return new CodecBufferFactory() {
-            ArrayChunkPool pool_ = pool;
-            @Override
-            public CodecBuffer newCodecBuffer(int bytes) {
-                return new ArrayCodecBuffer(pool_, bytes, DEFAULT_PRIORITY);
-            }
-
-            @Override
-            public CodecBuffer newCodecBuffer(int bytes, int priority) {
-                return new ArrayCodecBuffer(pool_, bytes, priority);
-            }
-        };
-    }
-
-    public static CodecBufferFactory newByteBufferCodecBufferFactory() {
-        return BYTE_BUFFER_CODEC_BUFFER_FACTORY;
-    }
-
-    public static CodecBufferFactory newByteBufferCodecBufferFactory(
-            int wholeBytes, boolean direct) {
-        final ByteBufferChunkPool pool = new ByteBufferChunkPool(wholeBytes, direct);
-        return new CodecBufferFactory() {
-            ByteBufferChunkPool pool_ = pool;
-            @Override
-            public CodecBuffer newCodecBuffer(int bytes) {
-                return new ByteBufferCodecBuffer(pool_, bytes, DEFAULT_PRIORITY);
-            }
-
-            @Override
-            public CodecBuffer newCodecBuffer(int bytes, int priority) {
-                return new ByteBufferCodecBuffer(pool_, bytes, priority);
-            }
-        };
+        return new CodecBufferList(DEFAULT_PRIORITY, buffer0, buffers);
     }
 }

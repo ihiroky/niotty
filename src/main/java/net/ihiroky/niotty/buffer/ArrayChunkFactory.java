@@ -22,7 +22,7 @@ public class ArrayChunkFactory extends ChunkManager<byte[]> {
     }
 
     @Override
-    public Chunk<byte[]> newChunk(int bytes) {
+    protected Chunk<byte[]> newChunk(int bytes) {
         ArrayChunk c = new ArrayChunk(new byte[bytes], this);
         c.ready();
         return c;

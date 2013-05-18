@@ -27,11 +27,22 @@ public class ByteBufferChunkPool extends ChunkPool<ByteBuffer> {
 
     /**
      * Constructs a new instance.
+     * The chunk created by the new instance has direct {@code ByteBuffer}.
+     *
+     * @param maxPoolingBytes the size of a pre-allocated {@code ByteBuffer}; the maximum number of pooling by the byte.
+     * @throws IllegalArgumentException if the maxPoolingBytes is not positive.
+     */
+    public ByteBufferChunkPool(int maxPoolingBytes) {
+        this(maxPoolingBytes, true);
+    }
+
+    /**
+     * Constructs a new instance.
      * @param maxPoolingBytes the size of a pre-allocated {@code ByteBuffer}; the maximum number of pooling by the byte.
      * @param direct true if the {@code ByteBuffer} is direct.
      * @throws IllegalArgumentException if the maxPoolingBytes is not positive.
      */
-    ByteBufferChunkPool(int maxPoolingBytes, boolean direct) {
+    public ByteBufferChunkPool(int maxPoolingBytes, boolean direct) {
         if (maxPoolingBytes <= 0) {
             throw new IllegalArgumentException("maxPoolingBytes must be positive.");
         }

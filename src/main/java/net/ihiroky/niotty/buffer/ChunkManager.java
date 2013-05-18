@@ -12,10 +12,11 @@ public abstract class ChunkManager<E> implements AutoCloseable {
 
     /**
      * Provides the chunk managed by this instance.
+     *
      * @param bytes a size of the chunk in byte
      * @return the chunk, which size can be larger than {@code bytes}
      */
-    public abstract Chunk<E> newChunk(int bytes);
+    protected abstract Chunk<E> newChunk(int bytes);
 
     /**
      * Retrieves the chunk, which is obtained by {@link #newChunk(int)}.

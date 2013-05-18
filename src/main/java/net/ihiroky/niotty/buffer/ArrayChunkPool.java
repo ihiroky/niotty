@@ -31,7 +31,7 @@ public class ArrayChunkPool extends ChunkPool<byte[]> {
      * @param maxPoolingBytes the maxPoolingBytes.
      * @throws IllegalArgumentException if the maxPoolingBytes is not positive integer.
      */
-    ArrayChunkPool(int maxPoolingBytes) {
+    public ArrayChunkPool(int maxPoolingBytes) {
         if (maxPoolingBytes <= 0) {
             throw new IllegalArgumentException("maxPoolingBytes must be positive.");
         }
