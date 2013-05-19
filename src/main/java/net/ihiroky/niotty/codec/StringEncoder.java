@@ -1,4 +1,4 @@
-package net.ihiroky.niotty.codec.string;
+package net.ihiroky.niotty.codec;
 
 import net.ihiroky.niotty.StoreStage;
 import net.ihiroky.niotty.StoreStageContext;

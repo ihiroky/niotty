@@ -11,8 +11,8 @@ import net.ihiroky.niotty.nio.NioClientSocketConfig;
 import net.ihiroky.niotty.nio.NioClientSocketProcessor;
 import net.ihiroky.niotty.nio.NioServerSocketConfig;
 import net.ihiroky.niotty.nio.NioServerSocketProcessor;
-import net.ihiroky.niotty.codec.string.StringDecoder;
-import net.ihiroky.niotty.codec.string.StringEncoder;
+import net.ihiroky.niotty.codec.StringDecoder;
+import net.ihiroky.niotty.codec.StringEncoder;
 import net.ihiroky.niotty.codec.FrameLengthPrependEncoder;
 import net.ihiroky.niotty.codec.FrameLengthRemoveDecoder;
 
