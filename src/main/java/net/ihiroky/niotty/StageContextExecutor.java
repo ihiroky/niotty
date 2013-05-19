@@ -5,7 +5,7 @@ package net.ihiroky.niotty;
  */
 public interface StageContextExecutor {
     <I> void execute(StageContext<I, ?> context, I input);
-    <I> void execute(StageContext<I, ?> context, TransportStateEvent event);
+    void execute(StageContext<?, ?> context, TransportStateEvent event);
     StageContextExecutorPool pool();
     void close(StageContext<?, ?> context);
 }

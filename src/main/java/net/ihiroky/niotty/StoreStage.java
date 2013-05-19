@@ -8,5 +8,5 @@ package net.ihiroky.niotty;
 public interface StoreStage<I, O> {
 
     void store(StoreStageContext<I, O> context, I input);
-    void store(StoreStageContext<I, O> context, TransportStateEvent event);
+    void store(StoreStageContext<?, ?> context, TransportStateEvent event);
 }

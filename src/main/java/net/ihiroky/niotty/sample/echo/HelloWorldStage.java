@@ -20,7 +20,7 @@ public class HelloWorldStage implements LoadStage<String, Void> {
     }
 
     @Override
-    public void load(LoadStageContext<String, Void> context, TransportStateEvent event) {
+    public void load(LoadStageContext<?, ?> context, TransportStateEvent event) {
         switch (event.state()) {
             case CONNECTED:
                 if (event.value() != null) {

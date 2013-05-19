@@ -8,5 +8,5 @@ package net.ihiroky.niotty;
 public interface LoadStage<I, O> {
 
     void load(LoadStageContext<I, O> context, I input);
-    void load(LoadStageContext<I, O> context, TransportStateEvent event);
+    void load(LoadStageContext<?, ?> context, TransportStateEvent event);
 }

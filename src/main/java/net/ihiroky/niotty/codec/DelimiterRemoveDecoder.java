@@ -15,7 +15,7 @@ public class DelimiterRemoveDecoder implements LoadStage<CodecBuffer, CodecBuffe
     }
 
     @Override
-    public void load(LoadStageContext<CodecBuffer, CodecBuffer> context, TransportStateEvent event) {
+    public void load(LoadStageContext<?, ?> context, TransportStateEvent event) {
         //To change body of implemented methods use File | Settings | File Templates.
     }
 }

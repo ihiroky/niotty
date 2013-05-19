@@ -43,7 +43,7 @@ public class NumberGenerator implements LoadStage<CodecBuffer, Void> {
     }
 
     @Override
-    public void load(LoadStageContext<CodecBuffer, Void> context, TransportStateEvent event) {
+    public void load(LoadStageContext<?, ?> context, TransportStateEvent event) {
         logger_.info("state: {}", event);
     }
 }

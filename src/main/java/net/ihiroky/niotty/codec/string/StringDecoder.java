@@ -34,7 +34,7 @@ public class StringDecoder implements LoadStage<CodecBuffer, String> {
     }
 
     @Override
-    public void load(LoadStageContext<CodecBuffer, String> context, TransportStateEvent event) {
+    public void load(LoadStageContext<?, ?> context, TransportStateEvent event) {
         context.proceed(event);
     }
 }

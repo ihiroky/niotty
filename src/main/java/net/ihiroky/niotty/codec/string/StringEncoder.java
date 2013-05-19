@@ -40,7 +40,7 @@ public class StringEncoder implements StoreStage<String, BufferSink> {
     }
 
     @Override
-    public void store(StoreStageContext<String, BufferSink> context, TransportStateEvent event) {
+    public void store(StoreStageContext<?, ?> context, TransportStateEvent event) {
         context.proceed(event);
     }
 }

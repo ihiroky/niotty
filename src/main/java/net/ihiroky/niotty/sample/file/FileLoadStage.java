@@ -31,6 +31,6 @@ public class FileLoadStage implements LoadStage<String, Void> {
     }
 
     @Override
-    public void load(LoadStageContext<String, Void> context, TransportStateEvent event) {
+    public void load(LoadStageContext<?, ?> context, TransportStateEvent event) {
     }
 }

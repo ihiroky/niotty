@@ -27,6 +27,6 @@ public class EvenOddReporter implements LoadStage<CodecBuffer, Void> {
     }
 
     @Override
-    public void load(LoadStageContext<CodecBuffer, Void> context, TransportStateEvent event) {
+    public void load(LoadStageContext<?, ?> context, TransportStateEvent event) {
     }
 }

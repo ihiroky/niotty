@@ -71,7 +71,7 @@ public class ThreadStageContextExecutor extends TaskLoop<ThreadStageContextExecu
     }
 
     @Override
-    public <I> void execute(final StageContext<I, ?> context, final TransportStateEvent event) {
+    public void execute(final StageContext<?, ?> context, final TransportStateEvent event) {
         offerTask(new Task<ThreadStageContextExecutor>() {
             @Override
             public int execute(ThreadStageContextExecutor eventLoop) throws Exception {

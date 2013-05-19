@@ -10,7 +10,7 @@ public class DefaultStageContextExecutor implements StageContextExecutor {
     }
 
     @Override
-    public <I> void execute(StageContext<I, ?> context, TransportStateEvent event) {
+    public void execute(StageContext<?, ?> context, TransportStateEvent event) {
         context.fire(event);
     }
 
