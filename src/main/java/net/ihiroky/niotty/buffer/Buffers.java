@@ -278,4 +278,24 @@ public final class Buffers {
     public static CodecBuffer newCodecBuffer(CodecBuffer buffer0, CodecBuffer...buffers) {
         return new CodecBufferList(DEFAULT_PRIORITY, buffer0, buffers);
     }
+
+    /**
+     * Creates a new {@code CodecBuffer} which consists of the specified {@code buffer0} and {@code buffers}.
+     * The order of {@code CodecBuffer} in the new buffer is the argument order; the first is {@code buffer0},
+     * the second is {@code buffers[0]} and the third is {@code buffers[1]} and so on. These buffers will be
+     * sliced when added to the new buffer.
+     * <p></p>
+     * The new buffer allocates a new {@code CodecBuffer} in the heap if the object needs more space
+     * on write operations. The maximum elements that can be held by the object is 1024.
+     * <p></p>
+     * An invocation of this method behaves in exactly the same way as the invocation
+     * {@link #newCodecBuffer(CodecBuffer, CodecBuffer...)} if {@code priority < 0}.
+
+     * @param buffer0 the first {@code CodecBuffer} in the new {@code CodecBuffer}.
+     * @param buffers the {@code CodecBuffer} after the {@code buffer0}.
+     * @return the new {@code CodecBuffer}.
+     */
+    public static CodecBuffer newCodecBuffer(int priority, CodecBuffer buffer0, CodecBuffer...buffers) {
+        return new CodecBufferList(priority, buffer0, buffers);
+    }
 }
