@@ -18,7 +18,7 @@ abstract class AbstractChunk<E> implements Chunk<E> {
     /** The reference count. */
     private volatile int referenceCount_;
 
-    @SuppressWarnings({ "unchecked", "raw" })
+    @SuppressWarnings("rawtypes")
     private static final AtomicIntegerFieldUpdater<AbstractChunk> REFERENCE_COUNT_UPDATER =
             AtomicIntegerFieldUpdater.newUpdater(AbstractChunk.class, "referenceCount_");
 
