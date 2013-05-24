@@ -1,5 +1,7 @@
 package net.ihiroky.niotty.buffer;
 
+import net.ihiroky.niotty.TransportParameter;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
@@ -36,36 +38,39 @@ public class SlicedCodecBuffer extends AbstractCodecBuffer {
      * Creates a new instance.
      *
      * @param base the base {@code CodecBuffer}.
+     * @param attachment the attachment used by a transport implementation.
      */
-    SlicedCodecBuffer(CodecBuffer base) {
-        CodecBuffer b = base.duplicate();
-        base_ = b;
-        offset_ = b.beginning();
-        capacity_ = b.end();
+    SlicedCodecBuffer(CodecBuffer base, TransportParameter attachment) {
+        super(attachment);
+        base_ = base;
+        offset_ = base.beginning();
+        capacity_ = base.end();
     }
 
     /**
-     * Creates a new instance.
+     * Creates a new instance. The end of the {@code base} changes to {@code base.beginning() + bytes}.
      *
      * @param base the base {@code CodecBuffer}.
      * @param bytes the data size by the bytes to be sliced.
+     * @param attachment the attachment used by a transport implementation.
      * @throws IllegalArgumentException if the {@code bytes} is greater the remaining of the {@code base}.
      */
-    SlicedCodecBuffer(CodecBuffer base, int bytes) {
+    SlicedCodecBuffer(CodecBuffer base, int bytes, TransportParameter attachment) {
+        super(attachment);
         int beginning = base.beginning();
         int capacity = beginning + bytes;
         if (capacity > base.end()) {
             throw new IllegalArgumentException("capacity must be less than or equal base.end().");
         }
 
-        CodecBuffer b = base.duplicate();
-        b.end(capacity);
-        base_ = b;
+        base.end(capacity);
+        base_ = base;
         offset_ = beginning;
         capacity_ = capacity;
     }
 
     private SlicedCodecBuffer(CodecBuffer base, int offset, int capacity) {
+        super(base.attachment());
         base_ = base.duplicate();
         offset_ = offset;
         capacity_ = capacity;
@@ -208,11 +213,6 @@ public class SlicedCodecBuffer extends AbstractCodecBuffer {
     }
 
     @Override
-    public int priority() {
-        return base_.priority();
-    }
-
-    @Override
     public void dispose() {
         base_.dispose();
     }
@@ -267,6 +267,11 @@ public class SlicedCodecBuffer extends AbstractCodecBuffer {
     }
 
     @Override
+    public void transferTo(ByteBuffer buffer) {
+        readBytes(buffer);
+    }
+
+    @Override
     public BufferSink addFirst(CodecBuffer buffer) {
         int required = buffer.remainingBytes();
         int frontSpace = base_.beginning() - offset_; // ignore space at tail.
@@ -297,7 +302,7 @@ public class SlicedCodecBuffer extends AbstractCodecBuffer {
 
     @Override
     public CodecBuffer slice() {
-        return new SlicedCodecBuffer(this);
+        return new SlicedCodecBuffer(this, attachment());
     }
 
     @Override
@@ -355,5 +360,16 @@ public class SlicedCodecBuffer extends AbstractCodecBuffer {
     @Override
     public int lastIndexOf(byte[] b, int fromIndex) {
         return base_.lastIndexOf(b, fromIndex + offset_);
+    }
+
+    /**
+     * Returns a summary of this buffer state.
+     * @return a summary of this buffer state
+     */
+    @Override
+    public String toString() {
+        return SlicedCodecBuffer.class.getName()
+                + "(beginning:" + beginning() + ", end:" + end() + ", capacity:" + capacityBytes()
+                + ", attachment:" + attachment() + ", offset:" + offset_ + ')';
     }
 }

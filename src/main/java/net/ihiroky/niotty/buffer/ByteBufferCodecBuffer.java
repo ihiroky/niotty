@@ -1,5 +1,7 @@
 package net.ihiroky.niotty.buffer;
 
+import net.ihiroky.niotty.TransportParameter;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
@@ -14,13 +16,12 @@ import java.util.Objects;
  * Implementation of {@link net.ihiroky.niotty.buffer.CodecBuffer} using {@code java.nio.ByteBuffer}.
  * @author Hiroki Itoh
  */
-public class ByteBufferCodecBuffer extends AbstractCodecBuffer implements CodecBuffer {
+public class ByteBufferCodecBuffer extends AbstractCodecBuffer {
 
     private Chunk<ByteBuffer> chunk_;
     private ByteBuffer buffer_;
     private int beginning_;
     private int end_;
-    private int priority_;
     private Mode mode_;
 
     /**
@@ -34,17 +35,18 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer implements CodecB
     }
 
     ByteBufferCodecBuffer() {
-        this(ByteBufferChunkFactory.heap(), Buffers.DEFAULT_CAPACITY, Buffers.DEFAULT_PRIORITY);
+        this(ByteBufferChunkFactory.heap(), Buffers.DEFAULT_CAPACITY, null);
     }
 
-    ByteBufferCodecBuffer(ChunkManager<ByteBuffer> manager, int initialCapacity, int priority) {
+    ByteBufferCodecBuffer(ChunkManager<ByteBuffer> manager, int initialCapacity, TransportParameter attachment) {
+        super(attachment);
         chunk_ = manager.newChunk(initialCapacity);
         buffer_ = chunk_.initialize();
         mode_ = Mode.WRITE;
-        priority_ = priority;
     }
 
-    ByteBufferCodecBuffer(ByteBuffer buffer, int priority) {
+    ByteBufferCodecBuffer(ByteBuffer buffer, TransportParameter attachment) {
+        super(attachment);
         Objects.requireNonNull(buffer, "buffer");
         ByteBufferChunk c = new ByteBufferChunk(buffer, ByteBufferChunkFactory.heap());
         c.ready();
@@ -52,17 +54,16 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer implements CodecB
         buffer_ = chunk_.initialize();
         beginning_ = buffer.position();
         end_ = buffer.limit();
-        priority_ = priority;
         mode_ = Mode.READ;
     }
 
     private ByteBufferCodecBuffer(ByteBufferCodecBuffer b) {
+        super(b.attachment());
         chunk_ = b.chunk_;
         buffer_ = b.chunk_.retain();
         beginning_ = b.beginning_;
         end_ = b.end_;
         mode_ = b.mode_;
-        priority_ = b.priority_;
     }
 
     private void changeModeToWrite() {
@@ -390,6 +391,11 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer implements CodecB
     }
 
     @Override
+    public void transferTo(ByteBuffer buffer) {
+        readBytes(buffer);
+    }
+
+    @Override
     public ByteBufferCodecBuffer addFirst(CodecBuffer buffer) {
         Objects.requireNonNull(buffer, "buffer");
         int inputSize = buffer.remainingBytes();
@@ -487,11 +493,6 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer implements CodecB
     public int remainingBytes() {
         syncBeginEnd();
         return end_ - beginning_;
-    }
-
-    @Override
-    public int priority() {
-        return priority_;
     }
 
     @Override
@@ -762,14 +763,14 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer implements CodecB
         if (bytes <= 0 || bytes > bb.remaining()) {
             throw new IllegalArgumentException("Invalid input " + bytes + ". " + bb.remaining() + " byte remains.");
         }
-        CodecBuffer sliced = new SlicedCodecBuffer(this, bytes);
+        CodecBuffer sliced = new SlicedCodecBuffer(duplicate(), bytes, attachment());
         bb.position(bb.position() + bytes);
         return sliced;
     }
 
     @Override
     public CodecBuffer slice() {
-        return new SlicedCodecBuffer(this);
+        return new SlicedCodecBuffer(duplicate(), attachment());
     }
 
     @Override
@@ -787,7 +788,7 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer implements CodecB
         syncBeginEnd();
         return ByteBufferCodecBuffer.class.getName()
                 + "(beginning:" + beginning_ + ", end:" + end_ + ", capacity:" + buffer_.capacity()
-                + ", priority:" + priority() + ')';
+                + ", attachment:" + attachment() + ')';
     }
 
     Chunk<ByteBuffer> chunk() {

@@ -39,7 +39,7 @@ public class ByteBufferCodecBufferTest {
     public static class ReadTests extends CodecBufferTestAbstract.AbstractReadTests {
         @Override
         protected CodecBuffer createCodecBuffer(byte[] buffer, int offset, int length) {
-            return Buffers.newCodecBuffer(ByteBuffer.wrap(buffer, offset, length));
+            return Buffers.wrap(ByteBuffer.wrap(buffer, offset, length));
         }
     }
 
@@ -51,14 +51,14 @@ public class ByteBufferCodecBufferTest {
 
         @Override
         protected CodecBuffer createCodecBuffer(int initialCapacity) {
-            return new ByteBufferCodecBuffer(ByteBufferChunkFactory.heap(), initialCapacity, -1);
+            return new ByteBufferCodecBuffer(ByteBufferChunkFactory.heap(), initialCapacity, null);
         }
     }
 
     public static class BufferSinkTests extends CodecBufferTestAbstract.AbstractBufferSinkTests {
         @Override
         protected CodecBuffer createCodecBuffer(byte[] buffer, int offset, int length) {
-            return Buffers.newCodecBuffer(ByteBuffer.wrap(buffer, offset, length));
+            return Buffers.wrap(ByteBuffer.wrap(buffer, offset, length));
         }
     }
 
@@ -66,7 +66,7 @@ public class ByteBufferCodecBufferTest {
 
         @Override
         protected CodecBuffer createCodecBuffer(byte[] data, int offset, int length) {
-            return Buffers.newCodecBuffer(ByteBuffer.wrap(data, offset, length));
+            return Buffers.wrap(ByteBuffer.wrap(data, offset, length));
         }
     }
 
@@ -78,7 +78,7 @@ public class ByteBufferCodecBufferTest {
         public void setUp() {
             byte[] data = new byte[10];
             Arrays.fill(data, (byte) 1);
-            sut_ = new ByteBufferCodecBuffer(ByteBufferChunkFactory.heap(), 10, -1);
+            sut_ = new ByteBufferCodecBuffer(ByteBufferChunkFactory.heap(), 10, null);
             sut_.writeBytes(data, 0, data.length);
         }
 

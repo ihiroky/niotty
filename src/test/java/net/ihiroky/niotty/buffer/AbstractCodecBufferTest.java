@@ -16,12 +16,12 @@ public class AbstractCodecBufferTest {
     private ArrayCodecBuffer sut_;
 
     static AbstractCodecBuffer newInstance(byte[] data, int offset, int length) {
-        return new ArrayCodecBuffer(data, offset, length, Buffers.DEFAULT_PRIORITY);
+        return new ArrayCodecBuffer(data, offset, length, null);
     }
 
     @Before
     public void setUp() {
-        sut_ = new ArrayCodecBuffer(ArrayChunkFactory.instance(), 0, Buffers.DEFAULT_PRIORITY);
+        sut_ = new ArrayCodecBuffer(ArrayChunkFactory.instance(), 0, null);
     }
 
     @Test

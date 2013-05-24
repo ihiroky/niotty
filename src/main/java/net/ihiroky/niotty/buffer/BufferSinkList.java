@@ -1,6 +1,10 @@
 package net.ihiroky.niotty.buffer;
 
+import net.ihiroky.niotty.DefaultTransportParameter;
+import net.ihiroky.niotty.TransportParameter;
+
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.channels.GatheringByteChannel;
 import java.util.Objects;
 
@@ -12,26 +16,33 @@ import java.util.Objects;
  */
 public class BufferSinkList implements BufferSink {
 
-    private BufferSink car_;
-    private BufferSink cdr_;
-    private int priority_;
+    private final BufferSink car_;
+    private final BufferSink cdr_;
+    private final TransportParameter attachment_;
 
     BufferSinkList(BufferSink car, BufferSink cdr) {
-        this(car, cdr, Buffers.DEFAULT_PRIORITY);
+        this(car, cdr, DefaultTransportParameter.NO_PARAMETER);
     }
 
-    BufferSinkList(BufferSink car, BufferSink cdr, int priority) {
+    BufferSinkList(BufferSink car, BufferSink cdr, TransportParameter attachment) {
         Objects.requireNonNull(car, "car");
         Objects.requireNonNull(cdr, "cdr");
         car_ = car;
         cdr_ = cdr;
-        priority_ = priority;
+        attachment_ = (attachment != null) ? attachment : DefaultTransportParameter.NO_PARAMETER;
     }
 
     @Override
     public boolean transferTo(GatheringByteChannel channel) throws IOException {
         return car_.transferTo(channel) && cdr_.transferTo(channel);
     }
+
+    @Override
+    public void transferTo(ByteBuffer buffer) {
+        car_.transferTo(buffer);
+        car_.transferTo(buffer);
+    }
+
 
     @Override
     public BufferSinkList addFirst(CodecBuffer buffer) {
@@ -63,16 +74,16 @@ public class BufferSinkList implements BufferSink {
         }
 
         if (cdrRemaining > 0) {
-            return (carSliced != null) ? Buffers.newBufferSink(carSliced, cdr_.slice(bytes)) : cdr_.slice(bytes);
+            return (carSliced != null) ? Buffers.wrap(carSliced, cdr_.slice(bytes)) : cdr_.slice(bytes);
         }
 
         // empty && bytes == 0
-        return Buffers.newCodecBuffer(0, priority_);
+        return Buffers.newCodecBuffer(0, attachment_);
     }
 
     @Override
     public BufferSinkList duplicate() {
-        return new BufferSinkList(car_.duplicate(), cdr_.duplicate(), priority_);
+        return new BufferSinkList(car_.duplicate(), cdr_.duplicate(), attachment_);
     }
 
     /**
@@ -84,12 +95,9 @@ public class BufferSinkList implements BufferSink {
         return (sum <= Integer.MAX_VALUE) ? (int) sum : Integer.MAX_VALUE;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public int priority() {
-        return priority_;
+    public TransportParameter attachment() {
+        return attachment_;
     }
 
     @Override

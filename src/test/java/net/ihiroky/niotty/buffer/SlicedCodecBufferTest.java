@@ -22,14 +22,16 @@ public class SlicedCodecBufferTest {
     public static class EmptyTests extends CodecBufferTestAbstract.AbstractEmptyTests {
         @Override
         protected CodecBuffer createCodecBuffer() {
-            return new SlicedCodecBuffer(new ArrayCodecBuffer());
+            CodecBuffer b = new ArrayCodecBuffer();
+            return new SlicedCodecBuffer(b, b.attachment());
         }
     }
 
     public static class ReadTests extends CodecBufferTestAbstract.AbstractReadTests {
         @Override
         protected CodecBuffer createCodecBuffer(byte[] buffer, int offset, int length) {
-            return new SlicedCodecBuffer(new ArrayCodecBuffer(buffer, offset, length, Buffers.DEFAULT_PRIORITY));
+            CodecBuffer b = new ArrayCodecBuffer(buffer, offset, length, null);
+            return new SlicedCodecBuffer(b, b.attachment());
         }
     }
 
@@ -44,9 +46,9 @@ public class SlicedCodecBufferTest {
         public void setUp() {
             byte[] data = new byte[11];
             Arrays.fill(data, (byte) 1);
-            CodecBuffer b = new ArrayCodecBuffer(data, 0, data.length, Buffers.DEFAULT_PRIORITY);
+            CodecBuffer b = new ArrayCodecBuffer(data, 0, data.length, null);
             b.beginning(1);
-            sut_ = new SlicedCodecBuffer(b);
+            sut_ = new SlicedCodecBuffer(b, b.attachment());
         }
 
         @Test
@@ -285,7 +287,7 @@ public class SlicedCodecBufferTest {
             Arrays.fill(a, (byte) 'a');
             sut_.clear();
 
-            int drained = sut_.drainFrom(new ArrayCodecBuffer(a, 0, a.length, -1));
+            int drained = sut_.drainFrom(new ArrayCodecBuffer(a, 0, a.length, null));
 
             assertThat(drained, is(10));
             assertThat(sut_.remainingBytes(), is(10));
@@ -305,14 +307,14 @@ public class SlicedCodecBufferTest {
             exceptionRule_.expect(IndexOutOfBoundsException.class);
             exceptionRule_.expectMessage("no space is left. required: 11, space: 10");
 
-            sut_.drainFrom(new ArrayCodecBuffer(a, 0, a.length, -1));
+            sut_.drainFrom(new ArrayCodecBuffer(a, 0, a.length, null));
         }
 
         @Test
         public void testDrainFrom_WithLimit() throws Exception {
             byte[] a = new byte[9];
             Arrays.fill(a, (byte) 'a');
-            CodecBuffer input = new ArrayCodecBuffer(a, 0, a.length, -1);
+            CodecBuffer input = new ArrayCodecBuffer(a, 0, a.length, null);
             sut_.clear();
 
             // drain 5 bytes.
@@ -335,7 +337,7 @@ public class SlicedCodecBufferTest {
             exceptionRule_.expect(IndexOutOfBoundsException.class);
             exceptionRule_.expectMessage("no space is left. required: 1, space: 0");
 
-            sut_.drainFrom(new ArrayCodecBuffer(new byte[1], 0, 1, -1), 1);
+            sut_.drainFrom(new ArrayCodecBuffer(new byte[1], 0, 1, null), 1);
         }
 
         @Test
@@ -348,7 +350,8 @@ public class SlicedCodecBufferTest {
     public static class BufferSinkTests extends CodecBufferTestAbstract.AbstractBufferSinkTests {
         @Override
         protected CodecBuffer createCodecBuffer(byte[] buffer, int offset, int length) {
-            return new SlicedCodecBuffer(new ArrayCodecBuffer(buffer, offset, length, -1));
+            CodecBuffer b = new ArrayCodecBuffer(buffer, offset, length, null);
+            return new SlicedCodecBuffer(b, b.attachment());
         }
     }
 
@@ -363,16 +366,16 @@ public class SlicedCodecBufferTest {
         public void setUp() {
             byte[] data = new byte[10];
             Arrays.fill(data, (byte) 0);
-            CodecBuffer base = new ArrayCodecBuffer(data, 0, data.length, -1);
+            CodecBuffer base = new ArrayCodecBuffer(data, 0, data.length, null);
             base.beginning(3);
-            sut_ = new SlicedCodecBuffer(base);
+            sut_ = new SlicedCodecBuffer(base, base.attachment());
         }
 
         @Test
         public void testAddFirst_OkIfEnoughSpaceExists() throws Exception {
             byte[] data = new byte[4];
             Arrays.fill(data, (byte) -1);
-            CodecBuffer added = new ArrayCodecBuffer(data, 0, data.length, -1);
+            CodecBuffer added = new ArrayCodecBuffer(data, 0, data.length, null);
 
             sut_.beginning(4);
             sut_.addFirst(added);
@@ -389,7 +392,7 @@ public class SlicedCodecBufferTest {
         @Test
         public void testAddFirst_NgIfNoEnoughSpaceExists() throws Exception {
             byte[] data = new byte[4];
-            CodecBuffer added = new ArrayCodecBuffer(data, 0, data.length, -1);
+            CodecBuffer added = new ArrayCodecBuffer(data, 0, data.length, null);
             exceptionRule_.expect(IndexOutOfBoundsException.class);
             exceptionRule_.expectMessage("no space is left. required: 4, front space: 3");
 
@@ -401,7 +404,7 @@ public class SlicedCodecBufferTest {
         public void testAddLast_OkIfEnoughSpaceExists() throws Exception {
             byte[] data = new byte[4];
             Arrays.fill(data, (byte) -1);
-            CodecBuffer added = new ArrayCodecBuffer(data, 0, data.length, -1);
+            CodecBuffer added = new ArrayCodecBuffer(data, 0, data.length, null);
 
             sut_.end(3);
             sut_.addLast(added);
@@ -418,7 +421,7 @@ public class SlicedCodecBufferTest {
         @Test
         public void testAddLast_NgIfNoEnoughSpaceExists() throws Exception {
             byte[] data = new byte[4];
-            CodecBuffer added = new ArrayCodecBuffer(data, 0, data.length, -1);
+            CodecBuffer added = new ArrayCodecBuffer(data, 0, data.length, null);
             exceptionRule_.expect(IndexOutOfBoundsException.class);
             exceptionRule_.expectMessage("no space is left. required: 4, back space: 3");
 

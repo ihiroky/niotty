@@ -14,6 +14,9 @@ public abstract class StageContext<I, O> {
     private volatile StageContext<O, Object> next_;
     private final StageContextExecutor executor_;
 
+    // TODO add address field to hold DatagramChannel#send()/receive()
+    // TODO add getter for address
+
     private static final StageContextExecutor DEFAULT_EXECUTOR = new DefaultStageContextExecutor();
 
     protected StageContext(Pipeline<?> pipeline, StageKey key, StageContextExecutorPool pool) {

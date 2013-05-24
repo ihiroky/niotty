@@ -58,7 +58,7 @@ public class SimpleWriteQueueTest {
                 '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'
         };
 
-        sut_.offer(Buffers.newCodecBuffer(data, 0, data.length));
+        sut_.offer(Buffers.wrap(data, 0, data.length));
         WriteQueue.FlushStatus status = sut_.flushTo(channel, writeBuffer_);
 
         assertThat(status, is(WriteQueue.FlushStatus.FLUSHED));
@@ -81,7 +81,7 @@ public class SimpleWriteQueueTest {
                 '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'
         };
 
-        sut_.offer(Buffers.newCodecBuffer(data, 0, data.length));
+        sut_.offer(Buffers.wrap(data, 0, data.length));
         WriteQueue.FlushStatus status = sut_.flushTo(channel, writeBuffer_, data.length);
 
         assertThat(status, is(WriteQueue.FlushStatus.FLUSHED));
@@ -104,8 +104,8 @@ public class SimpleWriteQueueTest {
                 '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'
         };
 
-        sut_.offer(Buffers.newCodecBuffer(data, 0, data.length));
-        sut_.offer(Buffers.newCodecBuffer(data, 0, data.length));
+        sut_.offer(Buffers.wrap(data, 0, data.length));
+        sut_.offer(Buffers.wrap(data, 0, data.length));
         WriteQueue.FlushStatus status = sut_.flushTo(channel, writeBuffer_, data.length);
 
         assertThat(status, is(WriteQueue.FlushStatus.SKIP));
@@ -128,7 +128,7 @@ public class SimpleWriteQueueTest {
                 '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'
         };
 
-        sut_.offer(Buffers.newCodecBuffer(data, 0, data.length));
+        sut_.offer(Buffers.wrap(data, 0, data.length));
         WriteQueue.FlushStatus status = sut_.flushTo(channel, writeBuffer_);
 
         assertThat(status, CoreMatchers.is(WriteQueue.FlushStatus.FLUSHING));
@@ -159,7 +159,7 @@ public class SimpleWriteQueueTest {
         byte[] data = new byte[] {
                 '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'
         };
-        sut_.offer(Buffers.newCodecBuffer(data, 0, data.length));
+        sut_.offer(Buffers.wrap(data, 0, data.length));
         WriteQueue.FlushStatus status = sut_.flushTo(channel, writeBuffer_);
         assertThat(status, is(WriteQueue.FlushStatus.FLUSHING));
         assertThat(sut_.lastFlushedBytes(), is(8));
@@ -190,7 +190,7 @@ public class SimpleWriteQueueTest {
         byte[] data = new byte[] {
                 '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'
         };
-        sut_.offer(Buffers.newCodecBuffer(data, 0, data.length));
+        sut_.offer(Buffers.wrap(data, 0, data.length));
         WriteQueue.FlushStatus status = sut_.flushTo(channel, writeBuffer_);
         assertThat(status, is(WriteQueue.FlushStatus.FLUSHING));
         assertThat(sut_.lastFlushedBytes(), is(8));

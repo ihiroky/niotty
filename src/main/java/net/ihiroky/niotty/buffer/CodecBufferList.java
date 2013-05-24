@@ -1,5 +1,7 @@
 package net.ihiroky.niotty.buffer;
 
+import net.ihiroky.niotty.TransportParameter;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
@@ -16,29 +18,30 @@ import java.util.Objects;
  * A {@link net.ihiroky.niotty.buffer.CodecBuffer} which consists of {@link net.ihiroky.niotty.buffer.CodecBuffer}s.
  * <p></p>
  * The {@link #addFirst(CodecBuffer)} and {@link #addLast(CodecBuffer)} add the argument into an internal list.
- * The elements contained in the list is sliced when added to. So an expansion of each elements does not happen.
- * This object allocates a new unsliced heap {@code CodecBuffer} and add it to the list if the object need expand
- * its space. The maximum elements that can be held by the object is 1024.
+ * The elements contained in the list is limited on its size when added to. So an expansion of each elements
+ * does not happen. But the beginning and end of the added instance can change according to read and write operation
+ * ot this instance. This object allocates a new heap {@code CodecBuffer} and add it to the list
+ * if the object need expand its space. The maximum elements that can be held by the object is 1024.
  *
  * @author Hiroki Itoh
  */
-public class CodecBufferList extends AbstractCodecBuffer implements CodecBuffer {
+public class CodecBufferList extends AbstractCodecBuffer {
 
     private List<CodecBuffer> buffers_;
     private int beginningBufferIndex_;
     private int endBufferIndex_;
-    private int priority_;
 
     private static final int INITIAL_BUFFERS_CAPACITY = 4;
     private static final int MAX_BUFFER_COUNT = 1024;
 
-    private CodecBufferList(int priority) {
+    private CodecBufferList(TransportParameter attachment) {
+        super(attachment);
         buffers_ = new ArrayList<>(INITIAL_BUFFERS_CAPACITY);
-        priority_ = priority;
         endBufferIndex_ = -1;
     }
 
-    CodecBufferList(int priority, CodecBuffer buffer0, CodecBuffer... buffers) {
+    CodecBufferList(TransportParameter attachment, CodecBuffer buffer0, CodecBuffer... buffers) {
+        super(attachment);
         Objects.requireNonNull(buffer0, "buffer0");
         Objects.requireNonNull(buffers, "buffers");
         if (buffers.length >= MAX_BUFFER_COUNT) {
@@ -46,17 +49,16 @@ public class CodecBufferList extends AbstractCodecBuffer implements CodecBuffer 
         }
 
         List<CodecBuffer> list = new ArrayList<>(Math.max(INITIAL_BUFFERS_CAPACITY, buffers.length + 1));
-        list.add(buffer0.slice());
+        list.add(new SlicedCodecBuffer(buffer0, attachment));
         int end = 0;
         for (int i = 0; i < buffers.length; i++) {
             CodecBuffer b = buffers[i];
             if (b.remainingBytes() > 0) {
                 end = i + 1;
             }
-            list.add(b.slice());
+            list.add(new SlicedCodecBuffer(b, attachment));
         }
         buffers_ = list;
-        priority_ = priority;
         endBufferIndex_ = end;
     }
 
@@ -76,7 +78,7 @@ public class CodecBufferList extends AbstractCodecBuffer implements CodecBuffer 
     public boolean transferTo(GatheringByteChannel channel) throws IOException {
         List<CodecBuffer> buffers = buffers_;
         int offset = beginningBufferIndex_;
-        int end = endBufferIndex_;
+        final int end = endBufferIndex_;
         for (; offset < end; offset++) {
             if (buffers.get(offset).remainingBytes() > 0) {
                 break;
@@ -94,10 +96,21 @@ public class CodecBufferList extends AbstractCodecBuffer implements CodecBuffer 
             ByteBuffer byteBuffer = byteBuffers[i - offset];
             buffers.get(i).beginning(byteBuffer.position());
             if (byteBuffer.hasRemaining()) {
+                beginningBufferIndex_ = i;
                 return false;
             }
         }
+        beginningBufferIndex_ = end;
         return true;
+    }
+
+    @Override
+    public void transferTo(ByteBuffer buffer) {
+        int end = endBufferIndex_;
+        List<CodecBuffer> buffers = buffers_;
+        for (int i = beginningBufferIndex_; i <= end; i++) {
+            buffers.get(i).readBytes(buffer);
+        }
     }
 
     @Override
@@ -112,7 +125,7 @@ public class CodecBufferList extends AbstractCodecBuffer implements CodecBuffer 
             beginning = ++beginningBufferIndex_;
         }
 
-        buffers_.add(beginning, buffer.slice());
+        buffers_.add(beginning, new SlicedCodecBuffer(buffer, attachment())); // wrap, not duplicated
         endBufferIndex_++;
         return this;
     }
@@ -129,16 +142,16 @@ public class CodecBufferList extends AbstractCodecBuffer implements CodecBuffer 
             end--;
         }
 
-        // TODO duplicate buffer to independent of beginning / end index.
+        // wrap, not duplicated
         int size = buffers_.size();
         if (end == size - 1) { // end is the last index ?
-            buffers_.add(buffer.slice());
+            buffers_.add(new SlicedCodecBuffer(buffer, attachment()));
             endBufferIndex_++;
         } else if (end >= 0) {
-            buffers_.add(++end, buffer.slice());
+            buffers_.add(++end, new SlicedCodecBuffer(buffer, attachment()));
             endBufferIndex_ = end;
         } else { // if (end == -1) { // all buffer between beginning and end are empty.
-            buffers_.add(buffer.slice());
+            buffers_.add(new SlicedCodecBuffer(buffer, attachment()));
             endBufferIndex_ = (buffer.remainingBytes() > 0) ? size : beginningBufferIndex_;
         }
         return this;
@@ -683,7 +696,7 @@ public class CodecBufferList extends AbstractCodecBuffer implements CodecBuffer 
         if (remaining >= bytes) {
             return buffer.slice(bytes);
         }
-        CodecBufferList ccb = new CodecBufferList(priority_);
+        CodecBufferList ccb = new CodecBufferList(attachment());
         CodecBuffer sliced = buffer.slice(remaining);
         bytes -= remaining;
         ccb.addLast(sliced);
@@ -704,7 +717,7 @@ public class CodecBufferList extends AbstractCodecBuffer implements CodecBuffer 
 
     @Override
     public CodecBuffer slice() {
-        CodecBufferList sliced = new CodecBufferList(priority_);
+        CodecBufferList sliced = new CodecBufferList(attachment());
         for (int i = beginningBufferIndex_; i <= endBufferIndex_; i++) {
             sliced.addLast(buffers_.get(i));
         }
@@ -713,7 +726,7 @@ public class CodecBufferList extends AbstractCodecBuffer implements CodecBuffer 
 
     @Override
     public CodecBuffer duplicate() {
-        CodecBufferList duplicated = new CodecBufferList(priority_);
+        CodecBufferList duplicated = new CodecBufferList(attachment());
         duplicated.beginningBufferIndex_ = beginningBufferIndex_;
         duplicated.endBufferIndex_ = endBufferIndex_;
         for (CodecBuffer b : buffers_) {
@@ -943,15 +956,27 @@ public class CodecBufferList extends AbstractCodecBuffer implements CodecBuffer 
     }
 
     @Override
-    public int priority() {
-        return priority_;
-    }
-
-    @Override
     public void dispose() {
         for (CodecBuffer buffer : buffers_) {
             buffer.dispose();
         }
         buffers_.clear();
+    }
+
+    @Override
+    public String toString() {
+        StringBuffer b = new StringBuffer();
+        b.append('[');
+        int index = beginningBufferIndex_;
+        int end = endBufferIndex_;
+        List<CodecBuffer> buffers = buffers_;
+        if (index <= end) {
+            b.append(buffers.get(index));
+            while (++index <= end) {
+                b.append(',').append(buffers.get(index));
+            }
+        }
+        b.append(']');
+        return b.toString();
     }
 }

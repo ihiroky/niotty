@@ -1,5 +1,6 @@
 package net.ihiroky.niotty.codec;
 
+import net.ihiroky.niotty.DefaultTransportParameter;
 import net.ihiroky.niotty.LoadStageContextMock;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.CodecBuffer;
@@ -36,7 +37,7 @@ public class FrameLengthRemoveDecoderTest {
 
     @Test
     public void testLoad_MessageOnce() throws Exception {
-        CodecBuffer input = Buffers.newCodecBuffer(data_, 0, dataLength_);
+        CodecBuffer input = Buffers.wrap(data_, 0, dataLength_);
 
         sut_.load(context_, input);
 
@@ -53,7 +54,7 @@ public class FrameLengthRemoveDecoderTest {
     @Test
     public void testLoad_MessageManyIncompletePacket() throws Exception {
         // read first 1 byte
-        CodecBuffer b = Buffers.newCodecBuffer(data_, 0, 1);
+        CodecBuffer b = Buffers.wrap(data_, 0, 1);
         sut_.load(context_, b);
         assertThat(context_.getProceededMessageEventQueue().size(), is(0));
         assertThat(sut_.getPooling(), is(nullValue()));
@@ -61,13 +62,13 @@ public class FrameLengthRemoveDecoderTest {
         assertThat(b.remainingBytes(), is(1));
 
         // prepend length field is read
-        sut_.load(context_, Buffers.newCodecBuffer(data_, 0, 2));
+        sut_.load(context_, Buffers.wrap(data_, 0, 2));
         assertThat(context_.getProceededMessageEventQueue().size(), is(0));
         assertThat(sut_.getPooling(), is(nullValue()));
         assertThat(sut_.getPoolingFrameBytes(), is(12));
 
         // read remaining
-        sut_.load(context_, Buffers.newCodecBuffer(data_, 2, 12));
+        sut_.load(context_, Buffers.wrap(data_, 2, 12));
         Queue<CodecBuffer> queue = context_.getProceededMessageEventQueue();
 
         CodecBuffer output = queue.poll();
@@ -93,7 +94,7 @@ public class FrameLengthRemoveDecoderTest {
         encodeBuffer.writeBytes(new byte[3], 0, 3);
         data_ = encodeBuffer.toArray();
         dataLength_ = encodeBuffer.remainingBytes();
-        CodecBuffer input = Buffers.newCodecBuffer(data_, 0, dataLength_);
+        CodecBuffer input = Buffers.wrap(data_, 0, dataLength_);
 
         sut_.load(context_, input);
 
@@ -122,7 +123,7 @@ public class FrameLengthRemoveDecoderTest {
         // just 3 packets
         data_ = encodeBuffer.toArray();
         dataLength_ = encodeBuffer.remainingBytes();
-        CodecBuffer input = Buffers.newCodecBuffer(data_, 0, dataLength_);
+        CodecBuffer input = Buffers.wrap(data_, 0, dataLength_);
 
         sut_.load(context_, input);
 
@@ -144,7 +145,7 @@ public class FrameLengthRemoveDecoderTest {
         FrameLengthRemoveDecoder sut = new FrameLengthRemoveDecoder();
         CodecBuffer wholeInput = Buffers.newCodecBuffer(8192);
         for (int i = 0; i < 30; i++) {
-            CodecBuffer buffer = Buffers.newCodecBuffer(1024, -((i + 1) % 2));
+            CodecBuffer buffer = Buffers.newCodecBuffer(1024, new DefaultTransportParameter(-((i + 1) % 2)));
             for (int j = 0; j < 256; j++) {
                 buffer.writeInt(i);
             }

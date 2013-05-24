@@ -29,14 +29,14 @@ public class NioClientSocketProcessor implements Processor<NioClientSocketTransp
     private static final int DEFAULT_BUFFER_SIZE = 8192;
     private static final boolean DEFAULT_DIRECT_BUFFER = true;
 
-    static final String DEFAULT_NAME = "NioServerSocket";
+    static final String DEFAULT_NAME = "NioClientSocket";
 
     public NioClientSocketProcessor() {
         messageIOSelectorPool_ = new MessageIOSelectorPool();
         connectSelectorPool_ = new ConnectSelectorPool(messageIOSelectorPool_);
         pipelineComposer_ = PipelineComposer.empty();
 
-        name_ = "NioClientSocket";
+        name_ = DEFAULT_NAME;
         numberOfConnectThread_ = DEFAULT_NUMBER_OF_CONNECT_THREAD;
         numberOfMessageIOThread_ = DEFAULT_NUMBER_OF_MESSAGE_IO_THREAD;
         readBufferSize_ = DEFAULT_BUFFER_SIZE;

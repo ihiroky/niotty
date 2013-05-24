@@ -1,5 +1,7 @@
 package net.ihiroky.niotty.buffer;
 
+import net.ihiroky.niotty.TransportParameter;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
@@ -15,30 +17,36 @@ import java.util.Objects;
  *
  * @author Hiroki Itoh
  */
-public class ArrayCodecBuffer extends AbstractCodecBuffer implements CodecBuffer {
+public class ArrayCodecBuffer extends AbstractCodecBuffer {
 
     private Chunk<byte[]> chunk_;
     private byte[] buffer_;
     private int beginning_;
     private int end_;
-    private int priority_;
 
     ArrayCodecBuffer() {
-        this(ArrayChunkFactory.instance(), Buffers.DEFAULT_CAPACITY, Buffers.DEFAULT_PRIORITY);
+        this(ArrayChunkFactory.instance(), Buffers.DEFAULT_CAPACITY, null);
     }
 
-    ArrayCodecBuffer(ChunkManager<byte[]> manager, int initialCapacity, int priority) {
+    ArrayCodecBuffer(ChunkManager<byte[]> manager, int initialCapacity, TransportParameter attachment) {
+        super(attachment);
         Objects.requireNonNull(manager, "manager");
         if (initialCapacity < 0) {
             throw new IllegalArgumentException("initialCapacity must not be negative.");
         }
         chunk_ = manager.newChunk(initialCapacity);
         buffer_ = chunk_.initialize();
-        priority_ = priority;
     }
 
-    ArrayCodecBuffer(byte[] b, int beginning, int length, int priority) {
+    ArrayCodecBuffer(byte[] b, int beginning, int length, TransportParameter attachment) {
+        super(attachment);
         Objects.requireNonNull(b, "b");
+        if (beginning < 0) {
+            throw new IllegalArgumentException("beginning must be zero or positive.");
+        }
+        if (length < 0) {
+            throw new IllegalArgumentException("length must be zero or positive.");
+        }
         if (beginning + length > b.length) {
             throw new IndexOutOfBoundsException(
                     "offset + length (" + (beginning + length) + ") exceeds buffer capacity " + b.length);
@@ -49,15 +57,14 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer implements CodecBuffer
         buffer_ = c.initialize();
         beginning_ = beginning;
         end_ = beginning + length;
-        priority_ = priority;
     }
 
     private ArrayCodecBuffer(ArrayCodecBuffer b) {
+        super(b.attachment());
         chunk_ = b.chunk_;
         buffer_ = b.chunk_.retain();
         beginning_ = b.beginning_;
         end_ = b.end_;
-        priority_ = b.priority_;
     }
 
     /**
@@ -382,6 +389,11 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer implements CodecBuffer
     }
 
     @Override
+    public void transferTo(ByteBuffer buffer) {
+        readBytes(buffer);
+    }
+
+    @Override
     public ArrayCodecBuffer addFirst(CodecBuffer buffer) {
         Objects.requireNonNull(buffer, "buffer");
         int inputSize = buffer.remainingBytes();
@@ -464,14 +476,6 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer implements CodecBuffer
     @Override
     public int remainingBytes() {
         return end_ - beginning_;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int priority() {
-        return priority_;
     }
 
     /**
@@ -733,14 +737,14 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer implements CodecBuffer
         if (bytes <= 0 || bytes > remainingBytes()) {
             throw new IllegalArgumentException("Invalid input " + bytes + ". " + remainingBytes() + " byte remains.");
         }
-        CodecBuffer sliced = new SlicedCodecBuffer(this, bytes);
+        CodecBuffer sliced = new SlicedCodecBuffer(duplicate(), bytes, attachment());
         beginning_ += bytes;
         return sliced;
     }
 
     @Override
     public CodecBuffer slice() {
-        return new SlicedCodecBuffer(this);
+        return new SlicedCodecBuffer(duplicate(), attachment());
     }
 
     @Override
@@ -756,7 +760,7 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer implements CodecBuffer
     public String toString() {
         return ArrayCodecBuffer.class.getName()
                 + "(beginning:" + beginning_ + ", end:" + end_ + ", capacity:" + buffer_.length
-                + ", priority:" + priority() + ')';
+                + ", attachment:" + attachment() + ')';
     }
 
     Chunk<byte[]> chunk() {

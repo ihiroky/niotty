@@ -75,14 +75,14 @@ public class FrameLengthRemoveDecoder implements LoadStage<CodecBuffer, CodecBuf
 
         int remainingBytes = input.remainingBytes();
         if (remainingBytes >= requiredLength) {
-            CodecBuffer p = Buffers.newCodecBuffer(new byte[requiredLength], 0, 0);
+            CodecBuffer p = Buffers.wrap(new byte[requiredLength], 0, 0);
             p.drainFrom(input, requiredLength);
             return p;
         }
         if (remainingBytes == 0) {
             return null;
         }
-        CodecBuffer p = Buffers.newCodecBuffer(new byte[requiredLength], 0, 0);
+        CodecBuffer p = Buffers.wrap(new byte[requiredLength], 0, 0);
         p.drainFrom(input, requiredLength);
         pooling_ = p;
         return null;

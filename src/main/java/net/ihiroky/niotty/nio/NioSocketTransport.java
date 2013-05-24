@@ -42,6 +42,16 @@ public abstract class NioSocketTransport<S extends AbstractSelector<S>> extends 
         return future;
     }
 
+    /**
+     * Closes the channel.
+     *
+     * The key is cancelled and the channel is closed if the key is non null and valid.
+     * {@link net.ihiroky.niotty.TransportListener#onClose(net.ihiroky.niotty.Transport)} if it is registered and
+     * {@link #executeLoad(net.ihiroky.niotty.TransportStateEvent)} is called after the channel is closed.
+     * This method calls {@code #onCloseSelectableChannel} and {@link #closePipelines()} before the channel close
+     * operation.
+     * @return
+     */
     final TransportFuture closeSelectableChannel() {
         onCloseSelectableChannel();
         closePipelines();

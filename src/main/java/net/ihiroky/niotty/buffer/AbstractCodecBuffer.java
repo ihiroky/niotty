@@ -1,12 +1,22 @@
 package net.ihiroky.niotty.buffer;
 
+import net.ihiroky.niotty.DefaultTransportParameter;
+import net.ihiroky.niotty.TransportParameter;
+
 /**
  * A skeletal implementation of {@link net.ihiroky.niotty.buffer.CodecBuffer}.
  * @author Hiroki Itoh
  */
 public abstract class AbstractCodecBuffer implements CodecBuffer {
 
+    /** A factor to expand internal buffer. */
     protected static final int EXPAND_MULTIPLIER = 2;
+
+    private TransportParameter attachment_;
+
+    AbstractCodecBuffer(TransportParameter attachment) {
+        attachment_ = (attachment != null) ? attachment : DefaultTransportParameter.NO_PARAMETER;
+    }
 
     /**
      * Writes {@code Long.MIN_VALUE} with signed VBC.
@@ -252,5 +262,10 @@ public abstract class AbstractCodecBuffer implements CodecBuffer {
     @Override
     public double readDouble() {
         return Double.longBitsToDouble(readLong());
+    }
+
+    @Override
+    public TransportParameter attachment() {
+        return attachment_;
     }
 }

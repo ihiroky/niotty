@@ -1,6 +1,10 @@
 package net.ihiroky.niotty.buffer;
 
+import net.ihiroky.niotty.DefaultTransportParameter;
+import net.ihiroky.niotty.TransportParameter;
+
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.GatheringByteChannel;
 import java.util.Objects;
@@ -24,16 +28,16 @@ public class FileBufferSink implements BufferSink {
     private final FileChannel channel_;
     private long beginning_;
     private final long end_;
-    private final int priority_;
+    private final TransportParameter attachment_;
     private CodecBuffer header_;
     private CodecBuffer footer_;
     private final AtomicInteger referenceCount_;
 
-    FileBufferSink(FileChannel channel, long beginning, long length, int priority) {
-        this(channel, beginning, length, priority, null);
+    FileBufferSink(FileChannel channel, long beginning, long length, TransportParameter attachment) {
+        this(channel, beginning, length, attachment, null);
     }
 
-    private FileBufferSink(FileChannel channel, long beginning, long length, int priority,
+    private FileBufferSink(FileChannel channel, long beginning, long length, TransportParameter attachment,
                            AtomicInteger referenceCount) {
         Objects.requireNonNull(channel, "channel");
         if (beginning < 0) {
@@ -54,11 +58,11 @@ public class FileBufferSink implements BufferSink {
         channel_ = channel;
         beginning_ = beginning;
         end_ = beginning + length;
-        priority_ = priority;
+        attachment_ = (attachment != null) ? attachment : DefaultTransportParameter.NO_PARAMETER;
         referenceCount_ = referenceCount;
 
-        header_ = Buffers.newCodecBuffer(0, priority);
-        footer_ = Buffers.newCodecBuffer(0, priority);
+        header_ = Buffers.newCodecBuffer(0, attachment);
+        footer_ = Buffers.newCodecBuffer(0, attachment);
     }
 
     private void closeAndThrow(RuntimeException e) {
@@ -82,6 +86,25 @@ public class FileBufferSink implements BufferSink {
         return header_.transferTo(channel) && transferFile(channel) && footer_.transferTo(channel);
     }
 
+    @Override
+    public void transferTo(ByteBuffer buffer) {
+        try {
+            header_.transferTo(buffer);
+
+            int limit = buffer.limit();
+            buffer.limit(buffer.position() + (int) (end_ - beginning_));
+            channel_.read(buffer, beginning_);
+            buffer.limit(limit);
+            beginning_ = end_;
+
+            footer_.transferTo(buffer);
+        } catch (IOException ioe) {
+            throw new RuntimeException(ioe);
+        } finally {
+            dispose();
+        }
+    }
+
     private boolean transferFile(GatheringByteChannel channel) throws IOException {
         if (beginning_ == end_) {
             return true;
@@ -94,7 +117,6 @@ public class FileBufferSink implements BufferSink {
             if (transferred < remaining) {
                 return false;
             }
-            dispose();
             return true;
         } catch (IOException ioe) {
             dispose();
@@ -109,7 +131,7 @@ public class FileBufferSink implements BufferSink {
         } else {
             Objects.requireNonNull(buffer, "buffer");
             if (buffer.remainingBytes() > 0) {
-                header_ = buffer;
+                header_ = new CodecBufferList(attachment(), buffer); // wrap and allow header to be added
             }
         }
         return this;
@@ -122,7 +144,7 @@ public class FileBufferSink implements BufferSink {
         } else {
             Objects.requireNonNull(buffer, "buffer");
             if (buffer.remainingBytes() > 0) {
-                footer_ = buffer;
+                footer_ = new CodecBufferList(attachment(), buffer); // wrap and allow footer to be added
             }
         }
         return this;
@@ -142,8 +164,8 @@ public class FileBufferSink implements BufferSink {
     }
 
     @Override
-    public int priority() {
-        return priority_;
+    public TransportParameter attachment() {
+        return attachment_;
     }
 
     @Override
@@ -197,14 +219,16 @@ public class FileBufferSink implements BufferSink {
             long b = beginning_;
             if (bytes <= contentRemaining) {
                 beginning_ += bytes;
-                contentSliced = new FileBufferSink(channel_, b, bytes, priority_, referenceCount_);
-                return (headerSliced == null) ? contentSliced : Buffers.newBufferSink(headerSliced, contentSliced);
+                contentSliced = new FileBufferSink(channel_, b, bytes, attachment_, referenceCount_);
+                return (headerSliced == null)
+                        ? contentSliced : Buffers.wrap(headerSliced, contentSliced, attachment_);
             }
-            contentSliced = new FileBufferSink(channel_, b, end_, priority_, referenceCount_);
+            contentSliced = new FileBufferSink(channel_, b, end_, attachment_, referenceCount_);
             bytes -= contentRemaining;
             beginning_ = end_;
             if (bytes == 0) {
-                return (headerSliced == null) ? contentSliced : Buffers.newBufferSink(headerSliced, contentSliced);
+                return (headerSliced == null)
+                        ? contentSliced : Buffers.wrap(headerSliced, contentSliced, attachment_);
             }
         }
 
@@ -215,12 +239,12 @@ public class FileBufferSink implements BufferSink {
             return newSlicedBufferSink(headerSliced, contentSliced, footer_.slice(footerRemaining));
         }
 
-        return Buffers.newCodecBuffer(0, priority_);
+        return Buffers.newCodecBuffer(0, attachment_);
     }
 
     @Override
     public BufferSink duplicate() {
-        return new FileBufferSink(channel_, beginning_, end_, priority_, referenceCount_)
+        return new FileBufferSink(channel_, beginning_, end_, attachment_, referenceCount_)
                 .addFirst(header_.duplicate()).addLast(footer_.duplicate());
     }
 
@@ -230,7 +254,7 @@ public class FileBufferSink implements BufferSink {
                 if (footer == null) {
                     return content;
                 }
-                return Buffers.newBufferSink(content, footer, priority_);
+                return Buffers.wrap(content, footer, attachment_);
             }
             if (footer != null) {
                 return footer;
@@ -240,13 +264,13 @@ public class FileBufferSink implements BufferSink {
 
         if (content != null) {
             if (footer == null) {
-                return Buffers.newBufferSink(header, content);
+                return Buffers.wrap(header, content);
             }
-            BufferSink cdr = Buffers.newBufferSink(content, footer);
-            return Buffers.newBufferSink(header, cdr, priority_);
+            BufferSink cdr = Buffers.wrap(content, footer);
+            return Buffers.wrap(header, cdr, attachment_);
         }
         if (footer != null) {
-            return Buffers.newBufferSink(header, footer);
+            return Buffers.wrap(header, footer);
         }
         return header;
     }
@@ -263,7 +287,7 @@ public class FileBufferSink implements BufferSink {
     public String toString() {
         return "(beginning:" + beginning_ + ", end:" + end_
                 + ", channel:" + channel_ + ", referenceCount" + referenceCount_.get()
-                + ", priority:" + priority_
+                + ", attachment:" + attachment_
                 + ')';
     }
 

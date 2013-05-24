@@ -89,9 +89,9 @@ public class BufferSinkListTest {
     public void testAddFirst() throws Exception {
         byte[] b0 = new byte[]{'0'};
         byte[] b1 = new byte[]{'1'};
-        CodecBuffer car = Buffers.newCodecBuffer(b0, 0, b0.length);
+        CodecBuffer car = Buffers.wrap(b0, 0, b0.length);
         CodecBuffer cdr = Buffers.newCodecBuffer(0);
-        CodecBuffer added = Buffers.newCodecBuffer(b1, 0, b1.length);
+        CodecBuffer added = Buffers.wrap(b1, 0, b1.length);
 
         BufferSinkList sut = new BufferSinkList(car, cdr);
         sut.addFirst(added);
@@ -109,8 +109,8 @@ public class BufferSinkListTest {
         byte[] b0 = new byte[]{'0'};
         byte[] b1 = new byte[]{'1'};
         CodecBuffer car = Buffers.newCodecBuffer(0);
-        CodecBuffer cdr = Buffers.newCodecBuffer(b0, 0, b0.length);
-        CodecBuffer added = Buffers.newCodecBuffer(b1, 0, b1.length);
+        CodecBuffer cdr = Buffers.wrap(b0, 0, b0.length);
+        CodecBuffer added = Buffers.wrap(b1, 0, b1.length);
 
         BufferSinkList sut = new BufferSinkList(car, cdr);
         sut.addLast(added);
@@ -125,12 +125,12 @@ public class BufferSinkListTest {
 
     @Test
     public void testSlice_ExceedingBytes() throws Exception {
-        BufferSink car = Buffers.newCodecBuffer(new byte[1], 0, 1);
-        BufferSink cdr = Buffers.newCodecBuffer(new byte[2], 0, 2);
+        BufferSink car = Buffers.wrap(new byte[1], 0, 1);
+        BufferSink cdr = Buffers.wrap(new byte[2], 0, 2);
         exceptionRule_.expect(IllegalArgumentException.class);
         exceptionRule_.expectMessage("Invalid input 4. 3 byte remains.");
 
-        BufferSink sut = Buffers.newBufferSink(car, cdr);
+        BufferSink sut = Buffers.wrap(car, cdr);
         sut.slice(4);
     }
 
@@ -141,7 +141,7 @@ public class BufferSinkListTest {
         exceptionRule_.expect(IllegalArgumentException.class);
         exceptionRule_.expectMessage("Invalid input -1. 0 byte remains.");
 
-        BufferSink sut = Buffers.newBufferSink(car, cdr);
+        BufferSink sut = Buffers.wrap(car, cdr);
         sut.slice(-1);
     }
 
@@ -150,7 +150,7 @@ public class BufferSinkListTest {
         BufferSink car = Buffers.newCodecBuffer(0);
         BufferSink cdr = Buffers.newCodecBuffer(0);
 
-        BufferSink sut = Buffers.newBufferSink(car, cdr);
+        BufferSink sut = Buffers.wrap(car, cdr);
         BufferSink sliced = sut.slice(0);
 
         assertThat(sliced.remainingBytes(), is(0));
@@ -158,10 +158,10 @@ public class BufferSinkListTest {
 
     @Test
     public void testSlice_CarOnly() throws Exception {
-        BufferSink car = Buffers.newCodecBuffer(new byte[2], 0, 2);
-        BufferSink cdr = Buffers.newCodecBuffer(new byte[3], 0, 3);
+        BufferSink car = Buffers.wrap(new byte[2], 0, 2);
+        BufferSink cdr = Buffers.wrap(new byte[3], 0, 3);
 
-        BufferSink sut = Buffers.newBufferSink(car, cdr);
+        BufferSink sut = Buffers.wrap(car, cdr);
         BufferSink sliced = sut.slice(2);
 
         assertThat(sliced.remainingBytes(), is(2));
@@ -171,10 +171,10 @@ public class BufferSinkListTest {
 
     @Test
     public void testSlice_CarAndCdr() throws Exception {
-        BufferSink car = Buffers.newCodecBuffer(new byte[2], 0, 2);
-        BufferSink cdr = Buffers.newCodecBuffer(new byte[3], 0, 3);
+        BufferSink car = Buffers.wrap(new byte[2], 0, 2);
+        BufferSink cdr = Buffers.wrap(new byte[3], 0, 3);
 
-        BufferSink sut = Buffers.newBufferSink(car, cdr);
+        BufferSink sut = Buffers.wrap(car, cdr);
         BufferSink sliced = sut.slice(3);
 
         assertThat(sliced.remainingBytes(), is(3));
@@ -190,10 +190,10 @@ public class BufferSinkListTest {
     public void testDuplicate_Independent() throws Exception {
         byte[] carData = new byte[2];
         Arrays.fill(carData, (byte) 1);
-        BufferSink car = Buffers.newCodecBuffer(carData, 0, carData.length);
+        BufferSink car = Buffers.wrap(carData, 0, carData.length);
         byte[] cdrData = new byte[3];
         Arrays.fill(cdrData, (byte) 2);
-        BufferSink cdr = Buffers.newCodecBuffer(cdrData, 0, cdrData.length);
+        BufferSink cdr = Buffers.wrap(cdrData, 0, cdrData.length);
         GatheringByteChannel channel = mock(GatheringByteChannel.class);
         when(channel.write(Mockito.any(ByteBuffer.class))).thenAnswer(new Answer<Integer>() {
              @Override

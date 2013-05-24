@@ -1,5 +1,6 @@
 package net.ihiroky.niotty.nio;
 
+import net.ihiroky.niotty.TransportParameter;
 import net.ihiroky.niotty.buffer.BufferSink;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,7 +17,7 @@ import java.util.List;
  *
  * This class has a base queue and weighted queues. The all queues is {@link net.ihiroky.niotty.nio.SimpleWriteQueue}.
  * These are checked and flushed in a round which is executed by calling
- * {@link #flushTo(java.nio.channels.WritableByteChannel, java.nio.ByteBuffer)}.
+ * {@link #flushTo(java.nio.channels.GatheringByteChannel, java.nio.ByteBuffer)}.
  * The base queue is a basis of flush size of calculation. The flush size for the base queue is limited by
  * {@code baseQueueLimit} specified by its constructor. If some packets ({@link net.ihiroky.niotty.buffer.BufferSink})
  * are in the base queue, a flush operation for the base queue is executed. The basis of flush size
@@ -103,11 +104,16 @@ public class DeficitRoundRobinWriteQueue implements WriteQueue {
 
     @Override
     public boolean offer(BufferSink bufferSink) {
-        int priority = bufferSink.priority();
-        if (priority >= weights_.length) {
-            throw new IllegalStateException("unsupported priority:" + priority);
+        TransportParameter p = bufferSink.attachment();
+        if (p.priority() < 0) {
+            return baseQueue_.offer(bufferSink);
         }
-        return (priority < 0) ? baseQueue_.offer(bufferSink) : weightedQueueList_.get(priority).offer(bufferSink);
+
+        int priority = p.priority();
+        if (priority >= weights_.length) {
+            throw new IllegalStateException("unsupported priority:" + p.priority());
+        }
+        return weightedQueueList_.get(priority).offer(bufferSink);
     }
 
     @Override

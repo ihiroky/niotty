@@ -1,15 +1,22 @@
 package net.ihiroky.niotty.buffer;
 
+import net.ihiroky.niotty.TransportParameter;
+
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.channels.GatheringByteChannel;
 
 /**
- * Writes data into a given {@code java.nio.channel.WritableByteChannel}.
- * This class has two member; beginning and end.
+ * Writes data into a given {@code java.nio.channel.WritableByteChannel} or {@code java.nio.ByteBuffer}.
+ *
+ * <p>This class has two member; beginning and end.
  * The beginning shows the start index (included) of data to be written.
- * The end shows the end index (excluded) of data to be written.
- * <p></p>
- * Add interface if new Transport is added and new data type is required.
+ * The end shows the end index (excluded) of data to be written.</p>
+ *
+ * <p>The class can hold an attachment. The attachment can be accessed by {@link #attachment()}
+ * if its instance hold.</p>
+ *
+ * <p>Add interface if new Transport is added and new data type is required.</p>
  * @author Hiroki Itoh
  */
 public interface BufferSink {
@@ -21,6 +28,14 @@ public interface BufferSink {
      * @throws IOException if I/O operation is failed
      */
     boolean transferTo(GatheringByteChannel channel) throws IOException;
+
+    /**
+     * Writes data in this instance to the given {@code buffer}.
+     *
+     * @param buffer the buffer to be written into
+     * @throws java.nio.BufferOverflowException if {@link #remainingBytes()} is larger than the buffer's remaining.
+     */
+    void transferTo(ByteBuffer buffer);
 
     /**
      * Adds a specified buffer before data which already exists in this instance .
@@ -67,10 +82,10 @@ public interface BufferSink {
     int remainingBytes();
 
     /**
-     * The value used by {@link net.ihiroky.niotty.nio.WriteQueue}.
-     * @return priority
+     * Returns the attachment.
+     * @return the attachment, or null if no attachment is held by this instance.
      */
-    int priority();
+    TransportParameter attachment();
 
     /**
      * Disposes resources managed in this class if exists.

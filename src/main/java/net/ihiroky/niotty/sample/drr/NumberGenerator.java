@@ -1,5 +1,6 @@
 package net.ihiroky.niotty.sample.drr;
 
+import net.ihiroky.niotty.DefaultTransportParameter;
 import net.ihiroky.niotty.LoadStage;
 import net.ihiroky.niotty.LoadStageContext;
 import net.ihiroky.niotty.Transport;
@@ -23,7 +24,7 @@ public class NumberGenerator implements LoadStage<CodecBuffer, Void> {
         System.out.println("count:" + count);
         CodecBuffer[] buffers = new CodecBuffer[count];
         for (int i = 0; i < count; i++) {
-            CodecBuffer buffer = Buffers.newCodecBuffer(1024, -((i + 1) % 2));
+            CodecBuffer buffer = Buffers.newCodecBuffer(1024, new DefaultTransportParameter(-((i + 1) % 2)));
             for (int j = 0; j < 256; j++) {
                 buffer.writeInt(i);
             }

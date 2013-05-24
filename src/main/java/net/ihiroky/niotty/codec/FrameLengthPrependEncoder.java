@@ -31,8 +31,8 @@ public class FrameLengthPrependEncoder implements StoreStage<BufferSink, BufferS
             headerBuffer = Buffers.newCodecBuffer(SHORT_BYTES + SHORT_BYTES);
             headerBuffer.writeInt(INT_FLAG | contentsLength);
         }
-        BufferSink output = Buffers.newBufferSink(headerBuffer, input, input.priority());
-        context.proceed(output);
+        input.addFirst(headerBuffer);
+        context.proceed(input);
     }
 
     @Override
