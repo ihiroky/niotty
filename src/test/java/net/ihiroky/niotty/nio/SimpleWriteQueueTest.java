@@ -1,7 +1,9 @@
 package net.ihiroky.niotty.nio;
 
+import net.ihiroky.niotty.DefaultTransportParameter;
 import net.ihiroky.niotty.buffer.BufferSink;
 import net.ihiroky.niotty.buffer.Buffers;
+import net.ihiroky.niotty.buffer.CodecBuffer;
 import org.hamcrest.CoreMatchers;
 import org.junit.Before;
 import org.junit.Rule;
@@ -11,7 +13,10 @@ import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.DatagramChannel;
 import java.nio.channels.GatheringByteChannel;
 
 import static org.hamcrest.CoreMatchers.*;
@@ -36,8 +41,16 @@ public class SimpleWriteQueueTest {
     }
 
     @Test
-    public void testFlushToEmpty() throws Exception {
+    public void testFlushTo_Empty() throws Exception {
         GatheringByteChannel channel = mock(GatheringByteChannel.class);
+        WriteQueue.FlushStatus status = sut_.flushTo(channel);
+        assertThat(status, is(WriteQueue.FlushStatus.FLUSHED));
+        verify(channel, never()).write(Mockito.any(ByteBuffer.class));
+    }
+
+    @Test
+    public void testFlushTo_DatagramChannel_Empty() throws Exception {
+        DatagramChannel channel = mock(DatagramChannel.class);
         WriteQueue.FlushStatus status = sut_.flushTo(channel, writeBuffer_);
         assertThat(status, is(WriteQueue.FlushStatus.FLUSHED));
         verify(channel, never()).write(Mockito.any(ByteBuffer.class));
@@ -59,7 +72,7 @@ public class SimpleWriteQueueTest {
         };
 
         sut_.offer(Buffers.wrap(data, 0, data.length));
-        WriteQueue.FlushStatus status = sut_.flushTo(channel, writeBuffer_);
+        WriteQueue.FlushStatus status = sut_.flushTo(channel);
 
         assertThat(status, is(WriteQueue.FlushStatus.FLUSHED));
         assertThat(sut_.lastFlushedBytes(), is(data.length));
@@ -67,7 +80,32 @@ public class SimpleWriteQueueTest {
     }
 
     @Test
-    public void testFlushToOnceLazyLimitedLastElement() throws Exception {
+    public void testFlushTo_Datagram_Once() throws Exception {
+        byte[] data = new byte[] {
+                '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'
+        };
+        SocketAddress target =  new InetSocketAddress(0);
+        CodecBuffer buffer = Buffers.wrap(data, 0, data.length, new DefaultTransportParameter(target));
+        DatagramChannel channel = mock(DatagramChannel.class);
+        when(channel.send(writeBuffer_, target)).thenAnswer(new Answer<Integer>() {
+            @Override
+            public Integer answer(InvocationOnMock invocation) throws Throwable {
+                ByteBuffer bb = (ByteBuffer) invocation.getArguments()[0];
+                bb.position(bb.limit());
+                return bb.limit();
+            }
+        });
+
+        sut_.offer(buffer);
+        WriteQueue.FlushStatus status = sut_.flushTo(channel, writeBuffer_);
+
+        assertThat(status, is(WriteQueue.FlushStatus.FLUSHED));
+        assertThat(sut_.lastFlushedBytes(), is(data.length));
+        verify(channel, times(1)).send(writeBuffer_, target);
+    }
+
+    @Test
+    public void testFlushToOnceLimitedLastElement() throws Exception {
         GatheringByteChannel channel = mock(GatheringByteChannel.class);
         when(channel.write(Mockito.any(ByteBuffer.class))).thenAnswer(new Answer<Integer>() {
             @Override
@@ -82,7 +120,7 @@ public class SimpleWriteQueueTest {
         };
 
         sut_.offer(Buffers.wrap(data, 0, data.length));
-        WriteQueue.FlushStatus status = sut_.flushTo(channel, writeBuffer_, data.length);
+        WriteQueue.FlushStatus status = sut_.flushTo(channel, data.length);
 
         assertThat(status, is(WriteQueue.FlushStatus.FLUSHED));
         assertThat(sut_.lastFlushedBytes(), is(data.length));
@@ -90,8 +128,57 @@ public class SimpleWriteQueueTest {
     }
 
     @Test
-    public void testFlushToOnceLazyLimitedNotLastElement() throws Exception {
+    public void testFlushTo_DatagramChannel_OnceLimitedLastElement() throws Exception {
+        byte[] data = new byte[] {
+                '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'
+        };
+        CodecBuffer buffer = Buffers.wrap(data, 0, data.length);
+        DatagramChannel channel = mock(DatagramChannel.class);
+        when(channel.write(Mockito.any(ByteBuffer.class))).thenAnswer(new Answer<Integer>() {
+            @Override
+            public Integer answer(InvocationOnMock invocation) throws Throwable {
+                ByteBuffer bb = (ByteBuffer) invocation.getArguments()[0];
+                bb.position(bb.limit());
+                return bb.limit();
+            }
+        });
+
+
+        sut_.offer(buffer);
+        WriteQueue.FlushStatus status = sut_.flushTo(channel, writeBuffer_, data.length);
+
+        assertThat(status, is(WriteQueue.FlushStatus.FLUSHED));
+        assertThat(sut_.lastFlushedBytes(), is(data.length));
+        verify(channel, times(1)).write(writeBuffer_);
+    }
+
+    @Test
+    public void testFlushToOnceLimitedNotLastElement() throws Exception {
         GatheringByteChannel channel = mock(GatheringByteChannel.class);
+        when(channel.write(Mockito.any(ByteBuffer.class))).thenAnswer(new Answer<Integer>() {
+            @Override
+            public Integer answer(InvocationOnMock invocation) throws Throwable {
+                ByteBuffer bb = (ByteBuffer) invocation.getArguments()[0];
+                bb.position(bb.limit());
+                return bb.limit();
+            }
+        });
+        byte[] data = new byte[] {
+                '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'
+        };
+
+        sut_.offer(Buffers.wrap(data, 0, data.length));
+        sut_.offer(Buffers.wrap(data, 0, data.length));
+        WriteQueue.FlushStatus status = sut_.flushTo(channel, data.length);
+
+        assertThat(status, is(WriteQueue.FlushStatus.SKIP));
+        assertThat(sut_.lastFlushedBytes(), is(data.length));
+        verify(channel, times(1)).write(Mockito.any(ByteBuffer.class));
+    }
+
+    @Test
+    public void testFlushTo_Datagram_OnceLimitedNotLastElement() throws Exception {
+        DatagramChannel channel = mock(DatagramChannel.class);
         when(channel.write(Mockito.any(ByteBuffer.class))).thenAnswer(new Answer<Integer>() {
             @Override
             public Integer answer(InvocationOnMock invocation) throws Throwable {
@@ -110,7 +197,7 @@ public class SimpleWriteQueueTest {
 
         assertThat(status, is(WriteQueue.FlushStatus.SKIP));
         assertThat(sut_.lastFlushedBytes(), is(data.length));
-        verify(channel, times(1)).write(Mockito.any(ByteBuffer.class));
+        verify(channel, times(1)).write(writeBuffer_);
     }
 
     @Test
@@ -129,7 +216,7 @@ public class SimpleWriteQueueTest {
         };
 
         sut_.offer(Buffers.wrap(data, 0, data.length));
-        WriteQueue.FlushStatus status = sut_.flushTo(channel, writeBuffer_);
+        WriteQueue.FlushStatus status = sut_.flushTo(channel);
 
         assertThat(status, CoreMatchers.is(WriteQueue.FlushStatus.FLUSHING));
         assertThat(sut_.lastFlushedBytes(), is(8));
@@ -160,11 +247,11 @@ public class SimpleWriteQueueTest {
                 '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'
         };
         sut_.offer(Buffers.wrap(data, 0, data.length));
-        WriteQueue.FlushStatus status = sut_.flushTo(channel, writeBuffer_);
+        WriteQueue.FlushStatus status = sut_.flushTo(channel);
         assertThat(status, is(WriteQueue.FlushStatus.FLUSHING));
         assertThat(sut_.lastFlushedBytes(), is(8));
 
-        status = sut_.flushTo(channel, writeBuffer_);
+        status = sut_.flushTo(channel);
 
         assertThat(status, CoreMatchers.is(WriteQueue.FlushStatus.FLUSHED));
         assertThat(sut_.lastFlushedBytes(), is(2));
@@ -191,15 +278,36 @@ public class SimpleWriteQueueTest {
                 '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'
         };
         sut_.offer(Buffers.wrap(data, 0, data.length));
-        WriteQueue.FlushStatus status = sut_.flushTo(channel, writeBuffer_);
+        WriteQueue.FlushStatus status = sut_.flushTo(channel);
         assertThat(status, is(WriteQueue.FlushStatus.FLUSHING));
         assertThat(sut_.lastFlushedBytes(), is(8));
 
-        status = sut_.flushTo(channel, writeBuffer_);
+        status = sut_.flushTo(channel);
 
         assertThat(status, CoreMatchers.is(WriteQueue.FlushStatus.FLUSHING));
         assertThat(sut_.lastFlushedBytes(), is(0));
         verify(channel, times(2)).write(Mockito.any(ByteBuffer.class));
+    }
+
+    @Test
+    public void testFlushTo_Datagram_OnceNotWritten() throws Exception {
+        DatagramChannel channel = mock(DatagramChannel.class);
+        when(channel.write(Mockito.any(ByteBuffer.class))).thenAnswer(new Answer<Integer>() {
+            @Override
+            public Integer answer(InvocationOnMock invocation) throws Throwable {
+                return 0;
+            }
+        });
+        byte[] data = new byte[] {
+                '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'
+        };
+
+        sut_.offer(Buffers.wrap(data, 0, data.length));
+        WriteQueue.FlushStatus status = sut_.flushTo(channel, writeBuffer_);
+
+        assertThat(status, CoreMatchers.is(WriteQueue.FlushStatus.SKIP));
+        assertThat(sut_.lastFlushedBytes(), is(0));
+        verify(channel, times(1)).write(writeBuffer_);
     }
 
     @Test

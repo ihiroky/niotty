@@ -2,19 +2,17 @@ package net.ihiroky.niotty.sample.echo;
 
 import net.ihiroky.niotty.LoadPipeline;
 import net.ihiroky.niotty.PipelineComposer;
-import net.ihiroky.niotty.StageKey;
 import net.ihiroky.niotty.StorePipeline;
 import net.ihiroky.niotty.Transport;
-import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.TransportListener;
+import net.ihiroky.niotty.codec.FrameLengthPrependEncoder;
+import net.ihiroky.niotty.codec.FrameLengthRemoveDecoder;
+import net.ihiroky.niotty.codec.StringDecoder;
+import net.ihiroky.niotty.codec.StringEncoder;
 import net.ihiroky.niotty.nio.NioClientSocketConfig;
 import net.ihiroky.niotty.nio.NioClientSocketProcessor;
 import net.ihiroky.niotty.nio.NioServerSocketConfig;
 import net.ihiroky.niotty.nio.NioServerSocketProcessor;
-import net.ihiroky.niotty.codec.StringDecoder;
-import net.ihiroky.niotty.codec.StringEncoder;
-import net.ihiroky.niotty.codec.FrameLengthPrependEncoder;
-import net.ihiroky.niotty.codec.FrameLengthRemoveDecoder;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -25,14 +23,6 @@ import java.net.SocketAddress;
  * @author Hiroki Itoh
  */
 public class EchoMain {
-
-    private enum MyStageKey implements StageKey {
-        LOAD_FRAMING,
-        LOAD_DECODE,
-        LOAD_APPLICATION,
-        STORE_ENCODE,
-        STORE_FRAMING,
-    }
 
     public static void main(String[] args) {
         new EchoMain().execute(args);
@@ -46,22 +36,22 @@ public class EchoMain {
         server.setPipelineComposer(new PipelineComposer() {
             @Override
             public void compose(LoadPipeline loadPipeline, StorePipeline storePipeline) {
-                loadPipeline.add(MyStageKey.LOAD_FRAMING, new FrameLengthRemoveDecoder())
-                        .add(MyStageKey.LOAD_DECODE, new StringDecoder())
-                        .add(MyStageKey.LOAD_APPLICATION, new EchoStage());
-                storePipeline.add(MyStageKey.STORE_ENCODE, new StringEncoder())
-                        .add(MyStageKey.STORE_FRAMING, new FrameLengthPrependEncoder());
+                loadPipeline.add(EchoStageKey.LOAD_FRAMING, new FrameLengthRemoveDecoder())
+                        .add(EchoStageKey.LOAD_DECODE, new StringDecoder())
+                        .add(EchoStageKey.LOAD_APPLICATION, new EchoStage());
+                storePipeline.add(EchoStageKey.STORE_ENCODE, new StringEncoder())
+                        .add(EchoStageKey.STORE_FRAMING, new FrameLengthPrependEncoder());
             }
         });
         NioClientSocketProcessor client = new NioClientSocketProcessor();
         client.setPipelineComposer(new PipelineComposer() {
             @Override
             public void compose(LoadPipeline loadPipeline, StorePipeline storePipeline) {
-                loadPipeline.add(MyStageKey.LOAD_FRAMING, new FrameLengthRemoveDecoder())
-                        .add(MyStageKey.LOAD_DECODE, new StringDecoder())
-                        .add(MyStageKey.LOAD_APPLICATION, new HelloWorldStage());
-                storePipeline.add(MyStageKey.STORE_ENCODE, new StringEncoder())
-                        .add(MyStageKey.STORE_FRAMING, new FrameLengthPrependEncoder());
+                loadPipeline.add(EchoStageKey.LOAD_FRAMING, new FrameLengthRemoveDecoder())
+                        .add(EchoStageKey.LOAD_DECODE, new StringDecoder())
+                        .add(EchoStageKey.LOAD_APPLICATION, new HelloWorldStage());
+                storePipeline.add(EchoStageKey.STORE_ENCODE, new StringEncoder())
+                        .add(EchoStageKey.STORE_FRAMING, new FrameLengthPrependEncoder());
             }
         });
 
@@ -83,9 +73,9 @@ public class EchoMain {
         try {
             serverTransport.bind(new InetSocketAddress(port));
 
-            TransportFuture connectFuture = clientTransport.connect(new InetSocketAddress("localhost", port));
-            connectFuture.waitForCompletion();
+            clientTransport.connect(new InetSocketAddress("localhost", port)).waitForCompletion();
             System.out.println("connection wait gets done.");
+            clientTransport.write("Hello World.");
 
             Thread.sleep(lastWaitMillis);
             System.out.println("end.");

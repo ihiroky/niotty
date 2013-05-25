@@ -18,7 +18,6 @@ public interface Transport {
     void join(InetAddress group, NetworkInterface networkInterface) throws IOException;
     void join(InetAddress group, NetworkInterface networkInterface, InetAddress source) throws IOException;
     void write(Object message);
-    void write(Object message, SocketAddress remote);
     void addListener(TransportListener listener);
     void removeListener(TransportListener listener);
     SocketAddress localAddress();

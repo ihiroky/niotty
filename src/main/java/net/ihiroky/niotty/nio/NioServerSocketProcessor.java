@@ -14,7 +14,7 @@ import java.util.Objects;
 public class NioServerSocketProcessor implements Processor<NioServerSocketTransport, NioServerSocketConfig> {
 
     private AcceptSelectorPool acceptSelectorPool_;
-    private MessageIOSelectorPool messageIOSelectorPool_;
+    private TcpIOSelectorPool ioSelectorPool_;
     private PipelineComposer pipelineComposer_;
     private int readBufferSize_;
     private int writeBufferSize_;
@@ -34,7 +34,7 @@ public class NioServerSocketProcessor implements Processor<NioServerSocketTransp
 
     public NioServerSocketProcessor() {
         acceptSelectorPool_ = new AcceptSelectorPool();
-        messageIOSelectorPool_ = new MessageIOSelectorPool();
+        ioSelectorPool_ = new TcpIOSelectorPool();
         pipelineComposer_ = PipelineComposer.empty();
 
         numberOfAcceptThread_ = DEFAULT_NUMBER_OF_ACCEPT_THREAD;
@@ -47,16 +47,16 @@ public class NioServerSocketProcessor implements Processor<NioServerSocketTransp
 
     @Override
     public synchronized void start() {
-        messageIOSelectorPool_.setReadBufferSize(readBufferSize_);
-        messageIOSelectorPool_.setDirect(useDirectBuffer_);
-        messageIOSelectorPool_.open(new NameCountThreadFactory(name_.concat("-MessageIO")), numberOfMessageIOThread_);
+        ioSelectorPool_.setReadBufferSize(readBufferSize_);
+        ioSelectorPool_.setDirect(useDirectBuffer_);
+        ioSelectorPool_.open(new NameCountThreadFactory(name_.concat("-MessageIO")), numberOfMessageIOThread_);
         acceptSelectorPool_.open(new NameCountThreadFactory(name_.concat("-Accept")), numberOfAcceptThread_);
     }
 
     @Override
     public synchronized void stop() {
         acceptSelectorPool_.close();
-        messageIOSelectorPool_.close();
+        ioSelectorPool_.close();
         pipelineComposer_.close();
     }
 
@@ -117,8 +117,8 @@ public class NioServerSocketProcessor implements Processor<NioServerSocketTransp
         return acceptSelectorPool_;
     }
 
-    MessageIOSelectorPool getMessageIOSelectorPool() {
-        return messageIOSelectorPool_;
+    AbstractSelectorPool<IOSelector> getMessageIOSelectorPool() {
+        return ioSelectorPool_;
     }
 
     PipelineComposer getPipelineComposer() {

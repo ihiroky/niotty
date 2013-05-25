@@ -14,8 +14,6 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
 import java.net.SocketAddress;
-import java.nio.ByteBuffer;
-import java.nio.channels.GatheringByteChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.Objects;
@@ -23,7 +21,7 @@ import java.util.Objects;
 /**
  * @author Hiroki Itoh
  */
-public class NioClientSocketTransport extends NioSocketTransport<MessageIOSelector> {
+public class NioClientSocketTransport extends NioSocketTransport<IOSelector> {
 
     private final SocketChannel clientChannel_;
     private final ConnectSelectorPool connector_;
@@ -70,9 +68,9 @@ public class NioClientSocketTransport extends NioSocketTransport<MessageIOSelect
         if (isInLoopThread()) {
             writeBufferSink(buffer);
         } else {
-            offerTask(new TaskLoop.Task<MessageIOSelector>() {
+            offerTask(new TaskLoop.Task<IOSelector>() {
                 @Override
-                public int execute(MessageIOSelector eventLoop) throws Exception {
+                public int execute(IOSelector eventLoop) throws Exception {
                     writeBufferSink(buffer);
                     return TaskLoop.TIMEOUT_NO_LIMIT;
                 }
@@ -126,11 +124,6 @@ public class NioClientSocketTransport extends NioSocketTransport<MessageIOSelect
     }
 
     @Override
-    public void write(Object message, SocketAddress remote) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public InetSocketAddress localAddress() {
         try {
             return (InetSocketAddress) clientChannel_.getLocalAddress();
@@ -161,14 +154,8 @@ public class NioClientSocketTransport extends NioSocketTransport<MessageIOSelect
         writeQueue_.offer(buffer);
     }
 
-    int flush(ByteBuffer byteBuffer) throws IOException {
-        GatheringByteChannel channel = (GatheringByteChannel) getSelectionKey().channel();
-        WriteQueue.FlushStatus status = writeQueue_.flushTo(channel, byteBuffer);
-        return status.waitTimeMillis_;
-    }
-
-    void loadEvent(Object message) {
-        executeLoad(message);
+    int flush() throws IOException {
+        return writeQueue_.flushTo(clientChannel_).waitTimeMillis_;
     }
 
     void fireOnConnect() {

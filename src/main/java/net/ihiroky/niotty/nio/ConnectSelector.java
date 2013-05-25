@@ -21,11 +21,11 @@ import java.util.Set;
  */
 public class ConnectSelector extends AbstractSelector<ConnectSelector> {
 
-    private final MessageIOSelectorPool messageIOSelectorPool_;
+    private final TcpIOSelectorPool ioSelectorPool_;
     private Logger logger_ = LoggerFactory.getLogger(ConnectSelector.class);
 
-    ConnectSelector(MessageIOSelectorPool messageIOSelectorPool) {
-        messageIOSelectorPool_ = messageIOSelectorPool;
+    ConnectSelector(TcpIOSelectorPool ioSelectorPool) {
+        ioSelectorPool_ = ioSelectorPool;
     }
 
     @Override
@@ -55,7 +55,7 @@ public class ConnectSelector extends AbstractSelector<ConnectSelector> {
             NioClientSocketTransport transport, DefaultTransportFuture future) throws IOException {
         InetSocketAddress remoteAddress = transport.remoteAddress();
         future.done();
-        messageIOSelectorPool_.register(channel, SelectionKey.OP_READ, transport);
+        ioSelectorPool_.register(channel, SelectionKey.OP_READ, transport);
         transport.fireOnConnect();
         transport.loadEvent(new TransportStateEvent(TransportState.CONNECTED, remoteAddress));
     }

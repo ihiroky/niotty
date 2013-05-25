@@ -7,6 +7,8 @@ import java.io.IOException;
 import java.net.SocketOption;
 import java.net.StandardSocketOptions;
 import java.nio.channels.ServerSocketChannel;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -17,44 +19,42 @@ import java.util.Objects;
 public class NioServerSocketConfig {
 
     private int backlog_;
-    private int receiveBufferSize_;
-    private boolean reuseAddress_;
+    private Map<SocketOption<?>, Object> socketOptionMap_;
     private WriteQueueFactory writeQueueFactory_;
 
     private Logger logger_ = LoggerFactory.getLogger(NioServerSocketTransport.class);
 
     public NioServerSocketConfig() {
         backlog_ = 50;
-        reuseAddress_ = true;
+        socketOptionMap_ = new HashMap<>();
         writeQueueFactory_ = new SimpleWriteQueueFactory();
     }
-
-    private <T> void setOption(ServerSocketChannel channel, SocketOption<T> option, T value) {
-        try {
-            channel.setOption(option, value);
-        } catch (IOException ioe) {
-            throw new RuntimeException("failed to set socket option:" + option + " value:" + value + " for:" + channel);
-        }
+    public <T> void setOption(SocketOption<T> name, Object value) {
+        socketOptionMap_.put(name, value);
     }
 
-    private <T> void logOptionValue(ServerSocketChannel channel, SocketOption<T> option) {
-        try {
-            logger_.info("{}'s {}: {}", channel, option, channel.getOption(option));
-        } catch (IOException ioe) {
-            throw new RuntimeException("failed to set socket option:" + option + " for:" + channel);
-        }
+    public <T> T getOption(SocketOption<T> name) {
+        Object value = socketOptionMap_.get(name);
+        return name.type().cast(value);
+    }
+
+    private <T> void logOptionValue(ServerSocketChannel channel, SocketOption<T> option) throws IOException {
+        logger_.info("{}'s {}: {}", channel, option, channel.getOption(option));
     }
 
     void applySocketOptions(ServerSocketChannel channel) {
-        Objects.requireNonNull(channel, "s");
+        try {
+            for (Map.Entry<SocketOption<?>, Object> entry : socketOptionMap_.entrySet()) {
+                @SuppressWarnings("unchecked")
+                SocketOption<Object> name = (SocketOption<Object>) entry.getKey();
+                channel.setOption(name, entry.getValue());
+            }
 
-        if (receiveBufferSize_ > 0) {
-            setOption(channel, StandardSocketOptions.SO_RCVBUF, receiveBufferSize_);
+            logOptionValue(channel, StandardSocketOptions.SO_RCVBUF);
+            logOptionValue(channel, StandardSocketOptions.SO_REUSEADDR);
+        } catch (IOException ioe) {
+            throw new RuntimeException(ioe);
         }
-        setOption(channel, StandardSocketOptions.SO_REUSEADDR, reuseAddress_);
-
-        logOptionValue(channel, StandardSocketOptions.SO_RCVBUF);
-        logOptionValue(channel, StandardSocketOptions.SO_REUSEADDR);
     }
 
     public void setBacklog(int n) {
@@ -63,22 +63,6 @@ public class NioServerSocketConfig {
 
     public int getBacklog() {
         return backlog_;
-    }
-
-    public void setReceiveBufferSize(int size) {
-        receiveBufferSize_ = size;
-    }
-
-    public int getRecieveBufferSize() {
-        return receiveBufferSize_;
-    }
-
-    public void setReuseAddress(boolean on) {
-        reuseAddress_ = on;
-    }
-
-    public boolean getReuseAddress() {
-        return reuseAddress_;
     }
 
     public void setWriteQueueFactory(WriteQueueFactory writeQueueFactory) {

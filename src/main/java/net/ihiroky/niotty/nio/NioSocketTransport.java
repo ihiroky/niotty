@@ -73,11 +73,11 @@ public abstract class NioSocketTransport<S extends AbstractSelector<S>> extends 
     void onCloseSelectableChannel() {
     }
 
-    final void loadEvent(final TransportStateEvent event) {
-        executeLoad(event);
+    final void loadEvent(Object message) {
+        executeLoad(message);
     }
 
-    final SelectionKey getSelectionKey() {
-        return key_;
+    final void loadEvent(final TransportStateEvent event) {
+        executeLoad(event);
     }
 }

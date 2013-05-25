@@ -64,11 +64,6 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
     }
 
     @Override
-    public void write(Object message, SocketAddress remote) {
-        throw new UnsupportedOperationException("write");
-    }
-
-    @Override
     public InetSocketAddress localAddress() {
         try {
             return (InetSocketAddress) serverChannel_.getLocalAddress();

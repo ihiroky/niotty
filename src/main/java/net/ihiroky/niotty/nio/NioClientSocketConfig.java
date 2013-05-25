@@ -7,7 +7,8 @@ import java.io.IOException;
 import java.net.SocketOption;
 import java.net.StandardSocketOptions;
 import java.nio.channels.SocketChannel;
-import java.util.Objects;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Created on 13/01/17, 18:01
@@ -16,88 +17,49 @@ import java.util.Objects;
  */
 public class NioClientSocketConfig {
 
-    private int sendBufferSize_;
-    private int receiveBufferSize_;
-    private boolean keepAlive_;
-    private boolean reuseAddress_;
-    private int linger_;
-    private boolean tcpNoDelay_;
+    private Map<SocketOption<?>, Object> socketOptionMap_;
     private WriteQueueFactory writeQueueFactory_;
 
     private Logger logger_ = LoggerFactory.getLogger(NioClientSocketConfig.class);
 
     public NioClientSocketConfig() {
+        socketOptionMap_ = new HashMap<>();
         writeQueueFactory_ = new SimpleWriteQueueFactory();
     }
 
-    private <T> void setOption(SocketChannel channel, SocketOption<T> option, T value) {
-        try {
-            channel.setOption(option, value);
-        } catch (IOException ioe) {
-            throw new RuntimeException("failed to set socket option:" + option + " value:" + value + " for:" + channel);
-        }
+    public <T> void setOption(SocketOption<T> name, Object value) {
+        socketOptionMap_.put(name, value);
     }
 
-    private <T> void logOptionValue(SocketChannel channel, SocketOption<T> option) {
-        try {
-            logger_.info("{}'s {}: {}", channel, option, channel.getOption(option));
-        } catch (IOException ioe) {
-            throw new RuntimeException("failed to set socket option:" + option + " for:" + channel);
-        }
+    public <T> T getOption(SocketOption<T> name) {
+        Object value = socketOptionMap_.get(name);
+        return name.type().cast(value);
+    }
+
+    private <T> void logOptionValue(SocketChannel channel, SocketOption<T> option) throws IOException {
+        logger_.info("{}'s {}: {}", channel, option, channel.getOption(option));
     }
 
     void applySocketOptions(SocketChannel channel) {
-        if (sendBufferSize_ > 0) {
-            setOption(channel, StandardSocketOptions.SO_SNDBUF, sendBufferSize_);
-        }
-        if (receiveBufferSize_ > 0) {
-            setOption(channel, StandardSocketOptions.SO_RCVBUF, receiveBufferSize_);
-        }
-        if (linger_ > 0) {
-            setOption(channel, StandardSocketOptions.SO_LINGER, linger_);
-        }
-        setOption(channel, StandardSocketOptions.SO_REUSEADDR, reuseAddress_);
-        setOption(channel, StandardSocketOptions.SO_KEEPALIVE, keepAlive_);
-        setOption(channel, StandardSocketOptions.TCP_NODELAY, tcpNoDelay_);
+        try {
+            for (Map.Entry<SocketOption<?>, Object> entry : socketOptionMap_.entrySet()) {
+                @SuppressWarnings("unchecked")
+                SocketOption<Object> name = (SocketOption<Object>) entry.getKey();
+                channel.setOption(name, entry.getValue());
+            }
 
-        logOptionValue(channel, StandardSocketOptions.SO_SNDBUF);
-        logOptionValue(channel, StandardSocketOptions.SO_RCVBUF);
-        logOptionValue(channel, StandardSocketOptions.SO_LINGER);
-        logOptionValue(channel, StandardSocketOptions.SO_REUSEADDR);
-        logOptionValue(channel, StandardSocketOptions.SO_KEEPALIVE);
-        logOptionValue(channel, StandardSocketOptions.TCP_NODELAY);
+            logOptionValue(channel, StandardSocketOptions.SO_SNDBUF);
+            logOptionValue(channel, StandardSocketOptions.SO_RCVBUF);
+            logOptionValue(channel, StandardSocketOptions.SO_LINGER);
+            logOptionValue(channel, StandardSocketOptions.SO_REUSEADDR);
+            logOptionValue(channel, StandardSocketOptions.SO_KEEPALIVE);
+            logOptionValue(channel, StandardSocketOptions.TCP_NODELAY);
+        } catch (IOException ioe) {
+            throw new RuntimeException("failed to apply socket options.", ioe);
+        }
     }
 
     WriteQueue newWriteQueue() {
         return writeQueueFactory_.newWriteQueue();
-    }
-
-    public void setSendBufferSize(int sendBufferSize) {
-        this.sendBufferSize_ = sendBufferSize;
-    }
-
-    public void setReceiveBufferSize(int receiveBufferSize) {
-        this.receiveBufferSize_ = receiveBufferSize;
-    }
-
-    public void setKeepAlive(boolean keepAlive) {
-        this.keepAlive_ = keepAlive;
-    }
-
-    public void setReuseAddress(boolean reuseAddress) {
-        this.reuseAddress_ = reuseAddress;
-    }
-
-    public void setLinger(int linger) {
-        this.linger_ = linger;
-    }
-
-    public void setTcpNoDelay(boolean tcpNoDelay) {
-        this.tcpNoDelay_ = tcpNoDelay;
-    }
-
-    public void setWriteQueueFactory_(WriteQueueFactory writeQueueFactory) {
-        Objects.requireNonNull(writeQueueFactory, "writeQueueFactory");
-        this.writeQueueFactory_ = writeQueueFactory;
     }
 }

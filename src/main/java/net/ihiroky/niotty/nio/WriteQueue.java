@@ -5,8 +5,8 @@ import net.ihiroky.niotty.buffer.BufferSink;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.DatagramChannel;
 import java.nio.channels.GatheringByteChannel;
-import java.nio.channels.WritableByteChannel;
 
 /**
  * A queue to holds {@link net.ihiroky.niotty.buffer.BufferSink} to be written to a channel.
@@ -21,15 +21,26 @@ public interface WriteQueue {
     boolean offer(BufferSink bufferSink);
 
     /**
-     * Flushes queued {@code BufferSink}s to a specified {@code channel} using {@code writeBuffer}.
-     * The {@code writeBuffer} must be cleared on returning from this method.
+     * Flushes queued {@code BufferSink}s to a specified {@code channel} directly.
+     *
      * @param channel the channel to write into
-     * @param writeBuffer write buffer
      * @return flush status
      * @throws IOException if I/O error occurs
      * @see {@link net.ihiroky.niotty.nio.WriteQueue.FlushStatus}
      */
-    FlushStatus flushTo(GatheringByteChannel channel, ByteBuffer writeBuffer) throws IOException;
+    FlushStatus flushTo(GatheringByteChannel channel) throws IOException;
+
+    /**
+     * Flushes queued {@code BufferSink}s to a specified {@code channel} using {@code writeBuffer}.
+     * The {@code writeBuffer} is cleared on returning from this method.
+     * @param channel the channel to write into
+     * @param writeBuffer write buffer
+     * @return flush status
+     * @throws IOException if I/O error occurs
+     * @throws java.nio.BufferOverflowException if the {@code writeBuffer} overflows.
+     * @see {@link net.ihiroky.niotty.nio.WriteQueue.FlushStatus}
+     */
+    FlushStatus flushTo(DatagramChannel channel, ByteBuffer writeBuffer) throws IOException;
 
     /**
      * Returns the number of elements in this queue.
@@ -45,7 +56,7 @@ public interface WriteQueue {
 
     /**
      * Returns byte length of data flushed lastly by
-     * {@link #flushTo(java.nio.channels.WritableByteChannel, java.nio.ByteBuffer)}.
+     * {@link #flushTo(java.nio.channels.GatheringByteChannel)}.
      * @return byte length of data flushed lastly
      */
     int lastFlushedBytes();
@@ -57,7 +68,8 @@ public interface WriteQueue {
 
     /**
      * Shows a result of
-     * {@link net.ihiroky.niotty.nio.WriteQueue#flushTo(java.nio.channels.WritableByteChannel, java.nio.ByteBuffer)}.
+     * {@link net.ihiroky.niotty.nio.WriteQueue#flushTo(java.nio.channels.GatheringByteChannel)}
+     * and {@link net.ihiroky.niotty.nio.WriteQueue#flushTo(java.nio.channels.DatagramChannel, java.nio.ByteBuffer)}.
      */
     enum FlushStatus {
         /**

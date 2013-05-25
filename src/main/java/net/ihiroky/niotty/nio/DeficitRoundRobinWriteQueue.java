@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.DatagramChannel;
 import java.nio.channels.GatheringByteChannel;
 import java.util.ArrayList;
 import java.util.List;
@@ -15,9 +16,10 @@ import java.util.List;
  * A implementation of {@link net.ihiroky.niotty.nio.WriteQueue} using
  * <a ref="http://en.wikipedia.org/wiki/Deficit_round_robin">deficit round robin</a> algorithm.
  *
- * This class has a base queue and weighted queues. The all queues is {@link net.ihiroky.niotty.nio.SimpleWriteQueue}.
- * These are checked and flushed in a round which is executed by calling
- * {@link #flushTo(java.nio.channels.GatheringByteChannel, java.nio.ByteBuffer)}.
+ * This class has a base queue and weighted queues. The all queues are {@link net.ihiroky.niotty.nio.SimpleWriteQueue}.
+ * They are checked and flushed in a round which is executed by calling
+ * {@link #flushTo(java.nio.channels.GatheringByteChannel)} or
+ * {@link #flushTo(java.nio.channels.DatagramChannel, java.nio.ByteBuffer)}.
  * The base queue is a basis of flush size of calculation. The flush size for the base queue is limited by
  * {@code baseQueueLimit} specified by its constructor. If some packets ({@link net.ihiroky.niotty.buffer.BufferSink})
  * are in the base queue, a flush operation for the base queue is executed. The basis of flush size
@@ -117,17 +119,21 @@ public class DeficitRoundRobinWriteQueue implements WriteQueue {
     }
 
     @Override
-    public FlushStatus flushTo(GatheringByteChannel channel, ByteBuffer writeBuffer) throws IOException {
-        return flushTo(channel, writeBuffer, 0);
+    public FlushStatus flushTo(GatheringByteChannel channel) throws IOException {
+        return flushTo(new GatheringDelegate(channel), 0);
     }
 
-    private FlushStatus flushTo(
-            GatheringByteChannel channel, ByteBuffer writeBuffer, int previousFlushedByte) throws IOException {
+    @Override
+    public FlushStatus flushTo(DatagramChannel channel, ByteBuffer writeBuffer) throws IOException {
+        return flushTo(new DatagramDelegate(channel, writeBuffer), 0);
+    }
+
+    private FlushStatus flushTo(Delegate delegate, int previousFlushedByte) throws IOException {
         int baseQuantum = 0;
         int flushedBytes = previousFlushedByte;
         int queueIndex = queueIndex_;
         if (queueIndex == QUEUE_INDEX_BASE) {
-            FlushStatus status = baseQueue_.flushTo(channel, writeBuffer, baseQueueLimit_);
+            FlushStatus status = delegate.flush(baseQueue_, baseQueueLimit_);
             baseQuantum = baseQueue_.lastFlushedBytes();
             flushedBytes += baseQuantum;
             if (status == FlushStatus.FLUSHING) {
@@ -153,7 +159,7 @@ public class DeficitRoundRobinWriteQueue implements WriteQueue {
 
             // flush operation
             int newDeficitCounter = deficitCounter_[i] + baseQuantum * weights_[i] / BASE_WEIGHT;
-            FlushStatus status = q.flushTo(channel, writeBuffer, newDeficitCounter);
+            FlushStatus status = delegate.flush(q, newDeficitCounter);
             int qlf = q.lastFlushedBytes();
             flushedBytes += qlf;
             deficitCounter_[i] = newDeficitCounter - qlf;
@@ -180,7 +186,7 @@ public class DeficitRoundRobinWriteQueue implements WriteQueue {
         queueIndex_ = QUEUE_INDEX_BASE;
         return baseQueue_.isEmpty()
                 ? (existsSkipped ? FlushStatus.SKIP : FlushStatus.FLUSHED)
-                : flushTo(channel, writeBuffer, flushedBytes);
+                : flushTo(delegate, flushedBytes);
     }
 
     private void countUpDeficitCounters(int baseQuantum, int from, int size) {
@@ -260,5 +266,39 @@ public class DeficitRoundRobinWriteQueue implements WriteQueue {
             throw new IndexOutOfBoundsException();
         }
         queueIndex_ = i;
+    }
+
+    private interface Delegate {
+        FlushStatus flush(SimpleWriteQueue queue, int bytes) throws IOException;
+    }
+
+    private static class GatheringDelegate implements Delegate {
+
+        private GatheringByteChannel channel_;
+
+        GatheringDelegate(GatheringByteChannel channel) {
+            channel_ = channel;
+        }
+
+        @Override
+        public FlushStatus flush(SimpleWriteQueue queue, int bytes) throws IOException {
+            return queue.flushTo(channel_, bytes);
+        }
+    }
+
+    private static class DatagramDelegate implements Delegate {
+
+        private DatagramChannel channel_;
+        private ByteBuffer writeBuffer_;
+
+        DatagramDelegate(DatagramChannel channel, ByteBuffer writeBuffer) {
+            channel_ = channel;
+            writeBuffer_ = writeBuffer;
+        }
+
+        @Override
+        public FlushStatus flush(SimpleWriteQueue queue, int bytes) throws IOException {
+            return queue.flushTo(channel_, writeBuffer_, bytes);
+        }
     }
 }

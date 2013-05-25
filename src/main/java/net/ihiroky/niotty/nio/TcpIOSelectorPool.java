@@ -1,21 +1,17 @@
 package net.ihiroky.niotty.nio;
 
 /**
- * Created on 13/01/15, 17:07
- *
  * @author Hiroki Itoh
  */
-public class MessageIOSelectorPool extends AbstractSelectorPool<MessageIOSelector> {
+public class TcpIOSelectorPool extends AbstractSelectorPool<IOSelector> {
 
     private int readBufferSize_;
-    private int writeBufferSize_;
     private boolean direct_;
 
     private static final int DEFAULT_BUFFER_SIZE = 8192;
 
-    public MessageIOSelectorPool() {
+    public TcpIOSelectorPool() {
         readBufferSize_ = DEFAULT_BUFFER_SIZE;
-        writeBufferSize_ = DEFAULT_BUFFER_SIZE;
         direct_ = false;
     }
 
@@ -26,12 +22,12 @@ public class MessageIOSelectorPool extends AbstractSelectorPool<MessageIOSelecto
         readBufferSize_ = size;
     }
 
-    public void setDirect(boolean on) {
-        this.direct_ = on;
+    public void setDirect(boolean direct) {
+        direct_ = direct;
     }
 
     @Override
-    protected MessageIOSelector newEventLoop() {
-        return new MessageIOSelector(readBufferSize_, writeBufferSize_, direct_);
+    protected IOSelector newEventLoop() {
+        return new IOSelector(new TcpIOStoreStage(), readBufferSize_, direct_);
     }
 }

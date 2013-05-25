@@ -9,6 +9,7 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import java.nio.ByteBuffer;
+import java.nio.channels.DatagramChannel;
 import java.nio.channels.GatheringByteChannel;
 
 import static org.hamcrest.CoreMatchers.*;
@@ -65,7 +66,24 @@ public class DeficitRoundRobinWriteQueueTest {
         };
 
         sut.offer(Buffers.wrap(data, 0, data.length));
-        WriteQueue.FlushStatus status = sut.flushTo(channel, ByteBuffer.allocate(16));
+        WriteQueue.FlushStatus status = sut.flushTo(channel);
+
+        assertThat(status, is(WriteQueue.FlushStatus.FLUSHED));
+        assertThat(sut.lastFlushedBytes(), is(4));
+        assertThat(sut.queueIndex(), is(-1));
+    }
+
+    @Test
+    public void testFlushTo_Base_Datagram() throws Exception {
+        DeficitRoundRobinWriteQueue sut = new DeficitRoundRobinWriteQueue(32);
+        DatagramChannel channel = mock(DatagramChannel.class);
+        when(channel.write(Mockito.any(ByteBuffer.class))).thenAnswer(new FlushAllAnswer());
+        byte[] data = new byte[] {
+                '0', '1', '2', '3'
+        };
+
+        sut.offer(Buffers.wrap(data, 0, data.length));
+        WriteQueue.FlushStatus status = sut.flushTo(channel, ByteBuffer.allocate(10));
 
         assertThat(status, is(WriteQueue.FlushStatus.FLUSHED));
         assertThat(sut.lastFlushedBytes(), is(4));
@@ -84,8 +102,7 @@ public class DeficitRoundRobinWriteQueueTest {
         sut.offer(Buffers.wrap(data, 0, data.length));
         sut.offer(Buffers.wrap(data, 0, data.length, new DefaultTransportParameter(0)));
         sut.offer(Buffers.wrap(data, 0, data.length, new DefaultTransportParameter(2)));
-        WriteQueue.FlushStatus status = sut.flushTo(channel, ByteBuffer.allocate(16));
-
+        WriteQueue.FlushStatus status = sut.flushTo(channel);
         assertThat(status, is(WriteQueue.FlushStatus.FLUSHING));
         assertThat(sut.lastFlushedBytes(), is(4));
         assertThat(sut.queueIndex(), is(-1));
@@ -107,7 +124,7 @@ public class DeficitRoundRobinWriteQueueTest {
 
         sut.offer(Buffers.wrap(data, 0, data.length));
         sut.offer(Buffers.wrap(data, 0, data.length / 2, new DefaultTransportParameter(0)));
-        WriteQueue.FlushStatus status = sut.flushTo(channel, ByteBuffer.allocate(32));
+        WriteQueue.FlushStatus status = sut.flushTo(channel);
 
         assertThat(status, is(WriteQueue.FlushStatus.FLUSHED));
         assertThat(sut.lastFlushedBytes(), is(8 + 4));
@@ -130,7 +147,7 @@ public class DeficitRoundRobinWriteQueueTest {
         sut.offer(Buffers.wrap(data, 0, data.length / 2));
         sut.offer(Buffers.wrap(data, 0, data.length, new DefaultTransportParameter(0)));
         sut.offer(Buffers.wrap(data, 0, data.length, new DefaultTransportParameter(1)));
-        WriteQueue.FlushStatus status = sut.flushTo(channel, ByteBuffer.allocate(32));
+        WriteQueue.FlushStatus status = sut.flushTo(channel);
 
         assertThat(status, is(WriteQueue.FlushStatus.SKIP));
         assertThat(sut.lastFlushedBytes(), is(4 + 8));
@@ -156,7 +173,7 @@ public class DeficitRoundRobinWriteQueueTest {
         sut.offer(Buffers.wrap(data, 0, data.length));
         sut.offer(Buffers.wrap(data, 0, data.length, new DefaultTransportParameter(0)));
         sut.offer(Buffers.wrap(data, 0, data.length, new DefaultTransportParameter(1)));
-        WriteQueue.FlushStatus status = sut.flushTo(channel, ByteBuffer.allocate(32));
+        WriteQueue.FlushStatus status = sut.flushTo(channel);
 
         assertThat(status, is(WriteQueue.FlushStatus.FLUSHING));
         assertThat(sut.lastFlushedBytes(), is(8 + 3)); // (queue -1) + (queue 0 (limited))
@@ -178,7 +195,7 @@ public class DeficitRoundRobinWriteQueueTest {
 
         sut.offer(Buffers.wrap(data, 0, data.length, new DefaultTransportParameter(0)));
         sut.offer(Buffers.wrap(data, 0, data.length, new DefaultTransportParameter(1)));
-        WriteQueue.FlushStatus status = sut.flushTo(channel, ByteBuffer.allocate(32));
+        WriteQueue.FlushStatus status = sut.flushTo(channel);
 
         assertThat(status, is(WriteQueue.FlushStatus.FLUSHED));
         assertThat(sut.lastFlushedBytes(), is(8 + 8));
@@ -202,7 +219,7 @@ public class DeficitRoundRobinWriteQueueTest {
         sut.offer(Buffers.wrap(data, 0, data.length));
         sut.offer(Buffers.wrap(data, 0, data.length - 1, new DefaultTransportParameter(0))); // only 7 byte
         sut.offer(Buffers.wrap(data, 0, data.length, new DefaultTransportParameter(1))); // flush first
-        WriteQueue.FlushStatus status = sut.flushTo(channel, ByteBuffer.allocate(32));
+        WriteQueue.FlushStatus status = sut.flushTo(channel);
 
         assertThat(status, is(WriteQueue.FlushStatus.FLUSHED));
         assertThat(sut.lastFlushedBytes(), is(8 + 7 + 8));

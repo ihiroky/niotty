@@ -65,11 +65,6 @@ public class ConnectionWaitTransport extends NioSocketTransport<ConnectSelector>
     }
 
     @Override
-    public void write(Object message, SocketAddress remote) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public SocketAddress localAddress() {
         throw new UnsupportedOperationException();
     }

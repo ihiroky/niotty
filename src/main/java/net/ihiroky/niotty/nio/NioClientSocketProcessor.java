@@ -14,7 +14,7 @@ import java.util.Objects;
 public class NioClientSocketProcessor implements Processor<NioClientSocketTransport, NioClientSocketConfig> {
 
     private ConnectSelectorPool connectSelectorPool_;
-    private MessageIOSelectorPool messageIOSelectorPool_;
+    private TcpIOSelectorPool ioSelectorPool_;
     private PipelineComposer pipelineComposer_;
     private String name_;
     private int numberOfConnectThread_;
@@ -32,8 +32,8 @@ public class NioClientSocketProcessor implements Processor<NioClientSocketTransp
     static final String DEFAULT_NAME = "NioClientSocket";
 
     public NioClientSocketProcessor() {
-        messageIOSelectorPool_ = new MessageIOSelectorPool();
-        connectSelectorPool_ = new ConnectSelectorPool(messageIOSelectorPool_);
+        ioSelectorPool_ = new TcpIOSelectorPool();
+        connectSelectorPool_ = new ConnectSelectorPool(ioSelectorPool_);
         pipelineComposer_ = PipelineComposer.empty();
 
         name_ = DEFAULT_NAME;
@@ -51,15 +51,15 @@ public class NioClientSocketProcessor implements Processor<NioClientSocketTransp
 
     @Override
     public void start() {
-        messageIOSelectorPool_.setReadBufferSize(readBufferSize_);
-        messageIOSelectorPool_.setDirect(useDirectBuffer_);
-        messageIOSelectorPool_.open(new NameCountThreadFactory(name_.concat("-MessageIO")), numberOfMessageIOThread_);
+        ioSelectorPool_.setReadBufferSize(readBufferSize_);
+        ioSelectorPool_.setDirect(useDirectBuffer_);
+        ioSelectorPool_.open(new NameCountThreadFactory(name_.concat("-IO")), numberOfMessageIOThread_);
         connectSelectorPool_.open(new NameCountThreadFactory(name_.concat("-Connect")), numberOfConnectThread_);
     }
 
     @Override
     public void stop() {
-        messageIOSelectorPool_.close();
+        ioSelectorPool_.close();
         connectSelectorPool_.close();
         pipelineComposer_.close();
     }
@@ -116,8 +116,8 @@ public class NioClientSocketProcessor implements Processor<NioClientSocketTransp
         return connectSelectorPool_;
     }
 
-    MessageIOSelectorPool getMessageIOSelectorPool() {
-        return messageIOSelectorPool_;
+    AbstractSelectorPool<IOSelector> getMessageIOSelectorPool() {
+        return ioSelectorPool_;
     }
 
     int getReadBufferSize() {

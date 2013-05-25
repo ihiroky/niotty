@@ -21,18 +21,6 @@ public class HelloWorldStage implements LoadStage<String, Void> {
 
     @Override
     public void load(LoadStageContext<?, ?> context, TransportStateEvent event) {
-        switch (event.state()) {
-            case CONNECTED:
-                if (event.value() != null) {
-                    logger_.info(event.toString());
-                    context.transport().write("Hello World.");
-                } else {
-                    logger_.info("state: {}", event.toString());
-                }
-                break;
-            default:
-                logger_.info("state: {}", event.toString());
-
-        }
+        logger_.info("state: {}", event.toString());
     }
 }
