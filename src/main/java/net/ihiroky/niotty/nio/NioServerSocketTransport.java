@@ -1,12 +1,12 @@
 package net.ihiroky.niotty.nio;
 
+import net.ihiroky.niotty.DefaultTransportStateEvent;
 import net.ihiroky.niotty.SucceededTransportFuture;
 import net.ihiroky.niotty.Transport;
 import net.ihiroky.niotty.TransportAggregate;
 import net.ihiroky.niotty.TransportAggregateSupport;
 import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.TransportState;
-import net.ihiroky.niotty.TransportStateEvent;
 import net.ihiroky.niotty.buffer.BufferSink;
 
 import java.io.IOException;
@@ -85,7 +85,6 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
     @Override
     public void bind(SocketAddress socketAddress) throws IOException {
         serverChannel_.bind(socketAddress, config_.getBacklog());
-        loadEvent(new TransportStateEvent(TransportState.BOUND, socketAddress));
         processor_.getAcceptSelectorPool().register(serverChannel_, SelectionKey.OP_ACCEPT, this);
     }
 
@@ -97,7 +96,7 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
     @Override
     public TransportFuture close() {
         if (getEventLoop() != null) {
-            return closeSelectableChannelLater(TransportState.BOUND);
+            return closeSelectableChannel(TransportState.BOUND);
         }
         try {
             serverChannel_.close();
@@ -123,11 +122,11 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
 
         NioClientSocketTransport child = new NioClientSocketTransport(
                 config_, processor_.getPipelineComposer(), processor_.name(), (SocketChannel) channel);
-        child.loadEvent(new TransportStateEvent(TransportState.CONNECTED, remoteAddress));
+        child.loadEvent(new DefaultTransportStateEvent(TransportState.CONNECTED, remoteAddress));
         processor_.getMessageIOSelectorPool().register(channel, SelectionKey.OP_READ, child);
         childAggregate_.add(child);
 
-        getTransportListener().onConnect(child, remoteAddress);
+        getTransportListener().onAccept(child, remoteAddress);
     }
 
     @Override

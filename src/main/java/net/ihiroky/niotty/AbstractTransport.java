@@ -171,6 +171,9 @@ abstract public class AbstractTransport<L extends TaskLoop<L>> implements Transp
 
     private static class NullListener implements TransportListener {
         @Override
+        public void onAccept(Transport transport, SocketAddress remote) {
+        }
+        @Override
         public void onConnect(Transport transport, SocketAddress remote) {
         }
         @Override
@@ -181,6 +184,13 @@ abstract public class AbstractTransport<L extends TaskLoop<L>> implements Transp
     private static class ListenerList implements TransportListener {
 
         CopyOnWriteArrayList<TransportListener> list_ = new CopyOnWriteArrayList<>();
+
+        @Override
+        public void onAccept(Transport transport, SocketAddress remote) {
+            for (TransportListener listener : list_) {
+                listener.onAccept(transport, remote);
+            }
+        }
 
         @Override
         public void onConnect(Transport transport, SocketAddress remote) {

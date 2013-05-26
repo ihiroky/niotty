@@ -1,8 +1,9 @@
 package net.ihiroky.niotty.nio;
 
-import net.ihiroky.niotty.TaskLoop;
+import net.ihiroky.niotty.DefaultTransportStateEvent;
 import net.ihiroky.niotty.StoreStage;
 import net.ihiroky.niotty.StoreStageContext;
+import net.ihiroky.niotty.TaskLoop;
 import net.ihiroky.niotty.TransportState;
 import net.ihiroky.niotty.TransportStateEvent;
 import net.ihiroky.niotty.buffer.BufferSink;
@@ -92,7 +93,7 @@ public abstract class AbstractSelector<S extends AbstractSelector<S>> extends Ta
         try {
             SelectionKey key = channel.register(selector_, ops, transport);
             transport.setSelectionKey(key);
-            transport.loadEvent(new TransportStateEvent(TransportState.INTEREST_OPS, ops));
+            transport.loadEvent(new DefaultTransportStateEvent(TransportState.INTEREST_OPS, ops));
             processingMemberCount_.incrementAndGet();
             logger_.debug("channel {} is registered to {}.", channel, Thread.currentThread());
         } catch (IOException ioe) {
@@ -101,9 +102,8 @@ public abstract class AbstractSelector<S extends AbstractSelector<S>> extends Ta
     }
 
     void unregister(SelectionKey key, NioSocketTransport<S> transport) {
-        int ops = key.interestOps();
         key.cancel();
-        transport.loadEvent(new TransportStateEvent(TransportState.INTEREST_OPS, ~ops));
+        transport.loadEvent(new DefaultTransportStateEvent(TransportState.INTEREST_OPS, 0));
         processingMemberCount_.decrementAndGet();
         logger_.debug("channel {} is unregistered from {}.", key.channel(), Thread.currentThread());
     }
@@ -129,32 +129,17 @@ public abstract class AbstractSelector<S extends AbstractSelector<S>> extends Ta
         public void store(StoreStageContext<?, ?> context, final TransportStateEvent event) {
             @SuppressWarnings("unchecked")
             final NioSocketTransport<S> transport = (NioSocketTransport<S>) context.transport();
-            switch (event.state()) {
-                case CONNECTED: // fall through
-                case BOUND:
-                    if (transport.isInLoopThread()) {
-                        close(transport, event);
-                    } else {
-                        transport.offerTask(new Task<S>() {
-                            @Override
-                            public int execute(S eventLoop) throws Exception {
-                                close(transport, event);
-                                return TaskLoop.TIMEOUT_NO_LIMIT;
-                            }
-                        });
+            if (transport.isInLoopThread()) {
+                event.execute();
+            } else {
+                transport.offerTask(new Task<S>() {
+                    @Override
+                    public int execute(S eventLoop) throws Exception {
+                        event.execute();
+                        return TaskLoop.TIMEOUT_NO_LIMIT;
                     }
-                    break;
-                default:
-                    break;
+                });
             }
-        }
-
-        private void close(NioSocketTransport<?> transport, TransportStateEvent event) {
-            Object value = event.value();
-            if (value == null || Boolean.FALSE.equals(value)) {
-                transport.closeSelectableChannel();
-            }
-            event.future().done();
         }
     }
 }

@@ -2,6 +2,7 @@ package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.StoreStageContext;
 import net.ihiroky.niotty.TaskLoop;
+import net.ihiroky.niotty.TransportState;
 import net.ihiroky.niotty.buffer.BufferSink;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,7 +13,7 @@ import java.nio.ByteBuffer;
 /**
  * @author Hiroki Itoh
  */
-public class UdpIOStoreStage extends AbstractSelector.SelectorStoreStage<IOSelector> {
+public class UdpIOStoreStage extends AbstractSelector.SelectorStoreStage<TcpIOSelector> {
 
     private ByteBuffer writeBuffer_;
 
@@ -26,14 +27,14 @@ public class UdpIOStoreStage extends AbstractSelector.SelectorStoreStage<IOSelec
     public void store(StoreStageContext<BufferSink, Void> context, BufferSink input) {
         final NioDatagramSocketTransport transport = (NioDatagramSocketTransport) context.transport();
         transport.writeBufferSink(input);
-        transport.offerTask(new TaskLoop.Task<IOSelector>() {
+        transport.offerTask(new TaskLoop.Task<TcpIOSelector>() {
             @Override
-            public int execute(IOSelector eventLoop) throws Exception {
+            public int execute(TcpIOSelector eventLoop) throws Exception {
                 try {
                     return transport.flush(writeBuffer_);
                 } catch (IOException ioe) {
                     logger_.error("failed to flush buffer to " + transport, ioe);
-                    transport.closeSelectableChannel();
+                    transport.closeSelectableChannel(TransportState.CONNECTED);
                 }
                 return 0;
             }

@@ -1,8 +1,8 @@
 package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.DefaultTransportFuture;
+import net.ihiroky.niotty.DefaultTransportStateEvent;
 import net.ihiroky.niotty.TransportState;
-import net.ihiroky.niotty.TransportStateEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,7 +46,7 @@ public class ConnectSelector extends AbstractSelector<ConnectSelector> {
                 }
             } catch (IOException ioe) {
                 attachment.getFuture().setThrowable(ioe);
-                attachment.transport().closeSelectableChannel();
+                attachment.transport().closeSelectableChannel(TransportState.CONNECTED);
             }
         }
     }
@@ -57,6 +57,6 @@ public class ConnectSelector extends AbstractSelector<ConnectSelector> {
         future.done();
         ioSelectorPool_.register(channel, SelectionKey.OP_READ, transport);
         transport.fireOnConnect();
-        transport.loadEvent(new TransportStateEvent(TransportState.CONNECTED, remoteAddress));
+        transport.loadEvent(new DefaultTransportStateEvent(TransportState.CONNECTED, remoteAddress));
     }
 }

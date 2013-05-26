@@ -1,22 +1,23 @@
 package net.ihiroky.niotty;
 
+import java.util.Objects;
+
 /**
  * Created on 13/01/11, 13:47
  *
  * @author Hiroki Itoh
  */
-public class TransportStateEvent {
+public abstract class TransportStateEvent {
 
     private TransportState state_;
     private Object value_;
-    private DefaultTransportFuture future_;
 
-    public TransportStateEvent(TransportState state, Object value) {
-        this(state, value, null);
+    public TransportStateEvent(TransportState state) {
+        this(state, null);
     }
 
-    public TransportStateEvent(TransportState state, Object value, DefaultTransportFuture future) {
-        future_ = future;
+    public TransportStateEvent(TransportState state, Object value) {
+        Objects.requireNonNull(state, "state");
         state_ = state;
         value_ = value;
     }
@@ -29,12 +30,14 @@ public class TransportStateEvent {
         return value_;
     }
 
-    public DefaultTransportFuture future() {
-        return future_;
+    protected void setValue(Object value) {
+        value_ = value;
     }
 
     @Override
     public String toString() {
-        return "state:[" + state_ + "], value:[" + value_ + ']';
+        return state_.toString();
     }
+
+    public abstract void execute();
 }

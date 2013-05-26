@@ -117,7 +117,7 @@ public class NioServerSocketProcessor implements Processor<NioServerSocketTransp
         return acceptSelectorPool_;
     }
 
-    AbstractSelectorPool<IOSelector> getMessageIOSelectorPool() {
+    AbstractSelectorPool<TcpIOSelector> getMessageIOSelectorPool() {
         return ioSelectorPool_;
     }
 

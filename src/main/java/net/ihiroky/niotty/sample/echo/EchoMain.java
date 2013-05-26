@@ -61,8 +61,11 @@ public class EchoMain {
         final Transport serverTransport = server.createTransport(new NioServerSocketConfig());
         serverTransport.addListener(new TransportListener() {
             @Override
-            public void onConnect(Transport transport, SocketAddress remoteAddress) {
+            public void onAccept(Transport transport, SocketAddress remoteAddress) {
                 serverTransport.write("new Transport " + transport + " is accepted on " + Thread.currentThread());
+            }
+            @Override
+            public void onConnect(Transport transport, SocketAddress remoteAddress) {
             }
             @Override
             public void onClose(Transport transport) {

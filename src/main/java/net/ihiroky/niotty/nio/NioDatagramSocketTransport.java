@@ -1,11 +1,11 @@
 package net.ihiroky.niotty.nio;
 
-import net.ihiroky.niotty.FailedTransportFuture;
+import net.ihiroky.niotty.DefaultTransportFuture;
 import net.ihiroky.niotty.PipelineComposer;
-import net.ihiroky.niotty.SucceededTransportFuture;
 import net.ihiroky.niotty.TaskLoop;
 import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.TransportState;
+import net.ihiroky.niotty.TransportStateEvent;
 import net.ihiroky.niotty.buffer.BufferSink;
 
 import java.io.IOException;
@@ -20,7 +20,7 @@ import java.util.Objects;
 /**
  * @author Hiroki Itoh
  */
-public class NioDatagramSocketTransport extends NioSocketTransport<IOSelector> {
+public class NioDatagramSocketTransport extends NioSocketTransport<TcpIOSelector> {
 
     private DatagramChannel channel_;
     private WriteQueue writeQueue_;
@@ -59,7 +59,7 @@ public class NioDatagramSocketTransport extends NioSocketTransport<IOSelector> {
 
     @Override
     public TransportFuture close() {
-        return isInLoopThread() ? closeSelectableChannel() : closeSelectableChannelLater(TransportState.CONNECTED);
+        return closeSelectableChannel(TransportState.CONNECTED);
     }
 
     @Override
@@ -68,14 +68,21 @@ public class NioDatagramSocketTransport extends NioSocketTransport<IOSelector> {
     }
 
     @Override
-    public TransportFuture connect(SocketAddress remote) {
-        try {
-            channel_.connect(remote);
-            getTransportListener().onConnect(this, remote);
-            return new SucceededTransportFuture(this);
-        } catch (IOException ioe) {
-            return new FailedTransportFuture(this, ioe);
-        }
+    public TransportFuture connect(final SocketAddress remote) {
+        final DefaultTransportFuture future = new DefaultTransportFuture(this);
+        executeStore(new TransportStateEvent(TransportState.CONNECTED) {
+            @Override
+            public void execute() {
+                try {
+                    channel_.connect(remote);
+                    getTransportListener().onConnect(NioDatagramSocketTransport.this, remote);
+                } catch (IOException ioe) {
+                    future.setThrowable(ioe);
+                }
+                future.done();
+            }
+        });
+        return future;
     }
 
     // TODO membership management
@@ -99,9 +106,9 @@ public class NioDatagramSocketTransport extends NioSocketTransport<IOSelector> {
         if (isInLoopThread()) {
             writeBufferSink(buffer);
         } else {
-            offerTask(new TaskLoop.Task<IOSelector>() {
+            offerTask(new TaskLoop.Task<TcpIOSelector>() {
                 @Override
-                public int execute(IOSelector eventLoop) throws Exception {
+                public int execute(TcpIOSelector eventLoop) throws Exception {
                     writeBufferSink(buffer);
                     return TaskLoop.TIMEOUT_NO_LIMIT;
                 }

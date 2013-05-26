@@ -21,7 +21,7 @@ import java.util.Objects;
 /**
  * @author Hiroki Itoh
  */
-public class NioClientSocketTransport extends NioSocketTransport<IOSelector> {
+public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> {
 
     private final SocketChannel clientChannel_;
     private final ConnectSelectorPool connector_;
@@ -68,9 +68,9 @@ public class NioClientSocketTransport extends NioSocketTransport<IOSelector> {
         if (isInLoopThread()) {
             writeBufferSink(buffer);
         } else {
-            offerTask(new TaskLoop.Task<IOSelector>() {
+            offerTask(new TaskLoop.Task<TcpIOSelector>() {
                 @Override
-                public int execute(IOSelector eventLoop) throws Exception {
+                public int execute(TcpIOSelector eventLoop) throws Exception {
                     writeBufferSink(buffer);
                     return TaskLoop.TIMEOUT_NO_LIMIT;
                 }
@@ -105,7 +105,7 @@ public class NioClientSocketTransport extends NioSocketTransport<IOSelector> {
 
     @Override
     public TransportFuture close() {
-        return isInLoopThread() ? closeSelectableChannel() : closeSelectableChannelLater(TransportState.CONNECTED);
+        return closeSelectableChannel(TransportState.CONNECTED);
     }
 
     @Override

@@ -56,6 +56,10 @@ public class TransportAggregateSupport implements TransportAggregate, TransportL
     }
 
     @Override
+    public void onAccept(Transport transport, SocketAddress remoteAddress) {
+    }
+
+    @Override
     public void onConnect(Transport transport, SocketAddress remoteAddress) {
     }
 

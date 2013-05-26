@@ -1,6 +1,7 @@
 package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.StoreStage;
+import net.ihiroky.niotty.TransportState;
 import net.ihiroky.niotty.buffer.BufferSink;
 import net.ihiroky.niotty.buffer.Buffers;
 import org.slf4j.Logger;
@@ -19,16 +20,16 @@ import java.util.Set;
  *
  * @author Hiroki Itoh
  */
-public class IOSelector extends AbstractSelector<IOSelector> {
+public class TcpIOSelector extends AbstractSelector<TcpIOSelector> {
 
     private final ByteBuffer readBuffer_;
     private final StoreStage<BufferSink, Void> ioStoreStage_;
-    private Logger logger_ = LoggerFactory.getLogger(IOSelector.class);
+    private Logger logger_ = LoggerFactory.getLogger(TcpIOSelector.class);
 
     private static final int MIN_BUFFER_SIZE = 256;
 
-    IOSelector(SelectorStoreStage<IOSelector> ioStoreStage,
-               int readBufferSize, boolean direct) {
+    TcpIOSelector(SelectorStoreStage<TcpIOSelector> ioStoreStage,
+                  int readBufferSize, boolean direct) {
         if (readBufferSize < MIN_BUFFER_SIZE) {
             readBufferSize = MIN_BUFFER_SIZE;
             logger_.warn("readBufferSize is set to {}.", readBufferSize);
@@ -54,7 +55,7 @@ public class IOSelector extends AbstractSelector<IOSelector> {
                     if (logger_.isDebugEnabled()) {
                         logger_.debug("transport reaches the end of its stream:" + transport);
                     }
-                    transport.closeSelectableChannel();
+                    transport.closeSelectableChannel(TransportState.CONNECTED);
                     localByteBuffer.clear();
                     continue;
                 }
@@ -62,12 +63,12 @@ public class IOSelector extends AbstractSelector<IOSelector> {
                 if (logger_.isDebugEnabled()) {
                     logger_.debug("failed to read from transport by interruption:" + transport, ie);
                 }
-                transport.closeSelectableChannel();
+                transport.closeSelectableChannel(TransportState.CONNECTED);
                 localByteBuffer.clear();
                 continue;
             } catch (IOException ioe) {
                 logger_.error("failed to read from transport:" + transport, ioe);
-                transport.closeSelectableChannel();
+                transport.closeSelectableChannel(TransportState.CONNECTED);
                 localByteBuffer.clear();
                 continue;
             }

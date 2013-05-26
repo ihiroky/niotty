@@ -2,6 +2,7 @@ package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.AbstractTransport;
 import net.ihiroky.niotty.DefaultTransportFuture;
+import net.ihiroky.niotty.DefaultTransportStateEvent;
 import net.ihiroky.niotty.SucceededTransportFuture;
 import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.TransportState;
@@ -31,14 +32,20 @@ public abstract class NioSocketTransport<S extends AbstractSelector<S>> extends 
         this.key_ = key;
     }
 
-    final TransportFuture closeSelectableChannelLater(TransportState transportState) {
+    final TransportFuture closeSelectableChannel(TransportState transportState) {
         S selector = getEventLoop();
         if (selector == null) {
             closePipelines();
             return new SucceededTransportFuture(this);
         }
         final DefaultTransportFuture future = new DefaultTransportFuture(this);
-        executeStore(new TransportStateEvent(transportState, null, future));
+        executeStore(new TransportStateEvent(transportState) {
+            @Override
+            public void execute() {
+                NioSocketTransport.this.doCloseSelectableChannel();
+                future.done();
+            }
+        });
         return future;
     }
 
@@ -52,7 +59,7 @@ public abstract class NioSocketTransport<S extends AbstractSelector<S>> extends 
      * operation.
      * @return
      */
-    final TransportFuture closeSelectableChannel() {
+    final TransportFuture doCloseSelectableChannel() {
         onCloseSelectableChannel();
         closePipelines();
         if (key_ != null && key_.isValid()) {
@@ -65,7 +72,7 @@ public abstract class NioSocketTransport<S extends AbstractSelector<S>> extends 
                 e.printStackTrace();
             }
             getTransportListener().onClose(this);
-            executeLoad(new TransportStateEvent(TransportState.CONNECTED, null));
+            executeLoad(new DefaultTransportStateEvent(TransportState.CONNECTED, null));
         }
         return new SucceededTransportFuture(this);
     }
