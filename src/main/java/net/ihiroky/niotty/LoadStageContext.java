@@ -28,6 +28,12 @@ public class LoadStageContext<I, O> extends PipelineElement<I, O> {
     }
 
     @Override
+    protected void fire(AttachedMessage<I> input) {
+        StageContext<O> context = input.wrappedContext(this);
+        stage_.load(context, input.message());
+    }
+
+    @Override
     protected void fire(TransportStateEvent event) {
         stage_.load(this, event);
     }
@@ -35,5 +41,10 @@ public class LoadStageContext<I, O> extends PipelineElement<I, O> {
     @Override
     public String toString() {
         return "(load stage:" + stage_ + ')';
+    }
+
+    @Override
+    public Object attachment() {
+        return null;
     }
 }

@@ -1,8 +1,8 @@
 package net.ihiroky.niotty.nio;
 
+import net.ihiroky.niotty.AttachedMessage;
 import net.ihiroky.niotty.DefaultTransportFuture;
 import net.ihiroky.niotty.PipelineComposer;
-import net.ihiroky.niotty.TaskLoop;
 import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.TransportState;
 import net.ihiroky.niotty.TransportStateEvent;
@@ -101,19 +101,8 @@ public class NioDatagramSocketTransport extends NioSocketTransport<TcpIOSelector
         executeStore(message);
     }
 
-    @Override
-    protected void writeDirect(final BufferSink buffer) {
-        if (isInLoopThread()) {
-            writeBufferSink(buffer);
-        } else {
-            offerTask(new TaskLoop.Task<TcpIOSelector>() {
-                @Override
-                public int execute(TcpIOSelector eventLoop) throws Exception {
-                    writeBufferSink(buffer);
-                    return TaskLoop.TIMEOUT_NO_LIMIT;
-                }
-            });
-        }
+    public void write(Object message, SocketAddress target) {
+        executeStore(new AttachedMessage<>(message, target));
     }
 
     @Override
@@ -143,8 +132,8 @@ public class NioDatagramSocketTransport extends NioSocketTransport<TcpIOSelector
         return channel_.isConnected();
     }
 
-    void writeBufferSink(BufferSink buffer) {
-        writeQueue_.offer(buffer);
+    void readyToWrite(AttachedMessage<BufferSink> message) {
+        writeQueue_.offer(message);
     }
 
     int flush(ByteBuffer writeBuffer) throws IOException {

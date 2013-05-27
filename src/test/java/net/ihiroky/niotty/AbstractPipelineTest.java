@@ -418,7 +418,14 @@ public class AbstractPipelineTest {
                 protected void fire(Object input) {
                 }
                 @Override
+                protected void fire(AttachedMessage<Object> input) {
+                }
+                @Override
                 protected void fire(TransportStateEvent event) {
+                }
+                @Override
+                public Object attachment() {
+                    return null;
                 }
             };
         }

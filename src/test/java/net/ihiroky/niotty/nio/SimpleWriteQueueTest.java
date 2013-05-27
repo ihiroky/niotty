@@ -1,5 +1,6 @@
 package net.ihiroky.niotty.nio;
 
+import net.ihiroky.niotty.AttachedMessage;
 import net.ihiroky.niotty.DefaultTransportParameter;
 import net.ihiroky.niotty.buffer.BufferSink;
 import net.ihiroky.niotty.buffer.Buffers;
@@ -71,7 +72,7 @@ public class SimpleWriteQueueTest {
                 '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'
         };
 
-        sut_.offer(Buffers.wrap(data, 0, data.length));
+        sut_.offer(new AttachedMessage<BufferSink>(Buffers.wrap(data, 0, data.length)));
         WriteQueue.FlushStatus status = sut_.flushTo(channel);
 
         assertThat(status, is(WriteQueue.FlushStatus.FLUSHED));
@@ -96,7 +97,7 @@ public class SimpleWriteQueueTest {
             }
         });
 
-        sut_.offer(buffer);
+        sut_.offer(new AttachedMessage<BufferSink>(buffer, target));
         WriteQueue.FlushStatus status = sut_.flushTo(channel, writeBuffer_);
 
         assertThat(status, is(WriteQueue.FlushStatus.FLUSHED));
@@ -119,7 +120,7 @@ public class SimpleWriteQueueTest {
                 '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'
         };
 
-        sut_.offer(Buffers.wrap(data, 0, data.length));
+        sut_.offer(new AttachedMessage<BufferSink>(Buffers.wrap(data, 0, data.length)));
         WriteQueue.FlushStatus status = sut_.flushTo(channel, data.length);
 
         assertThat(status, is(WriteQueue.FlushStatus.FLUSHED));
@@ -144,7 +145,7 @@ public class SimpleWriteQueueTest {
         });
 
 
-        sut_.offer(buffer);
+        sut_.offer(new AttachedMessage<BufferSink>(buffer));
         WriteQueue.FlushStatus status = sut_.flushTo(channel, writeBuffer_, data.length);
 
         assertThat(status, is(WriteQueue.FlushStatus.FLUSHED));
@@ -167,8 +168,8 @@ public class SimpleWriteQueueTest {
                 '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'
         };
 
-        sut_.offer(Buffers.wrap(data, 0, data.length));
-        sut_.offer(Buffers.wrap(data, 0, data.length));
+        sut_.offer(new AttachedMessage<BufferSink>(Buffers.wrap(data, 0, data.length)));
+        sut_.offer(new AttachedMessage<BufferSink>(Buffers.wrap(data, 0, data.length)));
         WriteQueue.FlushStatus status = sut_.flushTo(channel, data.length);
 
         assertThat(status, is(WriteQueue.FlushStatus.SKIP));
@@ -191,8 +192,8 @@ public class SimpleWriteQueueTest {
                 '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'
         };
 
-        sut_.offer(Buffers.wrap(data, 0, data.length));
-        sut_.offer(Buffers.wrap(data, 0, data.length));
+        sut_.offer(new AttachedMessage<BufferSink>(Buffers.wrap(data, 0, data.length)));
+        sut_.offer(new AttachedMessage<BufferSink>(Buffers.wrap(data, 0, data.length)));
         WriteQueue.FlushStatus status = sut_.flushTo(channel, writeBuffer_, data.length);
 
         assertThat(status, is(WriteQueue.FlushStatus.SKIP));
@@ -215,7 +216,7 @@ public class SimpleWriteQueueTest {
                 '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'
         };
 
-        sut_.offer(Buffers.wrap(data, 0, data.length));
+        sut_.offer(new AttachedMessage<BufferSink>(Buffers.wrap(data, 0, data.length)));
         WriteQueue.FlushStatus status = sut_.flushTo(channel);
 
         assertThat(status, CoreMatchers.is(WriteQueue.FlushStatus.FLUSHING));
@@ -246,7 +247,7 @@ public class SimpleWriteQueueTest {
         byte[] data = new byte[] {
                 '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'
         };
-        sut_.offer(Buffers.wrap(data, 0, data.length));
+        sut_.offer(new AttachedMessage<BufferSink>(Buffers.wrap(data, 0, data.length)));
         WriteQueue.FlushStatus status = sut_.flushTo(channel);
         assertThat(status, is(WriteQueue.FlushStatus.FLUSHING));
         assertThat(sut_.lastFlushedBytes(), is(8));
@@ -277,7 +278,7 @@ public class SimpleWriteQueueTest {
         byte[] data = new byte[] {
                 '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'
         };
-        sut_.offer(Buffers.wrap(data, 0, data.length));
+        sut_.offer(new AttachedMessage<BufferSink>(Buffers.wrap(data, 0, data.length)));
         WriteQueue.FlushStatus status = sut_.flushTo(channel);
         assertThat(status, is(WriteQueue.FlushStatus.FLUSHING));
         assertThat(sut_.lastFlushedBytes(), is(8));
@@ -302,7 +303,7 @@ public class SimpleWriteQueueTest {
                 '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'
         };
 
-        sut_.offer(Buffers.wrap(data, 0, data.length));
+        sut_.offer(new AttachedMessage<BufferSink>(Buffers.wrap(data, 0, data.length)));
         WriteQueue.FlushStatus status = sut_.flushTo(channel, writeBuffer_);
 
         assertThat(status, CoreMatchers.is(WriteQueue.FlushStatus.SKIP));
@@ -314,7 +315,7 @@ public class SimpleWriteQueueTest {
     public void testClear() throws Exception {
         BufferSink bufferSink = mock(BufferSink.class);
         doNothing().when(bufferSink).dispose();
-        sut_.offer(bufferSink);
+        sut_.offer(new AttachedMessage<BufferSink>(bufferSink));
 
         sut_.clear();
 

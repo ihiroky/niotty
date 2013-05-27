@@ -28,6 +28,12 @@ public class StoreStageContext<I, O> extends PipelineElement<I, O> {
     }
 
     @Override
+    protected void fire(AttachedMessage<I> input) {
+        StageContext<O> context = input.wrappedContext(this);
+        stage_.store(context, input.message());
+    }
+
+    @Override
     protected void fire(TransportStateEvent event) {
         stage_.store(this, event);
     }
@@ -36,5 +42,10 @@ public class StoreStageContext<I, O> extends PipelineElement<I, O> {
     @Override
     public String toString() {
         return "(store stage:" + stage_ + ')';
+    }
+
+    @Override
+    public Object attachment() {
+        return null;
     }
 }

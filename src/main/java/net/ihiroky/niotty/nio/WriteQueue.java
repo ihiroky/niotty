@@ -1,5 +1,6 @@
 package net.ihiroky.niotty.nio;
 
+import net.ihiroky.niotty.AttachedMessage;
 import net.ihiroky.niotty.TaskLoop;
 import net.ihiroky.niotty.buffer.BufferSink;
 
@@ -9,16 +10,18 @@ import java.nio.channels.DatagramChannel;
 import java.nio.channels.GatheringByteChannel;
 
 /**
- * A queue to holds {@link net.ihiroky.niotty.buffer.BufferSink} to be written to a channel.
+ * A queue to holds {@link net.ihiroky.niotty.AttachedMessage} that envelops
+ * {@link net.ihiroky.niotty.buffer.BufferSink} and arguments to be written to a channel.
+ *
  * @author Hiroki Itoh
  */
 public interface WriteQueue {
     /**
      * Inserts a specified {@code bufferSink} at the tail of this queue.
-     * @param bufferSink the element to add
+     * @param message the element to add
      * @return true if the {@code bufferSink} is added to this queue.
      */
-    boolean offer(BufferSink bufferSink);
+    boolean offer(AttachedMessage<BufferSink> message);
 
     /**
      * Flushes queued {@code BufferSink}s to a specified {@code channel} directly.

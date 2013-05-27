@@ -7,7 +7,6 @@ import net.ihiroky.niotty.TransportAggregate;
 import net.ihiroky.niotty.TransportAggregateSupport;
 import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.TransportState;
-import net.ihiroky.niotty.buffer.BufferSink;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -127,11 +126,6 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
         childAggregate_.add(child);
 
         getTransportListener().onAccept(child, remoteAddress);
-    }
-
-    @Override
-    protected void writeDirect(BufferSink buffer) {
-        throw new UnsupportedOperationException();
     }
 
     public Set<Transport> childSet() {

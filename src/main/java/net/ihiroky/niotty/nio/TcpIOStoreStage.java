@@ -1,5 +1,6 @@
 package net.ihiroky.niotty.nio;
 
+import net.ihiroky.niotty.AttachedMessage;
 import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.TaskLoop;
 import net.ihiroky.niotty.TransportState;
@@ -19,7 +20,7 @@ public class TcpIOStoreStage extends AbstractSelector.SelectorStoreStage<TcpIOSe
     @Override
     public void store(StageContext<Void> context, BufferSink input) {
         final NioClientSocketTransport transport = (NioClientSocketTransport) context.transport();
-        transport.writeBufferSink(input);
+        transport.readyToWrite(new AttachedMessage<>(input, context.attachment()));
         transport.offerTask(new TaskLoop.Task<TcpIOSelector>() {
             @Override
             public int execute(TcpIOSelector eventLoop) throws Exception {

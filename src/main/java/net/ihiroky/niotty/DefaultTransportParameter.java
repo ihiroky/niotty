@@ -1,6 +1,5 @@
 package net.ihiroky.niotty;
 
-import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 
 /**
@@ -48,18 +47,13 @@ public class DefaultTransportParameter implements TransportParameter {
     }
 
     @Override
-    public SocketAddress socketAddress() {
-        return address_;
-    }
-
-    @Override
-    public InetSocketAddress inetSocketAddress() {
-        return (InetSocketAddress) address_;
-    }
-
-    @Override
     public int priority() {
         return priority_;
+    }
+
+    @Override
+    public Object attachment() {
+        return address_;
     }
 
     @Override

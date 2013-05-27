@@ -60,12 +60,19 @@ public abstract class PipelineElement<I, O> implements StageContext<O> {
         executor_.execute(this, input);
     }
 
+    protected void execute(AttachedMessage<I> input) {
+        executor_.execute(this, input);
+    }
     protected void execute(TransportStateEvent event) {
         executor_.execute(this, event);
     }
 
     @Override
     public void proceed(O output) {
+        next_.execute(output);
+    }
+
+    protected void proceed(AttachedMessage<O> output) {
         next_.execute(output);
     }
 
@@ -76,5 +83,6 @@ public abstract class PipelineElement<I, O> implements StageContext<O> {
 
     protected abstract Object stage();
     protected abstract void fire(I input);
+    protected abstract void fire(AttachedMessage<I> input);
     protected abstract void fire(TransportStateEvent event);
 }

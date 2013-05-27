@@ -2,7 +2,6 @@ package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.DefaultTransportFuture;
 import net.ihiroky.niotty.TransportFuture;
-import net.ihiroky.niotty.buffer.BufferSink;
 
 import java.net.InetAddress;
 import java.net.NetworkInterface;
@@ -27,11 +26,6 @@ public class ConnectionWaitTransport extends NioSocketTransport<ConnectSelector>
 
     DefaultTransportFuture getFuture() {
         return future_;
-    }
-
-    @Override
-    protected void writeDirect(BufferSink buffer) {
-        throw new UnsupportedOperationException();
     }
 
     @Override

@@ -47,11 +47,19 @@ abstract public class AbstractTransport<L extends TaskLoop<L>> implements Transp
         loadPipeline_.execute(message);
     }
 
+    protected void executeLoad(AttachedMessage<Object> message) {
+        loadPipeline_.execute(message);
+    }
+
     protected void executeLoad(TransportStateEvent stateEvent) {
         loadPipeline_.execute(stateEvent);
     }
 
     protected void executeStore(Object message) {
+        storePipeline_.execute(message);
+    }
+
+    protected void executeStore(AttachedMessage<Object> message) {
         storePipeline_.execute(message);
     }
 
@@ -166,8 +174,6 @@ abstract public class AbstractTransport<L extends TaskLoop<L>> implements Transp
     public Object attachment() {
         return attachmentReference_.get();
     }
-
-    protected abstract void writeDirect(BufferSink buffer);
 
     private static class NullListener implements TransportListener {
         @Override

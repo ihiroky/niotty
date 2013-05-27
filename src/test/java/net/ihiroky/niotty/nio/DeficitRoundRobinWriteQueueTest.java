@@ -1,5 +1,6 @@
 package net.ihiroky.niotty.nio;
 
+import net.ihiroky.niotty.AttachedMessage;
 import net.ihiroky.niotty.DefaultTransportParameter;
 import net.ihiroky.niotty.buffer.BufferSink;
 import net.ihiroky.niotty.buffer.Buffers;
@@ -65,7 +66,7 @@ public class DeficitRoundRobinWriteQueueTest {
                 '0', '1', '2', '3'
         };
 
-        sut.offer(Buffers.wrap(data, 0, data.length));
+        sut.offer(new AttachedMessage<BufferSink>(Buffers.wrap(data, 0, data.length)));
         WriteQueue.FlushStatus status = sut.flushTo(channel);
 
         assertThat(status, is(WriteQueue.FlushStatus.FLUSHED));
@@ -82,7 +83,7 @@ public class DeficitRoundRobinWriteQueueTest {
                 '0', '1', '2', '3'
         };
 
-        sut.offer(Buffers.wrap(data, 0, data.length));
+        sut.offer(new AttachedMessage<BufferSink>(Buffers.wrap(data, 0, data.length)));
         WriteQueue.FlushStatus status = sut.flushTo(channel, ByteBuffer.allocate(10));
 
         assertThat(status, is(WriteQueue.FlushStatus.FLUSHED));
@@ -99,9 +100,11 @@ public class DeficitRoundRobinWriteQueueTest {
                 '0', '1', '2', '3', '4', '5', '6', '7'
         };
 
-        sut.offer(Buffers.wrap(data, 0, data.length));
-        sut.offer(Buffers.wrap(data, 0, data.length, new DefaultTransportParameter(0)));
-        sut.offer(Buffers.wrap(data, 0, data.length, new DefaultTransportParameter(2)));
+        sut.offer(new AttachedMessage<BufferSink>(Buffers.wrap(data, 0, data.length)));
+        sut.offer(new AttachedMessage<BufferSink>(Buffers.wrap(data, 0, data.length,
+                new DefaultTransportParameter(0))));
+        sut.offer(new AttachedMessage<BufferSink>(Buffers.wrap(data, 0, data.length,
+                new DefaultTransportParameter(2))));
         WriteQueue.FlushStatus status = sut.flushTo(channel);
         assertThat(status, is(WriteQueue.FlushStatus.FLUSHING));
         assertThat(sut.lastFlushedBytes(), is(4));
@@ -122,8 +125,9 @@ public class DeficitRoundRobinWriteQueueTest {
         sut.deficitCounter(0, 100);
         sut.deficitCounter(1, 100);
 
-        sut.offer(Buffers.wrap(data, 0, data.length));
-        sut.offer(Buffers.wrap(data, 0, data.length / 2, new DefaultTransportParameter(0)));
+        sut.offer(new AttachedMessage<BufferSink>(Buffers.wrap(data, 0, data.length)));
+        sut.offer(new AttachedMessage<BufferSink>(Buffers.wrap(data, 0, data.length / 2,
+                new DefaultTransportParameter(0))));
         WriteQueue.FlushStatus status = sut.flushTo(channel);
 
         assertThat(status, is(WriteQueue.FlushStatus.FLUSHED));
@@ -144,9 +148,11 @@ public class DeficitRoundRobinWriteQueueTest {
         sut.deficitCounter(0, 0); // priority 0 may not be executed.
         sut.deficitCounter(1, 6);
 
-        sut.offer(Buffers.wrap(data, 0, data.length / 2));
-        sut.offer(Buffers.wrap(data, 0, data.length, new DefaultTransportParameter(0)));
-        sut.offer(Buffers.wrap(data, 0, data.length, new DefaultTransportParameter(1)));
+        sut.offer(new AttachedMessage<BufferSink>(Buffers.wrap(data, 0, data.length / 2)));
+        sut.offer(new AttachedMessage<BufferSink>(Buffers.wrap(data, 0, data.length,
+                new DefaultTransportParameter(0))));
+        sut.offer(new AttachedMessage<BufferSink>(Buffers.wrap(data, 0, data.length,
+                new DefaultTransportParameter(1))));
         WriteQueue.FlushStatus status = sut.flushTo(channel);
 
         assertThat(status, is(WriteQueue.FlushStatus.SKIP));
@@ -170,9 +176,11 @@ public class DeficitRoundRobinWriteQueueTest {
         sut.deficitCounter(0, 0);
         sut.deficitCounter(1, 0);
 
-        sut.offer(Buffers.wrap(data, 0, data.length));
-        sut.offer(Buffers.wrap(data, 0, data.length, new DefaultTransportParameter(0)));
-        sut.offer(Buffers.wrap(data, 0, data.length, new DefaultTransportParameter(1)));
+        sut.offer(new AttachedMessage<BufferSink>(Buffers.wrap(data, 0, data.length)));
+        sut.offer(new AttachedMessage<BufferSink>(Buffers.wrap(data, 0, data.length,
+                new DefaultTransportParameter(0))));
+        sut.offer(new AttachedMessage<BufferSink>(Buffers.wrap(data, 0, data.length,
+                new DefaultTransportParameter(1))));
         WriteQueue.FlushStatus status = sut.flushTo(channel);
 
         assertThat(status, is(WriteQueue.FlushStatus.FLUSHING));
@@ -193,8 +201,10 @@ public class DeficitRoundRobinWriteQueueTest {
         sut.deficitCounter(0, 0);
         sut.deficitCounter(1, 0);
 
-        sut.offer(Buffers.wrap(data, 0, data.length, new DefaultTransportParameter(0)));
-        sut.offer(Buffers.wrap(data, 0, data.length, new DefaultTransportParameter(1)));
+        sut.offer(new AttachedMessage<BufferSink>(Buffers.wrap(data, 0, data.length,
+                new DefaultTransportParameter(0))));
+        sut.offer(new AttachedMessage<BufferSink>(Buffers.wrap(data, 0, data.length,
+                new DefaultTransportParameter(1))));
         WriteQueue.FlushStatus status = sut.flushTo(channel);
 
         assertThat(status, is(WriteQueue.FlushStatus.FLUSHED));
@@ -216,9 +226,11 @@ public class DeficitRoundRobinWriteQueueTest {
         sut.queueIndex(1);
         sut.deficitCounter(1, 8);
 
-        sut.offer(Buffers.wrap(data, 0, data.length));
-        sut.offer(Buffers.wrap(data, 0, data.length - 1, new DefaultTransportParameter(0))); // only 7 byte
-        sut.offer(Buffers.wrap(data, 0, data.length, new DefaultTransportParameter(1))); // flush first
+        sut.offer(new AttachedMessage<BufferSink>(Buffers.wrap(data, 0, data.length)));
+        sut.offer(new AttachedMessage<BufferSink>(Buffers.wrap(data, 0, data.length - 1,
+                new DefaultTransportParameter(0)))); // only 7 byte
+        sut.offer(new AttachedMessage<BufferSink>(Buffers.wrap(data, 0, data.length,
+                new DefaultTransportParameter(1)))); // flush first
         WriteQueue.FlushStatus status = sut.flushTo(channel);
 
         assertThat(status, is(WriteQueue.FlushStatus.FLUSHED));
@@ -241,9 +253,9 @@ public class DeficitRoundRobinWriteQueueTest {
         doReturn(new DefaultTransportParameter(1)).when(bufferSink2).attachment();
 
         DeficitRoundRobinWriteQueue sut = new DeficitRoundRobinWriteQueue(64, 100, 100);
-        sut.offer(bufferSink0);
-        sut.offer(bufferSink1);
-        sut.offer(bufferSink2);
+        sut.offer(new AttachedMessage<>(bufferSink0));
+        sut.offer(new AttachedMessage<>(bufferSink1));
+        sut.offer(new AttachedMessage<>(bufferSink2));
         sut.clear();
 
         verify(bufferSink0, times(1)).dispose();
