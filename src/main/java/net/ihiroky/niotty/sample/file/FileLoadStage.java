@@ -1,7 +1,7 @@
 package net.ihiroky.niotty.sample.file;
 
 import net.ihiroky.niotty.LoadStage;
-import net.ihiroky.niotty.LoadStageContext;
+import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.TransportStateEvent;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.FileBufferSink;
@@ -19,7 +19,7 @@ public class FileLoadStage implements LoadStage<String, Void> {
     private static final int DIVISOR = 2;
 
     @Override
-    public void load(LoadStageContext<String, Void> context, String input) {
+    public void load(StageContext<Void> context, String input) {
         Path path = Paths.get(input);
         try {
             long fileSize = Files.size(path);
@@ -31,6 +31,6 @@ public class FileLoadStage implements LoadStage<String, Void> {
     }
 
     @Override
-    public void load(LoadStageContext<?, ?> context, TransportStateEvent event) {
+    public void load(StageContext<?> context, TransportStateEvent event) {
     }
 }

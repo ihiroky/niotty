@@ -8,14 +8,14 @@ package net.ihiroky.niotty;
 public interface Pipeline<S> {
 
     Pipeline<S> add(StageKey key, S stage);
-    Pipeline<S> add(StageKey key, S stage, StageContextExecutorPool pool);
+    Pipeline<S> add(StageKey key, S stage, PipelineElementExecutorPool pool);
     Pipeline<S> addBefore(StageKey baseKey, StageKey key, S stage);
-    Pipeline<S> addBefore(StageKey baseKey, StageKey key, S stage, StageContextExecutorPool pool);
+    Pipeline<S> addBefore(StageKey baseKey, StageKey key, S stage, PipelineElementExecutorPool pool);
     Pipeline<S> addAfter(StageKey baseKey, StageKey key, S stage);
-    Pipeline<S> addAfter(StageKey baseKey, StageKey key, S stage, StageContextExecutorPool pool);
+    Pipeline<S> addAfter(StageKey baseKey, StageKey key, S stage, PipelineElementExecutorPool pool);
     Pipeline<S> remove(StageKey key);
     Pipeline<S> replace(StageKey oldKey, StageKey newKey, S newStage);
-    Pipeline<S> replace(StageKey oldKey, StageKey newKey, S newStage, StageContextExecutorPool pool);
+    Pipeline<S> replace(StageKey oldKey, StageKey newKey, S newStage, PipelineElementExecutorPool pool);
     String name();
     Transport transport();
 }

@@ -5,8 +5,8 @@ import java.util.List;
 /**
  * @author Hiroki Itoh
  */
-public final class ThreadStageContextExecutorPool
-        extends TaskLoopGroup<ThreadStageContextExecutor> implements StageContextExecutorPool {
+public final class ThreadPipelineElementExecutorPool
+        extends TaskLoopGroup<ThreadPipelineElementExecutor> implements PipelineElementExecutorPool {
 
     private final Object assignLock_;
     private final int numberOfThread_;
@@ -18,7 +18,7 @@ public final class ThreadStageContextExecutorPool
         CLOSED,
     }
 
-    public ThreadStageContextExecutorPool(int numberOfThread) {
+    public ThreadPipelineElementExecutorPool(int numberOfThread) {
         if (numberOfThread <= 0) {
             throw new IllegalArgumentException("numberOfThread must be positive.");
         }
@@ -28,8 +28,8 @@ public final class ThreadStageContextExecutorPool
     }
 
     @Override
-    protected ThreadStageContextExecutor newEventLoop() {
-        return new ThreadStageContextExecutor(this);
+    protected ThreadPipelineElementExecutor newEventLoop() {
+        return new ThreadPipelineElementExecutor(this);
     }
 
     Object assignLock() {
@@ -37,15 +37,15 @@ public final class ThreadStageContextExecutorPool
     }
 
     @Override
-    public StageContextExecutor assign(StageContext<?, ?> context) {
+    public PipelineElementExecutor assign(PipelineElement<?, ?> context) {
         synchronized (assignLock_) {
             if (state_ == State.INITIALIZED) {
                 super.open(new NameCountThreadFactory(context.key().toString()), numberOfThread_);
                 state_ = State.OPEN;
             }
-            List<ThreadStageContextExecutor> loops = sortedLoopsView();
-            ThreadStageContextExecutor target = loops.get(0);
-            for (ThreadStageContextExecutor loop : loops) {
+            List<ThreadPipelineElementExecutor> loops = sortedLoopsView();
+            ThreadPipelineElementExecutor target = loops.get(0);
+            for (ThreadPipelineElementExecutor loop : loops) {
                 if (loop.contains(context)) {
                     target = loop;
                     break;

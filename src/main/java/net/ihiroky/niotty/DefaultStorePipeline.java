@@ -19,8 +19,8 @@ public class DefaultStorePipeline extends AbstractPipeline<StoreStage<?, ?>> imp
     }
 
     @Override
-    protected StageContext<Object, Object> createContext(
-            StageKey key, StoreStage<?, ?> stage, StageContextExecutorPool pool) {
+    protected PipelineElement<Object, Object> createContext(
+            StageKey key, StoreStage<?, ?> stage, PipelineElementExecutorPool pool) {
         @SuppressWarnings("unchecked")
         StoreStage<Object, Object> s = (StoreStage<Object, Object>) stage;
         return new StoreStageContext<>(this, key, s, pool);
@@ -37,7 +37,7 @@ public class DefaultStorePipeline extends AbstractPipeline<StoreStage<?, ?>> imp
 
     public DefaultStorePipeline createCopy() {
         DefaultStorePipeline copy = new DefaultStorePipeline(name(), transport());
-        for (Iterator<StageContext<Object, Object>> i = iterator(); i.hasNext();) {
+        for (Iterator<PipelineElement<Object, Object>> i = iterator(); i.hasNext();) {
             @SuppressWarnings("unchecked")
             StoreStageContext<Object, Object> context = (StoreStageContext<Object, Object>) i.next();
             StageKey key = context.key();

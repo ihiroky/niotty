@@ -2,7 +2,7 @@ package net.ihiroky.niotty.sample.drr;
 
 import net.ihiroky.niotty.DefaultTransportParameter;
 import net.ihiroky.niotty.LoadStage;
-import net.ihiroky.niotty.LoadStageContext;
+import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.Transport;
 import net.ihiroky.niotty.TransportStateEvent;
 import net.ihiroky.niotty.buffer.Buffers;
@@ -18,7 +18,7 @@ public class NumberGenerator implements LoadStage<CodecBuffer, Void> {
     private Logger logger_ = LoggerFactory.getLogger(NumberGenerator.class);
 
     @Override
-    public void load(LoadStageContext<CodecBuffer, Void> context, CodecBuffer input) {
+    public void load(StageContext<Void> context, CodecBuffer input) {
         int count = input.readInt();
         Transport transport = context.transport();
         System.out.println("count:" + count);
@@ -44,7 +44,7 @@ public class NumberGenerator implements LoadStage<CodecBuffer, Void> {
     }
 
     @Override
-    public void load(LoadStageContext<?, ?> context, TransportStateEvent event) {
+    public void load(StageContext<?> context, TransportStateEvent event) {
         logger_.info("state: {}", event);
     }
 }

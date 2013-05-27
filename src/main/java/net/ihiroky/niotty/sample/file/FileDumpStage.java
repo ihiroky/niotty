@@ -1,7 +1,7 @@
 package net.ihiroky.niotty.sample.file;
 
 import net.ihiroky.niotty.LoadStage;
-import net.ihiroky.niotty.LoadStageContext;
+import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.TransportStateEvent;
 import net.ihiroky.niotty.buffer.CodecBuffer;
 
@@ -26,7 +26,7 @@ public class FileDumpStage implements LoadStage<CodecBuffer, Void> {
     }
 
     @Override
-    public void load(LoadStageContext<CodecBuffer, Void> context, CodecBuffer input) {
+    public void load(StageContext<Void> context, CodecBuffer input) {
         ByteBuffer in = input.toByteBuffer();
         CharBuffer out = CharBuffer.allocate(BUFFER_SIZE);
         CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder()
@@ -52,6 +52,6 @@ public class FileDumpStage implements LoadStage<CodecBuffer, Void> {
     }
 
     @Override
-    public void load(LoadStageContext<?, ?> context, TransportStateEvent event) {
+    public void load(StageContext<?> context, TransportStateEvent event) {
     }
 }

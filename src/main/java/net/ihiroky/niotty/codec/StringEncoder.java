@@ -1,7 +1,7 @@
 package net.ihiroky.niotty.codec;
 
+import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.StoreStage;
-import net.ihiroky.niotty.StoreStageContext;
 import net.ihiroky.niotty.TransportStateEvent;
 import net.ihiroky.niotty.buffer.BufferSink;
 import net.ihiroky.niotty.buffer.Buffers;
@@ -31,7 +31,7 @@ public class StringEncoder implements StoreStage<String, BufferSink> {
     }
 
     @Override
-    public void store(StoreStageContext<String, BufferSink> context, String input) {
+    public void store(StageContext<BufferSink> context, String input) {
         CharsetEncoder encoder = charset_.newEncoder();
         float bytesPerChar = encoder.averageBytesPerChar();
         CodecBuffer buffer = Buffers.newCodecBuffer(Math.round(bytesPerChar * input.length()));
@@ -40,7 +40,7 @@ public class StringEncoder implements StoreStage<String, BufferSink> {
     }
 
     @Override
-    public void store(StoreStageContext<?, ?> context, TransportStateEvent event) {
+    public void store(StageContext<?> context, TransportStateEvent event) {
         context.proceed(event);
     }
 }

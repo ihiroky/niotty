@@ -1,6 +1,6 @@
 package net.ihiroky.niotty.nio;
 
-import net.ihiroky.niotty.StoreStageContext;
+import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.TaskLoop;
 import net.ihiroky.niotty.TransportState;
 import net.ihiroky.niotty.buffer.BufferSink;
@@ -17,7 +17,7 @@ public class TcpIOStoreStage extends AbstractSelector.SelectorStoreStage<TcpIOSe
     static Logger logger_ = LoggerFactory.getLogger(TcpIOStoreStage.class);
 
     @Override
-    public void store(StoreStageContext<BufferSink, Void> context, BufferSink input) {
+    public void store(StageContext<Void> context, BufferSink input) {
         final NioClientSocketTransport transport = (NioClientSocketTransport) context.transport();
         transport.writeBufferSink(input);
         transport.offerTask(new TaskLoop.Task<TcpIOSelector>() {

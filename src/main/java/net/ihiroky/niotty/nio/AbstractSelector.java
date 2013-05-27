@@ -1,8 +1,8 @@
 package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.DefaultTransportStateEvent;
+import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.StoreStage;
-import net.ihiroky.niotty.StoreStageContext;
 import net.ihiroky.niotty.TaskLoop;
 import net.ihiroky.niotty.TransportState;
 import net.ihiroky.niotty.TransportStateEvent;
@@ -122,11 +122,11 @@ public abstract class AbstractSelector<S extends AbstractSelector<S>> extends Ta
 
     static class SelectorStoreStage<S extends AbstractSelector<S>> implements StoreStage<BufferSink, Void> {
         @Override
-        public void store(StoreStageContext<BufferSink, Void> context, BufferSink input) {
+        public void store(StageContext<Void> context, BufferSink input) {
         }
 
         @Override
-        public void store(StoreStageContext<?, ?> context, final TransportStateEvent event) {
+        public void store(StageContext<?> context, final TransportStateEvent event) {
             @SuppressWarnings("unchecked")
             final NioSocketTransport<S> transport = (NioSocketTransport<S>) context.transport();
             if (transport.isInLoopThread()) {

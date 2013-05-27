@@ -11,15 +11,15 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * @author Hiroki Itoh
  */
-public class ThreadStageContextExecutor extends TaskLoop<ThreadStageContextExecutor> implements StageContextExecutor {
+public class ThreadPipelineElementExecutor extends TaskLoop<ThreadPipelineElementExecutor> implements PipelineElementExecutor {
 
     private final Lock lock_;
     private final Condition condition_;
     private final AtomicBoolean signaled_;
-    private final Set<StageContext<?, ?>> contextSet_;
-    private final ThreadStageContextExecutorPool pool_;
+    private final Set<PipelineElement<?, ?>> contextSet_;
+    private final ThreadPipelineElementExecutorPool pool_;
 
-    public ThreadStageContextExecutor(ThreadStageContextExecutorPool pool) {
+    public ThreadPipelineElementExecutor(ThreadPipelineElementExecutorPool pool) {
         lock_ = new ReentrantLock();
         condition_ = lock_.newCondition();
         signaled_ = new AtomicBoolean();
@@ -60,10 +60,10 @@ public class ThreadStageContextExecutor extends TaskLoop<ThreadStageContextExecu
     }
 
     @Override
-    public <I> void execute(final StageContext<I, ?> context, final I input) {
-        offerTask(new Task<ThreadStageContextExecutor>() {
+    public <I> void execute(final PipelineElement<I, ?> context, final I input) {
+        offerTask(new Task<ThreadPipelineElementExecutor>() {
             @Override
-            public int execute(ThreadStageContextExecutor eventLoop) throws Exception {
+            public int execute(ThreadPipelineElementExecutor eventLoop) throws Exception {
                 context.fire(input);
                 return TIMEOUT_NO_LIMIT;
             }
@@ -71,10 +71,10 @@ public class ThreadStageContextExecutor extends TaskLoop<ThreadStageContextExecu
     }
 
     @Override
-    public void execute(final StageContext<?, ?> context, final TransportStateEvent event) {
-        offerTask(new Task<ThreadStageContextExecutor>() {
+    public void execute(final PipelineElement<?, ?> context, final TransportStateEvent event) {
+        offerTask(new Task<ThreadPipelineElementExecutor>() {
             @Override
-            public int execute(ThreadStageContextExecutor eventLoop) throws Exception {
+            public int execute(ThreadPipelineElementExecutor eventLoop) throws Exception {
                 context.fire(event);
                 return TIMEOUT_NO_LIMIT;
             }
@@ -82,12 +82,12 @@ public class ThreadStageContextExecutor extends TaskLoop<ThreadStageContextExecu
     }
 
     @Override
-    public StageContextExecutorPool pool() {
+    public PipelineElementExecutorPool pool() {
         return pool_;
     }
 
     @Override
-    public void close(StageContext<?, ?> context) {
+    public void close(PipelineElement<?, ?> context) {
         synchronized (pool_.assignLock()) {
             contextSet_.remove(context);
         }
@@ -95,25 +95,25 @@ public class ThreadStageContextExecutor extends TaskLoop<ThreadStageContextExecu
     }
 
     /**
-     * Adds a specified {@code StageContext} to the context set.
-     * This method can be called by {@link ThreadStageContextExecutorPool} only.
+     * Adds a specified {@code PipelineElement} to the context set.
+     * This method can be called by {@link ThreadPipelineElementExecutorPool} only.
      *
-     * @param context the {@code StageContext} to be added
+     * @param context the {@code PipelineElement} to be added
      * @return true if the context set does not contains the {@code context}
      */
-    boolean accept(StageContext<?, ?> context) {
+    boolean accept(PipelineElement<?, ?> context) {
         processingMemberCount_.incrementAndGet();
         return contextSet_.add(context);
     }
 
     /**
-     * Returns true if the context set contains a specified {@code StageContext}.
-     * This method can be called by {@link ThreadStageContextExecutorPool} only.
+     * Returns true if the context set contains a specified {@code PipelineElement}.
+     * This method can be called by {@link ThreadPipelineElementExecutorPool} only.
      *
-     * @param context the {@code StageContext} to be checked
-     * @return true if the context set contains a specified {@code StageContext}.
+     * @param context the {@code PipelineElement} to be checked
+     * @return true if the context set contains a specified {@code PipelineElement}.
      */
-    boolean contains(StageContext<?, ?> context) {
+    boolean contains(PipelineElement<?, ?> context) {
         return contextSet_.contains(context);
     }
 }

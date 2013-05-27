@@ -1,7 +1,7 @@
 package net.ihiroky.niotty.codec;
 
+import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.StoreStage;
-import net.ihiroky.niotty.StoreStageContext;
 import net.ihiroky.niotty.TransportStateEvent;
 import net.ihiroky.niotty.buffer.BufferSink;
 import net.ihiroky.niotty.buffer.Buffers;
@@ -18,7 +18,7 @@ public class FrameLengthPrependEncoder implements StoreStage<BufferSink, BufferS
     static final int MASK_TWO_BYTES = 0xFFFF;
 
     @Override
-    public void store(StoreStageContext<BufferSink, BufferSink> context, BufferSink input) {
+    public void store(StageContext<BufferSink> context, BufferSink input) {
         int contentsLength = input.remainingBytes();
         if (contentsLength < 0) {
             throw new IllegalArgumentException("input length is negative: " + contentsLength);
@@ -36,7 +36,7 @@ public class FrameLengthPrependEncoder implements StoreStage<BufferSink, BufferS
     }
 
     @Override
-    public void store(StoreStageContext<?, ?> context, TransportStateEvent event) {
+    public void store(StageContext<?> context, TransportStateEvent event) {
         context.proceed(event);
     }
 }

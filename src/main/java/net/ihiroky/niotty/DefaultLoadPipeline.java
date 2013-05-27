@@ -16,8 +16,8 @@ public class DefaultLoadPipeline extends AbstractPipeline<LoadStage<?, ?>> imple
     }
 
     @Override
-    protected StageContext<Object, Object> createContext(
-            StageKey key, LoadStage<?, ?> stage, StageContextExecutorPool pool) {
+    protected PipelineElement<Object, Object> createContext(
+            StageKey key, LoadStage<?, ?> stage, PipelineElementExecutorPool pool) {
         @SuppressWarnings("unchecked")
         LoadStage<Object, Object> s = (LoadStage<Object, Object>) stage;
         return new LoadStageContext<>(this, key, s, pool);
@@ -25,7 +25,7 @@ public class DefaultLoadPipeline extends AbstractPipeline<LoadStage<?, ?>> imple
 
     public DefaultLoadPipeline createCopy() {
         DefaultLoadPipeline copy = new DefaultLoadPipeline(name(), transport());
-        for (Iterator<StageContext<Object, Object>> i = iterator(); i.hasNext();) {
+        for (Iterator<PipelineElement<Object, Object>> i = iterator(); i.hasNext();) {
             @SuppressWarnings("unchecked")
             LoadStageContext<Object, Object> context = (LoadStageContext<Object, Object>) i.next();
             copy.add(context.key(), context.stage(), context.executor().pool());
