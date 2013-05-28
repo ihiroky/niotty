@@ -1,6 +1,5 @@
 package net.ihiroky.niotty.nio;
 
-import net.ihiroky.niotty.AttachedMessage;
 import net.ihiroky.niotty.buffer.BufferSink;
 
 import java.io.IOException;

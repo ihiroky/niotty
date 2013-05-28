@@ -1,4 +1,7 @@
-package net.ihiroky.niotty;
+package net.ihiroky.niotty.nio;
+
+import net.ihiroky.niotty.DefaultTransportParameter;
+import net.ihiroky.niotty.TransportParameter;
 
 /**
  * An message that an object is attached to.

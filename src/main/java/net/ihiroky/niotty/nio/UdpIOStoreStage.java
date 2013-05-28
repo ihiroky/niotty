@@ -1,6 +1,5 @@
 package net.ihiroky.niotty.nio;
 
-import net.ihiroky.niotty.AttachedMessage;
 import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.TaskLoop;
 import net.ihiroky.niotty.TransportState;

@@ -1,6 +1,5 @@
 package net.ihiroky.niotty.nio;
 
-import net.ihiroky.niotty.AttachedMessage;
 import net.ihiroky.niotty.TaskLoop;
 import net.ihiroky.niotty.buffer.BufferSink;
 
@@ -10,7 +9,7 @@ import java.nio.channels.DatagramChannel;
 import java.nio.channels.GatheringByteChannel;
 
 /**
- * A queue to holds {@link net.ihiroky.niotty.AttachedMessage} that envelops
+ * A queue to holds {@link AttachedMessage} that envelops
  * {@link net.ihiroky.niotty.buffer.BufferSink} and arguments to be written to a channel.
  *
  * @author Hiroki Itoh

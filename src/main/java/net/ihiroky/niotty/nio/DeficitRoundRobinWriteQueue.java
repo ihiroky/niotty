@@ -1,6 +1,5 @@
 package net.ihiroky.niotty.nio;
 
-import net.ihiroky.niotty.AttachedMessage;
 import net.ihiroky.niotty.TransportParameter;
 import net.ihiroky.niotty.buffer.BufferSink;
 import org.slf4j.Logger;
@@ -31,7 +30,7 @@ import java.util.List;
  * flushed and the counter is decremented by its actual flush size.
  *
  * A priority of the {@link net.ihiroky.niotty.buffer.BufferSink} passed at
- * {@link #offer(net.ihiroky.niotty.AttachedMessage)} decides the queue to be inserted.
+ * {@link #offer(AttachedMessage)} decides the queue to be inserted.
  * If the priority is negative, then the {@code BufferSink} is inserted to the base queue. If positive, then it
  * is inserted to the weighted queue, the same order as {@code weights} specified by the constructor.
  *
