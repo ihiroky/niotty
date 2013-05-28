@@ -10,8 +10,8 @@ public class DefaultPipelineElementExecutor implements PipelineElementExecutor {
     }
 
     @Override
-    public <I> void execute(PipelineElement<I, ?> context, AttachedMessage<I> input) {
-        context.fire(input.message());
+    public <I> void execute(PipelineElement<I, ?> context, I input, TransportParameter parameter) {
+        context.fire(input, parameter);
     }
 
     @Override

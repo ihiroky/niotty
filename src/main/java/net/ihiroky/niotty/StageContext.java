@@ -6,7 +6,7 @@ package net.ihiroky.niotty;
 public interface StageContext<O> {
     StageKey key();
     Transport transport();
-    Object attachment();
+    TransportParameter transportParameter();
     void proceed(O output);
     void proceed(TransportStateEvent event);
 }

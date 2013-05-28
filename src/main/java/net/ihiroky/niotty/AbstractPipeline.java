@@ -295,8 +295,8 @@ public abstract class AbstractPipeline<S> implements Pipeline<S> {
         head_.next().execute(input);
     }
 
-    public void execute(AttachedMessage<Object> input) {
-        head_.next().execute(input);
+    public void execute(Object input, TransportParameter parameter) {
+        head_.next().execute(input, parameter);
     }
 
     public void execute(TransportStateEvent event) {
@@ -339,14 +339,14 @@ public abstract class AbstractPipeline<S> implements Pipeline<S> {
         protected void fire(Object input) {
         }
         @Override
-        protected void fire(AttachedMessage<Object> input) {
+        protected void fire(Object input, TransportParameter parameter) {
         }
         @Override
         protected void fire(TransportStateEvent event) {
         }
         @Override
-        public Object attachment() {
-            return null;
+        public TransportParameter transportParameter() {
+            return DefaultTransportParameter.NO_PARAMETER;
         }
     }
 

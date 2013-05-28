@@ -5,5 +5,5 @@ package net.ihiroky.niotty;
  */
 public interface TransportParameter {
     int priority();
-    Object attachment();
+    Object argument();
 }

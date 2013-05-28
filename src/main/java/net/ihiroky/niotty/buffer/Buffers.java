@@ -1,8 +1,5 @@
 package net.ihiroky.niotty.buffer;
 
-import net.ihiroky.niotty.DefaultTransportParameter;
-import net.ihiroky.niotty.TransportParameter;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
@@ -16,7 +13,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 
 /**
- * Provides factory methods of {@link net.ihiroky.niotty.buffer.CodecBuffer}
+ * Provides factory methods of {@link net.ihiroky.niotty.buffer.CodecBuffer},
  * {@link net.ihiroky.niotty.buffer.BufferSink} and utility method for this package.
  *
  * @author Hiroki Itoh
@@ -66,36 +63,19 @@ public final class Buffers {
      * @return the new {@code CodecBuffer}.
      */
     public static CodecBuffer newCodecBuffer() {
-        return new ArrayCodecBuffer(
-                ArrayChunkFactory.instance(), DEFAULT_CAPACITY, DefaultTransportParameter.NO_PARAMETER);
+        return new ArrayCodecBuffer(ArrayChunkFactory.instance(), DEFAULT_CAPACITY);
     }
 
     /**
      * Creates a new {@code CodecBuffer} which has initial capacity {@code initialCapacity}.
      * The new {@code CodecBuffer} has no content to read.
      *
-     * An invocation of this method behaves in exactly the same way as the invocation
-     * {@code newCodecBuffer(initialCapacity, DefaultTransportParameter.NO_PARAMETER)}.
-     *
      * @param initialCapacity the initial capacity of the new {@code CodecBuffer}.
      * @throws IllegalArgumentException if the initialCapacity is negative.
      * @return the new {@code CodecBuffer}
      */
     public static CodecBuffer newCodecBuffer(int initialCapacity) {
-        return new ArrayCodecBuffer(
-                ArrayChunkFactory.instance(), initialCapacity, DefaultTransportParameter.NO_PARAMETER);
-    }
-
-    /**
-     * Creates a new {@code CodecBuffer} which has initial capacity {@code initialCapacity} and a specified attachment.
-     *
-     * @param initialCapacity the initial capacity of the new {@code CodecBuffer}
-     * @param attachment the attachment used by a transport implementation.
-     * @throws IllegalArgumentException if the initialCapacity is negative.
-     * @return the new {@code CodecBuffer}
-     */
-    public static CodecBuffer newCodecBuffer(int initialCapacity, TransportParameter attachment) {
-        return new ArrayCodecBuffer(ArrayChunkFactory.instance(), initialCapacity, attachment);
+        return new ArrayCodecBuffer(ArrayChunkFactory.instance(), initialCapacity);
     }
 
     /**
@@ -115,25 +95,7 @@ public final class Buffers {
      * @return the new {@code DecodeBuffer}
      */
     public static CodecBuffer wrap(byte[] buffer, int beginning, int length) {
-        return new ArrayCodecBuffer(buffer, beginning, length, DefaultTransportParameter.NO_PARAMETER);
-    }
-
-    /**
-     * Creates a new {@code CodecBuffer} which is backed by a specified byte array with a specified attachment.
-     *
-     * If some data is written into the {@code CodecBuffer}, then the backed byte array is also modified
-     * and vice versa. The new {@code CodecBuffer}'s beginning is {@code offset} and end is {@code offset + length}.
-     *
-     * @param buffer the backed byte array
-     * @param beginning the offset of content in {@code buffer}
-     * @param length the length of content in {@code buffer} from {@code offset}
-     * @param attachment the attachment used by a transport implementation.
-     * @throws NullPointerException if {@code buffer} is null.
-     * @throws IllegalArgumentException if {@code beginning} or {@code length} is invalid.
-     * @return the new {@code DecodeBuffer}
-     */
-    public static CodecBuffer wrap(byte[] buffer, int beginning, int length, TransportParameter attachment) {
-        return new ArrayCodecBuffer(buffer, beginning, length, attachment);
+        return new ArrayCodecBuffer(buffer, beginning, length);
     }
 
     /**
@@ -142,33 +104,13 @@ public final class Buffers {
      *
      * <p>An allocation of the new buffer's content is controlled by a specified {@code chunkPool}.</p>
      *
-     * <p>An invocation of this method behaves in exactly the same way as the invocation
-     * {@code newCodecBuffer(chunkPool, initialCapacity, DefaultTransportParameter.NO_PARAMETER)}.</p>
-     *
      * @param chunkPool the object which controls the allocation of the new buffer's content.
      * @param initialCapacity the initial capacity of the new {@code CodecBuffer}.
      * @throws IllegalArgumentException if the initialCapacity is negative.
      * @return the new {@code CodecBuffer}
      */
     public static CodecBuffer newCodecBuffer(ArrayChunkPool chunkPool, int initialCapacity) {
-        return new ArrayCodecBuffer(chunkPool, initialCapacity, DefaultTransportParameter.NO_PARAMETER);
-    }
-
-    /**
-     * Creates a new {@code CodecBuffer} which has initial capacity {@code initialCapacity} and a specified attachment.
-     * <p></p>
-     * An allocation of the new buffer's content is controlled by a specified {@code manager}.
-     *
-     * @param chunkPool the object which controls the allocation of the new buffer's content.
-     * @param initialCapacity the initial capacity of the new {@code CodecBuffer}
-     * @param attachment the attachment used by a transport implementation.
-     * @throws NullPointerException if chunkPool is null.
-     * @throws IllegalArgumentException if the initialCapacity is negative.
-     * @return the new {@code CodecBuffer}
-     */
-    public static CodecBuffer newCodecBuffer(
-            ArrayChunkPool chunkPool, int initialCapacity, TransportParameter attachment) {
-        return new ArrayCodecBuffer(chunkPool, initialCapacity, attachment);
+        return new ArrayCodecBuffer(chunkPool, initialCapacity);
     }
 
     /**
@@ -176,29 +118,12 @@ public final class Buffers {
      *
      * <p>If some data is written into the {@code CodecBuffer}, then the backed {@code ByteBuffer} is also modified
      * and vice versa. The new {@code CodecBuffer}'s beginning is buffer' position and end is buffer's limit.</p>
-     *
-     * <p>An invocation of this method behaves in exactly the same way as the invocation
-     * {@code wrap(byteBuffer, DefaultTransportParameter.NO_PARAMETER)}.</p>
      *
      * @param byteBuffer the backed {@code ByteBuffer}
      * @return the new {@code CodecBuffer}
      */
     public static CodecBuffer wrap(ByteBuffer byteBuffer) {
-        return new ByteBufferCodecBuffer(byteBuffer, DefaultTransportParameter.NO_PARAMETER);
-    }
-
-    /**
-     * Creates a new {@code CodecBuffer} which is backed by a specified byte buffer.
-     *
-     * <p>If some data is written into the {@code CodecBuffer}, then the backed {@code ByteBuffer} is also modified
-     * and vice versa. The new {@code CodecBuffer}'s beginning is buffer' position and end is buffer's limit.</p>
-     *
-     * @param byteBuffer the backed {@code ByteBuffer}
-     * @param attachment the attachment used in a Transport implementation.
-     * @return the new {@code DecodeBuffer}
-     */
-    public static CodecBuffer wrap(ByteBuffer byteBuffer, TransportParameter attachment) {
-        return new ByteBufferCodecBuffer(byteBuffer, attachment);
+        return new ByteBufferCodecBuffer(byteBuffer);
     }
 
     /**
@@ -209,45 +134,12 @@ public final class Buffers {
      *
      * <p>An allocation of the new buffer's content is controlled by a specified {@code chunkPool}.</p>
      *
-     * <p>An invocation of this method behaves in exactly the same way as the invocation
-     * {@code newCodecBuffer(chunkPool, initialCapacity, DefaultTransportParameter.NO_PARAMETER)}</p>
-     *
      * @param chunkPool the object which controls the allocation of the new buffer's content.
      * @param initialCapacity the initial capacity of the new {@code CodecBuffer}.
      * @return the new {@code CodecBuffer}
      */
     public static CodecBuffer newCodecBuffer(ByteBufferChunkPool chunkPool, int initialCapacity) {
-        return new ByteBufferCodecBuffer(chunkPool, initialCapacity, DefaultTransportParameter.NO_PARAMETER);
-    }
-
-    /**
-     * Creates a new {@code CodecBuffer} which is backed by a specified byte buffer.
-     * <p></p>
-     * An allocation of the new buffer's content is controlled by a specified {@code chunkPool}.
-     *
-     * @param chunkPool the object which controls the allocation of the new buffer's content.
-     * @param initialCapacity the initial capacity of the new {@code CodecBuffer}
-     * @param attachment the attachment used in a Transport implementation.
-     * @return the new {@code DecodeBuffer}
-     */
-    public static CodecBuffer newCodecBuffer(
-            ByteBufferChunkPool chunkPool, int initialCapacity, TransportParameter attachment) {
-        return new ByteBufferCodecBuffer(chunkPool, initialCapacity, attachment);
-    }
-
-    /**
-     * Creates a new {@code BufferSink} which presents a file specified with a {@code path} and its range.
-     * <p>An invocation of this method behaves in exactly the same way as the invocation
-     * {@code newBufferSink(path, beginning, length, DefaultTransportParameter.NO_PARAMETER)}.
-     </p>
-     * @param path the path to points the file
-     * @param beginning beginning byte of the range, from the head of the file
-     * @param length byte length of the range
-     * @return a new {@code BufferSink} which presents the file
-     * @throws IOException if failed to open the file
-     */
-    public static FileBufferSink newBufferSink(Path path, long beginning, long length) throws IOException {
-        return newBufferSink(path, beginning, length, DefaultTransportParameter.NO_PARAMETER);
+        return new ByteBufferCodecBuffer(chunkPool, initialCapacity);
     }
 
     /**
@@ -256,20 +148,16 @@ public final class Buffers {
      * @param path the path to points the file
      * @param beginning beginning byte of the range, from the head of the file
      * @param length byte length of the range
-     * @param attachment the attachment used by a transport implementation.
      * @return a new {@code BufferSink} which presents the file
      * @throws IOException if failed to open the file
      */
-    public static FileBufferSink newBufferSink(
-            Path path, long beginning, long length, TransportParameter attachment) throws IOException {
+    public static BufferSink newBufferSink(Path path, long beginning, long length) throws IOException {
         FileChannel channel = FileChannel.open(path, StandardOpenOption.READ);
-        return new FileBufferSink(channel, beginning, length, attachment);
+        return new FileBufferSink(channel, beginning, length);
     }
 
     /**
      * Creates a new {@code BufferSink} which holds a pair of {@code BufferSink}.
-     * <p>An invocation of this method behaves in exactly the same way as the invocation
-     * {@code wrap(car, cdr, DefaultTransportParameter.NO_PARAMETER)}.</p>
      *
      * @param car the former one of the pair
      * @param cdr the latter one of the pair
@@ -277,18 +165,6 @@ public final class Buffers {
      */
     public static BufferSink wrap(BufferSink car, BufferSink cdr) {
         return new BufferSinkList(car, cdr);
-    }
-
-    /**
-     * Creates a new {@code BufferSink} which holds a pair of {@code BufferSink}.
-     *
-     * @param car the former one of the pair
-     * @param cdr the latter one of the pair
-     * @param attachment the attachment used by a transport implementation.
-     * @return a new prioritized {@code BufferSink} which holds a pair of {@code BufferSink}
-     */
-    public static BufferSink wrap(BufferSink car, BufferSink cdr, TransportParameter attachment) {
-        return new BufferSinkList(car, cdr, attachment);
     }
 
     /**
@@ -300,33 +176,11 @@ public final class Buffers {
      * <p>The new buffer allocates a new {@code CodecBuffer} in the heap if the object needs more space
      * on write operations. The maximum elements that can be held by the object is 1024.</p>
      *
-     * <p>An invocation of this method behaves in exactly the same way as the invocation
-     * {@code wrap(DefaultTransportParameter.NO_PARAMETER, buffer0, buffers)}.</p>
-     *
      * @param buffer0 the first {@code CodecBuffer} in the new {@code CodecBuffer}.
      * @param buffers the {@code CodecBuffer} after the {@code buffer0}.
      * @return the new {@code CodecBuffer}.
      */
     public static CodecBuffer wrap(CodecBuffer buffer0, CodecBuffer... buffers) {
-        return new CodecBufferList(DefaultTransportParameter.NO_PARAMETER, buffer0, buffers);
-    }
-
-    /**
-     * Creates a new {@code CodecBuffer} which consists of the specified {@code buffer0} and {@code buffers}.
-     * The order of {@code CodecBuffer} in the new buffer is the argument order; the first is {@code buffer0},
-     * the second is {@code buffers[0]} and the third is {@code buffers[1]} and so on. These buffers will be
-     * sliced when added to the new buffer.
-     * <p></p>
-     * The new buffer allocates a new {@code CodecBuffer} in the heap if the object needs more space
-     * on write operations. The maximum elements that can be held by the object is 1024.
-     *
-     * @param attachment the attachment used by a transport implementation.
-     * @param buffer0 the first {@code CodecBuffer} in the new {@code CodecBuffer}.
-     * @param buffers the {@code CodecBuffer} after the {@code buffer0}.
-     * @return the new {@code CodecBuffer}.
-     */
-    public static CodecBuffer wrap(
-            TransportParameter attachment, CodecBuffer buffer0, CodecBuffer... buffers) {
-        return new CodecBufferList(attachment, buffer0, buffers);
+        return new CodecBufferList(buffer0, buffers);
     }
 }

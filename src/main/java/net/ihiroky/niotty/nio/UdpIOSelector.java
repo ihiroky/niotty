@@ -66,12 +66,13 @@ public class UdpIOSelector extends AbstractSelector<UdpIOSelector> {
                     }
                     localByteBuffer.flip();
                     buffer = Buffers.wrap(localByteBuffer);
+                    transport.loadEvent(buffer);
                 } else {
                     SocketAddress source = channel.receive(localByteBuffer);
                     localByteBuffer.flip();
-                    buffer = Buffers.wrap(localByteBuffer, new DefaultTransportParameter(source));
+                    buffer = Buffers.wrap(localByteBuffer);
+                    transport.loadEvent(buffer, new DefaultTransportParameter(source));
                 }
-                transport.loadEvent(buffer);
             } catch (ClosedByInterruptException ie) {
                 if (logger_.isDebugEnabled()) {
                     logger_.debug("failed to read from transport by interruption:" + transport, ie);

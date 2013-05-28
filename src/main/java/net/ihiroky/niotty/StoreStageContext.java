@@ -28,9 +28,9 @@ public class StoreStageContext<I, O> extends PipelineElement<I, O> {
     }
 
     @Override
-    protected void fire(AttachedMessage<I> input) {
-        StageContext<O> context = input.wrappedContext(this);
-        stage_.store(context, input.message());
+    protected void fire(I input, TransportParameter paramter) {
+        StageContext<O> context = wrappedStageContext(this, paramter);
+        stage_.store(context, input);
     }
 
     @Override
@@ -45,7 +45,7 @@ public class StoreStageContext<I, O> extends PipelineElement<I, O> {
     }
 
     @Override
-    public Object attachment() {
-        return null;
+    public TransportParameter transportParameter() {
+        return DefaultTransportParameter.NO_PARAMETER;
     }
 }

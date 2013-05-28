@@ -1,6 +1,5 @@
 package net.ihiroky.niotty.codec;
 
-import net.ihiroky.niotty.DefaultTransportParameter;
 import net.ihiroky.niotty.LoadStageContextMock;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.CodecBuffer;
@@ -145,7 +144,7 @@ public class FrameLengthRemoveDecoderTest {
         FrameLengthRemoveDecoder sut = new FrameLengthRemoveDecoder();
         CodecBuffer wholeInput = Buffers.newCodecBuffer(8192);
         for (int i = 0; i < 30; i++) {
-            CodecBuffer buffer = Buffers.newCodecBuffer(1024, new DefaultTransportParameter(-((i + 1) % 2)));
+            CodecBuffer buffer = Buffers.newCodecBuffer(1024);
             for (int j = 0; j < 256; j++) {
                 buffer.writeInt(i);
             }

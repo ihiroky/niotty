@@ -29,6 +29,12 @@ public class TransportAggregateSupport implements TransportAggregate, TransportL
         }
     }
 
+    public void write(Object message, TransportParameter parameter) {
+        for (Transport transport : transportMap_.keySet()) {
+            transport.write(message, parameter);
+        }
+    }
+
     public void close() {
         for (Transport transport : transportMap_.keySet()) {
             transport.close();

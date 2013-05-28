@@ -1,7 +1,5 @@
 package net.ihiroky.niotty;
 
-import java.net.SocketAddress;
-
 /**
  * A default implementation of {@link net.ihiroky.niotty.TransportParameter}.
  *
@@ -9,8 +7,8 @@ import java.net.SocketAddress;
  */
 public class DefaultTransportParameter implements TransportParameter {
 
-    private SocketAddress address_;
-    private int priority_;
+    private final int priority_;
+    private final Object argument_;
 
     /** Default priority (no wait). */
     private static final int DEFAULT_PRIORITY = -1;
@@ -22,10 +20,10 @@ public class DefaultTransportParameter implements TransportParameter {
 
     /**
      * Creates a new instance.
-     * @param address a target or source address.
+     * @param argument an argument.
      */
-    public DefaultTransportParameter(SocketAddress address) {
-        this(address, DEFAULT_PRIORITY);
+    public DefaultTransportParameter(Object argument) {
+        this(DEFAULT_PRIORITY, argument);
     }
 
     /**
@@ -33,17 +31,17 @@ public class DefaultTransportParameter implements TransportParameter {
      * @param priority a priority to control write operation.
      */
     public DefaultTransportParameter(int priority) {
-        this(null, priority);
+        this(priority, null);
     }
 
     /**
      * Creates a new instance.
-     * @param address a target or source address.
      * @param priority a priority to control a write operation.
+     * @param argument an argument.
      */
-    public DefaultTransportParameter(SocketAddress address, int priority) {
-        address_ = address;
+    public DefaultTransportParameter(int priority, Object argument) {
         priority_ = priority;
+        argument_ = argument;
     }
 
     @Override
@@ -52,15 +50,15 @@ public class DefaultTransportParameter implements TransportParameter {
     }
 
     @Override
-    public Object attachment() {
-        return address_;
+    public Object argument() {
+        return argument_;
     }
 
     @Override
     public int hashCode() {
         int h = HASH_BASE;
         h = h * HASH_FACTOR + priority_;
-        h = h * HASH_FACTOR + ((address_ != null) ? address_.hashCode() : 0);
+        h = h * HASH_FACTOR + ((argument_ != null) ? argument_.hashCode() : 0);
         return h;
     }
 
@@ -69,13 +67,13 @@ public class DefaultTransportParameter implements TransportParameter {
         if (object instanceof DefaultTransportParameter) {
             DefaultTransportParameter that = (DefaultTransportParameter) object;
             return this.priority_ == that.priority_
-                    && ((this.address_ != null) ? this.address_.equals(that.address_) : that.address_ == null);
+                    && ((this.argument_ != null) ? this.argument_.equals(that.argument_) : that.argument_ == null);
         }
         return false;
     }
 
     @Override
     public String toString() {
-        return "address: " + address_ + ", priority: " + priority_;
+        return "argument: " + argument_ + ", priority: " + priority_;
     }
 }

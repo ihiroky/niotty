@@ -1,7 +1,5 @@
 package net.ihiroky.niotty.buffer;
 
-import net.ihiroky.niotty.TransportParameter;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
@@ -34,14 +32,12 @@ public class CodecBufferList extends AbstractCodecBuffer {
     private static final int INITIAL_BUFFERS_CAPACITY = 4;
     private static final int MAX_BUFFER_COUNT = 1024;
 
-    private CodecBufferList(TransportParameter attachment) {
-        super(attachment);
+    private CodecBufferList() {
         buffers_ = new ArrayList<>(INITIAL_BUFFERS_CAPACITY);
         endBufferIndex_ = -1;
     }
 
-    CodecBufferList(TransportParameter attachment, CodecBuffer buffer0, CodecBuffer... buffers) {
-        super(attachment);
+    CodecBufferList(CodecBuffer buffer0, CodecBuffer... buffers) {
         Objects.requireNonNull(buffer0, "buffer0");
         Objects.requireNonNull(buffers, "buffers");
         if (buffers.length >= MAX_BUFFER_COUNT) {
@@ -49,14 +45,14 @@ public class CodecBufferList extends AbstractCodecBuffer {
         }
 
         List<CodecBuffer> list = new ArrayList<>(Math.max(INITIAL_BUFFERS_CAPACITY, buffers.length + 1));
-        list.add(new SlicedCodecBuffer(buffer0, attachment));
+        list.add(new SlicedCodecBuffer(buffer0));
         int end = 0;
         for (int i = 0; i < buffers.length; i++) {
             CodecBuffer b = buffers[i];
             if (b.remainingBytes() > 0) {
                 end = i + 1;
             }
-            list.add(new SlicedCodecBuffer(b, attachment));
+            list.add(new SlicedCodecBuffer(b));
         }
         buffers_ = list;
         endBufferIndex_ = end;
@@ -125,7 +121,7 @@ public class CodecBufferList extends AbstractCodecBuffer {
             beginning = ++beginningBufferIndex_;
         }
 
-        buffers_.add(beginning, new SlicedCodecBuffer(buffer, attachment())); // wrap, not duplicated
+        buffers_.add(beginning, new SlicedCodecBuffer(buffer)); // wrap, not duplicated
         endBufferIndex_++;
         return this;
     }
@@ -145,13 +141,13 @@ public class CodecBufferList extends AbstractCodecBuffer {
         // wrap, not duplicated
         int size = buffers_.size();
         if (end == size - 1) { // end is the last index ?
-            buffers_.add(new SlicedCodecBuffer(buffer, attachment()));
+            buffers_.add(new SlicedCodecBuffer(buffer));
             endBufferIndex_++;
         } else if (end >= 0) {
-            buffers_.add(++end, new SlicedCodecBuffer(buffer, attachment()));
+            buffers_.add(++end, new SlicedCodecBuffer(buffer));
             endBufferIndex_ = end;
         } else { // if (end == -1) { // all buffer between beginning and end are empty.
-            buffers_.add(new SlicedCodecBuffer(buffer, attachment()));
+            buffers_.add(new SlicedCodecBuffer(buffer));
             endBufferIndex_ = (buffer.remainingBytes() > 0) ? size : beginningBufferIndex_;
         }
         return this;
@@ -696,7 +692,7 @@ public class CodecBufferList extends AbstractCodecBuffer {
         if (remaining >= bytes) {
             return buffer.slice(bytes);
         }
-        CodecBufferList ccb = new CodecBufferList(attachment());
+        CodecBufferList ccb = new CodecBufferList();
         CodecBuffer sliced = buffer.slice(remaining);
         bytes -= remaining;
         ccb.addLast(sliced);
@@ -717,7 +713,7 @@ public class CodecBufferList extends AbstractCodecBuffer {
 
     @Override
     public CodecBuffer slice() {
-        CodecBufferList sliced = new CodecBufferList(attachment());
+        CodecBufferList sliced = new CodecBufferList();
         for (int i = beginningBufferIndex_; i <= endBufferIndex_; i++) {
             sliced.addLast(buffers_.get(i));
         }
@@ -726,7 +722,7 @@ public class CodecBufferList extends AbstractCodecBuffer {
 
     @Override
     public CodecBuffer duplicate() {
-        CodecBufferList duplicated = new CodecBufferList(attachment());
+        CodecBufferList duplicated = new CodecBufferList();
         duplicated.beginningBufferIndex_ = beginningBufferIndex_;
         duplicated.endBufferIndex_ = endBufferIndex_;
         for (CodecBuffer b : buffers_) {

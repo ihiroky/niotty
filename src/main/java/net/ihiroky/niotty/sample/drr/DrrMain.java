@@ -10,6 +10,7 @@ import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.CodecBuffer;
 import net.ihiroky.niotty.codec.FrameLengthPrependEncoder;
 import net.ihiroky.niotty.codec.FrameLengthRemoveDecoder;
+import net.ihiroky.niotty.nio.DeficitRoundRobinWriteQueueFactory;
 import net.ihiroky.niotty.nio.NioClientSocketConfig;
 import net.ihiroky.niotty.nio.NioClientSocketProcessor;
 import net.ihiroky.niotty.nio.NioServerSocketConfig;
@@ -55,7 +56,10 @@ public class DrrMain {
         });
         serverProcessor.start();
         clientProcessor.start();
-        Transport serverTransport = serverProcessor.createTransport(new NioServerSocketConfig());
+
+        NioServerSocketConfig config = new NioServerSocketConfig();
+        config.setWriteQueueFactory(new DeficitRoundRobinWriteQueueFactory(0.5f));
+        Transport serverTransport = serverProcessor.createTransport(config);
         Transport clientTransport = clientProcessor.createTransport(new NioClientSocketConfig());
         try {
             InetSocketAddress endpoint = new InetSocketAddress(serverPort);

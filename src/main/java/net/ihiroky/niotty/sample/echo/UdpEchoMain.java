@@ -1,15 +1,17 @@
 package net.ihiroky.niotty.sample.echo;
 
+import net.ihiroky.niotty.DefaultTransportParameter;
 import net.ihiroky.niotty.LoadPipeline;
 import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.StorePipeline;
-import net.ihiroky.niotty.Transport;
 import net.ihiroky.niotty.codec.StringDecoder;
 import net.ihiroky.niotty.codec.StringEncoder;
 import net.ihiroky.niotty.nio.NioDatagramSocketConfig;
 import net.ihiroky.niotty.nio.NioDatagramSocketProcessor;
+import net.ihiroky.niotty.nio.NioDatagramSocketTransport;
 
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 
 /**
  * @author Hiroki Itoh
@@ -31,7 +33,8 @@ public class UdpEchoMain {
             }
         });
         server.start();
-        final Transport serverTransport = server.createTransport(new NioDatagramSocketConfig());
+        NioDatagramSocketTransport serverTransport = server.createTransport(new NioDatagramSocketConfig());
+
         NioDatagramSocketProcessor client = new NioDatagramSocketProcessor();
         client.setPipelineComposer(new PipelineComposer() {
             @Override
@@ -42,16 +45,24 @@ public class UdpEchoMain {
             }
         });
         client.start();
-        Transport clientTransport = client.createTransport(new NioDatagramSocketConfig());
+        NioDatagramSocketTransport clientTransport = client.createTransport(new NioDatagramSocketConfig());
 
         try {
-            serverTransport.bind(new InetSocketAddress("localhost", serverPort));
-            clientTransport.bind(new InetSocketAddress("localhost", clientPort));
-            serverTransport.connect(new InetSocketAddress("localhost", clientPort));
-            clientTransport.connect(new InetSocketAddress("localhost", serverPort));
+            SocketAddress serverEndpoint = new InetSocketAddress("localhost", serverPort);
+            SocketAddress clientEndPoint = new InetSocketAddress("localhost", clientPort);
+            serverTransport.bind(serverEndpoint);
+            clientTransport.bind(clientEndPoint);
+            serverTransport.connect(clientEndPoint);
+            clientTransport.connect(serverEndpoint);
             clientTransport.write("Hello World.");
 
             Thread.sleep(lastWaitMillis);
+
+            clientTransport.disconnect();
+            clientTransport.write("Hello after disconnected.", new DefaultTransportParameter(serverEndpoint));
+
+            Thread.sleep(lastWaitMillis);
+
             System.out.println("end.");
         } catch (Exception e) {
             e.printStackTrace();

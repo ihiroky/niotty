@@ -27,21 +27,21 @@ public class CodecBufferListTest {
     public static class EmptyCase extends CodecBufferTestAbstract.AbstractEmptyTests {
         @Override
         protected CodecBuffer createCodecBuffer() {
-            return new CodecBufferList(null, Buffers.newCodecBuffer());
+            return new CodecBufferList(Buffers.newCodecBuffer());
         }
     }
 
     public static class ReadTests extends CodecBufferTestAbstract.AbstractReadTests {
         @Override
         protected CodecBuffer createCodecBuffer(byte[] buffer, int offset, int length) {
-            return new CodecBufferList(null, Buffers.wrap(buffer, offset, length));
+            return new CodecBufferList(Buffers.wrap(buffer, offset, length));
         }
 
         @Test
         public void testReadBytes_ArrayBetweenBuffers() throws Exception {
             byte[] data0 = new byte[]{'0', '0', '0'};
             byte[] data1 = new byte[]{'1', '1', '1'};
-            CodecBufferList sut = new CodecBufferList(null,
+            CodecBufferList sut = new CodecBufferList(
                     Buffers.wrap(data0, 0, data0.length),
                     Buffers.wrap(data1, 0, data1.length));
 
@@ -60,7 +60,7 @@ public class CodecBufferListTest {
         public void testReadBytes_ByteBufferBetweenBuffers() throws Exception {
             byte[] data0 = new byte[]{'0', '0', '0'};
             byte[] data1 = new byte[]{'1', '1', '1'};
-            CodecBufferList sut = new CodecBufferList( null,
+            CodecBufferList sut = new CodecBufferList( 
                     Buffers.wrap(ByteBuffer.wrap(data0, 0, data0.length)),
                     Buffers.wrap(ByteBuffer.wrap(data1, 0, data1.length)));
 
@@ -79,7 +79,7 @@ public class CodecBufferListTest {
         public void testReadChar_BetweenBuffers() throws Exception {
             char c = 'い';
             byte[] data = new byte[]{(byte) (c >> 8), (byte) (c & 0xFF)};
-            CodecBufferList sut = new CodecBufferList(null,
+            CodecBufferList sut = new CodecBufferList(
                     Buffers.wrap(data, 0, 1),
                     Buffers.wrap(data, 1, 1));
 
@@ -96,7 +96,7 @@ public class CodecBufferListTest {
         public void testReadShort_BetweenBuffers() throws Exception {
             short s = Short.MAX_VALUE;
             byte[] data = new byte[]{(byte) (s >> 8), (byte) (s & 0xFF)};
-            CodecBufferList sut = new CodecBufferList(null,
+            CodecBufferList sut = new CodecBufferList(
                     Buffers.wrap(data, 0, 1),
                     Buffers.wrap(data, 1, 1));
 
@@ -114,7 +114,7 @@ public class CodecBufferListTest {
             int i = Integer.MAX_VALUE;
             byte[] data = new byte[]{
                     (byte) (i >>> 24), (byte) ((i >>> 16) | 0xFF), (byte) ((i >>> 8) | 0xFF), (byte) (i & 0xFF)};
-            CodecBufferList sut = new CodecBufferList(null,
+            CodecBufferList sut = new CodecBufferList(
                     Buffers.wrap(data, 0, 3), Buffers.wrap(data, 1, 1));
 
             int actual = sut.readInt();
@@ -133,7 +133,7 @@ public class CodecBufferListTest {
                     (byte) (v >>> 56), (byte) ((v >>> 48) | 0xFF), (byte) ((v >>> 40) | 0xFF),
                     (byte) ((v >>> 32) | 0xFF), (byte) ((v >>> 24) | 0xFF), (byte) ((v >>> 16) | 0xFF),
                     (byte) ((v >>> 8) | 0xFF), (byte) (v & 0xFF)};
-            CodecBufferList sut = new CodecBufferList(null,
+            CodecBufferList sut = new CodecBufferList(
                     Buffers.wrap(data, 0, 7),
                     Buffers.wrap(data, 1, 1));
 
@@ -150,7 +150,7 @@ public class CodecBufferListTest {
         public void testReadString_BetweenBuffers() throws Exception {
             String s = "あい0123";
             byte[] data = s.getBytes("UTF-8");
-            CodecBufferList sut = new CodecBufferList(null,
+            CodecBufferList sut = new CodecBufferList(
                     Buffers.wrap(data, 0, 4),
                     Buffers.wrap(data, 4, 4),
                     Buffers.wrap(data, 8, 2));
@@ -170,7 +170,7 @@ public class CodecBufferListTest {
             Arrays.fill(data0, (byte) 1);
             byte[] data1 = new byte[5];
             Arrays.fill(data1, (byte) 2);
-            CodecBufferList sut = new CodecBufferList(null,
+            CodecBufferList sut = new CodecBufferList(
                     Buffers.wrap(data0, 0, 5),
                     Buffers.wrap(data1, 0, 5));
 
@@ -216,7 +216,7 @@ public class CodecBufferListTest {
             Arrays.fill(data1, (byte) 2);
             byte[] data2 = new byte[3];
             Arrays.fill(data2, (byte) 3);
-            CodecBufferList sut = new CodecBufferList(null,
+            CodecBufferList sut = new CodecBufferList(
                     Buffers.wrap(data0, 0, data0.length),
                     Buffers.wrap(data1, 0, data1.length),
                     Buffers.wrap(data2, 0, data2.length));
@@ -238,7 +238,7 @@ public class CodecBufferListTest {
             Arrays.fill(data0, (byte) 1);
             byte[] data1 = new byte[3];
             Arrays.fill(data1, (byte) 2);
-            CodecBufferList sut = new CodecBufferList(null,
+            CodecBufferList sut = new CodecBufferList(
                     Buffers.wrap(data0, 0, data0.length),
                     Buffers.wrap(data1, 0, data1.length));
 
@@ -257,7 +257,7 @@ public class CodecBufferListTest {
         public void testClear() throws Exception {
             CodecBuffer b0 = Buffers.wrap(new byte[3], 1, 1);
             CodecBuffer b1 = Buffers.wrap(new byte[3], 1, 1);
-            CodecBufferList sut = new CodecBufferList(null, b0, b1);
+            CodecBufferList sut = new CodecBufferList( b0, b1);
 
             sut.clear();
 
@@ -285,7 +285,7 @@ public class CodecBufferListTest {
         public void testWriteBytes_ArrayBetweenCodecBuffer() throws Exception {
             byte[] data0 = new byte[4];
             Arrays.fill(data0, (byte) 1);
-            CodecBufferList sut = new CodecBufferList(null,
+            CodecBufferList sut = new CodecBufferList(
                     Buffers.wrap(data0, 0, data0.length));
             byte[] data1 = new byte[6];
             Arrays.fill(data1, (byte) 2);
@@ -309,7 +309,7 @@ public class CodecBufferListTest {
         public void testWriteBytes_ArrayNoExpansion() throws Exception {
             byte[] data0 = new byte[4];
             Arrays.fill(data0, (byte) 1);
-            CodecBufferList sut = new CodecBufferList(null,
+            CodecBufferList sut = new CodecBufferList(
                     Buffers.wrap(data0, 0, data0.length));
             byte[] data1 = new byte[2];
             Arrays.fill(data1, (byte) 2);
@@ -332,8 +332,7 @@ public class CodecBufferListTest {
         public void testWriteBytes_ByteBufferBetweenCodecBuffer() throws Exception {
             byte[] data0 = new byte[4];
             Arrays.fill(data0, (byte) 1);
-            CodecBufferList sut = new CodecBufferList(null,
-                    Buffers.wrap(data0, 0, data0.length));
+            CodecBufferList sut = new CodecBufferList(Buffers.wrap(data0, 0, data0.length));
             byte[] data1 = new byte[6];
             Arrays.fill(data1, (byte) 2);
             byte[] data2 = new byte[4];
@@ -362,7 +361,7 @@ public class CodecBufferListTest {
         public void testWriteBytes_ByteBufferNoExpansion() throws Exception {
             byte[] data0 = new byte[4];
             Arrays.fill(data0, (byte) 1);
-            CodecBufferList sut = new CodecBufferList(null,
+            CodecBufferList sut = new CodecBufferList(
                     Buffers.wrap(data0, 0, data0.length));
             byte[] data1 = new byte[2];
             Arrays.fill(data1, (byte) 2);
@@ -385,7 +384,7 @@ public class CodecBufferListTest {
         public void testWriteShort_BetweenCodecBuffer() throws Exception {
             byte[] data0 = new byte[1];
             Arrays.fill(data0, (byte) 1);
-            CodecBufferList sut = new CodecBufferList(null,
+            CodecBufferList sut = new CodecBufferList(
                     Buffers.wrap(data0, 0, data0.length));
 
             sut.writeByte(2); // capacity gets 1 + 2
@@ -405,7 +404,7 @@ public class CodecBufferListTest {
         public void testWriteShort_NoExpansion() throws Exception {
             byte[] data0 = new byte[2];
             Arrays.fill(data0, (byte) 1);
-            CodecBufferList sut = new CodecBufferList(null,
+            CodecBufferList sut = new CodecBufferList(
                     Buffers.wrap(data0, 0, data0.length));
 
             sut.writeByte(2); // capacity gets 2 + 4
@@ -425,7 +424,7 @@ public class CodecBufferListTest {
         public void testWriteChar_BetweenCodecBuffer() throws Exception {
             byte[] data0 = new byte[1];
             Arrays.fill(data0, (byte) 1);
-            CodecBufferList sut = new CodecBufferList(null,
+            CodecBufferList sut = new CodecBufferList(
                     Buffers.wrap(data0, 0, data0.length));
 
             sut.writeByte(2); // capacity gets 1 + 2
@@ -445,7 +444,7 @@ public class CodecBufferListTest {
         public void testWriteChar_NoExpansion() throws Exception {
             byte[] data0 = new byte[2];
             Arrays.fill(data0, (byte) 1);
-            CodecBufferList sut = new CodecBufferList(null,
+            CodecBufferList sut = new CodecBufferList(
                     Buffers.wrap(data0, 0, data0.length));
 
             sut.writeByte(2); // capacity gets 2 + 4
@@ -465,7 +464,7 @@ public class CodecBufferListTest {
         public void testWriteInt_BetweenCodecBuffer() throws Exception {
             byte[] data0 = new byte[1];
             Arrays.fill(data0, (byte) 1);
-            CodecBufferList sut = new CodecBufferList(null,
+            CodecBufferList sut = new CodecBufferList(
                     Buffers.wrap(data0, 0, data0.length));
 
             sut.writeInt(-1);
@@ -483,7 +482,7 @@ public class CodecBufferListTest {
         public void testWriteInt_NoExpansion() throws Exception {
             byte[] data0 = new byte[3];
             Arrays.fill(data0, (byte) 1);
-            CodecBufferList sut = new CodecBufferList(null,
+            CodecBufferList sut = new CodecBufferList(
                     Buffers.wrap(data0, 0, data0.length));
 
             sut.writeByte(2); // capacity gets 3 + 6
@@ -503,7 +502,7 @@ public class CodecBufferListTest {
         public void testWriteLong_BetweenCodecBuffer() throws Exception {
             byte[] data0 = new byte[1];
             Arrays.fill(data0, (byte) 1);
-            CodecBufferList sut = new CodecBufferList(null,
+            CodecBufferList sut = new CodecBufferList(
                     Buffers.wrap(data0, 0, data0.length));
 
             sut.writeLong(-1L);
@@ -521,7 +520,7 @@ public class CodecBufferListTest {
         public void testWriteLong_NoExpansion() throws Exception {
             byte[] data0 = new byte[5];
             Arrays.fill(data0, (byte) 1);
-            CodecBufferList sut = new CodecBufferList(null,
+            CodecBufferList sut = new CodecBufferList(
                     Buffers.wrap(data0, 0, data0.length));
 
             sut.writeByte(2); // capacity gets 5 + 10
@@ -539,7 +538,7 @@ public class CodecBufferListTest {
 
         @Test
         public void testWriteString_BetweenCodecBuffer() throws Exception {
-            CodecBufferList sut = new CodecBufferList(null,
+            CodecBufferList sut = new CodecBufferList(
                     Buffers.newCodecBuffer(0));
             String s = "0123456789";
 
@@ -623,7 +622,7 @@ public class CodecBufferListTest {
 
         @Test
         public void testDrainFrom_AllBetweenBuffers() throws Exception {
-            CodecBufferList sut = new CodecBufferList(null,
+            CodecBufferList sut = new CodecBufferList(
                     Buffers.newCodecBuffer(3), Buffers.newCodecBuffer(3));
             byte[] drainedBytes = new byte[10];
             Arrays.fill(drainedBytes, (byte) 1);
@@ -640,7 +639,7 @@ public class CodecBufferListTest {
 
         @Test
         public void testDrainFrom_LimitedBetweenBuffers() throws Exception {
-            CodecBufferList sut = new CodecBufferList(null,
+            CodecBufferList sut = new CodecBufferList(
                     Buffers.wrap(new byte[3], 0, 3));
             byte[] drainedBytes = new byte[10];
             Arrays.fill(drainedBytes, (byte) 1);
@@ -661,7 +660,7 @@ public class CodecBufferListTest {
     public static class StructureChangeTests  {
 
         protected CodecBufferList createCodecBuffer(byte[] data, int offset, int length) {
-            return new CodecBufferList(null, Buffers.wrap(data, offset, length));
+            return new CodecBufferList(Buffers.wrap(data, offset, length));
         }
 
         protected CodecBuffer createDirectCodecBuffer(ByteBuffer directBuffer) {

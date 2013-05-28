@@ -6,12 +6,11 @@ import net.ihiroky.niotty.Transport;
 import net.ihiroky.niotty.TransportAggregate;
 import net.ihiroky.niotty.TransportAggregateSupport;
 import net.ihiroky.niotty.TransportFuture;
+import net.ihiroky.niotty.TransportParameter;
 import net.ihiroky.niotty.TransportState;
 
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.NetworkInterface;
 import java.net.SocketAddress;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
@@ -58,8 +57,13 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
     }
 
     @Override
-    public void write(final Object message) {
+    public void write(Object message) {
         childAggregate_.write(message);
+    }
+
+    @Override
+    public void write(Object message, TransportParameter parameter) {
+        childAggregate_.write(message, parameter);
     }
 
     @Override
@@ -103,16 +107,6 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
             ioe.printStackTrace();
         }
         return new SucceededTransportFuture(this);
-    }
-
-    @Override
-    public void join(InetAddress group, NetworkInterface networkInterface) {
-        throw new UnsupportedOperationException("join");
-    }
-
-    @Override
-    public void join(InetAddress group, NetworkInterface networkInterface, InetAddress source) {
-        throw new UnsupportedOperationException("join");
     }
 
     void registerReadLater(SelectableChannel channel) throws IOException {

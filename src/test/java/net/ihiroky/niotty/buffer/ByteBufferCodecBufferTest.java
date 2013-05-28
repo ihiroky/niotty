@@ -51,7 +51,7 @@ public class ByteBufferCodecBufferTest {
 
         @Override
         protected CodecBuffer createCodecBuffer(int initialCapacity) {
-            return new ByteBufferCodecBuffer(ByteBufferChunkFactory.heap(), initialCapacity, null);
+            return new ByteBufferCodecBuffer(ByteBufferChunkFactory.heap(), initialCapacity);
         }
     }
 
@@ -78,7 +78,7 @@ public class ByteBufferCodecBufferTest {
         public void setUp() {
             byte[] data = new byte[10];
             Arrays.fill(data, (byte) 1);
-            sut_ = new ByteBufferCodecBuffer(ByteBufferChunkFactory.heap(), 10, null);
+            sut_ = new ByteBufferCodecBuffer(ByteBufferChunkFactory.heap(), 10);
             sut_.writeBytes(data, 0, data.length);
         }
 

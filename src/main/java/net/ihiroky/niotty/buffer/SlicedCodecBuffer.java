@@ -1,7 +1,5 @@
 package net.ihiroky.niotty.buffer;
 
-import net.ihiroky.niotty.TransportParameter;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
@@ -38,10 +36,8 @@ public class SlicedCodecBuffer extends AbstractCodecBuffer {
      * Creates a new instance.
      *
      * @param base the base {@code CodecBuffer}.
-     * @param attachment the attachment used by a transport implementation.
      */
-    SlicedCodecBuffer(CodecBuffer base, TransportParameter attachment) {
-        super(attachment);
+    SlicedCodecBuffer(CodecBuffer base) {
         base_ = base;
         offset_ = base.beginning();
         capacity_ = base.end();
@@ -52,11 +48,9 @@ public class SlicedCodecBuffer extends AbstractCodecBuffer {
      *
      * @param base the base {@code CodecBuffer}.
      * @param bytes the data size by the bytes to be sliced.
-     * @param attachment the attachment used by a transport implementation.
      * @throws IllegalArgumentException if the {@code bytes} is greater the remaining of the {@code base}.
      */
-    SlicedCodecBuffer(CodecBuffer base, int bytes, TransportParameter attachment) {
-        super(attachment);
+    SlicedCodecBuffer(CodecBuffer base, int bytes) {
         int beginning = base.beginning();
         int capacity = beginning + bytes;
         if (capacity > base.end()) {
@@ -70,7 +64,6 @@ public class SlicedCodecBuffer extends AbstractCodecBuffer {
     }
 
     private SlicedCodecBuffer(CodecBuffer base, int offset, int capacity) {
-        super(base.attachment());
         base_ = base.duplicate();
         offset_ = offset;
         capacity_ = capacity;
@@ -302,7 +295,7 @@ public class SlicedCodecBuffer extends AbstractCodecBuffer {
 
     @Override
     public CodecBuffer slice() {
-        return new SlicedCodecBuffer(this, attachment());
+        return new SlicedCodecBuffer(this);
     }
 
     @Override
@@ -370,6 +363,6 @@ public class SlicedCodecBuffer extends AbstractCodecBuffer {
     public String toString() {
         return SlicedCodecBuffer.class.getName()
                 + "(beginning:" + beginning() + ", end:" + end() + ", capacity:" + capacityBytes()
-                + ", attachment:" + attachment() + ", offset:" + offset_ + ')';
+                + ", offset:" + offset_ + ')';
     }
 }

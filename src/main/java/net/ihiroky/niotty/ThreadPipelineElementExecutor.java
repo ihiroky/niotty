@@ -71,11 +71,11 @@ public class ThreadPipelineElementExecutor extends TaskLoop<ThreadPipelineElemen
     }
 
     @Override
-    public <I> void execute(final PipelineElement<I, ?> context, final AttachedMessage<I> input) {
+    public <I> void execute(final PipelineElement<I, ?> context, final I input, final TransportParameter parameter) {
         offerTask(new Task<ThreadPipelineElementExecutor>() {
             @Override
             public int execute(ThreadPipelineElementExecutor eventLoop) throws Exception {
-                context.fire(input);
+                context.fire(input, parameter);
                 return TIMEOUT_NO_LIMIT;
             }
         });

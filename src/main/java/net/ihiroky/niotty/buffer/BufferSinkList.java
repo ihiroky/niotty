@@ -1,8 +1,5 @@
 package net.ihiroky.niotty.buffer;
 
-import net.ihiroky.niotty.DefaultTransportParameter;
-import net.ihiroky.niotty.TransportParameter;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.GatheringByteChannel;
@@ -18,18 +15,12 @@ public class BufferSinkList implements BufferSink {
 
     private final BufferSink car_;
     private final BufferSink cdr_;
-    private final TransportParameter attachment_;
 
     BufferSinkList(BufferSink car, BufferSink cdr) {
-        this(car, cdr, DefaultTransportParameter.NO_PARAMETER);
-    }
-
-    BufferSinkList(BufferSink car, BufferSink cdr, TransportParameter attachment) {
         Objects.requireNonNull(car, "car");
         Objects.requireNonNull(cdr, "cdr");
         car_ = car;
         cdr_ = cdr;
-        attachment_ = (attachment != null) ? attachment : DefaultTransportParameter.NO_PARAMETER;
     }
 
     @Override
@@ -78,12 +69,12 @@ public class BufferSinkList implements BufferSink {
         }
 
         // empty && bytes == 0
-        return Buffers.newCodecBuffer(0, attachment_);
+        return Buffers.newCodecBuffer(0);
     }
 
     @Override
     public BufferSinkList duplicate() {
-        return new BufferSinkList(car_.duplicate(), cdr_.duplicate(), attachment_);
+        return new BufferSinkList(car_.duplicate(), cdr_.duplicate());
     }
 
     /**
@@ -93,11 +84,6 @@ public class BufferSinkList implements BufferSink {
     public int remainingBytes() {
         long sum = car_.remainingBytes() + cdr_.remainingBytes();
         return (sum <= Integer.MAX_VALUE) ? (int) sum : Integer.MAX_VALUE;
-    }
-
-    @Override
-    public TransportParameter attachment() {
-        return attachment_;
     }
 
     @Override

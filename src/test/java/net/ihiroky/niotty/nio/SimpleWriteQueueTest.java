@@ -86,7 +86,7 @@ public class SimpleWriteQueueTest {
                 '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'
         };
         SocketAddress target =  new InetSocketAddress(0);
-        CodecBuffer buffer = Buffers.wrap(data, 0, data.length, new DefaultTransportParameter(target));
+        CodecBuffer buffer = Buffers.wrap(data, 0, data.length);
         DatagramChannel channel = mock(DatagramChannel.class);
         when(channel.send(writeBuffer_, target)).thenAnswer(new Answer<Integer>() {
             @Override
@@ -97,7 +97,7 @@ public class SimpleWriteQueueTest {
             }
         });
 
-        sut_.offer(new AttachedMessage<BufferSink>(buffer, target));
+        sut_.offer(new AttachedMessage<BufferSink>(buffer, new DefaultTransportParameter(target)));
         WriteQueue.FlushStatus status = sut_.flushTo(channel, writeBuffer_);
 
         assertThat(status, is(WriteQueue.FlushStatus.FLUSHED));

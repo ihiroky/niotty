@@ -20,7 +20,7 @@ import java.util.Objects;
 /**
  * @author Hiroki Itoh
  */
-public class NioDatagramSocketTransport extends NioSocketTransport<TcpIOSelector> {
+public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector> {
 
     private DatagramChannel channel_;
     private WriteQueue writeQueue_;
@@ -76,33 +76,39 @@ public class NioDatagramSocketTransport extends NioSocketTransport<TcpIOSelector
                 try {
                     channel_.connect(remote);
                     getTransportListener().onConnect(NioDatagramSocketTransport.this, remote);
+                    future.done();
                 } catch (IOException ioe) {
                     future.setThrowable(ioe);
                 }
-                future.done();
+            }
+        });
+        return future;
+    }
+
+    public TransportFuture disconnect() {
+        final DefaultTransportFuture future = new DefaultTransportFuture(this);
+        executeStore(new TransportStateEvent(TransportState.CONNECTED) {
+            @Override
+            public void execute() {
+                try {
+                    channel_.disconnect();
+                    getTransportListener().onConnect(NioDatagramSocketTransport.this, null);
+                    future.done();
+                } catch (IOException ioe) {
+                    future.setThrowable(ioe);
+                }
             }
         });
         return future;
     }
 
     // TODO membership management
-    @Override
     public void join(InetAddress group, NetworkInterface networkInterface) throws IOException {
         channel_.join(group, networkInterface);
     }
 
-    @Override
     public void join(InetAddress group, NetworkInterface networkInterface, InetAddress source) throws IOException {
         channel_.join(group, networkInterface, source);
-    }
-
-    @Override
-    public void write(Object message) {
-        executeStore(message);
-    }
-
-    public void write(Object message, SocketAddress target) {
-        executeStore(new AttachedMessage<>(message, target));
     }
 
     @Override

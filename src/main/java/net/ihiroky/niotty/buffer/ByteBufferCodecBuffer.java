@@ -1,7 +1,5 @@
 package net.ihiroky.niotty.buffer;
 
-import net.ihiroky.niotty.TransportParameter;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
@@ -35,18 +33,16 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer {
     }
 
     ByteBufferCodecBuffer() {
-        this(ByteBufferChunkFactory.heap(), Buffers.DEFAULT_CAPACITY, null);
+        this(ByteBufferChunkFactory.heap(), Buffers.DEFAULT_CAPACITY);
     }
 
-    ByteBufferCodecBuffer(ChunkManager<ByteBuffer> manager, int initialCapacity, TransportParameter attachment) {
-        super(attachment);
+    ByteBufferCodecBuffer(ChunkManager<ByteBuffer> manager, int initialCapacity) {
         chunk_ = manager.newChunk(initialCapacity);
         buffer_ = chunk_.initialize();
         mode_ = Mode.WRITE;
     }
 
-    ByteBufferCodecBuffer(ByteBuffer buffer, TransportParameter attachment) {
-        super(attachment);
+    ByteBufferCodecBuffer(ByteBuffer buffer) {
         Objects.requireNonNull(buffer, "buffer");
         ByteBufferChunk c = new ByteBufferChunk(buffer, ByteBufferChunkFactory.heap());
         c.ready();
@@ -58,7 +54,6 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer {
     }
 
     private ByteBufferCodecBuffer(ByteBufferCodecBuffer b) {
-        super(b.attachment());
         chunk_ = b.chunk_;
         buffer_ = b.chunk_.retain();
         beginning_ = b.beginning_;
@@ -763,14 +758,14 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer {
         if (bytes <= 0 || bytes > bb.remaining()) {
             throw new IllegalArgumentException("Invalid input " + bytes + ". " + bb.remaining() + " byte remains.");
         }
-        CodecBuffer sliced = new SlicedCodecBuffer(duplicate(), bytes, attachment());
+        CodecBuffer sliced = new SlicedCodecBuffer(duplicate(), bytes);
         bb.position(bb.position() + bytes);
         return sliced;
     }
 
     @Override
     public CodecBuffer slice() {
-        return new SlicedCodecBuffer(duplicate(), attachment());
+        return new SlicedCodecBuffer(duplicate());
     }
 
     @Override
@@ -788,7 +783,7 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer {
         syncBeginEnd();
         return ByteBufferCodecBuffer.class.getName()
                 + "(beginning:" + beginning_ + ", end:" + end_ + ", capacity:" + buffer_.capacity()
-                + ", attachment:" + attachment() + ')';
+                + ", attachment:" + ')';
     }
 
     Chunk<ByteBuffer> chunk() {

@@ -107,8 +107,7 @@ public class DeficitRoundRobinWriteQueue implements WriteQueue {
 
     @Override
     public boolean offer(AttachedMessage<BufferSink> message) {
-        BufferSink bufferSink = message.message();
-        TransportParameter p = bufferSink.attachment();
+        TransportParameter p = message.parameter();
         if (p.priority() < 0) {
             return baseQueue_.offer(message);
         }

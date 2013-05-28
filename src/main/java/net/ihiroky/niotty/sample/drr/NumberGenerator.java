@@ -24,14 +24,14 @@ public class NumberGenerator implements LoadStage<CodecBuffer, Void> {
         System.out.println("count:" + count);
         CodecBuffer[] buffers = new CodecBuffer[count];
         for (int i = 0; i < count; i++) {
-            CodecBuffer buffer = Buffers.newCodecBuffer(1024, new DefaultTransportParameter(-((i + 1) % 2)));
+            CodecBuffer buffer = Buffers.newCodecBuffer(1024);
             for (int j = 0; j < 256; j++) {
                 buffer.writeInt(i);
             }
             buffers[i] = buffer;
         }
         for (int i = 0; i < count; i++) {
-            transport.write(buffers[i]);
+            transport.write(buffers[i], new DefaultTransportParameter(-((i + 1) % 2)));
         }
 //        for (int i = 0; i < count / 2; i++) {
 //            transport.write(buffers[i]);

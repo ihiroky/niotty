@@ -14,7 +14,7 @@ import java.nio.ByteBuffer;
 /**
  * @author Hiroki Itoh
  */
-public class UdpIOStoreStage extends AbstractSelector.SelectorStoreStage<TcpIOSelector> {
+public class UdpIOStoreStage extends AbstractSelector.SelectorStoreStage<UdpIOSelector> {
 
     private ByteBuffer writeBuffer_;
 
@@ -27,10 +27,10 @@ public class UdpIOStoreStage extends AbstractSelector.SelectorStoreStage<TcpIOSe
     @Override
     public void store(StageContext<Void> context, BufferSink input) {
         final NioDatagramSocketTransport transport = (NioDatagramSocketTransport) context.transport();
-        transport.readyToWrite(new AttachedMessage<>(input, context.attachment()));
-        transport.offerTask(new TaskLoop.Task<TcpIOSelector>() {
+        transport.readyToWrite(new AttachedMessage<>(input, context.transportParameter()));
+        transport.offerTask(new TaskLoop.Task<UdpIOSelector>() {
             @Override
-            public int execute(TcpIOSelector eventLoop) throws Exception {
+            public int execute(UdpIOSelector eventLoop) throws Exception {
                 try {
                     return transport.flush(writeBuffer_);
                 } catch (IOException ioe) {

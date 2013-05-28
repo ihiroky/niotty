@@ -37,7 +37,7 @@ public class ArrayCodecBufferTest {
     public static class ReadTests extends CodecBufferTestAbstract.AbstractReadTests {
         @Override
         protected CodecBuffer createCodecBuffer(byte[] buffer, int offset, int length) {
-            return new ArrayCodecBuffer(buffer, offset, length, null);
+            return new ArrayCodecBuffer(buffer, offset, length);
         }
     }
 
@@ -49,21 +49,21 @@ public class ArrayCodecBufferTest {
 
         @Override
         protected CodecBuffer createCodecBuffer(int initialCapacity) {
-            return new ArrayCodecBuffer(ArrayChunkFactory.instance(), initialCapacity, null);
+            return new ArrayCodecBuffer(ArrayChunkFactory.instance(), initialCapacity);
         }
     }
 
     public static class BufferSinkTests extends CodecBufferTestAbstract.AbstractBufferSinkTests {
         @Override
         protected CodecBuffer createCodecBuffer(byte[] buffer, int offset, int length) {
-            return new ArrayCodecBuffer(buffer, offset, length, null);
+            return new ArrayCodecBuffer(buffer, offset, length);
         }
     }
 
     public static class StructureChangeTests extends CodecBufferTestAbstract.AbstractStructureChangeTests {
         @Override
         protected CodecBuffer createCodecBuffer(byte[] data, int offset, int length) {
-            return new ArrayCodecBuffer(data, offset, length, null);
+            return new ArrayCodecBuffer(data, offset, length);
         }
     }
 
@@ -75,7 +75,7 @@ public class ArrayCodecBufferTest {
         public void setUp() {
             byte[] data = new byte[10];
             Arrays.fill(data, (byte) 1);
-            sut_ = new ArrayCodecBuffer(ArrayChunkFactory.instance(), 10, null);
+            sut_ = new ArrayCodecBuffer(ArrayChunkFactory.instance(), 10);
             sut_.writeBytes(data, 0, data.length);
         }
 

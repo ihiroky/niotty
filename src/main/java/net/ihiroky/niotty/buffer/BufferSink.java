@@ -1,7 +1,5 @@
 package net.ihiroky.niotty.buffer;
 
-import net.ihiroky.niotty.TransportParameter;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.GatheringByteChannel;
@@ -13,10 +11,8 @@ import java.nio.channels.GatheringByteChannel;
  * The beginning shows the start index (included) of data to be written.
  * The end shows the end index (excluded) of data to be written.</p>
  *
- * <p>The class can hold an attachment. The attachment can be accessed by {@link #attachment()}
- * if its instance hold.</p>
- *
  * <p>Add interface if new Transport is added and new data type is required.</p>
+ *
  * @author Hiroki Itoh
  */
 public interface BufferSink {
@@ -80,12 +76,6 @@ public interface BufferSink {
      * @return the byte size of remaining data in this instance.
      */
     int remainingBytes();
-
-    /**
-     * Returns the attachment.
-     * @return the attachment, or null if no attachment is held by this instance.
-     */
-    TransportParameter attachment();
 
     /**
      * Disposes resources managed in this class if exists.

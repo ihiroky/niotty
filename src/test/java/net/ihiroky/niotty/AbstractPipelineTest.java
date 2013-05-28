@@ -418,14 +418,14 @@ public class AbstractPipelineTest {
                 protected void fire(Object input) {
                 }
                 @Override
-                protected void fire(AttachedMessage<Object> input) {
+                protected void fire(Object input, TransportParameter parameter) {
                 }
                 @Override
                 protected void fire(TransportStateEvent event) {
                 }
                 @Override
-                public Object attachment() {
-                    return null;
+                public TransportParameter transportParameter() {
+                    return DefaultTransportParameter.NO_PARAMETER;
                 }
             };
         }

@@ -60,8 +60,8 @@ public abstract class PipelineElement<I, O> implements StageContext<O> {
         executor_.execute(this, input);
     }
 
-    protected void execute(AttachedMessage<I> input) {
-        executor_.execute(this, input);
+    protected void execute(I input, TransportParameter parameter) {
+        executor_.execute(this, input, parameter);
     }
     protected void execute(TransportStateEvent event) {
         executor_.execute(this, event);
@@ -72,8 +72,8 @@ public abstract class PipelineElement<I, O> implements StageContext<O> {
         next_.execute(output);
     }
 
-    protected void proceed(AttachedMessage<O> output) {
-        next_.execute(output);
+    protected void proceed(O output, TransportParameter parameter) {
+        next_.execute(output, parameter);
     }
 
     @Override
@@ -81,8 +81,48 @@ public abstract class PipelineElement<I, O> implements StageContext<O> {
         next_.execute(event);
     }
 
+    protected StageContext<O> wrappedStageContext(PipelineElement<?, O> context, TransportParameter parameter) {
+        return new WrappedStageContext<>(context, parameter);
+    }
+
+    private static class WrappedStageContext<O> implements StageContext<O> {
+
+        private final PipelineElement<?, O> context_;
+        private final TransportParameter parameter_;
+
+        WrappedStageContext(PipelineElement<?, O> context, TransportParameter parameter) {
+            context_ = context;
+            parameter_ = parameter;
+        }
+
+        @Override
+        public StageKey key() {
+            return context_.key();
+        }
+
+        @Override
+        public Transport transport() {
+            return context_.transport();
+        }
+
+        @Override
+        public TransportParameter transportParameter() {
+            return parameter_;
+        }
+
+        @Override
+        public void proceed(O output) {
+            context_.proceed(output, parameter_);
+        }
+
+        @Override
+        public void proceed(TransportStateEvent event) {
+            context_.proceed(event);
+        }
+    }
+
     protected abstract Object stage();
     protected abstract void fire(I input);
-    protected abstract void fire(AttachedMessage<I> input);
+    protected abstract void fire(I input, TransportParameter parameter);
     protected abstract void fire(TransportStateEvent event);
 }

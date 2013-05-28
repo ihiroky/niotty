@@ -3,8 +3,6 @@ package net.ihiroky.niotty.nio;
 import net.ihiroky.niotty.DefaultTransportFuture;
 import net.ihiroky.niotty.TransportFuture;
 
-import java.net.InetAddress;
-import java.net.NetworkInterface;
 import java.net.SocketAddress;
 
 /**
@@ -40,16 +38,6 @@ public class ConnectionWaitTransport extends NioSocketTransport<ConnectSelector>
 
     @Override
     public TransportFuture close() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void join(InetAddress group, NetworkInterface networkInterface) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void join(InetAddress group, NetworkInterface networkInterface, InetAddress source) {
         throw new UnsupportedOperationException();
     }
 

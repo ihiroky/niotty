@@ -20,7 +20,7 @@ public class TcpIOStoreStage extends AbstractSelector.SelectorStoreStage<TcpIOSe
     @Override
     public void store(StageContext<Void> context, BufferSink input) {
         final NioClientSocketTransport transport = (NioClientSocketTransport) context.transport();
-        transport.readyToWrite(new AttachedMessage<>(input, context.attachment()));
+        transport.readyToWrite(new AttachedMessage<>(input, context.transportParameter()));
         transport.offerTask(new TaskLoop.Task<TcpIOSelector>() {
             @Override
             public int execute(TcpIOSelector eventLoop) throws Exception {

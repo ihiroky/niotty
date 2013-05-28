@@ -10,9 +10,7 @@ import net.ihiroky.niotty.TransportState;
 import net.ihiroky.niotty.buffer.BufferSink;
 
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.NetworkInterface;
 import java.net.SocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
@@ -91,21 +89,6 @@ public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> 
     @Override
     public TransportFuture close() {
         return closeSelectableChannel(TransportState.CONNECTED);
-    }
-
-    @Override
-    public void join(InetAddress group, NetworkInterface networkInterface) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void join(InetAddress group, NetworkInterface networkInterface, InetAddress source) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void write(Object message) {
-        executeStore(message);
     }
 
     @Override

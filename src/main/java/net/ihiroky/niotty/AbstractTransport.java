@@ -47,8 +47,8 @@ abstract public class AbstractTransport<L extends TaskLoop<L>> implements Transp
         loadPipeline_.execute(message);
     }
 
-    protected void executeLoad(AttachedMessage<Object> message) {
-        loadPipeline_.execute(message);
+    protected void executeLoad(Object message, TransportParameter parameter) {
+        loadPipeline_.execute(message, parameter);
     }
 
     protected void executeLoad(TransportStateEvent stateEvent) {
@@ -59,8 +59,8 @@ abstract public class AbstractTransport<L extends TaskLoop<L>> implements Transp
         storePipeline_.execute(message);
     }
 
-    protected void executeStore(AttachedMessage<Object> message) {
-        storePipeline_.execute(message);
+    protected void executeStore(Object message, TransportParameter parameter) {
+        storePipeline_.execute(message, parameter);
     }
 
     protected void executeStore(TransportStateEvent stateEvent) {
@@ -123,6 +123,16 @@ abstract public class AbstractTransport<L extends TaskLoop<L>> implements Transp
 
     protected TransportListener getTransportListener() {
         return transportListener_;
+    }
+
+    @Override
+    public void write(Object message) {
+        executeStore(message);
+    }
+
+    @Override
+    public void write(Object message, TransportParameter parameter) {
+        executeStore(message, parameter);
     }
 
     @Override

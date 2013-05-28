@@ -28,9 +28,9 @@ public class LoadStageContext<I, O> extends PipelineElement<I, O> {
     }
 
     @Override
-    protected void fire(AttachedMessage<I> input) {
-        StageContext<O> context = input.wrappedContext(this);
-        stage_.load(context, input.message());
+    protected void fire(I input, TransportParameter parameter) {
+        StageContext<O> context = wrappedStageContext(this, parameter);
+        stage_.load(context, input);
     }
 
     @Override
@@ -44,7 +44,7 @@ public class LoadStageContext<I, O> extends PipelineElement<I, O> {
     }
 
     @Override
-    public Object attachment() {
-        return null;
+    public TransportParameter transportParameter() {
+        return DefaultTransportParameter.NO_PARAMETER;
     }
 }

@@ -3,7 +3,7 @@ package net.ihiroky.niotty.nio;
 /**
  * @author Hiroki Itoh
  */
-public class UdpIOSelectorPool extends AbstractSelectorPool<TcpIOSelector> {
+public class UdpIOSelectorPool extends AbstractSelectorPool<UdpIOSelector> {
 
     private int readBufferSize_;
     private int writeBufferSize_;
@@ -36,7 +36,7 @@ public class UdpIOSelectorPool extends AbstractSelectorPool<TcpIOSelector> {
     }
 
     @Override
-    protected TcpIOSelector newEventLoop() {
-        return new TcpIOSelector(new UdpIOStoreStage(writeBufferSize_, direct_), readBufferSize_, direct_);
+    protected UdpIOSelector newEventLoop() {
+        return new UdpIOSelector(new UdpIOStoreStage(writeBufferSize_, direct_), readBufferSize_, direct_);
     }
 }

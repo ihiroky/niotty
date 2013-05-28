@@ -5,6 +5,7 @@ import net.ihiroky.niotty.DefaultTransportFuture;
 import net.ihiroky.niotty.DefaultTransportStateEvent;
 import net.ihiroky.niotty.SucceededTransportFuture;
 import net.ihiroky.niotty.TransportFuture;
+import net.ihiroky.niotty.TransportParameter;
 import net.ihiroky.niotty.TransportState;
 import net.ihiroky.niotty.TransportStateEvent;
 
@@ -82,6 +83,10 @@ public abstract class NioSocketTransport<S extends AbstractSelector<S>> extends 
 
     final void loadEvent(Object message) {
         executeLoad(message);
+    }
+
+    final void loadEvent(Object message, TransportParameter parameter) {
+        executeLoad(message, parameter);
     }
 
     final void loadEvent(final TransportStateEvent event) {
