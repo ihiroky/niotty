@@ -135,6 +135,10 @@ abstract public class AbstractTransport<L extends TaskLoop<L>> implements Transp
         executeStore(message, parameter);
     }
 
+    public void write(Object message, int priority) {
+        executeStore(message, new DefaultTransportParameter(priority));
+    }
+
     @Override
     public void addListener(TransportListener listener) {
         Objects.requireNonNull(listener, "listener");

@@ -2,6 +2,7 @@ package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.AttachedMessage;
 import net.ihiroky.niotty.DefaultTransportFuture;
+import net.ihiroky.niotty.DefaultTransportParameter;
 import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.TransportState;
@@ -67,6 +68,19 @@ public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector
         channel_.bind(local);
     }
 
+    /**
+     * <p>Connects this transport's socket.</p>
+     *
+     * <p>The socket is configured so that it only receives datagrams from, and sends datagrams to,
+     * the given remote peer address. Once connected, datagrams may not be received from or sent to any other address.
+     * A datagram socket remains connected until it is explicitly disconnected or until it is closed.</p>
+     *
+     * <p>This method is asynchronously invoked. Use a future object returned to confirm the operation is
+     * correctly done or not.</p>
+     *
+     * @param remote The remote address to which this channel is to be connected.
+     * @return The future object.
+     */
     @Override
     public TransportFuture connect(final SocketAddress remote) {
         final DefaultTransportFuture future = new DefaultTransportFuture(this);
@@ -85,6 +99,22 @@ public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector
         return future;
     }
 
+    /**
+     * <p>Disconnects this transport's socket.</p>
+     *
+     * <p>The socket is configured so that it can receive datagrams from, and sends datagrams to,
+     * any remote address so long as the security manager, if installed, permits it.</p>
+     *
+     * <p>This method may be invoked at any time. It will not have any effect on read or write operations
+     * that are already in progress at the moment that it is invoked.</p>
+     *
+     * <p>If the socket is not connected, or if the transport is closed, then invoking this method has no effect.</p>
+     *
+     * <p>This method is asynchronously invoked. Use a future object returned to confirm the operation is
+     * correctly done or not.</p>
+
+     * @return The future object.
+     */
     public TransportFuture disconnect() {
         final DefaultTransportFuture future = new DefaultTransportFuture(this);
         executeStore(new TransportStateEvent(TransportState.CONNECTED) {
@@ -100,6 +130,14 @@ public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector
             }
         });
         return future;
+    }
+
+    public void write(Object message, SocketAddress target) {
+        super.write(message, new DefaultTransportParameter(target));
+    }
+
+    public void write(Object message, int priority, SocketAddress target) {
+        super.write(message, new DefaultTransportParameter(priority, target));
     }
 
     // TODO membership management

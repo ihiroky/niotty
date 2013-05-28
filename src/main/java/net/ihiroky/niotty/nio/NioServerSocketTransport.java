@@ -1,5 +1,6 @@
 package net.ihiroky.niotty.nio;
 
+import net.ihiroky.niotty.DefaultTransportParameter;
 import net.ihiroky.niotty.DefaultTransportStateEvent;
 import net.ihiroky.niotty.SucceededTransportFuture;
 import net.ihiroky.niotty.Transport;
@@ -64,6 +65,10 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
     @Override
     public void write(Object message, TransportParameter parameter) {
         childAggregate_.write(message, parameter);
+    }
+
+    public void write(Object message, int priority) {
+        write(message, new DefaultTransportParameter(priority));
     }
 
     @Override
