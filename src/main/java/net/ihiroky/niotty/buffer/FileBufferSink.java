@@ -125,7 +125,7 @@ public class FileBufferSink implements BufferSink {
         } else {
             Objects.requireNonNull(buffer, "buffer");
             if (buffer.remainingBytes() > 0) {
-                header_ = Buffers.wrap(buffer); // wrap and allow header to be added
+                header_ = new CodecBufferList(buffer); // wrap and allow header to be added
             }
         }
         return this;
@@ -138,7 +138,7 @@ public class FileBufferSink implements BufferSink {
         } else {
             Objects.requireNonNull(buffer, "buffer");
             if (buffer.remainingBytes() > 0) {
-                footer_ = Buffers.wrap(buffer); // wrap and allow footer to be added
+                footer_ = new CodecBufferList(buffer); // wrap and allow footer to be added
             }
         }
         return this;

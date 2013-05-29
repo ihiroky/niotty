@@ -37,8 +37,29 @@ public class CodecBufferList extends AbstractCodecBuffer {
         endBufferIndex_ = -1;
     }
 
-    CodecBufferList(CodecBuffer buffer0, CodecBuffer... buffers) {
+    CodecBufferList(CodecBuffer buffer0) {
         Objects.requireNonNull(buffer0, "buffer0");
+
+        List<CodecBuffer> list = new ArrayList<>(INITIAL_BUFFERS_CAPACITY);
+        list.add(new SlicedCodecBuffer(buffer0));
+        buffers_ = list;
+        endBufferIndex_ = 0;
+    }
+
+    CodecBufferList(CodecBuffer buffer0, CodecBuffer buffer1) {
+        Objects.requireNonNull(buffer0, "buffer0");
+        Objects.requireNonNull(buffer1, "buffer1");
+
+        List<CodecBuffer> list = new ArrayList<>(INITIAL_BUFFERS_CAPACITY);
+        list.add(new SlicedCodecBuffer(buffer0));
+        list.add(new SlicedCodecBuffer(buffer1));
+        buffers_ = list;
+        endBufferIndex_ = 1;
+    }
+
+    CodecBufferList(CodecBuffer buffer0, CodecBuffer buffer1, CodecBuffer... buffers) {
+        Objects.requireNonNull(buffer0, "buffer0");
+        Objects.requireNonNull(buffer0, "buffer1");
         Objects.requireNonNull(buffers, "buffers");
         if (buffers.length >= MAX_BUFFER_COUNT) {
             throw new IllegalArgumentException("length of buffers must be less than " + MAX_BUFFER_COUNT + ".");
@@ -46,13 +67,11 @@ public class CodecBufferList extends AbstractCodecBuffer {
 
         List<CodecBuffer> list = new ArrayList<>(Math.max(INITIAL_BUFFERS_CAPACITY, buffers.length + 1));
         list.add(new SlicedCodecBuffer(buffer0));
-        int end = 0;
-        for (int i = 0; i < buffers.length; i++) {
-            CodecBuffer b = buffers[i];
-            if (b.remainingBytes() > 0) {
-                end = i + 1;
-            }
+        list.add(new SlicedCodecBuffer(buffer1));
+        int end = 1;
+        for (CodecBuffer b : buffers) {
             list.add(new SlicedCodecBuffer(b));
+            end++;
         }
         buffers_ = list;
         endBufferIndex_ = end;

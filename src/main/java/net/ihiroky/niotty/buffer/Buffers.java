@@ -168,19 +168,35 @@ public final class Buffers {
     }
 
     /**
-     * Creates a new {@code CodecBuffer} which consists of the specified {@code buffer0} and {@code buffers}.
-     * The order of {@code CodecBuffer} in the new buffer is the argument order; the first is {@code buffer0},
-     * the second is {@code buffers[0]} and the third is {@code buffers[1]} and so on. These buffers will be
-     * sliced when added to the new buffer.
+     * Creates a new {@code CodecBuffer} which consists of the specified {@code first} and {@code second}.
+     * The order of {@code CodecBuffer} in the new buffer is the argument order; the first is {@code first},
+     * the second is {@code second}.
      *
      * <p>The new buffer allocates a new {@code CodecBuffer} in the heap if the object needs more space
      * on write operations. The maximum elements that can be held by the object is 1024.</p>
      *
-     * @param buffer0 the first {@code CodecBuffer} in the new {@code CodecBuffer}.
-     * @param buffers the {@code CodecBuffer} after the {@code buffer0}.
+     * @param first the first {@code CodecBuffer} in the new {@code CodecBuffer}.
+     * @param second the {@code CodecBuffer} after the {@code first}.
      * @return the new {@code CodecBuffer}.
      */
-    public static CodecBuffer wrap(CodecBuffer buffer0, CodecBuffer... buffers) {
-        return new CodecBufferList(buffer0, buffers);
+    public static CodecBuffer wrap(CodecBuffer first, CodecBuffer second) {
+        return new CodecBufferList(first, second);
+    }
+
+    /**
+     * Creates a new {@code CodecBuffer} which consists of the specified {@code first}, {@code second}
+     * and {@code buffers}. The order of {@code CodecBuffer} in the new buffer is the argument order;
+     * the first is {@code first}, the second is {@code second} and the third is {@code buffers[0]} and so on.
+     *
+     * <p>The new buffer allocates a new {@code CodecBuffer} in the heap if the object needs more space
+     * on write operations. The maximum elements that can be held by the object is 1024.</p>
+     *
+     * @param first the first {@code CodecBuffer} in the new {@code CodecBuffer}.
+     * @param second the {@code CodecBuffer} after the {@code first}.
+     * @param buffers the {@code CodecBuffer} after the {@code second}.
+     * @return the new {@code CodecBuffer}.
+     */
+    public static CodecBuffer wrap(CodecBuffer first, CodecBuffer second, CodecBuffer... buffers) {
+        return new CodecBufferList(first, second, buffers);
     }
 }

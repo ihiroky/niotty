@@ -563,7 +563,7 @@ public class CodecBufferListTest {
         public void setUp() {
             byte[] data = new byte[32];
             Arrays.fill(data, (byte) '0');
-            sut_ = Buffers.wrap(Buffers.wrap(data, 0, data.length));
+            sut_ = new CodecBufferList(Buffers.wrap(data, 0, data.length));
             dataLength_ = data.length;
         }
 
