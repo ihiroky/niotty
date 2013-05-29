@@ -17,7 +17,8 @@ import java.nio.channels.GatheringByteChannel;
  */
 public interface BufferSink {
     /**
-     * Writes data in this instance to the given {@code channel}.
+     * Writes data between the beginning and the end to the given {@code channel}.
+     * The beginning is increased by size of data which is written into the channel.
      *
      * @param channel the {@code WritableByteChannel} to be written into
      * @return true if all data in this instance is written into the {@code channel}
@@ -26,7 +27,8 @@ public interface BufferSink {
     boolean transferTo(GatheringByteChannel channel) throws IOException;
 
     /**
-     * Writes data in this instance to the given {@code buffer}.
+     * Writes data between the beginning and the end to the given {@code buffer}.
+     * The beginning and end is not changed.
      *
      * @param buffer the buffer to be written into
      * @throws java.nio.BufferOverflowException if {@link #remainingBytes()} is larger than the buffer's remaining.
@@ -34,7 +36,7 @@ public interface BufferSink {
     void transferTo(ByteBuffer buffer);
 
     /**
-     * Adds a specified buffer before data which already exists in this instance .
+     * Adds a specified buffer before data which already exists in this instance.
      * @param buffer buffer to be added
      * @return this instance
      */

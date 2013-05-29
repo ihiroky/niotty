@@ -33,6 +33,7 @@ public class FileBufferSinkTest {
 
     private FileChannel channel_;
     private List<ByteBufferChunkPool> closeableList;
+    private byte[] originalData_;
 
     @Rule
     public TemporaryFolder temporaryFolderRule_ = new TemporaryFolder();
@@ -51,6 +52,7 @@ public class FileBufferSinkTest {
         channel_.write(ByteBuffer.wrap(data));
         channel_.position(0);
         closeableList = new ArrayList<>();
+        originalData_ = data;
     }
 
     @After
@@ -223,6 +225,30 @@ public class FileBufferSinkTest {
         assertThat(sut.remainingBytes(), is(0 + 0 + 1));
         verify(outputChannel, times(1)).write(Mockito.any(ByteBuffer.class));
         verify(outputChannel, times(2)).write(Mockito.any(ByteBuffer[].class), anyInt(), anyInt());
+    }
+
+    @Test
+    public void testTransferTo_ByteBufferAll() throws Exception {
+        FileBufferSink sut = new FileBufferSink(channel_, 0, 32);
+        ByteBuffer buffer = ByteBuffer.allocate(sut.remainingBytes());
+
+        sut.transferTo(buffer);
+
+        assertThat(sut.remainingBytes(), is(32)); // remaining all
+        assertThat(channel_.position(), is(0L));
+        assertThat(buffer.array(), is(originalData_));
+    }
+
+    @Test
+    public void testTransferTo_ByteBufferPart() throws Exception {
+        FileBufferSink sut = new FileBufferSink(channel_, 0, 32);
+        ByteBuffer buffer = ByteBuffer.allocate(sut.remainingBytes() - 1);
+
+        sut.transferTo(buffer);
+
+        assertThat(sut.remainingBytes(), is(32)); // remaining all
+        assertThat(channel_.position(), is(0L));
+        assertThat(buffer.array(), is(Arrays.copyOf(originalData_, 31)));
     }
 
     @Test

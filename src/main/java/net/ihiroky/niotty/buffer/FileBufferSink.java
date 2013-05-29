@@ -85,17 +85,21 @@ public class FileBufferSink implements BufferSink {
         try {
             header_.transferTo(buffer);
 
-            int limit = buffer.limit();
-            buffer.limit(buffer.position() + (int) (end_ - beginning_));
-            channel_.read(buffer, beginning_);
-            buffer.limit(limit);
-            beginning_ = end_;
+            int space = buffer.remaining();
+            int remaining = (int) (end_ - beginning_);
+            if (space >= remaining) {
+                int limit = buffer.limit();
+                buffer.limit(buffer.position() + remaining);
+                channel_.read(buffer, beginning_);
+                buffer.limit(limit);
+            } else {
+                channel_.read(buffer, beginning_);
+            }
 
             footer_.transferTo(buffer);
         } catch (IOException ioe) {
-            throw new RuntimeException(ioe);
-        } finally {
             dispose();
+            throw new RuntimeException(ioe);
         }
     }
 

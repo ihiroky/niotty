@@ -53,6 +53,7 @@ public class SimpleWriteQueue implements WriteQueue {
             }
             if (buffer.transferTo(channel)) {
                 flushedBytes += beforeTransfer;
+                buffer.dispose();
                 queue_.poll();
                 if (flushedBytes >= limitBytes) {
                     lastFlushedBytes_ = flushedBytes;
@@ -92,6 +93,7 @@ public class SimpleWriteQueue implements WriteQueue {
 
             if (transferred > 0) {
                 flushedBytes += transferred;
+                buffer.dispose();
                 queue_.poll();
                 if (flushedBytes >= limitBytes) {
                     lastFlushedBytes_ = flushedBytes;

@@ -1044,6 +1044,26 @@ public class CodecBufferTestAbstract {
             sut_.transferTo(channel);
             verify(channel, times(1)).write(Mockito.any(ByteBuffer.class));
         }
+
+        @Test
+        public void testTransferTo_ByteBufferAll() throws Exception {
+            ByteBuffer buffer = ByteBuffer.allocate(sut_.remainingBytes());
+
+            sut_.transferTo(buffer);
+
+            assertThat(sut_.remainingBytes(), is(32)); // remaining all
+            assertThat(buffer.array(), is(sut_.toArray()));
+        }
+
+        @Test
+        public void testTransferTo_ByteBufferPart() throws Exception {
+            ByteBuffer buffer = ByteBuffer.allocate(sut_.remainingBytes() - 1);
+
+            sut_.transferTo(buffer);
+
+            assertThat(sut_.remainingBytes(), is(32)); // remaining all
+            assertThat(buffer.array(), is(Arrays.copyOf(sut_.toArray(), 31)));
+        }
     }
 
     public static abstract class AbstractStructureChangeTests {

@@ -384,8 +384,13 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer {
     }
 
     @Override
-    public void transferTo(ByteBuffer buffer) {
-        readBytes(buffer);
+    public void transferTo(ByteBuffer byteBuffer) {
+        int space = byteBuffer.remaining();
+        int beginning = beginning_;
+        int remaining = end_ - beginning;
+        int read = (space <= remaining) ? space : remaining;
+        byteBuffer.put(buffer_, beginning_, read);
+        // beginning is not changed.
     }
 
     @Override

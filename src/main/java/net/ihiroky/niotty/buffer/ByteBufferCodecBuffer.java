@@ -386,8 +386,22 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer {
     }
 
     @Override
-    public void transferTo(ByteBuffer buffer) {
-        readBytes(buffer);
+    public void transferTo(ByteBuffer byteBuffer) {
+        changeModeToRead();
+        ByteBuffer myBuffer = buffer_;
+        int position = myBuffer.position();
+        int space = byteBuffer.remaining();
+        int remaining = myBuffer.remaining();
+        if (space >= remaining) {
+            byteBuffer.put(myBuffer);
+            myBuffer.position(position);
+            return;
+        }
+        int limit = myBuffer.limit();
+        myBuffer.limit(myBuffer.position() + space);
+        byteBuffer.put(myBuffer);
+        myBuffer.position(position);
+        myBuffer.limit(limit);
     }
 
     @Override

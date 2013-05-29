@@ -621,6 +621,26 @@ public class CodecBufferListTest {
         }
 
         @Test
+        public void testTransferTo_ByteBufferAll() throws Exception {
+            ByteBuffer buffer = ByteBuffer.allocate(sut_.remainingBytes());
+
+            sut_.transferTo(buffer);
+
+            assertThat(sut_.remainingBytes(), is(32)); // remaining all
+            assertThat(buffer.array(), is(sut_.toArray()));
+        }
+
+        @Test
+        public void testTransferTo_ByteBufferPart() throws Exception {
+            ByteBuffer buffer = ByteBuffer.allocate(sut_.remainingBytes() - 1);
+
+            sut_.transferTo(buffer);
+
+            assertThat(sut_.remainingBytes(), is(32)); // remaining all
+            assertThat(buffer.array(), is(Arrays.copyOf(sut_.toArray(), 31)));
+        }
+
+        @Test
         public void testDrainFrom_AllBetweenBuffers() throws Exception {
             CodecBufferList sut = new CodecBufferList(
                     Buffers.newCodecBuffer(3), Buffers.newCodecBuffer(3));

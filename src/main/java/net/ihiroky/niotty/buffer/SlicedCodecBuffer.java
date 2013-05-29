@@ -261,7 +261,7 @@ public class SlicedCodecBuffer extends AbstractCodecBuffer {
 
     @Override
     public void transferTo(ByteBuffer buffer) {
-        readBytes(buffer);
+        base_.transferTo(buffer);
     }
 
     @Override

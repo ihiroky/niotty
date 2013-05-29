@@ -124,7 +124,7 @@ public class CodecBufferList extends AbstractCodecBuffer {
         int end = endBufferIndex_;
         List<CodecBuffer> buffers = buffers_;
         for (int i = beginningBufferIndex_; i <= end; i++) {
-            buffers.get(i).readBytes(buffer);
+            buffers.get(i).transferTo(buffer);
         }
     }
 
