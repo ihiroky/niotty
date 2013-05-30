@@ -109,7 +109,7 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
 
     @Override
     public TransportFuture close() {
-        if (getEventLoop() != null) {
+        if (eventLoop() != null) {
             return closeSelectableChannel();
         }
         try {
@@ -130,7 +130,7 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
         processor_.getMessageIOSelectorPool().register(channel, SelectionKey.OP_READ, child);
         childAggregate_.add(child);
 
-        getTransportListener().onAccept(child, remoteAddress);
+        transportListener().onAccept(child, remoteAddress);
     }
 
     public Set<Transport> childSet() {

@@ -127,7 +127,7 @@ public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> 
     }
 
     void fireOnConnect() {
-        getTransportListener().onConnect(this, remoteAddress());
+        transportListener().onConnect(this, remoteAddress());
     }
 
     @Override

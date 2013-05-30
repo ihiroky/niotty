@@ -23,6 +23,7 @@ repositories {
 dependencies {
     compile 'org.slf4j:slf4j-api:1.7.5'
     runtime 'ch.qos.logback:logback-classic:1.0.11'
+    compile 'org.apache.httpcomponents:httpcore-nio:4.2.4'
     testCompile 'junit:junit:4.11'
     testCompile 'org.mockito:mockito-core:1.9.5'
 }

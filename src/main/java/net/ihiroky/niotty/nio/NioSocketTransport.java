@@ -34,7 +34,7 @@ public abstract class NioSocketTransport<S extends AbstractSelector<S>> extends 
     }
 
     final TransportFuture closeSelectableChannel() {
-        S selector = getEventLoop();
+        S selector = eventLoop();
         if (selector == null) {
             closePipelines();
             return new SucceededTransportFuture(this);
@@ -65,14 +65,14 @@ public abstract class NioSocketTransport<S extends AbstractSelector<S>> extends 
         closePipelines();
         if (key_ != null && key_.isValid()) {
             SelectableChannel channel = key_.channel();
-            getEventLoop().unregister(key_, this); // decrement register count
+            eventLoop().unregister(key_, this); // decrement register count
             key_.cancel();
             try {
                 channel.close();
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            getTransportListener().onClose(this);
+            transportListener().onClose(this);
             executeLoad(new DefaultTransportStateEvent(TransportState.CONNECTED, null));
         }
         return new SucceededTransportFuture(this);

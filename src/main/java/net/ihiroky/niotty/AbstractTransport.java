@@ -8,13 +8,18 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * TODO invalidate pipeline on close and recreate pipelines.
+ * <p>A skeletal implementation of {@code Transport}.</p>
+ *
+ * <p>This class holds a load (inbound) and store (outbound) pipeline, an attachment reference and an event listener.
+ * {@link net.ihiroky.niotty.TaskLoop} is also held by this class, which handles asynchronous I/O operations</p>
+ *
+ * @param <L> The type of {@link net.ihiroky.niotty.TaskLoop}
  * @author Hiroki Itoh
  */
 abstract public class AbstractTransport<L extends TaskLoop<L>> implements Transport {
 
-    private DefaultLoadPipeline loadPipeline_;
-    private DefaultStorePipeline storePipeline_;
+    private volatile DefaultLoadPipeline loadPipeline_;
+    private volatile DefaultStorePipeline storePipeline_;
     private AtomicReference<Object> attachmentReference_;
     private TransportListener transportListener_;
     private L loop_;
@@ -23,6 +28,9 @@ abstract public class AbstractTransport<L extends TaskLoop<L>> implements Transp
     private static final DefaultLoadPipeline NULL_LOAD_PIPELINE = new DefaultLoadPipeline("null", null);
     private static final DefaultStorePipeline NULL_STORE_PIPELINE = new DefaultStorePipeline("null", null);
 
+    /**
+     * Creates a new instance.
+     */
     protected AbstractTransport() {
         loadPipeline_ = NULL_LOAD_PIPELINE;
         storePipeline_ = NULL_STORE_PIPELINE;
@@ -30,6 +38,12 @@ abstract public class AbstractTransport<L extends TaskLoop<L>> implements Transp
         transportListener_ = NULL_LISTENER;
     }
 
+    /**
+     * <p>Initializes the load / store pipeline with a specified pipeline composer.</p>
+     *
+     * @param baseName a name used in {@link net.ihiroky.niotty.AbstractPipeline}.
+     * @param pipelineComposer the composer to set up the load / store pipeline.
+     */
     protected void setUpPipelines(String baseName, PipelineComposer pipelineComposer) {
 
         DefaultLoadPipeline loadPipeline = new DefaultLoadPipeline(baseName, this);
@@ -43,30 +57,60 @@ abstract public class AbstractTransport<L extends TaskLoop<L>> implements Transp
         storePipeline_ = storePipeline;
     }
 
+    /**
+     * <p>Executes the load pipeline.</p>
+     * @param message A message to be processed.
+     */
     protected void executeLoad(Object message) {
         loadPipeline_.execute(message);
     }
 
+    /**
+     * <p>Executes the load pipeline.</p>
+     * @param message A message to be processed.
+     * @param parameter A parameter which is passed to I/O implementation.
+     */
     protected void executeLoad(Object message, TransportParameter parameter) {
         loadPipeline_.execute(message, parameter);
     }
 
+    /**
+     * <p>Executes the load pipeline.</p>
+     * @param stateEvent an event to change transport state.
+     */
     protected void executeLoad(TransportStateEvent stateEvent) {
         loadPipeline_.execute(stateEvent);
     }
 
+    /**
+     * <p>Executes the store pipeline.</p>
+     * @param message A message to be processed.
+     */
     protected void executeStore(Object message) {
         storePipeline_.execute(message);
     }
 
+    /**
+     * <p>Executes the store pipeline.</p>
+     * @param message A message to be processed.
+     * @param parameter A parameter which is passed to I/O implementation.
+     */
     protected void executeStore(Object message, TransportParameter parameter) {
         storePipeline_.execute(message, parameter);
     }
 
+    /**
+     * <p>Executes the store pipeline.</p>
+     * @param stateEvent an event to change transport state.
+     */
     protected void executeStore(TransportStateEvent stateEvent) {
         storePipeline_.execute(stateEvent);
     }
 
+    /**
+     * Resets the pipelines with the specified composer.
+     * @param composer the composer to reset pipelines.
+     */
     public final void resetPipelines(PipelineComposer composer) {
         Objects.requireNonNull(composer, "composer");
 
@@ -92,36 +136,63 @@ abstract public class AbstractTransport<L extends TaskLoop<L>> implements Transp
         }
     }
 
+    /**
+     * Closes pipelines.
+     */
     public final void closePipelines() {
         loadPipeline_.close();
         storePipeline_.close();
     }
 
+    /**
+     * Adds the specified stage at the end of the store pipeline.
+     * @param ioStage
+     */
     public final void addIOStage(StoreStage<BufferSink, Void> ioStage) {
         Objects.requireNonNull(ioStage, "ioStage");
         storePipeline_.addIOStage(ioStage);
     }
 
+    /**
+     * Sets the instance of {@link net.ihiroky.niotty.TaskLoop}.
+     * @param loop the the instance of {@code TaskLoop}.
+     */
     public final void setEventLoop(L loop) {
         Objects.requireNonNull(loop, "loop");
         this.loop_ = loop;
     }
 
-    protected final L getEventLoop() {
+    /**
+     * Gets the instance of {@link net.ihiroky.niotty.TaskLoop}.
+     * @return
+     */
+    protected final L eventLoop() {
         return loop_;
     }
 
+    /**
+     * Offers the specified task to the {@code TaskLoop}.
+     * @param task the task to be executed in the {@code TaskLoop}.
+     */
     public void offerTask(TaskLoop.Task<L> task) {
         if (loop_ != null) {
             loop_.offerTask(task);
         }
     }
 
+    /**
+     * Returns true if the current thread is managed by the {@code TaskLoop}.
+     * @return true if the current thread is managed by the {@code TaskLoop}.
+     */
     public boolean isInLoopThread() {
         return (loop_ != null) && loop_.isInLoopThread();
     }
 
-    protected TransportListener getTransportListener() {
+    /**
+     * Returns the listener.
+     * @return the listener.
+     */
+    protected TransportListener transportListener() {
         return transportListener_;
     }
 
