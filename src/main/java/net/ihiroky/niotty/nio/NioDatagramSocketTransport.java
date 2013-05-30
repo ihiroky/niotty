@@ -2,7 +2,9 @@ package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.DefaultTransportFuture;
 import net.ihiroky.niotty.DefaultTransportParameter;
+import net.ihiroky.niotty.FailedTransportFuture;
 import net.ihiroky.niotty.PipelineComposer;
+import net.ihiroky.niotty.SucceededTransportFuture;
 import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.TransportState;
 import net.ihiroky.niotty.TransportStateEvent;
@@ -14,16 +16,23 @@ import java.net.NetworkInterface;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
+import java.nio.channels.MembershipKey;
 import java.nio.channels.SelectionKey;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 /**
+ * A Transport implementation for {@code java.nio.channels.DatagramChannel}.
+ *
  * @author Hiroki Itoh
  */
 public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector> {
 
     private DatagramChannel channel_;
     private WriteQueue writeQueue_;
+    private final Map<GroupKey, MembershipKey> membershipKeyMap_;
 
     NioDatagramSocketTransport(NioDatagramSocketConfig config, PipelineComposer composer,
                                String name, UdpIOSelectorPool selectorPool) {
@@ -51,6 +60,7 @@ public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector
 
         channel_ = channel;
         writeQueue_ = config.newWriteQueue();
+        membershipKeyMap_ = Collections.synchronizedMap(new HashMap<GroupKey, MembershipKey>());
 
         // TODO attach a thread for remote ip from a pool.
         // TODO set read buffer size to 64k.
@@ -131,21 +141,29 @@ public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector
         return future;
     }
 
+    /**
+     * <p>Writes the message to the {@code DatagramChannel} via a pipeline associated with this transport.
+     * The message is sent to the given target. If this transport is connected
+     * by {@link #connect(java.net.SocketAddress)}, an invocation of this method is failed.</p>
+     *
+     * @param message The message to be sent.
+     * @param target The target to which the message is sent.
+     */
     public void write(Object message, SocketAddress target) {
         super.write(message, new DefaultTransportParameter(target));
     }
 
+    /**
+     * <p>Writes the message to the {@code DatagramChannel} via a pipeline associated with this transport.
+     * The message is sent to the given target. If this transport is connected
+     * by {@link #connect(java.net.SocketAddress)}, an invocation of this method is failed.</p>
+     *
+     * @param message The message to be sent.
+     * @param priority A priority which is used in {@link net.ihiroky.niotty.nio.WriteQueue}
+     * @param target The target to which the message is sent.
+     */
     public void write(Object message, int priority, SocketAddress target) {
         super.write(message, new DefaultTransportParameter(priority, target));
-    }
-
-    // TODO membership management
-    public void join(InetAddress group, NetworkInterface networkInterface) throws IOException {
-        channel_.join(group, networkInterface);
-    }
-
-    public void join(InetAddress group, NetworkInterface networkInterface, InetAddress source) throws IOException {
-        channel_.join(group, networkInterface, source);
     }
 
     @Override
@@ -171,6 +189,10 @@ public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector
         return channel_.isOpen();
     }
 
+    /**
+     * Returns true if this transport is connected.
+     * @return true if this transport is connected.
+     */
     public boolean isConnected() {
         return channel_.isConnected();
     }
@@ -186,5 +208,152 @@ public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector
     @Override
     void onCloseSelectableChannel() {
         writeQueue_.clear();
+    }
+
+    /**
+     * <p>Joins a multicast group to begin receiving all datagrams sent to the group on the given network interface.</p>
+     *
+     * @param group The multicast group address.
+     * @param networkInterface The network interface on which to join the group.
+     * @return A future object to show a result.
+     */
+    public TransportFuture joinGroup(InetAddress group, NetworkInterface networkInterface) {
+        final GroupKey key = new GroupKey(group, networkInterface);
+        if (membershipKeyMap_.containsKey(key)) {
+            return new SucceededTransportFuture(this);
+        }
+
+        try {
+            MembershipKey membershipKey = channel_.join(key.group_, key.networkInterface_);
+            membershipKeyMap_.put(key, membershipKey);
+            return new SucceededTransportFuture(this);
+        } catch (Exception e) {
+            return new FailedTransportFuture(this, e);
+        }
+    }
+
+    /**
+     * <p>Joins a multicast group to begin receiving datagrams sent to the group from a given source address.
+     * on the given network interface.</p>
+     *
+     * @param group The multicast group address.
+     * @param networkInterface The network interface on which to join the group.
+     * @param source The source address from which datagrams is sent.
+     * @return A future object to show a result of this method.
+     */
+    public TransportFuture joinGroup(InetAddress group, NetworkInterface networkInterface, final InetAddress source) {
+        final GroupKey key = new GroupKey(group, networkInterface);
+        if (membershipKeyMap_.containsKey(key)) {
+            return new SucceededTransportFuture(this);
+        }
+
+        try {
+            MembershipKey membershipKey = channel_.join(key.group_, key.networkInterface_, source);
+            membershipKeyMap_.put(key, membershipKey);
+            return new SucceededTransportFuture(this);
+        } catch (Exception e) {
+            return new FailedTransportFuture(this, e);
+        }
+    }
+
+    /**
+     * <p>Drop membership.</p>
+     *
+     * <p>This transport will no longer receive any datagrams sent to the group if the membership is dropped.</p>
+     *
+     * @param group The group address.
+     * @param networkInterface The network interface
+     * @return A future object to show a result of this method.
+     */
+    public TransportFuture leaveGroup(InetAddress group, NetworkInterface networkInterface) {
+        final GroupKey key = new GroupKey(group, networkInterface);
+        if (!membershipKeyMap_.containsKey(key)) {
+            return new SucceededTransportFuture(this);
+        }
+
+        final DefaultTransportFuture future = new DefaultTransportFuture(this);
+        MembershipKey membershipKey = membershipKeyMap_.remove(key);
+        membershipKey.drop();
+        return new SucceededTransportFuture(this);
+    }
+
+    /**
+     * <p>Blocks multicast datagrams from the given source address.</p>
+     *
+     * @param group The group address.
+     * @param networkInterface The network interface on which to join the group.
+     * @param source The source address to block.
+     * @return A future object to show a result of this method.
+     */
+    public TransportFuture block(InetAddress group, NetworkInterface networkInterface, final InetAddress source) {
+        GroupKey key = new GroupKey(group, networkInterface);
+        final MembershipKey membershipKey = membershipKeyMap_.get(key);
+        if (membershipKey == null) {
+            return new SucceededTransportFuture(this);
+        }
+
+        try {
+            membershipKey.block(source);
+            return new SucceededTransportFuture(this);
+        } catch (Exception e) {
+            return new FailedTransportFuture(this, e);
+        }
+    }
+
+    /**
+     * <p>Unblock multicast datagrams from the given source address that was previously blocked.</p>
+     *
+     * @param group The group address.
+     * @param networkInterface The network interface on which to join the group.
+     * @param source The source address to unblock.
+     * @return A future object to show a result of this method.
+     */
+    public TransportFuture unblock(InetAddress group, NetworkInterface networkInterface, final InetAddress source) {
+        GroupKey key = new GroupKey(group, networkInterface);
+        final MembershipKey membershipKey = membershipKeyMap_.get(key);
+        if (membershipKey == null) {
+            return new SucceededTransportFuture(this);
+        }
+
+        try {
+            membershipKey.unblock(source);
+            return new SucceededTransportFuture(this);
+        } catch (Exception e) {
+            return new FailedTransportFuture(this, e);
+        }
+    }
+
+    private class GroupKey {
+        final InetAddress group_;
+        final NetworkInterface networkInterface_;
+
+        GroupKey(InetAddress group, NetworkInterface networkInterface) {
+            group_ = group;
+            networkInterface_ = networkInterface;
+        }
+
+        private static final int BASE = 17;
+        private static final int FACTOR = 31;
+
+        @Override
+        public int hashCode() {
+            int h = BASE;
+            h = h * FACTOR + ((group_ != null) ? group_.hashCode() : 0);
+            h = h * FACTOR + ((networkInterface_ != null) ? networkInterface_.hashCode() : 0);
+            return h;
+        }
+
+        @Override
+        public boolean equals(Object object) {
+            if (object instanceof GroupKey) {
+                GroupKey that = (GroupKey) object;
+                boolean groupEqual = (this.group_ != null)
+                        ? this.group_.equals(that.group_) : that.group_ == null;
+                boolean networkInterfaceEqual = (this.networkInterface_ != null)
+                        ? this.networkInterface_.equals(that.networkInterface_) : that.networkInterface_ == null;
+                return groupEqual && networkInterfaceEqual;
+            }
+            return false;
+        }
     }
 }
