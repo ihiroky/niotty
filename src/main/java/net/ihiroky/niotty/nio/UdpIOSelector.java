@@ -2,7 +2,6 @@ package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.DefaultTransportParameter;
 import net.ihiroky.niotty.StoreStage;
-import net.ihiroky.niotty.TransportState;
 import net.ihiroky.niotty.buffer.BufferSink;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.CodecBuffer;
@@ -60,7 +59,7 @@ public class UdpIOSelector extends AbstractSelector<UdpIOSelector> {
                         if (logger_.isDebugEnabled()) {
                             logger_.debug("transport reaches the end of its stream:" + transport);
                         }
-                        transport.closeSelectableChannel(TransportState.CONNECTED);
+                        transport.closeSelectableChannel();
                         localByteBuffer.clear();
                         continue;
                     }
@@ -77,10 +76,10 @@ public class UdpIOSelector extends AbstractSelector<UdpIOSelector> {
                 if (logger_.isDebugEnabled()) {
                     logger_.debug("failed to read from transport by interruption:" + transport, ie);
                 }
-                transport.closeSelectableChannel(TransportState.CONNECTED);
+                transport.closeSelectableChannel();
             } catch (IOException ioe) {
                 logger_.error("failed to read from transport:" + transport, ioe);
-                transport.closeSelectableChannel(TransportState.CONNECTED);
+                transport.closeSelectableChannel();
             } finally {
                 localByteBuffer.clear();
             }

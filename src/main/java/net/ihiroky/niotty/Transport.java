@@ -1,6 +1,5 @@
 package net.ihiroky.niotty;
 
-import java.io.IOException;
 import java.net.SocketAddress;
 
 /**
@@ -10,7 +9,7 @@ import java.net.SocketAddress;
  */
 public interface Transport {
 
-    void bind(SocketAddress local) throws IOException;
+    TransportFuture bind(SocketAddress local);
     TransportFuture connect(SocketAddress remote);
     TransportFuture close();
     void write(Object message);

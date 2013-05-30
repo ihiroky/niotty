@@ -27,7 +27,7 @@ public class ConnectionWaitTransport extends NioSocketTransport<ConnectSelector>
     }
 
     @Override
-    public void bind(SocketAddress local) {
+    public TransportFuture bind(SocketAddress local) {
         throw new UnsupportedOperationException();
     }
 

@@ -69,12 +69,17 @@ public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector
 
     @Override
     public TransportFuture close() {
-        return closeSelectableChannel(TransportState.CONNECTED);
+        return closeSelectableChannel();
     }
 
     @Override
-    public void bind(SocketAddress local) throws IOException {
-        channel_.bind(local);
+    public TransportFuture bind(SocketAddress local) {
+        try {
+            channel_.bind(local);
+            return new SucceededTransportFuture(this);
+        } catch (IOException ioe) {
+            return new FailedTransportFuture(this, ioe);
+        }
     }
 
     /**

@@ -33,14 +33,14 @@ public abstract class NioSocketTransport<S extends AbstractSelector<S>> extends 
         this.key_ = key;
     }
 
-    final TransportFuture closeSelectableChannel(TransportState transportState) {
+    final TransportFuture closeSelectableChannel() {
         S selector = getEventLoop();
         if (selector == null) {
             closePipelines();
             return new SucceededTransportFuture(this);
         }
         final DefaultTransportFuture future = new DefaultTransportFuture(this);
-        executeStore(new TransportStateEvent(transportState) {
+        executeStore(new TransportStateEvent(TransportState.CLOSED) {
             @Override
             public void execute() {
                 NioSocketTransport.this.doCloseSelectableChannel();

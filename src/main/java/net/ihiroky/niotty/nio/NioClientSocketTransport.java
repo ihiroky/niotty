@@ -5,7 +5,6 @@ import net.ihiroky.niotty.FailedTransportFuture;
 import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.SucceededTransportFuture;
 import net.ihiroky.niotty.TransportFuture;
-import net.ihiroky.niotty.TransportState;
 import net.ihiroky.niotty.buffer.BufferSink;
 
 import java.io.IOException;
@@ -61,11 +60,13 @@ public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> 
     }
 
     @Override
-    public void bind(SocketAddress local) throws IOException {
-        if (connector_ == null) {
-            throw new IllegalStateException("Channel is an accepted channel.");
+    public TransportFuture bind(SocketAddress local) {
+        try {
+            clientChannel_.bind(local);
+            return new SucceededTransportFuture(this);
+        } catch (IOException ioe) {
+            return new FailedTransportFuture(this, ioe);
         }
-        clientChannel_.bind(local);
     }
 
     @Override
@@ -87,7 +88,7 @@ public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> 
 
     @Override
     public TransportFuture close() {
-        return closeSelectableChannel(TransportState.CONNECTED);
+        return closeSelectableChannel();
     }
 
     @Override

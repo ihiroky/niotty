@@ -46,7 +46,7 @@ public class ConnectSelector extends AbstractSelector<ConnectSelector> {
                 }
             } catch (IOException ioe) {
                 attachment.getFuture().setThrowable(ioe);
-                attachment.transport().closeSelectableChannel(TransportState.CONNECTED);
+                attachment.transport().closeSelectableChannel();
             }
         }
     }

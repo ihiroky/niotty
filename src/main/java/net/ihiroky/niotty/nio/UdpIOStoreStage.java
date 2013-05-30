@@ -2,7 +2,6 @@ package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.TaskLoop;
-import net.ihiroky.niotty.TransportState;
 import net.ihiroky.niotty.buffer.BufferSink;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,7 +33,7 @@ public class UdpIOStoreStage extends AbstractSelector.SelectorStoreStage<UdpIOSe
                     return transport.flush(writeBuffer_);
                 } catch (IOException ioe) {
                     logger_.error("failed to flush buffer to " + transport, ioe);
-                    transport.closeSelectableChannel(TransportState.CONNECTED);
+                    transport.closeSelectableChannel();
                 }
                 return 0;
             }

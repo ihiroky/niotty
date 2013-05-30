@@ -2,6 +2,7 @@ package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.DefaultTransportParameter;
 import net.ihiroky.niotty.DefaultTransportStateEvent;
+import net.ihiroky.niotty.FailedTransportFuture;
 import net.ihiroky.niotty.SucceededTransportFuture;
 import net.ihiroky.niotty.Transport;
 import net.ihiroky.niotty.TransportAggregate;
@@ -91,9 +92,14 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
     }
 
     @Override
-    public void bind(SocketAddress socketAddress) throws IOException {
-        serverChannel_.bind(socketAddress, config_.getBacklog());
-        processor_.getAcceptSelectorPool().register(serverChannel_, SelectionKey.OP_ACCEPT, this);
+    public TransportFuture bind(SocketAddress socketAddress) {
+        try {
+            serverChannel_.bind(socketAddress, config_.getBacklog());
+            processor_.getAcceptSelectorPool().register(serverChannel_, SelectionKey.OP_ACCEPT, this);
+            return new SucceededTransportFuture(this);
+        } catch (IOException ioe) {
+            return new FailedTransportFuture(this, ioe);
+        }
     }
 
     @Override
@@ -104,7 +110,7 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
     @Override
     public TransportFuture close() {
         if (getEventLoop() != null) {
-            return closeSelectableChannel(TransportState.BOUND);
+            return closeSelectableChannel();
         }
         try {
             serverChannel_.close();
