@@ -1,14 +1,47 @@
 package net.ihiroky.niotty;
 
 /**
- * Created on 13/01/16, 17:11
+ * Manages I/O threads and {@link Transport} instantiations.
  *
+ * <h3>PipelineComposer life cycle</h3>
+ * <p>The life cycle of {@link PipelineComposer} is managed by this instance.
+ * If {@link #start()} is called, then {@link net.ihiroky.niotty.PipelineComposer#setUp()}
+ * is called. And If {@link #stop()}, then {@link net.ihiroky.niotty.PipelineComposer#close()}.
+ * The instance of {@code PipelineComposer} is set by {@link #setPipelineComposer(PipelineComposer)}.
+ * It is used by the transport implementation to set up pipelines.</p>
+ *
+ * @param <T> the type of the transport to be created by this class.
+ * @param <C> the type of the transport configuration.
  * @author Hiroki Itoh
  */
 public interface Processor<T extends Transport, C> {
+
+    /**
+     * Starts I/O threads.
+     */
     void start();
+
+    /**
+     * Stops I/O threads.
+     */
     void stop();
+
+    /**
+     * Returns a name for this instance.
+     * @return a name for this instance.
+     */
     String name();
+
+    /**
+     * Sets a {@link PipelineComposer}.
+     * @param composer a {@code PipelineComposer}.
+     */
     void setPipelineComposer(PipelineComposer composer);
+
+    /**
+     * Constructs the transport.
+     * @param config a configuration to construct the transport.
+     * @return the transport.
+     */
     T createTransport(C config);
 }

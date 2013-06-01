@@ -40,7 +40,7 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
             config.applySocketOptions(serverChannel);
 
             // set up StoreStage for selector referenced at bind/close operation.
-            setUpPipelines(processor.name(), processor.getPipelineComposer());
+            setUpPipelines(processor.name(), processor.pipelineComposer());
 
             this.config_ = config;
             this.serverChannel_ = serverChannel;
@@ -125,7 +125,7 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
         InetSocketAddress remoteAddress = (InetSocketAddress) ((SocketChannel) channel).getRemoteAddress();
 
         NioClientSocketTransport child = new NioClientSocketTransport(
-                config_, processor_.getPipelineComposer(), processor_.name(), (SocketChannel) channel);
+                config_, processor_.pipelineComposer(), processor_.name(), (SocketChannel) channel);
         child.loadEvent(new DefaultTransportStateEvent(TransportState.CONNECTED, remoteAddress));
         processor_.getMessageIOSelectorPool().register(channel, SelectionKey.OP_READ, child);
         childAggregate_.add(child);
