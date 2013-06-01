@@ -10,7 +10,7 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 
 /**
- * Created on 13/01/10, 17:21
+ * A skeletal implemention of {@link Pipeline}.
  *
  * @author Hiroki Itoh
  */
@@ -51,7 +51,7 @@ public abstract class AbstractPipeline<S> implements Pipeline<S> {
                 newContext.setNext(TERMINAL);
                 return this;
             } else {
-                for (StageContextIterator i = new StageContextIterator(head_); i.hasNext();) {
+                for (PipelineElementIterator i = new PipelineElementIterator(head_); i.hasNext();) {
                     PipelineElement<Object, Object> context = i.next();
                     if (context.key().equals(key)) {
                         throw new IllegalArgumentException("key " + key + " already exists.");
@@ -82,7 +82,7 @@ public abstract class AbstractPipeline<S> implements Pipeline<S> {
         synchronized (head_) {
             PipelineElement<Object, Object> prev = null;
             PipelineElement<Object, Object> target = null;
-            for (StageContextIterator i = new StageContextIterator(head_); i.hasNext();) {
+            for (PipelineElementIterator i = new PipelineElementIterator(head_); i.hasNext();) {
                 PipelineElement<Object, Object> context = i.next();
                 StageKey ikey = context.key();
                 if (ikey.equals(key)) {
@@ -116,7 +116,7 @@ public abstract class AbstractPipeline<S> implements Pipeline<S> {
 
         synchronized (head_) {
             PipelineElement<Object, Object> target = null;
-            for (StageContextIterator i = new StageContextIterator(head_); i.hasNext();) {
+            for (PipelineElementIterator i = new PipelineElementIterator(head_); i.hasNext();) {
                 PipelineElement<Object, Object> context = i.next();
                 StageKey ikey = context.key();
                 if (ikey.equals(key)) {
@@ -142,7 +142,7 @@ public abstract class AbstractPipeline<S> implements Pipeline<S> {
         Objects.requireNonNull(key, "key");
 
         synchronized (head_) {
-            for (StageContextIterator i = new StageContextIterator(head_); i.hasNext();) {
+            for (PipelineElementIterator i = new PipelineElementIterator(head_); i.hasNext();) {
                 PipelineElement<Object, Object> context = i.next();
                 if (context.key().equals(key)) {
                     PipelineElement<Object, Object> prev = i.prev();
@@ -169,7 +169,7 @@ public abstract class AbstractPipeline<S> implements Pipeline<S> {
         synchronized (head_) {
             PipelineElement<Object, Object> prev = null;
             PipelineElement<Object, Object> target = null;
-            for (StageContextIterator i = new StageContextIterator(head_); i.hasNext();) {
+            for (PipelineElementIterator i = new PipelineElementIterator(head_); i.hasNext();) {
                 PipelineElement<Object, Object> context = i.next();
                 StageKey ikey = context.key();
                 if (ikey.equals(newKey)) {
@@ -192,7 +192,8 @@ public abstract class AbstractPipeline<S> implements Pipeline<S> {
         throw new NoSuchElementException("oldKey " + oldKey + " is not found.");
     }
 
-    protected abstract PipelineElement<Object, Object> createContext(StageKey key, S stage, PipelineElementExecutorPool pool);
+    protected abstract PipelineElement<Object, Object> createContext(
+            StageKey key, S stage, PipelineElementExecutorPool pool);
 
     public void close() {
         for (PipelineElement<Object, Object> ctx = head_; ctx != TERMINAL; ctx = ctx.next()) {
@@ -209,7 +210,7 @@ public abstract class AbstractPipeline<S> implements Pipeline<S> {
         int counter = 0;
         Class<?> prevOutputClass = null;
         Class<?> prevStageClass = null;
-        for (StageContextIterator i = new StageContextIterator(head_); i.hasNext();) {
+        for (PipelineElementIterator i = new PipelineElementIterator(head_); i.hasNext();) {
             Class<?> stageClass = i.next().stage().getClass();
             for (Type type : stageClass.getGenericInterfaces()) {
                 Type[] actualTypeArguments = stageTypeParameters(type);
@@ -314,7 +315,7 @@ public abstract class AbstractPipeline<S> implements Pipeline<S> {
     }
 
     protected PipelineElement<Object, Object> search(StageKey key) {
-        for (StageContextIterator i = new StageContextIterator(head_); i.hasNext();) {
+        for (PipelineElementIterator i = new PipelineElementIterator(head_); i.hasNext();) {
             PipelineElement<Object, Object> context = i.next();
             if (context.key() == key) {
                 return context;
@@ -324,7 +325,7 @@ public abstract class AbstractPipeline<S> implements Pipeline<S> {
     }
 
     protected Iterator<PipelineElement<Object, Object>> iterator() {
-        return new StageContextIterator(head_);
+        return new PipelineElementIterator(head_);
     }
 
     private static class NullContext extends PipelineElement<Object, Object> {
@@ -353,17 +354,17 @@ public abstract class AbstractPipeline<S> implements Pipeline<S> {
     /**
      * Iterates {@code PipelineElement} chain from head context.
      */
-    private static class StageContextIterator implements Iterator<PipelineElement<Object, Object>> {
+    private static class PipelineElementIterator implements Iterator<PipelineElement<Object, Object>> {
 
         private PipelineElement<Object, Object> context_;
         private final PipelineElement<Object, Object> terminal_;
         private PipelineElement<Object, Object> prev_;
 
-        StageContextIterator(PipelineElement<Object, Object> head) {
+        PipelineElementIterator(PipelineElement<Object, Object> head) {
             this(head, TERMINAL);
         }
 
-        StageContextIterator(PipelineElement<Object, Object> head, PipelineElement<Object, Object> terminal) {
+        PipelineElementIterator(PipelineElement<Object, Object> head, PipelineElement<Object, Object> terminal) {
             context_ = head;
             terminal_ = terminal;
             prev_ = null;
