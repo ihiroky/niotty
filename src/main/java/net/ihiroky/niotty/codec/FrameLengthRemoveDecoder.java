@@ -12,7 +12,7 @@ import net.ihiroky.niotty.buffer.CodecBuffer;
 public class FrameLengthRemoveDecoder implements LoadStage<CodecBuffer, CodecBuffer> {
 
     private int poolingFrameBytes_;
-    private CodecBuffer pooling_;
+    private CodecBuffer buffer_;
 
     @Override
     public void load(StageContext<CodecBuffer> context, CodecBuffer input) {
@@ -21,32 +21,37 @@ public class FrameLengthRemoveDecoder implements LoadStage<CodecBuffer, CodecBuf
 
             // load frame length
             if (frameBytes == 0) {
-                if (input.remainingBytes() < FrameLengthPrependEncoder.SHORT_BYTES) {
+                CodecBuffer b = readFully(input, FrameLengthPrependEncoder.SHORT_BYTES, true);
+                if (b == null) {
                     return;
                 }
-                int length = input.readShort() & FrameLengthPrependEncoder.MASK_TWO_BYTES;
+                // int length = b.readShort() & FrameLengthPrependEncoder.MASK_TWO_BYTES;
+                int length = b.readShort();
                 if (length >= 0) { // length < Short.MAX_VALUE
                     frameBytes = length;
                 } else {
-                    if (input.remainingBytes() < FrameLengthPrependEncoder.SHORT_BYTES) {
+                    length <<= FrameLengthPrependEncoder.SHIFT_TWO_BYTES;
+                    b = readFully(input, FrameLengthPrependEncoder.SHORT_BYTES, true);
+                    if (b == null) {
                         poolingFrameBytes_ = length; // negative
                         return;
                     }
                     int upper = length & ~FrameLengthPrependEncoder.INT_FLAG;
-                    int lower = input.readShort() & FrameLengthPrependEncoder.MASK_TWO_BYTES;
-                    frameBytes = (upper << FrameLengthPrependEncoder.SHIFT_TWO_BYTES) | lower;
+                    int lower = b.readShort() & FrameLengthPrependEncoder.MASK_TWO_BYTES;
+                    frameBytes = upper | lower;
                 }
             } else if (frameBytes < 0) {
-                if (input.remainingBytes() < FrameLengthPrependEncoder.SHORT_BYTES) {
+                CodecBuffer b = readFully(input, FrameLengthPrependEncoder.SHORT_BYTES, true);
+                if (b == null) {
                     return;
                 }
-                int upper = poolingFrameBytes_ & ~FrameLengthPrependEncoder.INT_FLAG;
-                int lower = input.readShort() & FrameLengthPrependEncoder.MASK_TWO_BYTES;
+                int upper = frameBytes & ~FrameLengthPrependEncoder.INT_FLAG;
+                int lower = b.readShort() & FrameLengthPrependEncoder.MASK_TWO_BYTES;
                 frameBytes = (upper << FrameLengthPrependEncoder.SHIFT_TWO_BYTES) | lower;
             }
 
             // load frame
-            CodecBuffer output = readFully(input, frameBytes);
+            CodecBuffer output = readFully(input, frameBytes, false);
             if (output == null) {
                 poolingFrameBytes_ = frameBytes;
                 return;
@@ -62,12 +67,26 @@ public class FrameLengthRemoveDecoder implements LoadStage<CodecBuffer, CodecBuf
         context.proceed(event);
     }
 
-    private CodecBuffer readFully(CodecBuffer input, int requiredLength) {
-        if (pooling_ != null) {
-            pooling_.drainFrom(input, requiredLength - pooling_.remainingBytes());
-            if (pooling_.remainingBytes() == requiredLength) {
-                CodecBuffer fulfilled = pooling_;
-                pooling_ = null;
+    /**
+     * <p>Reads data to the amount of specified {@code requiredLength}.</p>
+     *
+     * <p>If enough data exist in the {@code input}, then this method returns a buffer
+     * which contains data at least {@code requiredLength}. Otherwise, returns null
+     * and pools a content of the {@code input} to a member field.</p>
+     *
+     * @param input a input buffer
+     * @param requiredLength expected read length
+     * @param noCopyIfEnough true if this method returns the {@code input} when the {@code input}
+     *                       has enough data to read data to the amount of {@code requiredLength},
+     *                       or returns new copied buffer.
+     * @return the buffer which contains the data at least the {@code requiredLength}, or null.
+     */
+    CodecBuffer readFully(CodecBuffer input, int requiredLength, boolean noCopyIfEnough) {
+        if (buffer_ != null) {
+            buffer_.drainFrom(input, requiredLength - buffer_.remainingBytes());
+            if (buffer_.remainingBytes() == requiredLength) {
+                CodecBuffer fulfilled = buffer_;
+                buffer_ = null;
                 return fulfilled;
             }
             return null;
@@ -75,17 +94,19 @@ public class FrameLengthRemoveDecoder implements LoadStage<CodecBuffer, CodecBuf
 
         int remainingBytes = input.remainingBytes();
         if (remainingBytes >= requiredLength) {
-            CodecBuffer p = Buffers.wrap(new byte[requiredLength], 0, 0);
-            p.drainFrom(input, requiredLength);
-            return p;
+            return noCopyIfEnough ? input : copy(input, requiredLength);
         }
         if (remainingBytes == 0) {
             return null;
         }
-        CodecBuffer p = Buffers.wrap(new byte[requiredLength], 0, 0);
-        p.drainFrom(input, requiredLength);
-        pooling_ = p;
+        buffer_ = copy(input, requiredLength);
         return null;
+    }
+
+    private static CodecBuffer copy(CodecBuffer input, int bytes) {
+        CodecBuffer b = Buffers.wrap(new byte[bytes], 0, 0);
+        b.drainFrom(input, bytes);
+        return b;
     }
 
     int getPoolingFrameBytes() {
@@ -93,6 +114,6 @@ public class FrameLengthRemoveDecoder implements LoadStage<CodecBuffer, CodecBuf
     }
 
     CodecBuffer getPooling() {
-        return pooling_;
+        return buffer_;
     }
 }

@@ -34,8 +34,20 @@ public class FrameLengthRemoveDecoderTest {
         dataLength_ = encodeBuffer.remainingBytes();
     }
 
+    private void setUpAgainAsIntLength() {
+        sut_ = new FrameLengthRemoveDecoder();
+        context_ = new LoadStageContextMock<>(sut_);
+        CodecBuffer encodeBuffer = Buffers.newCodecBuffer(32);
+        encodeBuffer.writeInt(12 | 0x80000000); // INT_FLAG
+        encodeBuffer.writeInt(1);
+        encodeBuffer.writeInt(2);
+        encodeBuffer.writeInt(3);
+        data_ = encodeBuffer.toArray();
+        dataLength_ = encodeBuffer.remainingBytes();
+    }
+
     @Test
-    public void testLoad_MessageOnce() throws Exception {
+    public void testLoad_MessageShortOnce() throws Exception {
         CodecBuffer input = Buffers.wrap(data_, 0, dataLength_);
 
         sut_.load(context_, input);
@@ -51,23 +63,87 @@ public class FrameLengthRemoveDecoderTest {
     }
 
     @Test
-    public void testLoad_MessageManyIncompletePacket() throws Exception {
+    public void testLoad_MessageIntOnce() throws Exception {
+        setUpAgainAsIntLength();
+
+        CodecBuffer input = Buffers.wrap(data_, 0, dataLength_);
+
+        sut_.load(context_, input);
+
+        Queue<CodecBuffer> queue = context_.getProceededMessageEventQueue();
+        CodecBuffer output = queue.poll();
+        assertThat(output.readInt(), is(1));
+        assertThat(output.readInt(), is(2));
+        assertThat(output.readInt(), is(3));
+        assertThat(queue.isEmpty(), is(true));
+        assertThat(sut_.getPooling(), is(nullValue()));
+        assertThat(sut_.getPoolingFrameBytes(), is(0));
+    }
+
+    @Test
+    public void testLoad_MessageManyIncompleteShortPacket() throws Exception {
         // read first 1 byte
         CodecBuffer b = Buffers.wrap(data_, 0, 1);
         sut_.load(context_, b);
         assertThat(context_.getProceededMessageEventQueue().size(), is(0));
-        assertThat(sut_.getPooling(), is(nullValue()));
+        assertThat(sut_.getPooling().remainingBytes(), is(1));
         assertThat(sut_.getPoolingFrameBytes(), is(0));
-        assertThat(b.remainingBytes(), is(1));
+        assertThat(b.remainingBytes(), is(0));
 
         // prepend length field is read
-        sut_.load(context_, Buffers.wrap(data_, 0, 2));
+        sut_.load(context_, Buffers.wrap(data_, 1, 1));
         assertThat(context_.getProceededMessageEventQueue().size(), is(0));
         assertThat(sut_.getPooling(), is(nullValue()));
         assertThat(sut_.getPoolingFrameBytes(), is(12));
 
         // read remaining
         sut_.load(context_, Buffers.wrap(data_, 2, 12));
+        Queue<CodecBuffer> queue = context_.getProceededMessageEventQueue();
+
+        CodecBuffer output = queue.poll();
+        assertThat(output.readInt(), is(1));
+        assertThat(output.readInt(), is(2));
+        assertThat(output.readInt(), is(3));
+        assertThat(queue.isEmpty(), is(true));
+        assertThat(sut_.getPooling(), is(nullValue()));
+        assertThat(sut_.getPoolingFrameBytes(), is(0));
+    }
+
+    @Test
+    public void testLoad_MessageManyIncompleteIntPacket() throws Exception {
+        setUpAgainAsIntLength();
+
+        // read first byte
+        CodecBuffer b = Buffers.wrap(data_, 0, 1);
+        sut_.load(context_, b);
+        assertThat(context_.getProceededMessageEventQueue().size(), is(0));
+        assertThat(sut_.getPooling().remainingBytes(), is(1));
+        assertThat(sut_.getPoolingFrameBytes(), is(0));
+        assertThat(b.remainingBytes(), is(0));
+
+        // read second byte
+        b = Buffers.wrap(data_, 1, 1);
+        sut_.load(context_, b);
+        assertThat(context_.getProceededMessageEventQueue().size(), is(0));
+        assertThat(sut_.getPooling(), is(nullValue()));
+        assertThat(sut_.getPoolingFrameBytes(), is(0x8000_0000));
+        assertThat(b.remainingBytes(), is(0));
+
+        // read third byte
+        sut_.load(context_, Buffers.wrap(data_, 2, 1));
+        assertThat(context_.getProceededMessageEventQueue().size(), is(0));
+        assertThat(sut_.getPooling().remainingBytes(), is(1));
+        assertThat(sut_.getPoolingFrameBytes(), is(0x8000_0000));
+        assertThat(b.remainingBytes(), is(0));
+
+        // prepend length field is read
+        sut_.load(context_, Buffers.wrap(data_, 3, 1));
+        assertThat(context_.getProceededMessageEventQueue().size(), is(0));
+        assertThat(sut_.getPooling(), is(nullValue()));
+        assertThat(sut_.getPoolingFrameBytes(), is(12));
+
+        // read remaining
+        sut_.load(context_, Buffers.wrap(data_, 4, 12));
         Queue<CodecBuffer> queue = context_.getProceededMessageEventQueue();
 
         CodecBuffer output = queue.poll();
