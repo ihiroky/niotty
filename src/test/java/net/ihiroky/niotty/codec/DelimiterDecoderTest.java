@@ -142,4 +142,24 @@ public class DelimiterDecoderTest {
         assertThat(q.isEmpty(), is(true));
         assertThat(sut.buffer(), is(nullValue()));
     }
+
+    @Test
+    public void testLoad_RemoveDelimiter() throws Exception {
+        DelimiterDecoder sut = new DelimiterDecoder(new byte[]{'\r', '\n'}, true);
+        LoadStageContextMock<CodecBuffer, CodecBuffer> context = new LoadStageContextMock<>(sut);
+
+        byte[] data0 = "input0\r\ninput1\r".getBytes(StandardCharsets.UTF_8);
+        byte[] data1 = "\ninput2\r\n".getBytes(StandardCharsets.UTF_8);
+        CodecBuffer input0 = Buffers.wrap(data0, 0, data0.length);
+        CodecBuffer input1 = Buffers.wrap(data1, 0, data1.length);
+        sut.load(context, input0);
+        sut.load(context, input1);
+
+        Queue<CodecBuffer> q = context.getProceededMessageEventQueue();
+        assertContent(q.poll(), is("input0".getBytes(StandardCharsets.UTF_8)));
+        assertContent(q.poll(), is("input1".getBytes(StandardCharsets.UTF_8)));
+        assertContent(q.poll(), is("input2".getBytes(StandardCharsets.UTF_8)));
+        assertThat(q.isEmpty(), is(true));
+        assertThat(sut.buffer(), is(nullValue()));
+    }
 }
