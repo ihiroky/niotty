@@ -35,7 +35,7 @@ public class ThreadPipelineElementExecutor extends TaskLoop<ThreadPipelineElemen
     }
 
     @Override
-    protected void process(int timeout) throws Exception {
+    protected void process(int timeout) throws InterruptedException {
         lock_.lock();
         try {
             if (timeout > 0) {
@@ -49,6 +49,7 @@ public class ThreadPipelineElementExecutor extends TaskLoop<ThreadPipelineElemen
                 }
             }
         } finally {
+            signaled_ = false;
             lock_.unlock();
         }
     }
