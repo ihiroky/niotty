@@ -58,11 +58,9 @@ public abstract class NioSocketTransport<S extends AbstractSelector<S>> extends 
      * {@link #executeLoad(net.ihiroky.niotty.TransportStateEvent)} is called after the channel is closed.
      * This method calls {@code #onCloseSelectableChannel} and {@link #closePipelines()} before the channel close
      * operation.
-     * @return
+     * @return succeeded future
      */
     final TransportFuture doCloseSelectableChannel() {
-        onCloseSelectableChannel();
-        closePipelines();
         if (key_ != null && key_.isValid()) {
             SelectableChannel channel = key_.channel();
             eventLoop().unregister(key_, this); // decrement register count
@@ -73,8 +71,10 @@ public abstract class NioSocketTransport<S extends AbstractSelector<S>> extends 
                 e.printStackTrace();
             }
             transportListener().onClose(this);
-            executeLoad(new DefaultTransportStateEvent(TransportState.CONNECTED, null));
+            executeLoad(new DefaultTransportStateEvent(TransportState.CLOSED, null));
         }
+        onCloseSelectableChannel();
+        closePipelines();
         return new SucceededTransportFuture(this);
     }
 
