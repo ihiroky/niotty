@@ -3,6 +3,11 @@ package net.ihiroky.niotty;
 import java.util.List;
 
 /**
+ * <p>An implementation of {@link PipelineElementExecutorPool} that manages
+ * {@link ThreadPipelineElementExecutor}.</p>
+ *
+ * <p>This class use threads to execute the {@code ThreadPipelineElementExecutor}. </p>
+ *
  * @author Hiroki Itoh
  */
 public final class ThreadPipelineElementExecutorPool
@@ -10,7 +15,10 @@ public final class ThreadPipelineElementExecutorPool
 
     private final Object assignLock_;
     private final int numberOfThread_;
+    private final String threadNamePrefix_;
     private State state_;
+
+    private static final String DEFAULT_THREAD_NAME_PREFIX = "ExecutorFor";
 
     private enum State {
         INITIALIZED,
@@ -18,12 +26,30 @@ public final class ThreadPipelineElementExecutorPool
         CLOSED,
     }
 
+    /**
+     * Constructs a instance.
+     *
+     * An invocation of this constructor behaves in exactly the same way as the invocation
+     * {@code ThreadPipelineElementExecutorPool(numberOfThread, null)}.
+     *
+     * @param numberOfThread the number of the threads to be managed by the instance.
+     */
     public ThreadPipelineElementExecutorPool(int numberOfThread) {
+        this(numberOfThread, null);
+    }
+
+    /**
+     * Constructs a instance.
+     * @param numberOfThread the number of the threads to be managed by the instance.
+     * @param threadNamePrefix a prefix of the thread name, "ExecutorFor" is used if null.
+     */
+    public ThreadPipelineElementExecutorPool(int numberOfThread, String threadNamePrefix) {
         if (numberOfThread <= 0) {
             throw new IllegalArgumentException("numberOfThread must be positive.");
         }
         assignLock_ = new Object();
         numberOfThread_ = numberOfThread;
+        threadNamePrefix_ = (threadNamePrefix != null) ? threadNamePrefix : DEFAULT_THREAD_NAME_PREFIX;
         state_ = State.INITIALIZED;
     }
 
@@ -40,7 +66,8 @@ public final class ThreadPipelineElementExecutorPool
     public PipelineElementExecutor assign(PipelineElement<?, ?> context) {
         synchronized (assignLock_) {
             if (state_ == State.INITIALIZED) {
-                super.open(new NameCountThreadFactory(context.key().toString()), numberOfThread_);
+                String prefix = threadNamePrefix_.concat(context.key().toString());
+                super.open(new NameCountThreadFactory(prefix), numberOfThread_);
                 state_ = State.OPEN;
             }
             List<ThreadPipelineElementExecutor> loops = sortedLoopsView();
