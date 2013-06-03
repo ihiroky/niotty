@@ -41,6 +41,30 @@ public class ByteBufferCodecBufferTest {
         protected CodecBuffer createCodecBuffer(byte[] buffer, int offset, int length) {
             return Buffers.wrap(ByteBuffer.wrap(buffer, offset, length));
         }
+
+        @Test
+        public void testCompact_BasedOnDirectBuffer() throws Exception {
+            byte[] data = new byte[16];
+            for (int i = 0; i < data.length; i++) {
+                data[i] = (byte) i;
+            }
+            ByteBuffer directBuffer = ByteBuffer.allocateDirect(16);
+            directBuffer.limit(0);
+            CodecBuffer sut = new ByteBufferCodecBuffer(directBuffer);
+            sut.writeBytes(data, 0, data.length);
+
+            sut.beginning(3);
+            sut.compact();
+
+            assertThat(sut.beginning(), is(0));
+            assertThat(sut.end(), is(13));
+            byte[] expected = new byte[13];
+            sut.readBytes(expected, 0, expected.length);
+            assertThat(expected[0], is((byte) 3));
+            assertThat(expected[1], is((byte) 4));
+            assertThat(expected[11], is((byte) 14));
+            assertThat(expected[12], is((byte) 15));
+        }
     }
 
     public static class WriteTests extends CodecBufferTestAbstract.AbstractWriteTests {

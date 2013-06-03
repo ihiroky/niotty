@@ -613,6 +613,20 @@ public class CodecBufferTestAbstract {
             assertThat(i, is(-1));
         }
 
+        @Test
+        public void testCompact() throws Exception {
+            sut_.beginning(3);
+            sut_.compact();
+
+            assertThat(sut_.beginning(), is(0));
+            assertThat(sut_.end(), is(47));
+            byte[] data = new byte[47];
+            sut_.readBytes(data, 0, data.length);
+            assertThat(data[0], is((byte) '3'));
+            assertThat(data[1], is((byte) '4'));
+            assertThat(data[45], is((byte) '8'));
+            assertThat(data[46], is((byte) '9'));
+        }
     }
 
     public static abstract class AbstractWriteTests {

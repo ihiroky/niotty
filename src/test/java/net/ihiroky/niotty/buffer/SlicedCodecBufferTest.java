@@ -33,6 +33,32 @@ public class SlicedCodecBufferTest {
             CodecBuffer b = new ArrayCodecBuffer(buffer, offset, length);
             return new SlicedCodecBuffer(b);
         }
+
+        @Test
+        public void testCompact_BasedOnDirectBuffer() throws Exception {
+            byte[] data = new byte[16];
+            for (int i = 0; i < data.length; i++) {
+                data[i] = (byte) i;
+            }
+            ByteBuffer directBuffer = ByteBuffer.allocateDirect(16);
+            directBuffer.limit(0);
+            CodecBuffer b = new ByteBufferCodecBuffer(directBuffer);
+            b.writeBytes(data, 0, data.length);
+            b.beginning(1); // The offset of sliced buffer sets to 1.
+            CodecBuffer sut = new SlicedCodecBuffer(b);
+
+            sut.beginning(3);
+            sut.compact();
+
+            assertThat(sut.beginning(), is(0));
+            assertThat(sut.end(), is(12));
+            byte[] expected = new byte[13];
+            sut.readBytes(expected, 0, expected.length);
+            assertThat(expected[0], is((byte) 4));
+            assertThat(expected[1], is((byte) 5));
+            assertThat(expected[10], is((byte) 14));
+            assertThat(expected[11], is((byte) 15));
+        }
     }
 
     public static class WriteTests {

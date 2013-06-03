@@ -788,6 +788,20 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer {
         return new ByteBufferCodecBuffer(this);
     }
 
+    @Override
+    public CodecBuffer compact() {
+        changeModeToRead();
+        if (beginning_ == 0) {
+            return this;
+        }
+
+        ByteBuffer b = buffer_;
+        b.compact().flip();
+        beginning_ = b.position();
+        end_ = b.limit();
+        return this;
+    }
+
     /**
      * Returns a summary of this buffer state.
      * @return a summary of this buffer state

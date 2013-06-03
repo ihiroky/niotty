@@ -752,6 +752,19 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer {
         return new ArrayCodecBuffer(this);
     }
 
+    @Override
+    public CodecBuffer compact() {
+        int beginning = beginning_;
+        if (beginning == 0) {
+            return this;
+        }
+
+        System.arraycopy(buffer_, beginning, buffer_, 0, end_ - beginning);
+        end_ -= beginning;
+        beginning_ = 0;
+        return this;
+    }
+
     /**
      * Returns a summary of this buffer state.
      * @return a summary of this buffer state

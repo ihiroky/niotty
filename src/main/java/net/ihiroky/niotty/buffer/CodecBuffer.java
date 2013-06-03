@@ -345,6 +345,18 @@ public interface CodecBuffer extends BufferSink {
     CodecBuffer duplicate();
 
     /**
+     * <p>Compacts this buffer.</p>
+     *
+     * <p>The bytes between the buffer's current beginning and end are copied to the head of
+     * the region in this buffer. The byte at index {@code beginning} is copied to index zero,
+     * the byte at index {@code beginning + 1} is copied to index one, and so forth until the byte
+     * at index {@code end - 1} is copied to index {@code end - beginning}. The beginning is then
+     * set to {@code 0} and the end is set to {@code end - beginning}.</p>
+     * @return this {@code CodecBuffer}
+     */
+    CodecBuffer compact();
+
+    /**
      * Clears this buffer. The the beginning and the end is set to 0.
      * @return this {@code CodecBuffer}
      */

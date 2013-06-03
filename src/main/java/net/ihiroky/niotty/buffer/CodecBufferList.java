@@ -751,6 +751,28 @@ public class CodecBufferList extends AbstractCodecBuffer {
     }
 
     @Override
+    public CodecBuffer compact() {
+        if (endBufferIndex_ < 0) {
+            return this;
+        }
+
+        if (beginningBufferIndex_ > 0) {
+            List<CodecBuffer> t = new ArrayList<>(endBufferIndex_ - beginningBufferIndex_ + 1);
+            for (int i = beginningBufferIndex_; i <= endBufferIndex_; i++) {
+                t.add(buffers_.get(i));
+            }
+            buffers_ = t;
+        }
+
+        CodecBuffer first = buffers_.get(0);
+        if (first.beginning() == 0) {
+            return this;
+        }
+        first.compact();
+        return this;
+    }
+
+    @Override
     public CodecBuffer clear() {
         for (CodecBuffer b : buffers_) {
             b.clear();

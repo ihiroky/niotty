@@ -304,6 +304,30 @@ public class SlicedCodecBuffer extends AbstractCodecBuffer {
     }
 
     @Override
+    public CodecBuffer compact() {
+        int frontSpace = base_.beginning() - offset_;
+        if (frontSpace == 0) {
+            return this;
+        }
+
+        if (base_.hasArray()) {
+            byte[] b = base_.toArray();
+            int os = base_.arrayOffset() + offset_;
+            System.arraycopy(b, os + frontSpace, b, os, base_.remainingBytes());
+            base_.beginning(offset_);
+            base_.end(base_.end() - frontSpace);
+        } else {
+            ByteBuffer bb = base_.toByteBuffer();
+            bb.position(offset_).limit(capacity_);
+            ByteBuffer s = bb.slice();
+            s.position(frontSpace);
+            s.compact();
+            base_.beginning(offset_).end(base_.end() - frontSpace);
+        }
+        return this;
+    }
+
+    @Override
     public CodecBuffer clear() {
         base_.beginning(offset_);
         base_.end(offset_);
