@@ -3,7 +3,6 @@ package net.ihiroky.niotty;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -15,14 +14,14 @@ public class ThreadPipelineElementExecutor extends TaskLoop<ThreadPipelineElemen
 
     private final Lock lock_;
     private final Condition condition_;
-    private final AtomicBoolean signaled_;
+    private boolean signaled_;
     private final Set<PipelineElement<?, ?>> contextSet_;
     private final ThreadPipelineElementExecutorPool pool_;
 
     public ThreadPipelineElementExecutor(ThreadPipelineElementExecutorPool pool) {
         lock_ = new ReentrantLock();
         condition_ = lock_.newCondition();
-        signaled_ = new AtomicBoolean();
+        signaled_ = false;
         contextSet_ = new HashSet<>();
         pool_ = pool;
     }
@@ -39,9 +38,15 @@ public class ThreadPipelineElementExecutor extends TaskLoop<ThreadPipelineElemen
     protected void process(int timeout) throws Exception {
         lock_.lock();
         try {
-            long timeoutNanos = TimeUnit.MILLISECONDS.toNanos(timeout);
-            while (signaled_.getAndSet(false) || (timeoutNanos > 0 && hasNoTask())) {
-                timeoutNanos = condition_.awaitNanos(timeoutNanos);
+            if (timeout > 0) {
+                long timeoutNanos = TimeUnit.MILLISECONDS.toNanos(timeout);
+                while (!signaled_) {
+                    timeoutNanos = condition_.awaitNanos(timeoutNanos);
+                }
+            } else if (timeout < 0) {
+                while (!signaled_) {
+                    condition_.await();
+                }
             }
         } finally {
             lock_.unlock();
@@ -52,7 +57,7 @@ public class ThreadPipelineElementExecutor extends TaskLoop<ThreadPipelineElemen
     protected void wakeUp() {
         lock_.lock();
         try {
-            signaled_.set(true);
+            signaled_ = true;
             condition_.signal();
         } finally {
             lock_.unlock();
