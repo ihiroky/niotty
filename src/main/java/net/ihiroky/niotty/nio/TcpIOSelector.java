@@ -54,27 +54,24 @@ public class TcpIOSelector extends AbstractSelector<TcpIOSelector> {
                     if (logger_.isDebugEnabled()) {
                         logger_.debug("transport reaches the end of its stream:" + transport);
                     }
-                    transport.closeSelectableChannel();
+                    transport.doCloseSelectableChannel();
                     localByteBuffer.clear();
                     continue;
                 }
+
+                localByteBuffer.flip();
+                transport.loadEvent(Buffers.wrap(localByteBuffer));
             } catch (ClosedByInterruptException ie) {
                 if (logger_.isDebugEnabled()) {
                     logger_.debug("failed to read from transport by interruption:" + transport, ie);
                 }
-                transport.closeSelectableChannel();
-                localByteBuffer.clear();
-                continue;
+                transport.doCloseSelectableChannel();
             } catch (IOException ioe) {
                 logger_.error("failed to read from transport:" + transport, ioe);
-                transport.closeSelectableChannel();
+                transport.doCloseSelectableChannel();
+            } finally {
                 localByteBuffer.clear();
-                continue;
             }
-
-            localByteBuffer.flip();
-            transport.loadEvent(Buffers.wrap(localByteBuffer));
-            localByteBuffer.clear();
         }
     }
 

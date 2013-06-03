@@ -64,7 +64,6 @@ public abstract class NioSocketTransport<S extends AbstractSelector<S>> extends 
         if (key_ != null && key_.isValid()) {
             SelectableChannel channel = key_.channel();
             eventLoop().unregister(key_, this); // decrement register count
-            key_.cancel();
             try {
                 channel.close();
             } catch (IOException e) {

@@ -52,34 +52,39 @@ public class UdpIOSelector extends AbstractSelector<UdpIOSelector> {
             DatagramChannel channel = (DatagramChannel) key.channel();
             NioSocketTransport<?> transport = (NioSocketTransport<?>) key.attachment();
             try {
-                CodecBuffer buffer;
                 if (channel.isConnected()) {
                     read = channel.read(localByteBuffer);
                     if (read == -1) {
                         if (logger_.isDebugEnabled()) {
                             logger_.debug("transport reaches the end of its stream:" + transport);
                         }
-                        transport.closeSelectableChannel();
-                        localByteBuffer.clear();
+                        transport.doCloseSelectableChannel();
                         continue;
                     }
                     localByteBuffer.flip();
-                    buffer = Buffers.wrap(localByteBuffer);
+                    CodecBuffer buffer = Buffers.wrap(localByteBuffer);
                     transport.loadEvent(buffer);
                 } else {
                     SocketAddress source = channel.receive(localByteBuffer);
+                    if (source == null) {
+                        if (logger_.isDebugEnabled()) {
+                            logger_.debug("transport reaches the end of its stream:" + transport);
+                        }
+                        transport.doCloseSelectableChannel();
+                        continue;
+                    }
                     localByteBuffer.flip();
-                    buffer = Buffers.wrap(localByteBuffer);
+                    CodecBuffer buffer = Buffers.wrap(localByteBuffer);
                     transport.loadEvent(buffer, new DefaultTransportParameter(source));
                 }
             } catch (ClosedByInterruptException ie) {
                 if (logger_.isDebugEnabled()) {
                     logger_.debug("failed to read from transport by interruption:" + transport, ie);
                 }
-                transport.closeSelectableChannel();
+                transport.doCloseSelectableChannel();
             } catch (IOException ioe) {
                 logger_.error("failed to read from transport:" + transport, ioe);
-                transport.closeSelectableChannel();
+                transport.doCloseSelectableChannel();
             } finally {
                 localByteBuffer.clear();
             }
