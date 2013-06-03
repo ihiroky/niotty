@@ -10,7 +10,7 @@ import net.ihiroky.niotty.TransportStateEvent;
 class Dump implements LoadStage<String, Void> {
     @Override
     public void load(StageContext<Void> context, String input) {
-        System.out.println(context.transport().localAddress() + ":" + input);
+        System.out.println("remote: " + context.transport().remoteAddress() + " - " + input);
     }
 
     @Override

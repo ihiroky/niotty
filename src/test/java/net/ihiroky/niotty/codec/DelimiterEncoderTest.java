@@ -32,7 +32,7 @@ public class DelimiterEncoderTest {
         buffer.flip();
 
         byte[] expected = new byte[data.length + 2];
-        System.arraycopy(data, 0, expected, 0, data.length);
+        buffer.get(expected, 0, data.length);
         expected[data.length] = '\r';
         expected[data.length + 1] = '\n';
         assertThat(Arrays.copyOf(buffer.array(), buffer.limit()), is(expected));

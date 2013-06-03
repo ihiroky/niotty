@@ -4,8 +4,8 @@ import net.ihiroky.niotty.LoadPipeline;
 import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.StageKeys;
 import net.ihiroky.niotty.StorePipeline;
-import net.ihiroky.niotty.codec.FrameLengthPrependEncoder;
-import net.ihiroky.niotty.codec.FrameLengthRemoveDecoder;
+import net.ihiroky.niotty.codec.DelimiterDecoder;
+import net.ihiroky.niotty.codec.DelimiterEncoder;
 import net.ihiroky.niotty.codec.StringDecoder;
 import net.ihiroky.niotty.codec.StringEncoder;
 import net.ihiroky.niotty.nio.NioServerSocketConfig;
@@ -30,11 +30,11 @@ public class Server {
         processor.setPipelineComposer(new PipelineComposer() {
             @Override
             public void compose(LoadPipeline loadPipeline, StorePipeline storePipeline) {
-                loadPipeline.add(StageKeys.of("load-frame"), new FrameLengthRemoveDecoder())
+                loadPipeline.add(StageKeys.of("load-frame"), new DelimiterDecoder(new byte[]{'\n'}, true))
                         .add(StageKeys.of("load-string"), new StringDecoder())
                         .add(StageKeys.of("load-app"), new Dump());
                 storePipeline.add(StageKeys.of("store-string"), new StringEncoder())
-                        .add(StageKeys.of("store-frame"), new FrameLengthPrependEncoder());
+                        .add(StageKeys.of("store-frame"), new DelimiterEncoder(new byte[]{'\n'}));
             }
         });
         processor.start();

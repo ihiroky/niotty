@@ -29,7 +29,7 @@ public class DelimiterEncoder implements StoreStage<BufferSink, BufferSink> {
     public void store(StageContext<BufferSink> context, BufferSink input) {
         CodecBuffer b = Buffers.wrap(delimiter_, 0, delimiter_.length);
         input.addLast(b);
-        context.proceed(b);
+        context.proceed(input);
     }
 
     @Override
