@@ -25,9 +25,8 @@ public class FrameLengthRemoveDecoder implements LoadStage<CodecBuffer, CodecBuf
                 if (b == null) {
                     return;
                 }
-                // int length = b.readShort() & FrameLengthPrependEncoder.MASK_TWO_BYTES;
                 int length = b.readShort();
-                if (length >= 0) { // length < Short.MAX_VALUE
+                if (length >= 0) { // it's also satisfies length <= Short.MAX_VALUE
                     frameBytes = length;
                 } else {
                     length <<= FrameLengthPrependEncoder.SHIFT_TWO_BYTES;
@@ -53,7 +52,7 @@ public class FrameLengthRemoveDecoder implements LoadStage<CodecBuffer, CodecBuf
             // load frame
             CodecBuffer output = readFully(input, frameBytes, false);
             if (output == null) {
-                poolingFrameBytes_ = frameBytes;
+                poolingFrameBytes_ = frameBytes; // positive
                 return;
             }
 
