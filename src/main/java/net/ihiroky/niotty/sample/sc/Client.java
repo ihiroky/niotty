@@ -46,7 +46,7 @@ public class Client {
         transport.connect(new InetSocketAddress(serverPort));
 
         ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
-        final Future future = executor.scheduleAtFixedRate(new Runnable() {
+        final Future<?> future = executor.scheduleAtFixedRate(new Runnable() {
             @Override
             public void run() {
                 transport.write(new Date().toString());
