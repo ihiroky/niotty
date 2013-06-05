@@ -126,7 +126,7 @@ public abstract class AbstractSelector<S extends AbstractSelector<S>> extends Ta
         }
 
         @Override
-        public void store(StageContext<?> context, final TransportStateEvent event) {
+        public void store(StageContext<Void> context, final TransportStateEvent event) {
             @SuppressWarnings("unchecked")
             final NioSocketTransport<S> transport = (NioSocketTransport<S>) context.transport();
             if (transport.isInLoopThread()) {

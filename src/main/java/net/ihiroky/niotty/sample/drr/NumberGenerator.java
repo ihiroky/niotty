@@ -33,18 +33,10 @@ public class NumberGenerator implements LoadStage<CodecBuffer, Void> {
         for (int i = 0; i < count; i++) {
             transport.write(buffers[i], new DefaultTransportParameter(-((i + 1) % 2)));
         }
-//        for (int i = 0; i < count / 2; i++) {
-//            transport.write(buffers[i]);
-//        }
-//        try { Thread.sleep(100); }
-//        catch (Exception e) { e.printStackTrace(); }
-//        for (int i = count / 2; i < count; i++) {
-//            transport.write(buffers[i]);
-//        }
     }
 
     @Override
-    public void load(StageContext<?> context, TransportStateEvent event) {
+    public void load(StageContext<Void> context, TransportStateEvent event) {
         logger_.info("state: {}", event);
     }
 }
