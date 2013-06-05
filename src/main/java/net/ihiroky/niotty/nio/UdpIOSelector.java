@@ -58,7 +58,7 @@ public class UdpIOSelector extends AbstractSelector<UdpIOSelector> {
                         if (logger_.isDebugEnabled()) {
                             logger_.debug("transport reaches the end of its stream:" + transport);
                         }
-                        transport.doCloseSelectableChannel();
+                        transport.doCloseSelectableChannel(true);
                         continue;
                     }
                     localByteBuffer.flip();
@@ -70,7 +70,7 @@ public class UdpIOSelector extends AbstractSelector<UdpIOSelector> {
                         if (logger_.isDebugEnabled()) {
                             logger_.debug("transport reaches the end of its stream:" + transport);
                         }
-                        transport.doCloseSelectableChannel();
+                        transport.doCloseSelectableChannel(true);
                         continue;
                     }
                     localByteBuffer.flip();
@@ -81,10 +81,10 @@ public class UdpIOSelector extends AbstractSelector<UdpIOSelector> {
                 if (logger_.isDebugEnabled()) {
                     logger_.debug("failed to read from transport by interruption:" + transport, ie);
                 }
-                transport.doCloseSelectableChannel();
+                transport.doCloseSelectableChannel(true);
             } catch (IOException ioe) {
                 logger_.error("failed to read from transport:" + transport, ioe);
-                transport.doCloseSelectableChannel();
+                transport.doCloseSelectableChannel(true);
             } finally {
                 localByteBuffer.clear();
             }

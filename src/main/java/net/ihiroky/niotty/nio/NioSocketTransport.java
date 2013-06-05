@@ -43,7 +43,7 @@ public abstract class NioSocketTransport<S extends AbstractSelector<S>> extends 
         executeStore(new TransportStateEvent(TransportState.CLOSED) {
             @Override
             public void execute() {
-                NioSocketTransport.this.doCloseSelectableChannel();
+                NioSocketTransport.this.doCloseSelectableChannel(false);
                 future.done();
             }
         });
@@ -60,7 +60,7 @@ public abstract class NioSocketTransport<S extends AbstractSelector<S>> extends 
      * operation.
      * @return succeeded future
      */
-    final TransportFuture doCloseSelectableChannel() {
+    final TransportFuture doCloseSelectableChannel(boolean executeStoreClosed) {
         if (key_ != null && key_.isValid()) {
             SelectableChannel channel = key_.channel();
             eventLoop().unregister(key_, this); // decrement register count
@@ -70,7 +70,11 @@ public abstract class NioSocketTransport<S extends AbstractSelector<S>> extends 
                 e.printStackTrace();
             }
             transportListener().onClose(this);
-            executeLoad(new DefaultTransportStateEvent(TransportState.CLOSED, null));
+            TransportStateEvent event = new DefaultTransportStateEvent(TransportState.CLOSED, null);
+            if (executeStoreClosed) {
+                executeStore(event);
+            }
+            executeLoad(event);
         }
         onCloseSelectableChannel();
         closePipelines();
