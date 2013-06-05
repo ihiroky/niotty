@@ -76,8 +76,7 @@ public abstract class PipelineElement<I, O> implements StageContext<O> {
         next_.execute(output, parameter);
     }
 
-    @Override
-    public void proceed(TransportStateEvent event) {
+    protected void proceed(TransportStateEvent event) {
         next_.execute(event);
     }
 
@@ -113,11 +112,6 @@ public abstract class PipelineElement<I, O> implements StageContext<O> {
         @Override
         public void proceed(O output) {
             context_.proceed(output, parameter_);
-        }
-
-        @Override
-        public void proceed(TransportStateEvent event) {
-            context_.proceed(event);
         }
     }
 

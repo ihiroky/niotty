@@ -8,5 +8,4 @@ public interface StageContext<O> {
     Transport transport();
     TransportParameter transportParameter();
     void proceed(O output);
-    void proceed(TransportStateEvent event);
 }

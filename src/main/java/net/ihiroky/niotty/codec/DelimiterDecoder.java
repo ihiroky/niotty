@@ -63,7 +63,6 @@ public class DelimiterDecoder implements LoadStage<CodecBuffer, CodecBuffer> {
 
     @Override
     public void load(StageContext<CodecBuffer> context, TransportStateEvent event) {
-        context.proceed(event);
     }
 
     private CodecBuffer bufferOfInput(CodecBuffer input) {

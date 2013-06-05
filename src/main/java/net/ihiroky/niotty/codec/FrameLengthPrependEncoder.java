@@ -37,6 +37,5 @@ public class FrameLengthPrependEncoder implements StoreStage<BufferSink, BufferS
 
     @Override
     public void store(StageContext<BufferSink> context, TransportStateEvent event) {
-        context.proceed(event);
     }
 }

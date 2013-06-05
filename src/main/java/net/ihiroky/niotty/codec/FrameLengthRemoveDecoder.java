@@ -63,7 +63,6 @@ public class FrameLengthRemoveDecoder implements LoadStage<CodecBuffer, CodecBuf
 
     @Override
     public void load(StageContext<CodecBuffer> context, TransportStateEvent event) {
-        context.proceed(event);
     }
 
     /**

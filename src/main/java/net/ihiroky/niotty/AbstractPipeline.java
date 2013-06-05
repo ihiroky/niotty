@@ -21,12 +21,12 @@ public abstract class AbstractPipeline<S> implements Pipeline<S> {
     private final PipelineElement<Object, Object> head_;
     private static Logger logger_ = LoggerFactory.getLogger(AbstractPipeline.class);
 
-    private static final PipelineElement<Object, Object> TERMINAL = new NullContext();
+    private static final PipelineElement<Object, Object> TERMINAL = new NullPipelineElement();
     private static final int INPUT_TYPE = 0;
     private static final int OUTPUT_TYPE = 1;
 
     protected AbstractPipeline(String name, Transport transport) {
-        PipelineElement<Object, Object> head = new NullContext();
+        PipelineElement<Object, Object> head = new NullPipelineElement();
         head.setNext(TERMINAL);
 
         name_ = name;
@@ -328,8 +328,8 @@ public abstract class AbstractPipeline<S> implements Pipeline<S> {
         return new PipelineElementIterator(head_);
     }
 
-    private static class NullContext extends PipelineElement<Object, Object> {
-        protected NullContext() {
+    private static class NullPipelineElement extends PipelineElement<Object, Object> {
+        protected NullPipelineElement() {
             super(null, null, null);
         }
         @Override
@@ -348,6 +348,16 @@ public abstract class AbstractPipeline<S> implements Pipeline<S> {
         @Override
         public TransportParameter transportParameter() {
             return DefaultTransportParameter.NO_PARAMETER;
+        }
+
+        @Override
+        protected void execute(Object input) {
+        }
+        @Override
+        protected void execute(Object input, TransportParameter parameter) {
+        }
+        @Override
+        protected void execute(TransportStateEvent event) {
         }
     }
 

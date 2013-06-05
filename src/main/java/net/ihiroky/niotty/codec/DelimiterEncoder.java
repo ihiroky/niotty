@@ -34,6 +34,5 @@ public class DelimiterEncoder implements StoreStage<BufferSink, BufferSink> {
 
     @Override
     public void store(StageContext<BufferSink> context, TransportStateEvent event) {
-        context.proceed(event);
     }
 }

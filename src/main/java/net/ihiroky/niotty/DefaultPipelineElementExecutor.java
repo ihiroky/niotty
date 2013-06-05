@@ -17,6 +17,7 @@ public class DefaultPipelineElementExecutor implements PipelineElementExecutor {
     @Override
     public void execute(PipelineElement<?, ?> context, TransportStateEvent event) {
         context.fire(event);
+        context.proceed(event);
     }
 
     @Override

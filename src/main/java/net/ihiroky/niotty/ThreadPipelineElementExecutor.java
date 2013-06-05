@@ -93,6 +93,7 @@ public class ThreadPipelineElementExecutor extends TaskLoop<ThreadPipelineElemen
             @Override
             public int execute(ThreadPipelineElementExecutor eventLoop) throws Exception {
                 context.fire(event);
+                context.proceed(event);
                 return TIMEOUT_NO_LIMIT;
             }
         });
