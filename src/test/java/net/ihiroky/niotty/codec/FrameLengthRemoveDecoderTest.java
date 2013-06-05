@@ -1,12 +1,9 @@
 package net.ihiroky.niotty.codec;
 
-import net.ihiroky.niotty.LoadStageContextMock;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.CodecBuffer;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.util.Queue;
 
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
@@ -17,14 +14,14 @@ import static org.junit.Assert.*;
 public class FrameLengthRemoveDecoderTest {
 
     FrameLengthRemoveDecoder sut_;
-    LoadStageContextMock<CodecBuffer, CodecBuffer> context_;
+    StageContextMock<CodecBuffer> context_;
     byte[] data_;
     int dataLength_;
 
     @Before
     public void setUp() {
         sut_ = new FrameLengthRemoveDecoder();
-        context_ = new LoadStageContextMock<>(sut_);
+        context_ = new StageContextMock<>();
         CodecBuffer encodeBuffer = Buffers.newCodecBuffer(32);
         encodeBuffer.writeShort((short) 12);
         encodeBuffer.writeInt(1);
@@ -36,7 +33,7 @@ public class FrameLengthRemoveDecoderTest {
 
     private void setUpAgainAsIntLength() {
         sut_ = new FrameLengthRemoveDecoder();
-        context_ = new LoadStageContextMock<>(sut_);
+        context_ = new StageContextMock<>();
         CodecBuffer encodeBuffer = Buffers.newCodecBuffer(32);
         encodeBuffer.writeInt(12 | 0x80000000); // INT_FLAG
         encodeBuffer.writeInt(1);
@@ -52,12 +49,11 @@ public class FrameLengthRemoveDecoderTest {
 
         sut_.load(context_, input);
 
-        Queue<CodecBuffer> queue = context_.getProceededMessageEventQueue();
-        CodecBuffer output = queue.poll();
+        CodecBuffer output = context_.pollEvent();
         assertThat(output.readInt(), is(1));
         assertThat(output.readInt(), is(2));
         assertThat(output.readInt(), is(3));
-        assertThat(queue.isEmpty(), is(true));
+        assertThat(context_.hasNoEvent(), is(true));
         assertThat(sut_.getPooling(), is(nullValue()));
         assertThat(sut_.getPoolingFrameBytes(), is(0));
     }
@@ -70,12 +66,11 @@ public class FrameLengthRemoveDecoderTest {
 
         sut_.load(context_, input);
 
-        Queue<CodecBuffer> queue = context_.getProceededMessageEventQueue();
-        CodecBuffer output = queue.poll();
+        CodecBuffer output = context_.pollEvent();
         assertThat(output.readInt(), is(1));
         assertThat(output.readInt(), is(2));
         assertThat(output.readInt(), is(3));
-        assertThat(queue.isEmpty(), is(true));
+        assertThat(context_.hasNoEvent(), is(true));
         assertThat(sut_.getPooling(), is(nullValue()));
         assertThat(sut_.getPoolingFrameBytes(), is(0));
     }
@@ -85,26 +80,25 @@ public class FrameLengthRemoveDecoderTest {
         // read first 1 byte
         CodecBuffer b = Buffers.wrap(data_, 0, 1);
         sut_.load(context_, b);
-        assertThat(context_.getProceededMessageEventQueue().size(), is(0));
+        assertThat(context_.eventCount(), is(0));
         assertThat(sut_.getPooling().remainingBytes(), is(1));
         assertThat(sut_.getPoolingFrameBytes(), is(0));
         assertThat(b.remainingBytes(), is(0));
 
         // prepend length field is read
         sut_.load(context_, Buffers.wrap(data_, 1, 1));
-        assertThat(context_.getProceededMessageEventQueue().size(), is(0));
+        assertThat(context_.eventCount(), is(0));
         assertThat(sut_.getPooling(), is(nullValue()));
         assertThat(sut_.getPoolingFrameBytes(), is(12));
 
         // read remaining
         sut_.load(context_, Buffers.wrap(data_, 2, 12));
-        Queue<CodecBuffer> queue = context_.getProceededMessageEventQueue();
 
-        CodecBuffer output = queue.poll();
+        CodecBuffer output = context_.pollEvent();
         assertThat(output.readInt(), is(1));
         assertThat(output.readInt(), is(2));
         assertThat(output.readInt(), is(3));
-        assertThat(queue.isEmpty(), is(true));
+        assertThat(context_.hasNoEvent(), is(true));
         assertThat(sut_.getPooling(), is(nullValue()));
         assertThat(sut_.getPoolingFrameBytes(), is(0));
     }
@@ -116,7 +110,7 @@ public class FrameLengthRemoveDecoderTest {
         // read first byte
         CodecBuffer b = Buffers.wrap(data_, 0, 1);
         sut_.load(context_, b);
-        assertThat(context_.getProceededMessageEventQueue().size(), is(0));
+        assertThat(context_.eventCount(), is(0));
         assertThat(sut_.getPooling().remainingBytes(), is(1));
         assertThat(sut_.getPoolingFrameBytes(), is(0));
         assertThat(b.remainingBytes(), is(0));
@@ -124,33 +118,32 @@ public class FrameLengthRemoveDecoderTest {
         // read second byte
         b = Buffers.wrap(data_, 1, 1);
         sut_.load(context_, b);
-        assertThat(context_.getProceededMessageEventQueue().size(), is(0));
+        assertThat(context_.eventCount(), is(0));
         assertThat(sut_.getPooling(), is(nullValue()));
         assertThat(sut_.getPoolingFrameBytes(), is(0x8000_0000));
         assertThat(b.remainingBytes(), is(0));
 
         // read third byte
         sut_.load(context_, Buffers.wrap(data_, 2, 1));
-        assertThat(context_.getProceededMessageEventQueue().size(), is(0));
+        assertThat(context_.eventCount(), is(0));
         assertThat(sut_.getPooling().remainingBytes(), is(1));
         assertThat(sut_.getPoolingFrameBytes(), is(0x8000_0000));
         assertThat(b.remainingBytes(), is(0));
 
         // prepend length field is read
         sut_.load(context_, Buffers.wrap(data_, 3, 1));
-        assertThat(context_.getProceededMessageEventQueue().size(), is(0));
+        assertThat(context_.eventCount(), is(0));
         assertThat(sut_.getPooling(), is(nullValue()));
         assertThat(sut_.getPoolingFrameBytes(), is(12));
 
         // read remaining
         sut_.load(context_, Buffers.wrap(data_, 4, 12));
-        Queue<CodecBuffer> queue = context_.getProceededMessageEventQueue();
 
-        CodecBuffer output = queue.poll();
+        CodecBuffer output = context_.pollEvent();
         assertThat(output.readInt(), is(1));
         assertThat(output.readInt(), is(2));
         assertThat(output.readInt(), is(3));
-        assertThat(queue.isEmpty(), is(true));
+        assertThat(context_.hasNoEvent(), is(true));
         assertThat(sut_.getPooling(), is(nullValue()));
         assertThat(sut_.getPoolingFrameBytes(), is(0));
     }
@@ -173,14 +166,13 @@ public class FrameLengthRemoveDecoderTest {
 
         sut_.load(context_, input);
 
-        Queue<CodecBuffer> queue = context_.getProceededMessageEventQueue();
         for (int i = 0; i < 3; i++) {
-            CodecBuffer output = queue.poll();
+            CodecBuffer output = context_.pollEvent();
             assertThat(output.readInt(), is(1));
             assertThat(output.readInt(), is(2));
             assertThat(output.readInt(), is(3));
         }
-        assertThat(queue.size(), is(0));
+        assertThat(context_.eventCount(), is(0));
         assertThat(input.remainingBytes(), is(0));
         assertThat(sut_.getPooling().remainingBytes(), is(3));
         assertThat(sut_.getPoolingFrameBytes(), is(12));
@@ -202,14 +194,13 @@ public class FrameLengthRemoveDecoderTest {
 
         sut_.load(context_, input);
 
-        Queue<CodecBuffer> queue = context_.getProceededMessageEventQueue();
         for (int i = 0; i < 3; i++) {
-            CodecBuffer output = queue.poll();
+            CodecBuffer output = context_.pollEvent();
             assertThat(output.readInt(), is(1));
             assertThat(output.readInt(), is(2));
             assertThat(output.readInt(), is(3));
         }
-        assertThat(queue.size(), is(0));
+        assertThat(context_.eventCount(), is(0));
         assertThat(input.remainingBytes(), is(0));
         assertThat(sut_.getPooling(), is(nullValue()));
         assertThat(sut_.getPoolingFrameBytes(), is(0));
@@ -234,9 +225,9 @@ public class FrameLengthRemoveDecoderTest {
             sut.load(context_, input);
         }
         for (int i = 0; i < 30; i++) {
-            CodecBuffer b = context_.getProceededMessageEventQueue().poll();
+            CodecBuffer b = context_.pollEvent();
             assertThat(b.readInt(), is(i));
         }
-        assertThat(context_.getProceededMessageEventQueue().isEmpty(), is(true));
+        assertThat(context_.hasNoEvent(), is(true));
     }
 }

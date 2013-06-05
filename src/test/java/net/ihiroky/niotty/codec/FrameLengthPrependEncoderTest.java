@@ -1,10 +1,8 @@
 package net.ihiroky.niotty.codec;
 
-import net.ihiroky.niotty.StoreStageContextMock;
 import net.ihiroky.niotty.buffer.BufferSink;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.CodecBuffer;
-import net.ihiroky.niotty.codec.FrameLengthPrependEncoder;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -17,13 +15,13 @@ import static org.junit.Assert.*;
 public class FrameLengthPrependEncoderTest {
 
     FrameLengthPrependEncoder sut_;
-    StoreStageContextMock<BufferSink, BufferSink> context_;
+    StageContextMock<BufferSink> context_;
 
     @Before
     @SuppressWarnings("unchecked")
     public void setUp() throws Exception {
         sut_ = new FrameLengthPrependEncoder();
-        context_ = new StoreStageContextMock<>(sut_);
+        context_ = new StageContextMock<>();
     }
 
     @Test
@@ -33,7 +31,7 @@ public class FrameLengthPrependEncoderTest {
 
         sut_.store(context_, input);
 
-        BufferSink actual = context_.getProceededMessageEvent().poll();
+        BufferSink actual = context_.pollEvent();
         assertThat(actual.remainingBytes(), is(7));
     }
 
@@ -44,7 +42,7 @@ public class FrameLengthPrependEncoderTest {
 
         sut_.store(context_, input);
 
-        BufferSink actual = context_.getProceededMessageEvent().poll();
+        BufferSink actual = context_.pollEvent();
         assertThat(actual.remainingBytes(), is(Short.MAX_VALUE + 2));
     }
 
@@ -55,7 +53,7 @@ public class FrameLengthPrependEncoderTest {
 
         sut_.store(context_, input);
 
-        BufferSink actual = context_.getProceededMessageEvent().poll();
+        BufferSink actual = context_.pollEvent();
         assertThat(actual.remainingBytes(), is((Short.MAX_VALUE + 1) + 4));
     }
 }
