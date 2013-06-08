@@ -74,6 +74,31 @@ public interface BufferSink {
     BufferSink duplicate();
 
     /**
+     * Returns true if this buffer is backed by a byte array.
+     * @return true if this buffer is backed by a byte array
+     */
+    boolean hasArray();
+
+    /**
+     * Returns a byte array that backs this buffer.
+     * Modification to this buffer's content modifies the byte array, and vice versa as long as this buffer does not
+     * expands its size. If {@link #hasArray()} returns false, this method throws
+     * {@code java.lang.UnsupportedOperationException}.
+     *
+     * @return a byte array that backs this buffer
+     * @throws UnsupportedOperationException if this buffer is not backed by a byte array
+     */
+    byte[] array();
+
+    /**
+     * Returns an offset for a first byte in byte array that backs this buffer.
+     * If {@link #hasArray()} returns false, this method throws {@code java.lang.UnsupportedOperationException}.
+     * @return an offset for a first byte in byte array that backs this buffer
+     * @throws UnsupportedOperationException if this buffer is not backed by a byte array
+     */
+    int arrayOffset();
+
+    /**
      * The byte size of remaining data in this instance.
      * @return the byte size of remaining data in this instance.
      */

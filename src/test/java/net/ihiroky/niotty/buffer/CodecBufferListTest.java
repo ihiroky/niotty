@@ -627,7 +627,7 @@ public class CodecBufferListTest {
             sut_.transferTo(buffer);
 
             assertThat(sut_.remainingBytes(), is(32)); // remaining all
-            assertThat(buffer.array(), is(sut_.toArray()));
+            assertThat(buffer.array(), is(sut_.array()));
         }
 
         @Test
@@ -637,7 +637,7 @@ public class CodecBufferListTest {
             sut_.transferTo(buffer);
 
             assertThat(sut_.remainingBytes(), is(32)); // remaining all
-            assertThat(buffer.array(), is(Arrays.copyOf(sut_.toArray(), 31)));
+            assertThat(buffer.array(), is(Arrays.copyOf(sut_.array(), 31)));
         }
 
         @Test

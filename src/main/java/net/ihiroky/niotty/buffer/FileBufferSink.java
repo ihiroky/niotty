@@ -240,6 +240,21 @@ public class FileBufferSink implements BufferSink {
                 .addFirst(header_.duplicate()).addLast(footer_.duplicate());
     }
 
+    @Override
+    public boolean hasArray() {
+        return false;
+    }
+
+    @Override
+    public byte[] array() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int arrayOffset() {
+        throw new UnsupportedOperationException();
+    }
+
     private BufferSink newSlicedBufferSink(BufferSink header, BufferSink content, BufferSink footer) {
         if (header == null) {
             if (content != null) {

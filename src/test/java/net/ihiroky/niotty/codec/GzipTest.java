@@ -184,8 +184,8 @@ public class GzipTest {
         File file = tmpFileRule_.newFile();
         FileChannel fileChannel = FileChannel.open(file.toPath(), StandardOpenOption.WRITE);
         try {
-            fileChannel.write(deflated.toByteBuffer());
-            fileChannel.write(finished.toByteBuffer());
+            fileChannel.write(deflated.byteBuffer());
+            fileChannel.write(finished.byteBuffer());
         } finally {
             fileChannel.close();
         }

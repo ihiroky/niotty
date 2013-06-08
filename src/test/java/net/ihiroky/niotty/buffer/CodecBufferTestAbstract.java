@@ -412,7 +412,7 @@ public class CodecBufferTestAbstract {
 
         @Test
         public void testToArray() throws Exception {
-            byte[] array = sut_.toArray();
+            byte[] array = sut_.array();
             array[0] = 'a';
             assertThat(sut_.readByte(), is((int) 'a')); // read 1 byte
             assertThat(array.length, is(sut_.remainingBytes() + 1));
@@ -660,10 +660,10 @@ public class CodecBufferTestAbstract {
         @Test
         public void testWriteByte() throws Exception {
             sut_.writeByte(10);
-            assertThat(sut_.toArray()[0], is((byte) 10));
+            assertThat(sut_.array()[0], is((byte) 10));
 
             sut_.writeByte(20);
-            assertThat(sut_.toArray()[1], is((byte) 20));
+            assertThat(sut_.array()[1], is((byte) 20));
         }
 
         @Test
@@ -792,7 +792,7 @@ public class CodecBufferTestAbstract {
         @Test
         public void testWriteShort() throws Exception {
             sut_.writeShort(Short.MAX_VALUE);
-            byte[] actual = sut_.toArray();
+            byte[] actual = sut_.array();
             assertThat(actual[0], is((byte) 0x7F));
             assertThat(actual[1], is((byte) 0xFF));
             assertThat(sut_.remainingBytes(), is(2));
@@ -804,7 +804,7 @@ public class CodecBufferTestAbstract {
 
             sut_.writeShort(Short.MAX_VALUE);
 
-            byte[] actual = sut_.toArray();
+            byte[] actual = sut_.array();
             byte[] expected = new byte[16];
             expected[7] = 0x7F;
             expected[8] = (byte) 0xFF;
@@ -815,7 +815,7 @@ public class CodecBufferTestAbstract {
         @Test
         public void testWriteChar() throws Exception {
             sut_.writeChar(Character.MAX_VALUE);
-            byte[] actual = sut_.toArray();
+            byte[] actual = sut_.array();
             assertThat(actual[0], is((byte) 0xFF));
             assertThat(actual[1], is((byte) 0xFF));
             assertThat(sut_.remainingBytes(), is(2));
@@ -827,7 +827,7 @@ public class CodecBufferTestAbstract {
 
             sut_.writeChar(Character.MAX_VALUE);
 
-            byte[] actual = sut_.toArray();
+            byte[] actual = sut_.array();
             byte[] expected = new byte[16];
             expected[7] = (byte) 0xFF;
             expected[8] = (byte) 0xFF;
@@ -838,7 +838,7 @@ public class CodecBufferTestAbstract {
         @Test
         public void testWriteInt() throws Exception {
             sut_.writeInt(Integer.MIN_VALUE);
-            byte[] actual = sut_.toArray();
+            byte[] actual = sut_.array();
             assertThat(actual[0], is((byte) 0x80));
             assertThat(actual[1], is((byte) 0x00));
             assertThat(actual[2], is((byte) 0x00));
@@ -852,7 +852,7 @@ public class CodecBufferTestAbstract {
 
             sut_.writeInt(-1);
 
-            byte[] actual = sut_.toArray();
+            byte[] actual = sut_.array();
             byte[] expected = new byte[16];
             expected[5] = (byte) -1;
             expected[6] = (byte) -1;
@@ -865,7 +865,7 @@ public class CodecBufferTestAbstract {
         @Test
         public void testWriteLong() throws Exception {
             sut_.writeLong(1);
-            byte[] actual = sut_.toArray();
+            byte[] actual = sut_.array();
             assertThat(actual[0], is((byte) 0x00));
             assertThat(actual[1], is((byte) 0x00));
             assertThat(actual[2], is((byte) 0x00));
@@ -882,7 +882,7 @@ public class CodecBufferTestAbstract {
             sut_.end(1);
 
             sut_.writeLong(-1);
-            byte[] actual = sut_.toArray();
+            byte[] actual = sut_.array();
             byte[] expected = new byte[16];
             expected[1] = (byte) -1;
             expected[2] = (byte) -1;
@@ -899,7 +899,7 @@ public class CodecBufferTestAbstract {
         @Test
         public void testWriteFloat() throws Exception {
             sut_.writeFloat(1f);
-            byte[] b = sut_.toArray();
+            byte[] b = sut_.array();
             assertThat(b[0], is((byte) 0x3F));
             assertThat(b[1], is((byte) 0x80));
             assertThat(b[2], is((byte) 0x00));
@@ -910,7 +910,7 @@ public class CodecBufferTestAbstract {
         @Test
         public void testWriteDouble() throws Exception {
             sut_.writeDouble(1d);
-            byte[] b = sut_.toArray();
+            byte[] b = sut_.array();
             assertThat(b[0], is((byte) 0x3F));
             assertThat(b[1], is((byte) 0xF0));
             assertThat(b[2], is((byte) 0x00));
@@ -1066,7 +1066,7 @@ public class CodecBufferTestAbstract {
             sut_.transferTo(buffer);
 
             assertThat(sut_.remainingBytes(), is(32)); // remaining all
-            assertThat(buffer.array(), is(sut_.toArray()));
+            assertThat(buffer.array(), is(sut_.array()));
         }
 
         @Test
@@ -1076,7 +1076,7 @@ public class CodecBufferTestAbstract {
             sut_.transferTo(buffer);
 
             assertThat(sut_.remainingBytes(), is(32)); // remaining all
-            assertThat(buffer.array(), is(Arrays.copyOf(sut_.toArray(), 31)));
+            assertThat(buffer.array(), is(Arrays.copyOf(sut_.array(), 31)));
         }
     }
 
@@ -1096,7 +1096,7 @@ public class CodecBufferTestAbstract {
             sut.writeBytes(new byte[1], 0, 1);
 
             assertThat(sut.arrayOffset(), is(0));
-            assertThat(sut.toArray().length, is(3 * 2));
+            assertThat(sut.array().length, is(3 * 2));
             assertThat(sut.remainingBytes(), is(4));
         }
 
@@ -1107,7 +1107,7 @@ public class CodecBufferTestAbstract {
             sut.writeBytes(new byte[4], 0, 4);
 
             assertThat(sut.arrayOffset(), is(0));
-            assertThat(sut.toArray().length, is(7));
+            assertThat(sut.array().length, is(7));
             assertThat(sut.remainingBytes(), is(3 + 4));
         }
 
@@ -1131,7 +1131,7 @@ public class CodecBufferTestAbstract {
             sut.readBytes(b, 0, 8);
             assertThat(b, is(initial));
             assertThat(sut.arrayOffset(), is(0));
-            assertThat(sut.toArray().length, is(16));
+            assertThat(sut.array().length, is(16));
         }
 
         @Test
@@ -1154,7 +1154,7 @@ public class CodecBufferTestAbstract {
             sut.readBytes(b, 0, 8);
             assertThat(b, is(initial));
             assertThat(sut.arrayOffset(), is(0));
-            assertThat(sut.toArray().length, is(16));
+            assertThat(sut.array().length, is(16));
         }
 
         @Test
@@ -1177,7 +1177,7 @@ public class CodecBufferTestAbstract {
             sut.readBytes(b, 0, 8);
             assertThat(b, is(initial));
             assertThat(sut.arrayOffset(), is(0));
-            assertThat(sut.toArray().length, is(16));
+            assertThat(sut.array().length, is(16));
         }
 
         @Test
@@ -1200,7 +1200,7 @@ public class CodecBufferTestAbstract {
             sut.readBytes(b, 0, 8);
             assertThat(b, is(initial));
             assertThat(sut.arrayOffset(), is(0));
-            assertThat(sut.toArray().length, is(16));
+            assertThat(sut.array().length, is(16));
         }
 
         @Test
@@ -1224,7 +1224,7 @@ public class CodecBufferTestAbstract {
             sut.readBytes(b10, 0, b10.length);
             assertThat(b10, is(initial));
             assertThat(sut.arrayOffset(), is(0));
-            assertThat(sut.toArray().length, is(10 * 2));
+            assertThat(sut.array().length, is(10 * 2));
         }
 
         @Test
@@ -1248,7 +1248,7 @@ public class CodecBufferTestAbstract {
             sut.readBytes(b10, 0, 10);
             assertThat(b10, is(initial));
             assertThat(sut.arrayOffset(), is(0));
-            assertThat(sut.toArray().length, is(10 + 11));
+            assertThat(sut.array().length, is(10 + 11));
         }
 
         @Test
@@ -1272,7 +1272,7 @@ public class CodecBufferTestAbstract {
             sut.readBytes(b8, 0, b8.length);
             assertThat(b8, is(addedBytes));
             assertThat(sut.arrayOffset(), is(0));
-            assertThat(sut.toArray().length, is(16));
+            assertThat(sut.array().length, is(16));
 
         }
 
@@ -1297,7 +1297,7 @@ public class CodecBufferTestAbstract {
             sut.readBytes(b8, 0, b8.length);
             assertThat(b8, is(addedBytes));
             assertThat(sut.arrayOffset(), is(0));
-            assertThat(sut.toArray().length, is(16));
+            assertThat(sut.array().length, is(16));
         }
 
         @Test
@@ -1322,7 +1322,7 @@ public class CodecBufferTestAbstract {
             sut.readBytes(secondHalf, 0, secondHalf.length);
             assertThat(secondHalf, is(addedBytes));
             assertThat(sut.arrayOffset(), is(0));
-            assertThat(sut.toArray().length, is(data.length));
+            assertThat(sut.array().length, is(data.length));
         }
 
         @Test
@@ -1346,7 +1346,7 @@ public class CodecBufferTestAbstract {
             sut.readBytes(secondHalf, 0, secondHalf.length);
             assertThat(secondHalf, is(addedBytes));
             assertThat(sut.arrayOffset(), is(0));
-            assertThat(sut.toArray().length, is(8 * 2));
+            assertThat(sut.array().length, is(8 * 2));
         }
 
         @Test
@@ -1370,7 +1370,7 @@ public class CodecBufferTestAbstract {
             sut.readBytes(secondHalf, 0, secondHalf.length);
             assertThat(secondHalf, is(addedBytes));
             assertThat(sut.arrayOffset(), is(0));
-            assertThat(sut.toArray().length, is(8 + 9));
+            assertThat(sut.array().length, is(8 + 9));
         }
     }
 }

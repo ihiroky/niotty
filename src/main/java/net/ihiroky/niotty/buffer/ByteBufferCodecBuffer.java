@@ -414,7 +414,7 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer {
 
         changeModeToRead();
         ByteBuffer b = buffer_;
-        ByteBuffer inputBuffer = buffer.toByteBuffer();
+        ByteBuffer inputBuffer = buffer.byteBuffer();
         int position = b.position();
 
         int beginning;
@@ -467,7 +467,7 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer {
         }
 
         syncBeginEnd();
-        ByteBuffer inputBuffer = buffer.toByteBuffer();
+        ByteBuffer inputBuffer = buffer.byteBuffer();
         ByteBuffer cb = buffer_;
         int backSpace = cb.capacity() - end_;
         if (inputSize >= backSpace) {
@@ -618,7 +618,7 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer {
      * {@inheritDoc}
      */
     @Override
-    public ByteBuffer toByteBuffer() {
+    public ByteBuffer byteBuffer() {
         changeModeToRead();
         return buffer_.duplicate();
     }
@@ -635,7 +635,7 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer {
      * {@inheritDoc}
      */
     @Override
-    public byte[] toArray() {
+    public byte[] array() {
         return buffer_.array();
     }
 

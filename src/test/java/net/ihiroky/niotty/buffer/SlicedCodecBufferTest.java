@@ -81,9 +81,9 @@ public class SlicedCodecBufferTest {
         public void testWriteByte() throws Exception {
             sut_.end(8);
             sut_.writeByte(10);
-            assertThat(sut_.toArray()[9], is((byte) 10));
+            assertThat(sut_.array()[9], is((byte) 10));
             sut_.writeByte(20);
-            assertThat(sut_.toArray()[10], is((byte) 20));
+            assertThat(sut_.array()[10], is((byte) 20));
         }
 
         @Test
@@ -198,7 +198,7 @@ public class SlicedCodecBufferTest {
         public void testWriteShort() throws Exception {
             sut_.end(8);
             sut_.writeShort(Short.MAX_VALUE);
-            byte[] actual = sut_.toArray();
+            byte[] actual = sut_.array();
             assertThat(actual[9], is((byte) 0x7F));
             assertThat(actual[10], is((byte) 0xFF));
             assertThat(sut_.remainingBytes(), is(10));
@@ -219,7 +219,7 @@ public class SlicedCodecBufferTest {
 
             sut_.writeChar((char) (Character.MAX_VALUE / 2));
 
-            byte[] b = sut_.toArray();
+            byte[] b = sut_.array();
             assertThat(b[9], is((byte) 0x7F));
             assertThat(b[10], is((byte) 0xFF));
             assertThat(sut_.remainingBytes(), is(10));
@@ -231,7 +231,7 @@ public class SlicedCodecBufferTest {
 
             sut_.writeInt(Integer.MAX_VALUE);
 
-            byte[] b = sut_.toArray();
+            byte[] b = sut_.array();
             assertThat(b[7], is((byte) 0x7F));
             assertThat(b[8], is((byte) 0xFF));
             assertThat(b[9], is((byte) 0xFF));
@@ -254,7 +254,7 @@ public class SlicedCodecBufferTest {
 
             sut_.writeLong(Long.MAX_VALUE);
 
-            byte[] b = sut_.toArray();
+            byte[] b = sut_.array();
             assertThat(b[3], is((byte) 0x7F));
             assertThat(b[4], is((byte) 0xFF));
             assertThat(b[5], is((byte) 0xFF));
@@ -278,7 +278,7 @@ public class SlicedCodecBufferTest {
         public void testWriteFloat() throws Exception {
             sut_.end(0);
             sut_.writeFloat(1f);
-            byte[] b = sut_.toArray();
+            byte[] b = sut_.array();
             assertThat(b[1], is((byte) 0x3F));
             assertThat(b[2], is((byte) 0x80));
             assertThat(b[3], is((byte) 0x00));
@@ -290,7 +290,7 @@ public class SlicedCodecBufferTest {
         public void testWriteDouble() throws Exception {
             sut_.end(0);
             sut_.writeDouble(1d);
-            byte[] b = sut_.toArray();
+            byte[] b = sut_.array();
             assertThat(b[1], is((byte) 0x3F));
             assertThat(b[2], is((byte) 0xF0));
             assertThat(b[3], is((byte) 0x00));
@@ -412,7 +412,7 @@ public class SlicedCodecBufferTest {
             expected[4] = (byte) -1;
             expected[5] = (byte) -1;
             expected[6] = (byte) -1;
-            assertThat(sut_.toArray(), is(expected));
+            assertThat(sut_.array(), is(expected));
         }
 
         @Test
@@ -441,7 +441,7 @@ public class SlicedCodecBufferTest {
             expected[7] = (byte) -1;
             expected[8] = (byte) -1;
             expected[9] = (byte) -1;
-            assertThat(sut_.toArray(), is(expected));
+            assertThat(sut_.array(), is(expected));
         }
 
         @Test

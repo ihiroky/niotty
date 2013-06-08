@@ -27,7 +27,7 @@ public class FileDumpStage implements LoadStage<CodecBuffer, Void> {
 
     @Override
     public void load(StageContext<Void> context, CodecBuffer input) {
-        ByteBuffer in = input.toByteBuffer();
+        ByteBuffer in = input.byteBuffer();
         CharBuffer out = CharBuffer.allocate(BUFFER_SIZE);
         CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder()
                 .onMalformedInput(CodingErrorAction.REPLACE)

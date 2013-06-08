@@ -27,7 +27,7 @@ public class FrameLengthRemoveDecoderTest {
         encodeBuffer.writeInt(1);
         encodeBuffer.writeInt(2);
         encodeBuffer.writeInt(3);
-        data_ = encodeBuffer.toArray();
+        data_ = encodeBuffer.array();
         dataLength_ = encodeBuffer.remainingBytes();
     }
 
@@ -39,7 +39,7 @@ public class FrameLengthRemoveDecoderTest {
         encodeBuffer.writeInt(1);
         encodeBuffer.writeInt(2);
         encodeBuffer.writeInt(3);
-        data_ = encodeBuffer.toArray();
+        data_ = encodeBuffer.array();
         dataLength_ = encodeBuffer.remainingBytes();
     }
 
@@ -160,7 +160,7 @@ public class FrameLengthRemoveDecoderTest {
         // remaining 5 bytes
         encodeBuffer.writeShort((short) 12);
         encodeBuffer.writeBytes(new byte[3], 0, 3);
-        data_ = encodeBuffer.toArray();
+        data_ = encodeBuffer.array();
         dataLength_ = encodeBuffer.remainingBytes();
         CodecBuffer input = Buffers.wrap(data_, 0, dataLength_);
 
@@ -188,7 +188,7 @@ public class FrameLengthRemoveDecoderTest {
             encodeBuffer.writeInt(3);
         }
         // just 3 packets
-        data_ = encodeBuffer.toArray();
+        data_ = encodeBuffer.array();
         dataLength_ = encodeBuffer.remainingBytes();
         CodecBuffer input = Buffers.wrap(data_, 0, dataLength_);
 

@@ -425,7 +425,7 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer {
         }
 
         if (buffer.hasArray()) {
-            System.arraycopy(buffer.toArray(), buffer.beginning(), buffer_, beginning - inputSize, inputSize);
+            System.arraycopy(buffer.array(), buffer.beginning(), buffer_, beginning - inputSize, inputSize);
         } else {
             buffer.readBytes(buffer_, beginning - inputSize, inputSize);
         }
@@ -462,7 +462,7 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer {
             }
         }
         if (buffer.hasArray()) {
-            System.arraycopy(buffer.toArray(), buffer.beginning(), buffer_, end_, inputSize);
+            System.arraycopy(buffer.array(), buffer.beginning(), buffer_, end_, inputSize);
         } else {
             buffer.readBytes(buffer_, end_, inputSize);
         }
@@ -564,7 +564,7 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer {
      * {@inheritDoc}
      */
     @Override
-    public ByteBuffer toByteBuffer() {
+    public ByteBuffer byteBuffer() {
         return ByteBuffer.wrap(buffer_, beginning_, (end_ - beginning_));
     }
 
@@ -580,7 +580,7 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer {
      * {@inheritDoc}
      */
     @Override
-    public byte[] toArray() {
+    public byte[] array() {
         return buffer_;
     }
 

@@ -123,7 +123,7 @@ public class SlicedCodecBuffer extends AbstractCodecBuffer {
         Objects.requireNonNull(encoder, "encoder");
 
         CharBuffer input = CharBuffer.wrap(s);
-        ByteBuffer output = base_.toByteBuffer();
+        ByteBuffer output = base_.byteBuffer();
         output.position(output.limit());
         output.limit(output.capacity());
         for (;;) {
@@ -311,13 +311,13 @@ public class SlicedCodecBuffer extends AbstractCodecBuffer {
         }
 
         if (base_.hasArray()) {
-            byte[] b = base_.toArray();
+            byte[] b = base_.array();
             int os = base_.arrayOffset() + offset_;
             System.arraycopy(b, os + frontSpace, b, os, base_.remainingBytes());
             base_.beginning(offset_);
             base_.end(base_.end() - frontSpace);
         } else {
-            ByteBuffer bb = base_.toByteBuffer();
+            ByteBuffer bb = base_.byteBuffer();
             bb.position(offset_).limit(capacity_);
             ByteBuffer s = bb.slice();
             s.position(frontSpace);
@@ -335,8 +335,8 @@ public class SlicedCodecBuffer extends AbstractCodecBuffer {
     }
 
     @Override
-    public ByteBuffer toByteBuffer() {
-        ByteBuffer bb = base_.toByteBuffer();
+    public ByteBuffer byteBuffer() {
+        ByteBuffer bb = base_.byteBuffer();
         int position = bb.position();
         bb.position(offset_);
         ByteBuffer sliced = bb.slice();
@@ -350,8 +350,8 @@ public class SlicedCodecBuffer extends AbstractCodecBuffer {
     }
 
     @Override
-    public byte[] toArray() {
-        return base_.toArray();
+    public byte[] array() {
+        return base_.array();
     }
 
     @Override

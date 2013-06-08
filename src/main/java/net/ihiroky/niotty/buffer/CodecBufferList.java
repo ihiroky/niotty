@@ -104,7 +104,7 @@ public class CodecBufferList extends AbstractCodecBuffer {
         }
         ByteBuffer[] byteBuffers = new ByteBuffer[end - offset + 1];
         for (int i = offset; i <= end; i++) {
-            byteBuffers[i - offset] = buffers.get(i).toByteBuffer();
+            byteBuffers[i - offset] = buffers.get(i).byteBuffer();
         }
         channel.write(byteBuffers, 0, byteBuffers.length);
         for (int i = offset; i <= end; i++) {
@@ -282,7 +282,7 @@ public class CodecBufferList extends AbstractCodecBuffer {
 
         CodecBuffer buffer = buffers_.get(endBufferIndex_);
         CharBuffer input = CharBuffer.wrap(s);
-        ByteBuffer output = buffer.toByteBuffer();
+        ByteBuffer output = buffer.byteBuffer();
         output.position(output.limit());
         output.limit(output.capacity());
         for (;;) {
@@ -304,7 +304,7 @@ public class CodecBufferList extends AbstractCodecBuffer {
                 } else {
                     buffer = buffers_.get(++endBufferIndex_);
                 }
-                output = buffer.toByteBuffer();
+                output = buffer.byteBuffer();
                 output.position(output.limit());
                 output.limit(output.capacity());
                 continue;
@@ -436,7 +436,7 @@ public class CodecBufferList extends AbstractCodecBuffer {
         }
 
         CodecBuffer buffer = nextReadBuffer();
-        ByteBuffer input = buffer.toByteBuffer();
+        ByteBuffer input = buffer.byteBuffer();
         CharBuffer output = CharBuffer.allocate(Buffers.outputCharBufferSize(decoder, bytes));
         int currentRemaining = input.remaining();
         boolean endOfInput = currentRemaining >= bytes;
@@ -458,10 +458,10 @@ public class CodecBufferList extends AbstractCodecBuffer {
                     buffer.beginning(buffer.end());
                     buffer = nextReadBuffer();
                     if (remaining == 0) {
-                        input = buffer.toByteBuffer();
+                        input = buffer.byteBuffer();
                     } else {
                         ByteBuffer newInput = ByteBuffer.allocate(remaining + buffer.remainingBytes());
-                        newInput.put(input).put(buffer.toByteBuffer()).flip();
+                        newInput.put(input).put(buffer.byteBuffer()).flip();
                         input = newInput;
                     }
                     bytes -= currentRemaining - remaining;
@@ -783,11 +783,11 @@ public class CodecBufferList extends AbstractCodecBuffer {
     }
 
     @Override
-    public ByteBuffer toByteBuffer() {
+    public ByteBuffer byteBuffer() {
         int begin = beginningBufferIndex_;
         int end = endBufferIndex_;
         if (begin == end) {
-            return buffers_.get(end).toByteBuffer();
+            return buffers_.get(end).byteBuffer();
         }
         long remaining = remainingBytesLong();
         if (remaining > Integer.MAX_VALUE) {
@@ -796,7 +796,7 @@ public class CodecBufferList extends AbstractCodecBuffer {
         ByteBuffer byteBuffer = ByteBuffer.allocate((int) remaining);
         for (int i = begin; i <= end; i++) {
             CodecBuffer buffer = buffers_.get(i);
-            byteBuffer.put(buffer.toByteBuffer());
+            byteBuffer.put(buffer.byteBuffer());
         }
         byteBuffer.flip();
         return byteBuffer;
@@ -814,11 +814,11 @@ public class CodecBufferList extends AbstractCodecBuffer {
     }
 
     @Override
-    public byte[] toArray() {
+    public byte[] array() {
         if (beginningBufferIndex_ == endBufferIndex_) {
             CodecBuffer buffer = buffers_.get(endBufferIndex_);
             if (buffer.hasArray()) {
-                return buffer.toArray();
+                return buffer.array();
             }
         }
         throw new UnsupportedOperationException();
