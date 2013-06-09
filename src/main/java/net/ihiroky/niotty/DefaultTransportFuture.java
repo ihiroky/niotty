@@ -36,7 +36,7 @@ public class DefaultTransportFuture implements TransportFuture {
     }
 
     @Override
-    public Throwable getThrowable() {
+    public Throwable throwable() {
         return throwable_;
     }
 

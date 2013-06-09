@@ -14,7 +14,7 @@ public class FailedTransportFuture extends CompletedTransportFuture {
     }
 
     @Override
-    public Throwable getThrowable() {
+    public Throwable throwable() {
         return throwable_;
     }
 

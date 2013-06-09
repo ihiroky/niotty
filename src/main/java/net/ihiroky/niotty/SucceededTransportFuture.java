@@ -10,7 +10,7 @@ public class SucceededTransportFuture extends CompletedTransportFuture {
     }
 
     @Override
-    public Throwable getThrowable() {
+    public Throwable throwable() {
         return null;
     }
 

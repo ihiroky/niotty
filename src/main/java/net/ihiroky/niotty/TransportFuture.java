@@ -12,7 +12,7 @@ public interface TransportFuture {
     Transport transport();
     boolean isCancelled();
     boolean isDone();
-    Throwable getThrowable();
+    Throwable throwable();
     void throwIfFailed();
     TransportFuture waitForCompletion() throws InterruptedException;
     TransportFuture waitForCompletion(long timeout, TimeUnit unit) throws InterruptedException;
