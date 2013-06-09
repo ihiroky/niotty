@@ -52,7 +52,6 @@ public class InflateDecoder implements LoadStage<CodecBuffer, CodecBuffer> {
         byte[] output = (output_ == null) ? new byte[outputBufferSize(input.remainingBytes())] : output_;
         Inflater inflater = inflater_;
         while (input.remainingBytes() > 0) {
-            // TODO use an internal array of the input if input hasArray() is true.
             int n = input.readBytes(buffer_, 0, buffer_.length);
             try {
                 int offset = onBeforeDecode(buffer_, 0, n);

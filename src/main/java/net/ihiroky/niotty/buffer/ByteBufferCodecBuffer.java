@@ -636,7 +636,13 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer {
      */
     @Override
     public byte[] array() {
-        return buffer_.array();
+        if (buffer_.hasArray()) {
+            return buffer_.array();
+        }
+        int remaining = remainingBytes();
+        ByteBuffer bb = ByteBuffer.allocate(remaining);
+        transferTo(bb);
+        return bb.array();
     }
 
     /**
@@ -644,7 +650,7 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer {
      */
     @Override
     public int arrayOffset() {
-        return buffer_.arrayOffset();
+        return buffer_.hasArray() ? buffer_.arrayOffset() : 0;
     }
 
     @Override

@@ -8,7 +8,6 @@ import net.ihiroky.niotty.buffer.BufferSink;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.CodecBuffer;
 
-import java.nio.ByteBuffer;
 import java.util.zip.Deflater;
 
 /**
@@ -19,7 +18,7 @@ public class DeflaterEncoder implements StoreStage<BufferSink, CodecBuffer> {
     private final Deflater deflater_;
     private final byte[] buffer_;
 
-    protected static final int DEFAULT_BUFFER_SIZE = 4096;
+    protected static final int DEFAULT_BUFFER_SIZE = 8192;
 
     public DeflaterEncoder() {
         this(Deflater.BEST_SPEED, DEFAULT_BUFFER_SIZE, null, false);
@@ -41,19 +40,19 @@ public class DeflaterEncoder implements StoreStage<BufferSink, CodecBuffer> {
     public void store(StageContext<CodecBuffer> context, BufferSink input) {
         CodecBuffer output = Buffers.newCodecBuffer((int) (input.remainingBytes() * 0.7f));
 
-        // TODO use an internal array of the input if input hasArray() is true.
-        ByteBuffer bb = ByteBuffer.allocate(input.remainingBytes());
-        input.transferTo(bb);
-        byte[] inputBytes = bb.array();
+        byte[] inputBytes = input.array();
+        int inputOffset = input.arrayOffset();
+        int inputLength = input.remainingBytes();
 
-        onBeforeEncode(inputBytes, output);
+        onBeforeEncode(inputBytes, inputOffset, inputLength, output);
 
-        deflater_.setInput(inputBytes);
+        deflater_.setInput(inputBytes, inputOffset, inputLength);
         int length = buffer_.length;
         for (int n = length; n == length;) {
             n = deflater_.deflate(buffer_, 0, length, Deflater.SYNC_FLUSH);
             output.writeBytes(buffer_, 0, n);
         }
+        input.dispose();
         context.proceed(output);
     }
 
@@ -76,7 +75,7 @@ public class DeflaterEncoder implements StoreStage<BufferSink, CodecBuffer> {
         }
     }
 
-    protected void onBeforeEncode(byte[] input, CodecBuffer output) {
+    protected void onBeforeEncode(byte[] input, int offset, int length, CodecBuffer output) {
     }
 
     protected void onAfterFinished(CodecBuffer footer, Deflater deflater) {

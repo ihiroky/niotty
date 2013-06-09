@@ -675,6 +675,19 @@ public class CodecBufferListTest {
             assertThat(sut.sizeOfBuffers(), is(2));
         }
 
+        @Test
+        public void testArray_MultipleElements() throws Exception {
+            byte[] data = new byte[10];
+            Arrays.fill(data, (byte) '0');
+            CodecBufferList sut = new CodecBufferList(
+                    Buffers.wrap(data, 0, 5), Buffers.wrap(data, 5, 5));
+
+            byte[] array = sut.array();
+
+            assertThat(array, is(data));
+            assertThat(array, is(not(sameInstance(data))));
+            assertThat(sut.hasArray(), is(false));
+        }
     }
 
     public static class StructureChangeTests  {

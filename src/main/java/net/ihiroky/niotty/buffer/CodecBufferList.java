@@ -821,7 +821,10 @@ public class CodecBufferList extends AbstractCodecBuffer {
                 return buffer.array();
             }
         }
-        throw new UnsupportedOperationException();
+        int remaining = remainingBytes();
+        ByteBuffer bb = ByteBuffer.allocate(remaining);
+        transferTo(bb);
+        return bb.array();
     }
 
     @Override
@@ -832,7 +835,7 @@ public class CodecBufferList extends AbstractCodecBuffer {
                 return buffer.arrayOffset();
             }
         }
-        throw new UnsupportedOperationException();
+        return 0;
     }
 
     @Override

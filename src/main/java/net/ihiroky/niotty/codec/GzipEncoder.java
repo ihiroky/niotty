@@ -4,6 +4,7 @@ import net.ihiroky.niotty.buffer.CodecBuffer;
 
 import java.util.zip.CRC32;
 import java.util.zip.Deflater;
+import java.util.zip.GZIPInputStream;
 
 /**
  * @author Hiroki Itoh
@@ -14,8 +15,19 @@ public class GzipEncoder extends DeflaterEncoder {
     private boolean first_;
     private boolean finished_;
 
+    private static final int GZIP_MAGIC = GZIPInputStream.GZIP_MAGIC;
+
     private static final byte[] GZIP_HEADER = new byte[]{
-            0x1f, (byte) 0x8b, Deflater.DEFLATED, 0, 0, 0, 0, 0, 0, 0
+            (byte) GZIP_MAGIC,        // Magic number (short)
+            (byte) (GZIP_MAGIC >> Byte.SIZE),  // Magic number (short)
+            Deflater.DEFLATED,        // Compression method (CM)
+            0,                        // Flags (FLG)
+            0,                        // Modification time MTIME (int)
+            0,                        // Modification time MTIME (int)
+            0,                        // Modification time MTIME (int)
+            0,                        // Modification time MTIME (int)
+            0,                        // Extra flags (XFLG)
+            0                         // Operating system (OS)
     };
 
     public GzipEncoder() {
@@ -34,12 +46,12 @@ public class GzipEncoder extends DeflaterEncoder {
     }
 
     @Override
-    protected void onBeforeEncode(byte[] input, CodecBuffer output) {
+    protected void onBeforeEncode(byte[] input, int offset, int length, CodecBuffer output) {
         if (first_) {
             output.writeBytes(GZIP_HEADER, 0, GZIP_HEADER.length);
             first_ = false;
         }
-        crc32_.update(input);
+        crc32_.update(input, offset, length);
     }
 
     @Override
@@ -48,14 +60,14 @@ public class GzipEncoder extends DeflaterEncoder {
             // write crc and totalIn with little endian
             int crc = (int) crc32_.getValue();
             output.writeByte(crc);
-            output.writeByte(crc >>> 8);
-            output.writeByte(crc >>> 16);
-            output.writeByte(crc >>> 24);
+            output.writeByte(crc >>> Byte.SIZE);
+            output.writeByte(crc >>> Short.SIZE);
+            output.writeByte(crc >>> (Byte.SIZE + Short.SIZE));
             int totalIn = deflater.getTotalIn();
             output.writeByte(totalIn);
-            output.writeByte(totalIn >>> 8);
-            output.writeByte(totalIn >>> 16);
-            output.writeByte(totalIn >>> 24);
+            output.writeByte(totalIn >>> Byte.SIZE);
+            output.writeByte(totalIn >>> Short.SIZE);
+            output.writeByte(totalIn >>> (Byte.SIZE + Short.SIZE));
             finished_ = true;
         }
     }

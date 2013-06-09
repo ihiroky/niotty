@@ -84,12 +84,15 @@ public class BufferSinkList implements BufferSink {
 
     @Override
     public byte[] array() {
-        throw new UnsupportedOperationException();
+        int remaining = remainingBytes();
+        ByteBuffer bb = ByteBuffer.allocate(remaining);
+        transferTo(bb);
+        return bb.array();
     }
 
     @Override
     public int arrayOffset() {
-        throw new UnsupportedOperationException();
+        return 0;
     }
 
     /**

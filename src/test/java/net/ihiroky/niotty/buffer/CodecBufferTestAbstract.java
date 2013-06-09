@@ -994,6 +994,7 @@ public class CodecBufferTestAbstract {
     public static abstract class AbstractBufferSinkTests {
 
         private CodecBuffer sut_;
+        private byte[] data_;
         private int dataLength_;
 
         protected abstract CodecBuffer createCodecBuffer(byte[] buffer, int offset, int length);
@@ -1004,6 +1005,7 @@ public class CodecBufferTestAbstract {
             Arrays.fill(data, (byte) '0');
             sut_ = createCodecBuffer(data, 0, data.length);
             dataLength_ = data.length;
+            data_ = data;
         }
 
         @Test
@@ -1077,6 +1079,16 @@ public class CodecBufferTestAbstract {
 
             assertThat(sut_.remainingBytes(), is(32)); // remaining all
             assertThat(buffer.array(), is(Arrays.copyOf(sut_.array(), 31)));
+        }
+
+        @Test
+        public void testArray() throws Exception {
+            byte[] array = sut_.array();
+
+            assertThat(array, is(data_));
+            if (sut_.hasArray()) {
+                assertThat(array, is(sameInstance(data_)));
+            }
         }
     }
 

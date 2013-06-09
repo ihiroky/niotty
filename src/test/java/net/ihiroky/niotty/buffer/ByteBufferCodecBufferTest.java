@@ -92,6 +92,19 @@ public class ByteBufferCodecBufferTest {
         protected CodecBuffer createCodecBuffer(byte[] data, int offset, int length) {
             return Buffers.wrap(ByteBuffer.wrap(data, offset, length));
         }
+
+        @Test
+        public void testArray_Direct() throws Exception {
+            byte[] data = new byte[10];
+            Arrays.fill(data, (byte) '0');
+            ByteBuffer bb = ByteBuffer.allocateDirect(10);
+            bb.put(data).position(0);
+            ByteBufferCodecBuffer b = new ByteBufferCodecBuffer(bb);
+
+            byte[] array = b.array();
+            assertThat(array, is(data));
+            assertThat(array, is(not(sameInstance(data))));
+        }
     }
 
     public static class ReferenceCountTests {
