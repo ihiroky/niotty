@@ -14,4 +14,7 @@ public enum TransportState {
 
     /** The state to close the transport. */
     CLOSED,
+
+    /** The state to disconnect. */
+    DISCONNECT,
 }

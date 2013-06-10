@@ -131,7 +131,7 @@ public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector
      */
     public TransportFuture disconnect() {
         final DefaultTransportFuture future = new DefaultTransportFuture(this);
-        executeStore(new TransportStateEvent(TransportState.CONNECTED) {
+        executeStore(new TransportStateEvent(TransportState.DISCONNECT) {
             @Override
             public void execute() {
                 try {
