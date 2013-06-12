@@ -3,6 +3,7 @@ package net.ihiroky.niotty.nio;
 import net.ihiroky.niotty.AbstractTransport;
 import net.ihiroky.niotty.DefaultTransportFuture;
 import net.ihiroky.niotty.DefaultTransportStateEvent;
+import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.SucceededTransportFuture;
 import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.TransportParameter;
@@ -22,6 +23,10 @@ import java.util.Objects;
 public abstract class NioSocketTransport<S extends AbstractSelector<S>> extends AbstractTransport<S> {
 
     private SelectionKey key_;
+
+    NioSocketTransport(String name, PipelineComposer pipelineComposer) {
+        super(name, pipelineComposer);
+    }
 
     @Override
     public String toString() {

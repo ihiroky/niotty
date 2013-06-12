@@ -17,4 +17,7 @@ public enum TransportState {
 
     /** The state to disconnect. */
     DISCONNECT,
+
+    SHUTDOWN_OUTPUT,
+    SHUTDOWN_INPUT,
 }

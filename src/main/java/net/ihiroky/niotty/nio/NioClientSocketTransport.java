@@ -27,17 +27,15 @@ public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> 
 
     NioClientSocketTransport(
             NioClientSocketConfig config, PipelineComposer composer, String name, ConnectSelectorPool connector) {
+        super(name, composer);
+
         Objects.requireNonNull(config, "config");
-        Objects.requireNonNull(composer, "composer");
-        Objects.requireNonNull(name, "name");
         Objects.requireNonNull(connector, "connector");
 
         try {
             SocketChannel clientChannel = SocketChannel.open();
             clientChannel.configureBlocking(false);
             config.applySocketOptions(clientChannel);
-
-            setUpPipelines(name, composer);
 
             clientChannel_ = clientChannel;
             connector_ = connector;
@@ -49,12 +47,10 @@ public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> 
 
     NioClientSocketTransport(
             NioServerSocketConfig config, PipelineComposer composer, String name, SocketChannel child) {
-        Objects.requireNonNull(config, "config");
-        Objects.requireNonNull(composer, "composer");
-        Objects.requireNonNull(name, "name");
-        Objects.requireNonNull(child, "child");
+        super(name, composer);
 
-        setUpPipelines(name, composer);
+        Objects.requireNonNull(config, "config");
+        Objects.requireNonNull(child, "child");
 
         clientChannel_ = child;
         connector_ = null;

@@ -42,6 +42,10 @@ public abstract class TaskLoopGroup<L extends TaskLoop<L>> {
         }
     }
 
+    public boolean isOpen() {
+        return isInitialized(eventLoops_);
+    }
+
     public void offerTask(TaskLoop.Task<L> task) {
         for (L loop : eventLoops_) {
             loop.offerTask(task);

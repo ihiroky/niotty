@@ -25,17 +25,17 @@ abstract public class AbstractTransport<L extends TaskLoop<L>> implements Transp
     private L loop_;
 
     private static final TransportListener NULL_LISTENER = new NullListener();
-    private static final DefaultLoadPipeline NULL_LOAD_PIPELINE = new DefaultLoadPipeline("null", null);
-    private static final DefaultStorePipeline NULL_STORE_PIPELINE = new DefaultStorePipeline("null", null);
 
     /**
      * Creates a new instance.
      */
-    protected AbstractTransport() {
-        loadPipeline_ = NULL_LOAD_PIPELINE;
-        storePipeline_ = NULL_STORE_PIPELINE;
+    protected AbstractTransport(String name, PipelineComposer pipelineComposer) {
+        Objects.requireNonNull(name, "name");
+        Objects.requireNonNull(pipelineComposer, "pipelineComposer");
+
         attachmentReference_ = new AtomicReference<>();
         transportListener_ = NULL_LISTENER;
+        setUpPipelines(name, pipelineComposer);
     }
 
     /**
@@ -44,7 +44,7 @@ abstract public class AbstractTransport<L extends TaskLoop<L>> implements Transp
      * @param baseName a name used in {@link net.ihiroky.niotty.AbstractPipeline}.
      * @param pipelineComposer the composer to set up the load / store pipeline.
      */
-    protected void setUpPipelines(String baseName, PipelineComposer pipelineComposer) {
+    private void setUpPipelines(String baseName, PipelineComposer pipelineComposer) {
 
         DefaultLoadPipeline loadPipeline = new DefaultLoadPipeline(baseName, this);
         DefaultStorePipeline storePipeline = new DefaultStorePipeline(baseName, this);
@@ -149,6 +149,9 @@ abstract public class AbstractTransport<L extends TaskLoop<L>> implements Transp
      * @param ioStage
      */
     public final void addIOStage(StoreStage<BufferSink, Void> ioStage) {
+        if (storePipeline_ == null) {
+            throw new IllegalStateException("setUpPipelines() is not called.");
+        }
         Objects.requireNonNull(ioStage, "ioStage");
         storePipeline_.addIOStage(ioStage);
     }

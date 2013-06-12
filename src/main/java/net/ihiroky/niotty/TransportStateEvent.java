@@ -35,8 +35,24 @@ public abstract class TransportStateEvent {
     }
 
     @Override
+    public int hashCode() {
+        return Objects.hash(state_, value_);
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        if (object instanceof TransportStateEvent) {
+            TransportStateEvent that = (TransportStateEvent) object;
+            boolean stateEqual = this.state_ == that.state_;
+            boolean valueEqual = (this.value_ != null) ? this.value_.equals(that.value_) : that.value_ == null;
+            return stateEqual && valueEqual;
+        }
+        return false;
+    }
+
+    @Override
     public String toString() {
-        return state_.toString();
+        return "(state: " + state_ + ", value: " + value_ + ')';
     }
 
     public abstract void execute();

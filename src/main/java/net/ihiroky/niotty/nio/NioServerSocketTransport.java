@@ -3,6 +3,7 @@ package net.ihiroky.niotty.nio;
 import net.ihiroky.niotty.DefaultTransportParameter;
 import net.ihiroky.niotty.DefaultTransportStateEvent;
 import net.ihiroky.niotty.FailedTransportFuture;
+import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.SucceededTransportFuture;
 import net.ihiroky.niotty.Transport;
 import net.ihiroky.niotty.TransportAggregate;
@@ -33,14 +34,13 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
     private TransportAggregateSupport childAggregate_;
 
     NioServerSocketTransport(NioServerSocketConfig config, NioServerSocketProcessor processor) {
+        super(processor.name(), PipelineComposer.empty());
+
         ServerSocketChannel serverChannel = null;
         try {
             serverChannel = ServerSocketChannel.open();
             serverChannel.configureBlocking(false);
             config.applySocketOptions(serverChannel);
-
-            // set up StoreStage for selector referenced at bind/close operation.
-            setUpPipelines(processor.name(), processor.pipelineComposer());
 
             this.config_ = config;
             this.serverChannel_ = serverChannel;

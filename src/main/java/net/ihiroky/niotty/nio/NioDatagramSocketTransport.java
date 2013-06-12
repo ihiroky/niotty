@@ -36,8 +36,8 @@ public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector
 
     NioDatagramSocketTransport(NioDatagramSocketConfig config, PipelineComposer composer,
                                String name, UdpIOSelectorPool selectorPool) {
-        Objects.requireNonNull(composer, "composer");
-        Objects.requireNonNull(name, "name");
+        super(name, composer);
+
         Objects.requireNonNull(selectorPool, "selectorPool");
 
         DatagramChannel channel = null;
@@ -55,8 +55,6 @@ public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector
             }
             throw new RuntimeException("failed to open DatagramChannel.", ioe);
         }
-
-        setUpPipelines(name, composer);
 
         channel_ = channel;
         writeQueue_ = config.newWriteQueue();
