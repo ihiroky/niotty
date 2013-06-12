@@ -95,4 +95,8 @@ public abstract class NioSocketTransport<S extends AbstractSelector<S>> extends 
     final void loadEvent(final TransportStateEvent event) {
         executeLoad(event);
     }
+
+    final SelectionKey key() {
+        return key_;
+    }
 }

@@ -5,6 +5,8 @@ import net.ihiroky.niotty.FailedTransportFuture;
 import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.SucceededTransportFuture;
 import net.ihiroky.niotty.TransportFuture;
+import net.ihiroky.niotty.TransportState;
+import net.ihiroky.niotty.TransportStateEvent;
 import net.ihiroky.niotty.buffer.BufferSink;
 
 import java.io.IOException;
@@ -116,6 +118,55 @@ public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> 
 
     public boolean isConnected() {
         return clientChannel_.isConnected();
+    }
+
+    public TransportFuture shutdownOutput() {
+        TcpIOSelector selector = eventLoop();
+        if (selector == null) {
+            return new SucceededTransportFuture(this);
+        }
+        final DefaultTransportFuture future = new DefaultTransportFuture(this);
+        executeStore(new TransportStateEvent(TransportState.SHUTDOWN_OUTPUT) {
+            @Override
+            public void execute() {
+                SelectionKey key = key();
+                if (key != null && key.isValid()) {
+                    SocketChannel channel = (SocketChannel) key.channel();
+                    try {
+                        channel.shutdownOutput();
+                        future.done();
+                    } catch (IOException ioe) {
+                        future.setThrowable(ioe);
+                    }
+                }
+            }
+        });
+        return future;
+    }
+
+    public TransportFuture shutdownInput() {
+        TcpIOSelector selector = eventLoop();
+        if (selector == null) {
+            return new SucceededTransportFuture(this);
+        }
+        final DefaultTransportFuture future = new DefaultTransportFuture(this);
+        executeStore(new TransportStateEvent(TransportState.SHUTDOWN_INPUT) {
+            @Override
+            public void execute() {
+                SelectionKey key = key();
+                if (key != null && key.isValid()) {
+                    SocketChannel channel = (SocketChannel) key.channel();
+                    try {
+                        channel.shutdownInput();
+                        future.done();
+                    } catch (IOException ioe) {
+                        future.setThrowable(ioe);
+                    }
+                }
+            }
+        });
+        return future;
+
     }
 
     void readyToWrite(AttachedMessage<BufferSink> message) {
