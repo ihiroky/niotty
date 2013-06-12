@@ -15,7 +15,7 @@ public abstract class AbstractSelectorPool<S extends AbstractSelector<S>> extend
     public void register(final SelectableChannel channel, final int ops, final NioSocketTransport<S> transport) {
         S target = searchLowMemberCountLoop();
         if (target == null) {
-            throw new AssertionError("should not reach here.");
+            throw new AssertionError("I should not reach here. Task threads may be stopped.");
         }
         transport.addIOStage(target.ioStoreStage());
         transport.setEventLoop(target);
