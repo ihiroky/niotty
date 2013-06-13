@@ -1,6 +1,7 @@
 package net.ihiroky.niotty.nio;
 
-import net.ihiroky.niotty.StoreStage;
+import net.ihiroky.niotty.StageContext;
+import net.ihiroky.niotty.TaskLoop;
 import net.ihiroky.niotty.buffer.BufferSink;
 import net.ihiroky.niotty.buffer.Buffers;
 import org.slf4j.Logger;
@@ -22,19 +23,16 @@ import java.util.Set;
 public class TcpIOSelector extends AbstractSelector<TcpIOSelector> {
 
     private final ByteBuffer readBuffer_;
-    private final StoreStage<BufferSink, Void> ioStoreStage_;
     private Logger logger_ = LoggerFactory.getLogger(TcpIOSelector.class);
 
     private static final int MIN_BUFFER_SIZE = 256;
 
-    TcpIOSelector(SelectorStoreStage<TcpIOSelector> ioStoreStage,
-                  int readBufferSize, boolean direct) {
+    TcpIOSelector(int readBufferSize, boolean direct) {
         if (readBufferSize < MIN_BUFFER_SIZE) {
             readBufferSize = MIN_BUFFER_SIZE;
             logger_.warn("readBufferSize is set to {}.", readBufferSize);
         }
         readBuffer_ = direct ? ByteBuffer.allocateDirect(readBufferSize) : ByteBuffer.allocate(readBufferSize);
-        ioStoreStage_ = ioStoreStage;
     }
 
     @Override
@@ -76,7 +74,20 @@ public class TcpIOSelector extends AbstractSelector<TcpIOSelector> {
     }
 
     @Override
-    public StoreStage<BufferSink, Void> ioStoreStage() {
-        return ioStoreStage_;
+    public void store(StageContext<Void> context, BufferSink input) {
+        final NioClientSocketTransport transport = (NioClientSocketTransport) context.transport();
+        transport.readyToWrite(new AttachedMessage<>(input, context.transportParameter()));
+        offerTask(new TaskLoop.Task<TcpIOSelector>() {
+            @Override
+            public int execute(TcpIOSelector eventLoop) throws Exception {
+                try {
+                    return transport.flush();
+                } catch (IOException ioe) {
+                    logger_.error("failed to flush buffer to " + transport, ioe);
+                    transport.closeSelectableChannel();
+                }
+                return TIMEOUT_NO_LIMIT;
+            }
+        });
     }
 }

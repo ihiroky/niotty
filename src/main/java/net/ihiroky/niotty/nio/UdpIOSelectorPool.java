@@ -37,6 +37,6 @@ public class UdpIOSelectorPool extends AbstractSelectorPool<UdpIOSelector> {
 
     @Override
     protected UdpIOSelector newEventLoop() {
-        return new UdpIOSelector(new UdpIOStoreStage(writeBufferSize_, direct_), readBufferSize_, direct_);
+        return new UdpIOSelector(readBufferSize_, writeBufferSize_, direct_);
     }
 }

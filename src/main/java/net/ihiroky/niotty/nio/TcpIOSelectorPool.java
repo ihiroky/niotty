@@ -28,6 +28,6 @@ public class TcpIOSelectorPool extends AbstractSelectorPool<TcpIOSelector> {
 
     @Override
     protected TcpIOSelector newEventLoop() {
-        return new TcpIOSelector(new TcpIOStoreStage(), readBufferSize_, direct_);
+        return new TcpIOSelector(readBufferSize_, direct_);
     }
 }

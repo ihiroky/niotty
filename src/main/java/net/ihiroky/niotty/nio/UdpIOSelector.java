@@ -1,7 +1,8 @@
 package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.DefaultTransportParameter;
-import net.ihiroky.niotty.StoreStage;
+import net.ihiroky.niotty.StageContext;
+import net.ihiroky.niotty.TaskLoop;
 import net.ihiroky.niotty.buffer.BufferSink;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.CodecBuffer;
@@ -25,19 +26,18 @@ import java.util.Set;
 public class UdpIOSelector extends AbstractSelector<UdpIOSelector> {
 
     private final ByteBuffer readBuffer_;
-    private final StoreStage<BufferSink, Void> ioStoreStage_;
+    private final ByteBuffer writeBuffer_; // TODO Use ByteBufferPool
     private Logger logger_ = LoggerFactory.getLogger(UdpIOSelector.class);
 
     private static final int MIN_BUFFER_SIZE = 256;
 
-    UdpIOSelector(SelectorStoreStage<UdpIOSelector> ioStoreStage,
-                  int readBufferSize, boolean direct) {
+    UdpIOSelector(int readBufferSize, int writeBufferSize, boolean direct) {
         if (readBufferSize < MIN_BUFFER_SIZE) {
             readBufferSize = MIN_BUFFER_SIZE;
             logger_.warn("readBufferSize is set to {}.", readBufferSize);
         }
         readBuffer_ = direct ? ByteBuffer.allocateDirect(readBufferSize) : ByteBuffer.allocate(readBufferSize);
-        ioStoreStage_ = ioStoreStage;
+        writeBuffer_ = direct ? ByteBuffer.allocateDirect(writeBufferSize) : ByteBuffer.allocate(writeBufferSize);
     }
 
     @Override
@@ -92,7 +92,20 @@ public class UdpIOSelector extends AbstractSelector<UdpIOSelector> {
     }
 
     @Override
-    public StoreStage<BufferSink, Void> ioStoreStage() {
-        return ioStoreStage_;
+    public void store(StageContext<Void> context, BufferSink input) {
+        final NioDatagramSocketTransport transport = (NioDatagramSocketTransport) context.transport();
+        transport.readyToWrite(new AttachedMessage<>(input, context.transportParameter()));
+        offerTask(new TaskLoop.Task<UdpIOSelector>() {
+            @Override
+            public int execute(UdpIOSelector eventLoop) throws Exception {
+                try {
+                    return transport.flush(writeBuffer_);
+                } catch (IOException ioe) {
+                    logger_.error("failed to flush buffer to " + transport, ioe);
+                    transport.closeSelectableChannel();
+                }
+                return TIMEOUT_NO_LIMIT;
+            }
+        });
     }
 }

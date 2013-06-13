@@ -17,7 +17,7 @@ public abstract class AbstractSelectorPool<S extends AbstractSelector<S>> extend
         if (target == null) {
             throw new AssertionError("I should not reach here. Task threads may be stopped.");
         }
-        transport.addIOStage(target.ioStoreStage());
+        transport.addIOStage(target);
         transport.setEventLoop(target);
         target.offerTask(new TaskLoop.Task<S>() {
             @Override

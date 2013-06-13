@@ -21,10 +21,10 @@ import java.util.Set;
  *
  * @author Hiroki Itoh
  */
-public abstract class AbstractSelector<S extends AbstractSelector<S>> extends TaskLoop<S> {
+public abstract class AbstractSelector<S extends AbstractSelector<S>>
+        extends TaskLoop<S> implements StoreStage<BufferSink, Void> {
 
     private Selector selector_;
-    private SelectorStoreStage<S> selectorStoreStage_ = new SelectorStoreStage<>();
 
     private Logger logger_ = LoggerFactory.getLogger(AbstractSelector.class);
 
@@ -116,30 +116,23 @@ public abstract class AbstractSelector<S extends AbstractSelector<S>> extends Ta
         return (selector_ != null) && selector_.isOpen();
     }
 
-    StoreStage<BufferSink, Void> ioStoreStage() {
-        return selectorStoreStage_;
+    @Override
+    public void store(StageContext<Void> context, BufferSink input) {
     }
 
-    static class SelectorStoreStage<S extends AbstractSelector<S>> implements StoreStage<BufferSink, Void> {
-        @Override
-        public void store(StageContext<Void> context, BufferSink input) {
-        }
-
-        @Override
-        public void store(StageContext<Void> context, final TransportStateEvent event) {
-            @SuppressWarnings("unchecked")
-            final NioSocketTransport<S> transport = (NioSocketTransport<S>) context.transport();
-            if (transport.isInLoopThread()) {
-                event.execute();
-            } else {
-                transport.offerTask(new Task<S>() {
+    @Override
+    public void store(StageContext<Void> context, final TransportStateEvent event) {
+        final NioSocketTransport<?> transport = (NioSocketTransport<?>) context.transport();
+        if (transport.isInLoopThread()) {
+            event.execute();
+        } else {
+            offerTask(new Task<S>() {
                     @Override
                     public int execute(S eventLoop) throws Exception {
                         event.execute();
                         return TaskLoop.TIMEOUT_NO_LIMIT;
                     }
-                });
-            }
+            });
         }
     }
 }
