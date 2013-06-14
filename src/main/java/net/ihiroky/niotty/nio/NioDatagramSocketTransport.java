@@ -192,6 +192,11 @@ public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector
         return channel_.isOpen();
     }
 
+    @Override
+    public int pendingWriteBuffers() {
+        return writeQueue_.size();
+    }
+
     /**
      * Returns true if this transport is connected.
      * @return true if this transport is connected.

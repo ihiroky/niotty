@@ -62,4 +62,9 @@ public class ConnectionWaitTransport extends NioSocketTransport<ConnectSelector>
     public boolean isOpen() {
         throw new UnsupportedOperationException();
     }
+
+    @Override
+    public int pendingWriteBuffers() {
+        return -1;
+    }
 }

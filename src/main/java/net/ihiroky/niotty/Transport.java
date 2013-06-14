@@ -21,4 +21,5 @@ public interface Transport {
     boolean isOpen();
     Object attach(Object attachment);
     Object attachment();
+    int pendingWriteBuffers();
 }

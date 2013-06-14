@@ -112,6 +112,11 @@ public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> 
         return clientChannel_.isOpen();
     }
 
+    @Override
+    public int pendingWriteBuffers() {
+        return writeQueue_.size();
+    }
+
     public boolean isConnected() {
         return clientChannel_.isConnected();
     }
