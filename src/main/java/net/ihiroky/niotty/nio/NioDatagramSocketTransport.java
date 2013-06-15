@@ -80,6 +80,33 @@ public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector
         }
     }
 
+    @Override
+    public SocketAddress localAddress() {
+        try {
+            return channel_.getLocalAddress();
+        } catch (IOException ioe) {
+            throw new RuntimeException(ioe);
+        }
+    }
+
+    @Override
+    public SocketAddress remoteAddress() {
+        try {
+            return channel_.getRemoteAddress();
+        } catch (IOException ioe) {
+            throw new RuntimeException(ioe);
+        }
+    }
+
+    @Override
+    public boolean isOpen() {
+        return channel_.isOpen();
+    }
+
+    public int pendingWriteBuffers() {
+        return writeQueue_.size();
+    }
+
     /**
      * <p>Connects this transport's socket.</p>
      *
@@ -93,7 +120,6 @@ public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector
      * @param remote The remote address to which this channel is to be connected.
      * @return The future object.
      */
-    @Override
     public TransportFuture connect(final SocketAddress remote) {
         final DefaultTransportFuture future = new DefaultTransportFuture(this);
         executeStore(new TransportStateEvent(TransportState.CONNECTED) {
@@ -167,34 +193,6 @@ public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector
      */
     public void write(Object message, int priority, SocketAddress target) {
         super.write(message, new DefaultTransportParameter(priority, target));
-    }
-
-    @Override
-    public SocketAddress localAddress() {
-        try {
-            return channel_.getLocalAddress();
-        } catch (IOException ioe) {
-            throw new RuntimeException(ioe);
-        }
-    }
-
-    @Override
-    public SocketAddress remoteAddress() {
-        try {
-            return channel_.getRemoteAddress();
-        } catch (IOException ioe) {
-            throw new RuntimeException(ioe);
-        }
-    }
-
-    @Override
-    public boolean isOpen() {
-        return channel_.isOpen();
-    }
-
-    @Override
-    public int pendingWriteBuffers() {
-        return writeQueue_.size();
     }
 
     /**

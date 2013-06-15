@@ -4,7 +4,6 @@ import net.ihiroky.niotty.LoadPipeline;
 import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.StageKey;
 import net.ihiroky.niotty.StorePipeline;
-import net.ihiroky.niotty.Transport;
 import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.CodecBuffer;
@@ -13,8 +12,10 @@ import net.ihiroky.niotty.codec.FrameLengthRemoveDecoder;
 import net.ihiroky.niotty.nio.DeficitRoundRobinWriteQueueFactory;
 import net.ihiroky.niotty.nio.NioClientSocketConfig;
 import net.ihiroky.niotty.nio.NioClientSocketProcessor;
+import net.ihiroky.niotty.nio.NioClientSocketTransport;
 import net.ihiroky.niotty.nio.NioServerSocketConfig;
 import net.ihiroky.niotty.nio.NioServerSocketProcessor;
+import net.ihiroky.niotty.nio.NioServerSocketTransport;
 
 import java.net.InetSocketAddress;
 
@@ -59,8 +60,8 @@ public class DrrMain {
 
         NioServerSocketConfig config = new NioServerSocketConfig();
         config.setWriteQueueFactory(new DeficitRoundRobinWriteQueueFactory(0.5f));
-        Transport serverTransport = serverProcessor.createTransport(config);
-        Transport clientTransport = clientProcessor.createTransport(new NioClientSocketConfig());
+        NioServerSocketTransport serverTransport = serverProcessor.createTransport(config);
+        NioClientSocketTransport clientTransport = clientProcessor.createTransport(new NioClientSocketConfig());
         try {
             InetSocketAddress endpoint = new InetSocketAddress(serverPort);
             serverTransport.bind(endpoint);

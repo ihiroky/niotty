@@ -92,11 +92,6 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
     }
 
     @Override
-    public int pendingWriteBuffers() {
-        return -1;
-    }
-
-    @Override
     public TransportFuture bind(SocketAddress socketAddress) {
         try {
             serverChannel_.bind(socketAddress, config_.getBacklog());
@@ -105,11 +100,6 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
         } catch (IOException ioe) {
             return new FailedTransportFuture(this, ioe);
         }
-    }
-
-    @Override
-    public TransportFuture connect(SocketAddress remoteAddress) {
-        throw new UnsupportedOperationException("connect");
     }
 
     @Override

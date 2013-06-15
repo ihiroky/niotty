@@ -68,23 +68,6 @@ public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> 
     }
 
     @Override
-    public TransportFuture connect(SocketAddress remote) {
-        if (connector_ == null) {
-            throw new IllegalStateException("Channel is an accepted channel.");
-        }
-        try {
-            if (clientChannel_.connect(remote)) {
-                return new SucceededTransportFuture(this);
-            }
-            DefaultTransportFuture future = new DefaultTransportFuture(this);
-            connector_.register(clientChannel_, SelectionKey.OP_CONNECT, new ConnectionWaitTransport(this, future));
-            return future;
-        } catch (IOException ioe) {
-            return new FailedTransportFuture(this, ioe);
-        }
-    }
-
-    @Override
     public TransportFuture close() {
         return closeSelectableChannel();
     }
@@ -112,9 +95,24 @@ public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> 
         return clientChannel_.isOpen();
     }
 
-    @Override
     public int pendingWriteBuffers() {
         return writeQueue_.size();
+    }
+
+    public TransportFuture connect(SocketAddress remote) {
+        if (connector_ == null) {
+            throw new IllegalStateException("Channel is an accepted channel.");
+        }
+        try {
+            if (clientChannel_.connect(remote)) {
+                return new SucceededTransportFuture(this);
+            }
+            DefaultTransportFuture future = new DefaultTransportFuture(this);
+            connector_.register(clientChannel_, SelectionKey.OP_CONNECT, new ConnectionWaitTransport(this, future));
+            return future;
+        } catch (IOException ioe) {
+            return new FailedTransportFuture(this, ioe);
+        }
     }
 
     public boolean isConnected() {

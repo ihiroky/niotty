@@ -123,7 +123,7 @@ public abstract class AbstractSelector<S extends AbstractSelector<S>>
     @Override
     public void store(StageContext<Void> context, final TransportStateEvent event) {
         final NioSocketTransport<?> transport = (NioSocketTransport<?>) context.transport();
-        if (transport.isInLoopThread()) {
+        if (isInLoopThread()) {
             event.execute();
         } else {
             offerTask(new Task<S>() {

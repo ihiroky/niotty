@@ -11,8 +11,10 @@ import net.ihiroky.niotty.codec.StringDecoder;
 import net.ihiroky.niotty.codec.StringEncoder;
 import net.ihiroky.niotty.nio.NioClientSocketConfig;
 import net.ihiroky.niotty.nio.NioClientSocketProcessor;
+import net.ihiroky.niotty.nio.NioClientSocketTransport;
 import net.ihiroky.niotty.nio.NioServerSocketConfig;
 import net.ihiroky.niotty.nio.NioServerSocketProcessor;
+import net.ihiroky.niotty.nio.NioServerSocketTransport;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -58,7 +60,7 @@ public class EchoMain {
         server.start();
         client.start();
 
-        final Transport serverTransport = server.createTransport(new NioServerSocketConfig());
+        final NioServerSocketTransport serverTransport = server.createTransport(new NioServerSocketConfig());
         serverTransport.addListener(new TransportListener() {
             @Override
             public void onAccept(Transport transport, SocketAddress remoteAddress) {
@@ -71,7 +73,7 @@ public class EchoMain {
             public void onClose(Transport transport) {
             }
         });
-        Transport clientTransport = client.createTransport(new NioClientSocketConfig());
+        NioClientSocketTransport clientTransport = client.createTransport(new NioClientSocketConfig());
 
         try {
             serverTransport.bind(new InetSocketAddress(port));

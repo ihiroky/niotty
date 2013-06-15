@@ -80,6 +80,7 @@ public abstract class NioSocketTransport<S extends AbstractSelector<S>> extends 
                 executeStore(event);
             }
             executeLoad(event);
+
         }
         onCloseSelectableChannel();
         closePipelines();

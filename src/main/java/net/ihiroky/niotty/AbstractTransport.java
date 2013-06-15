@@ -174,24 +174,6 @@ abstract public class AbstractTransport<L extends TaskLoop<L>> implements Transp
     }
 
     /**
-     * Offers the specified task to the {@code TaskLoop}.
-     * @param task the task to be executed in the {@code TaskLoop}.
-     */
-    public void offerTask(TaskLoop.Task<L> task) {
-        if (loop_ != null) {
-            loop_.offerTask(task);
-        }
-    }
-
-    /**
-     * Returns true if the current thread is managed by the {@code TaskLoop}.
-     * @return true if the current thread is managed by the {@code TaskLoop}.
-     */
-    public boolean isInLoopThread() {
-        return (loop_ != null) && loop_.isInLoopThread();
-    }
-
-    /**
      * Returns the listener.
      * @return the listener.
      */

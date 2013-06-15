@@ -34,11 +34,6 @@ public class ConnectionWaitTransport extends NioSocketTransport<ConnectSelector>
     }
 
     @Override
-    public TransportFuture connect(SocketAddress remote) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public TransportFuture close() {
         throw new UnsupportedOperationException();
     }
@@ -61,10 +56,5 @@ public class ConnectionWaitTransport extends NioSocketTransport<ConnectSelector>
     @Override
     public boolean isOpen() {
         throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int pendingWriteBuffers() {
-        return -1;
     }
 }
