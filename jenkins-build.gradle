@@ -6,9 +6,7 @@ apply plugin: 'pmd'
 defaultTasks 'clean', 'build'
 
 def buildNumber = System.getenv()['BUILD_NUMBER'];
-if (!buildNumber) {
-    buildNumber = new Date().format("yyyyMMdd-HHmmss")
-}
+buildNumber = buildNumber ?: new Date().format("yyyyMMdd-HHmmss")
 
 configurations {
     doclet
@@ -33,7 +31,7 @@ task javadoc(overwrite: true) {
     doLast {
         ant.javadoc(classpath: configurations.runtime.asPath,
                     sourcepath: 'src/main/java',
-                    doctitle: 'Niotty API Reference',
+                    doctitle: "Niotty API Reference (${version}, ${buildNumber})",
                     encoding: encoding,
                     packagenames: '*',
                     destdir: docsDir,
@@ -43,9 +41,10 @@ task javadoc(overwrite: true) {
                 param(name: '-verbose')
                 param(name: '-inferrel')
                 param(name: '-inferdep')
+                param(name: '-inferdepvis', value: 'protected')
                 param(name: '-qualify')
                 param(name: '-postfixpackage')
-                param(name: '-hide', value: 'java.*')
+                param(name: '-hide', value: '(java.*|org.*)')
                 param(name: '-collpackages', value: 'java.util.*')
                 param(name: '-nodefontsize', value: '9')
                 param(name: '-nodefontpackagesize', value: '7')
