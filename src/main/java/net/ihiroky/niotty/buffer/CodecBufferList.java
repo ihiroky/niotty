@@ -592,11 +592,14 @@ public class CodecBufferList extends AbstractCodecBuffer {
 
     /**
      * Sets the value of the beginning as long type.
-     * {@inheritDoc}
+     *
+     * @param beginning the value to be set
+     * @return this {@code CodecBuffer}
+     * @throws java.lang.IndexOutOfBoundsException if {@code beginning} is out of range
      */
     public CodecBuffer beginningLong(long beginning) {
         if (beginning < 0) {
-            throw new IllegalArgumentException("beginning must be more than 0.");
+            throw new IndexOutOfBoundsException("beginning must be more than 0.");
         }
         List<CodecBuffer> buffer = buffers_;
         int endBufferIndex = endBufferIndex_;
@@ -611,7 +614,7 @@ public class CodecBufferList extends AbstractCodecBuffer {
             beginning -= c;
         }
         if (target == null) {
-            throw new IllegalArgumentException("beginning is greater than end.");
+            throw new IndexOutOfBoundsException("beginning is greater than end.");
         }
         target.beginning((int) beginning);
         return this;
@@ -643,7 +646,10 @@ public class CodecBufferList extends AbstractCodecBuffer {
 
     /**
      * Sets the value of the end as long type.
-     * {@inheritDoc}
+     *
+     * @param end the value to be set
+     * @return this {@code CodecBuffer}
+     * @throws java.lang.IndexOutOfBoundsException if {@code end} is out of range
      */
     public CodecBuffer endLong(long end) {
         List<CodecBuffer> buffers = buffers_;

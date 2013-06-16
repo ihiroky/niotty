@@ -28,7 +28,7 @@ public interface WriteQueue {
      * @param channel the channel to write into
      * @return flush status
      * @throws IOException if I/O error occurs
-     * @see {@link net.ihiroky.niotty.nio.WriteQueue.FlushStatus}
+     * @see net.ihiroky.niotty.nio.WriteQueue.FlushStatus
      */
     FlushStatus flushTo(GatheringByteChannel channel) throws IOException;
 
@@ -40,7 +40,7 @@ public interface WriteQueue {
      * @return flush status
      * @throws IOException if I/O error occurs
      * @throws java.nio.BufferOverflowException if the {@code writeBuffer} overflows.
-     * @see {@link net.ihiroky.niotty.nio.WriteQueue.FlushStatus}
+     * @see net.ihiroky.niotty.nio.WriteQueue.FlushStatus
      */
     FlushStatus flushTo(DatagramChannel channel, ByteBuffer writeBuffer) throws IOException;
 

@@ -146,7 +146,7 @@ abstract public class AbstractTransport<L extends TaskLoop<L>> implements Transp
 
     /**
      * Adds the specified stage at the end of the store pipeline.
-     * @param ioStage
+     * @param ioStage the stage
      */
     public final void addIOStage(StoreStage<BufferSink, Void> ioStage) {
         if (storePipeline_ == null) {
@@ -167,7 +167,7 @@ abstract public class AbstractTransport<L extends TaskLoop<L>> implements Transp
 
     /**
      * Gets the instance of {@link net.ihiroky.niotty.TaskLoop}.
-     * @return
+     * @return <L> the TaskLoop.
      */
     protected final L eventLoop() {
         return loop_;
@@ -191,6 +191,15 @@ abstract public class AbstractTransport<L extends TaskLoop<L>> implements Transp
         executeStore(message, parameter);
     }
 
+    /**
+     * <p>Writes a specified message to this transport with a specified priority.</p>
+     *
+     * <p>An invocation of this method behaves in exactly the same way as the invocation
+     * {@code write(message, new DefaultTransportParameter(priority))}.</p>
+     *
+     * @param message the message
+     * @param priority the priority
+     */
     public void write(Object message, int priority) {
         executeStore(message, new DefaultTransportParameter(priority));
     }
@@ -245,6 +254,9 @@ abstract public class AbstractTransport<L extends TaskLoop<L>> implements Transp
         return attachmentReference_.get();
     }
 
+    /**
+     * A null object for TransportListener.
+     */
     private static class NullListener implements TransportListener {
         @Override
         public void onAccept(Transport transport, SocketAddress remote) {
@@ -257,6 +269,9 @@ abstract public class AbstractTransport<L extends TaskLoop<L>> implements Transp
         }
     }
 
+    /**
+     * An aggregator for TransportListener.
+     */
     private static class ListenerList implements TransportListener {
 
         CopyOnWriteArrayList<TransportListener> list_ = new CopyOnWriteArrayList<>();
