@@ -31,7 +31,6 @@ public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> 
         super(name, composer, weight);
 
         Objects.requireNonNull(config, "config");
-        Objects.requireNonNull(connector, "connector");
 
         try {
             SocketChannel clientChannel = SocketChannel.open();
@@ -103,7 +102,8 @@ public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> 
 
     public TransportFuture connect(SocketAddress remote) {
         if (connector_ == null) {
-            throw new IllegalStateException("Channel is an accepted channel.");
+            throw new IllegalStateException(
+                    "Channel is an accepted channel or asynchronous connection is not supported.");
         }
         try {
             if (clientChannel_.connect(remote)) {
@@ -114,6 +114,15 @@ public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> 
             return future;
         } catch (IOException ioe) {
             return new FailedTransportFuture(this, ioe);
+        }
+    }
+
+    public void blockingConnect(SocketAddress remote) throws IOException {
+        clientChannel_.configureBlocking(true);
+        try {
+            clientChannel_.connect(remote);
+        } finally {
+            clientChannel_.configureBlocking(false);
         }
     }
 
