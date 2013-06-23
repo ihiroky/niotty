@@ -7,7 +7,7 @@ import java.util.Objects;
  *
  * @author Hiroki Itoh
  */
-public abstract class PipelineElement<I, O> implements StageContext<O> {
+public abstract class PipelineElement<I, O> implements StageContext<O>, TaskSelection {
 
     private final Pipeline<?> pipeline_;
     private final StageKey key_;
@@ -82,6 +82,11 @@ public abstract class PipelineElement<I, O> implements StageContext<O> {
 
     protected StageContext<O> wrappedStageContext(PipelineElement<?, O> context, TransportParameter parameter) {
         return new WrappedStageContext<>(context, parameter);
+    }
+
+    @Override
+    public int weight() {
+        return 1; // TODO correspond to transport ?
     }
 
     private static class WrappedStageContext<O> implements StageContext<O> {

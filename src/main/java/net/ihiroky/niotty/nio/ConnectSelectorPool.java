@@ -17,7 +17,7 @@ public class ConnectSelectorPool extends AbstractSelectorPool<ConnectSelector> {
     }
 
     @Override
-    protected ConnectSelector newEventLoop() {
+    protected ConnectSelector newTaskLoop() {
         return new ConnectSelector(ioSelectorPool_);
     }
 }

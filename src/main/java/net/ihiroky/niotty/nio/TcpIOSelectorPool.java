@@ -27,7 +27,7 @@ public class TcpIOSelectorPool extends AbstractSelectorPool<TcpIOSelector> {
     }
 
     @Override
-    protected TcpIOSelector newEventLoop() {
+    protected TcpIOSelector newTaskLoop() {
         return new TcpIOSelector(readBufferSize_, direct_);
     }
 }

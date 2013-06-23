@@ -13,7 +13,7 @@ import java.nio.channels.SelectableChannel;
 public abstract class AbstractSelectorPool<S extends AbstractSelector<S>> extends TaskLoopGroup<S> {
 
     public void register(final SelectableChannel channel, final int ops, final NioSocketTransport<S> transport) {
-        S target = searchLowMemberCountLoop();
+        S target = assign(transport);
         if (target == null) {
             throw new AssertionError("I should not reach here. Task threads may be stopped.");
         }

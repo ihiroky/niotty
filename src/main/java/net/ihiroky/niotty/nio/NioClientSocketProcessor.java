@@ -40,7 +40,19 @@ public class NioClientSocketProcessor extends AbstractProcessor<NioClientSocketT
 
     @Override
     public NioClientSocketTransport createTransport(NioClientSocketConfig config) {
-        return new NioClientSocketTransport(config, pipelineComposer(), name(), connectSelectorPool_);
+        return new NioClientSocketTransport(config, pipelineComposer(),
+                NioClientSocketTransport.DEFAULT_WEIGHT, name(), connectSelectorPool_);
+    }
+
+    /**
+     * Constructs the transport.
+     *
+     * @param config a configuration to construct the transport.
+     * @param weight a weight to choose I/O thread.
+     * @return the transport.
+     */
+    public NioClientSocketTransport createTransport(NioClientSocketConfig config, int weight) {
+        return new NioClientSocketTransport(config, pipelineComposer(), weight, name(), connectSelectorPool_);
     }
 
     @Override
@@ -89,6 +101,10 @@ public class NioClientSocketProcessor extends AbstractProcessor<NioClientSocketT
         this.useDirectBuffer_ = useDirectBuffer;
     }
 
+    public void setTaskWeightThresholdOfIOSelectorPool(int threshold) {
+        ioSelectorPool_.setTaskWeightThreshold(threshold);
+    }
+
     ConnectSelectorPool getConnectSelectorPool() {
         return connectSelectorPool_;
     }
@@ -97,15 +113,19 @@ public class NioClientSocketProcessor extends AbstractProcessor<NioClientSocketT
         return ioSelectorPool_;
     }
 
-    int getReadBufferSize() {
+    public int getReadBufferSize() {
         return readBufferSize_;
     }
 
-    int getWriteBufferSize() {
+    public int getWriteBufferSize() {
         return writeBufferSize_;
     }
 
-    boolean isUseDirectBuffer() {
+    public boolean isUseDirectBuffer() {
         return useDirectBuffer_;
+    }
+
+    public int getTaskWeightThresholdOfIOSelectorPool() {
+        return ioSelectorPool_.getTaskWeightThreshold();
     }
 }

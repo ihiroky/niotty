@@ -16,25 +16,30 @@ import java.util.concurrent.atomic.AtomicReference;
  * @param <L> The type of {@link net.ihiroky.niotty.TaskLoop}
  * @author Hiroki Itoh
  */
-abstract public class AbstractTransport<L extends TaskLoop<L>> implements Transport {
+public abstract class AbstractTransport<L extends TaskLoop<L>> implements Transport, TaskSelection {
 
     private volatile DefaultLoadPipeline loadPipeline_;
     private volatile DefaultStorePipeline storePipeline_;
-    private AtomicReference<Object> attachmentReference_;
+    private final AtomicReference<Object> attachmentReference_;
     private TransportListener transportListener_;
     private L loop_;
+    private final int weight_;
 
     private static final TransportListener NULL_LISTENER = new NullListener();
 
     /**
      * Creates a new instance.
      */
-    protected AbstractTransport(String name, PipelineComposer pipelineComposer) {
+    protected AbstractTransport(String name, PipelineComposer pipelineComposer, int weight) {
         Objects.requireNonNull(name, "name");
         Objects.requireNonNull(pipelineComposer, "pipelineComposer");
+        if (weight <= 0) {
+            throw new IllegalArgumentException("The weight must be positive.");
+        }
 
         attachmentReference_ = new AtomicReference<>();
         transportListener_ = NULL_LISTENER;
+        weight_ = weight;
         setUpPipelines(name, pipelineComposer);
     }
 
@@ -154,6 +159,11 @@ abstract public class AbstractTransport<L extends TaskLoop<L>> implements Transp
         }
         Objects.requireNonNull(ioStage, "ioStage");
         storePipeline_.addIOStage(ioStage);
+    }
+
+    @Override
+    public int weight() {
+        return weight_;
     }
 
     /**

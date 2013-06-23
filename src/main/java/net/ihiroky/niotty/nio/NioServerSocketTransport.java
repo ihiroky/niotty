@@ -34,7 +34,7 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
     private TransportAggregateSupport childAggregate_;
 
     NioServerSocketTransport(NioServerSocketConfig config, NioServerSocketProcessor processor) {
-        super(processor.name(), PipelineComposer.empty());
+        super(processor.name(), PipelineComposer.empty(), DEFAULT_WEIGHT);
 
         ServerSocketChannel serverChannel = null;
         try {
@@ -120,7 +120,7 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
         InetSocketAddress remoteAddress = (InetSocketAddress) ((SocketChannel) channel).getRemoteAddress();
 
         NioClientSocketTransport child = new NioClientSocketTransport(
-                config_, processor_.pipelineComposer(), processor_.name(), (SocketChannel) channel);
+                config_, processor_.pipelineComposer(), DEFAULT_WEIGHT, processor_.name(), (SocketChannel) channel);
         child.loadEvent(new DefaultTransportStateEvent(TransportState.CONNECTED, remoteAddress));
         processor_.getMessageIOSelectorPool().register(channel, SelectionKey.OP_READ, child);
         childAggregate_.add(child);

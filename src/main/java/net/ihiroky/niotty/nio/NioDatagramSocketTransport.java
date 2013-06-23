@@ -34,9 +34,9 @@ public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector
     private WriteQueue writeQueue_;
     private final Map<GroupKey, MembershipKey> membershipKeyMap_;
 
-    NioDatagramSocketTransport(NioDatagramSocketConfig config, PipelineComposer composer,
+    NioDatagramSocketTransport(NioDatagramSocketConfig config, PipelineComposer composer, int weight,
                                String name, UdpIOSelectorPool selectorPool) {
-        super(name, composer);
+        super(name, composer, weight);
 
         Objects.requireNonNull(selectorPool, "selectorPool");
 

@@ -94,7 +94,6 @@ public abstract class AbstractSelector<S extends AbstractSelector<S>>
             SelectionKey key = channel.register(selector_, ops, transport);
             transport.setSelectionKey(key);
             transport.loadEvent(new DefaultTransportStateEvent(TransportState.INTEREST_OPS, ops));
-            processingMemberCount_.incrementAndGet();
             logger_.debug("channel {} is registered to {}.", channel, Thread.currentThread());
         } catch (IOException ioe) {
             logger_.warn("failed to register channel:" + channel, ioe);
@@ -104,7 +103,7 @@ public abstract class AbstractSelector<S extends AbstractSelector<S>>
     void unregister(SelectionKey key, NioSocketTransport<S> transport) {
         key.cancel();
         transport.loadEvent(new DefaultTransportStateEvent(TransportState.INTEREST_OPS, 0));
-        processingMemberCount_.decrementAndGet();
+        reject(transport);
         logger_.debug("channel {} is unregistered from {}.", key.channel(), Thread.currentThread());
     }
 
@@ -122,7 +121,6 @@ public abstract class AbstractSelector<S extends AbstractSelector<S>>
 
     @Override
     public void store(StageContext<Void> context, final TransportStateEvent event) {
-        final NioSocketTransport<?> transport = (NioSocketTransport<?>) context.transport();
         if (isInLoopThread()) {
             event.execute();
         } else {

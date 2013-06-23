@@ -47,7 +47,26 @@ public class NioDatagramSocketProcessor
 
     @Override
     public NioDatagramSocketTransport createTransport(NioDatagramSocketConfig config) {
-        return new NioDatagramSocketTransport(config, pipelineComposer(), name(), ioSelectorPool_);
+        return new NioDatagramSocketTransport(config, pipelineComposer(),
+                NioDatagramSocketTransport.DEFAULT_WEIGHT, name(), ioSelectorPool_);
     }
 
+    /**
+     * Constructs the transport.
+     *
+     * @param config a configuration to construct the transport.
+     * @param weight a weight to choose I/O thread.
+     * @return the transport.
+     */
+    public NioDatagramSocketTransport createTransport(NioDatagramSocketConfig config, int weight) {
+        return new NioDatagramSocketTransport(config, pipelineComposer(), weight, name(), ioSelectorPool_);
+    }
+
+    public void setTaskWeightThresholdOfIOSelectorPool(int threshold) {
+        ioSelectorPool_.setTaskWeightThreshold(threshold);
+    }
+
+    public int getTaskWeightThresholdOfIOSelectorPool() {
+        return ioSelectorPool_.getTaskWeightThreshold();
+    }
 }
