@@ -60,7 +60,7 @@ public class TaskLoopTest {
             @Override
             public Integer answer(InvocationOnMock invocation) throws Throwable {
                 executed[0] = true;
-                return TaskLoop.TIMEOUT_NOW;
+                return TaskLoop.RETRY_IMMEDIATELY;
             }
         }).when(t).execute(sut_);
 
@@ -106,7 +106,7 @@ public class TaskLoopTest {
             @Override
             public Integer answer(InvocationOnMock invocation) throws Throwable {
                 isInLoopThread[0] = sut_.isInLoopThread();
-                return TaskLoop.TIMEOUT_NOW;
+                return TaskLoop.RETRY_IMMEDIATELY;
             }
         }).when(t).execute(sut_);
 

@@ -67,7 +67,7 @@ public class ThreadPipelineElementExecutor extends TaskLoop<ThreadPipelineElemen
             @Override
             public int execute(ThreadPipelineElementExecutor eventLoop) throws Exception {
                 context.fire(input);
-                return TIMEOUT_NO_LIMIT;
+                return WAIT_NO_LIMIT;
             }
         });
     }
@@ -78,7 +78,7 @@ public class ThreadPipelineElementExecutor extends TaskLoop<ThreadPipelineElemen
             @Override
             public int execute(ThreadPipelineElementExecutor eventLoop) throws Exception {
                 context.fire(input, parameter);
-                return TIMEOUT_NO_LIMIT;
+                return WAIT_NO_LIMIT;
             }
         });
     }
@@ -90,7 +90,7 @@ public class ThreadPipelineElementExecutor extends TaskLoop<ThreadPipelineElemen
             public int execute(ThreadPipelineElementExecutor eventLoop) throws Exception {
                 context.fire(event);
                 context.proceed(event);
-                return TIMEOUT_NO_LIMIT;
+                return WAIT_NO_LIMIT;
             }
         });
     }

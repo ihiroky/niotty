@@ -28,8 +28,11 @@ public abstract class TaskLoop<L extends TaskLoop<L>> implements Runnable, Compa
 
     private Logger logger_ = LoggerFactory.getLogger(TaskLoop.class);
 
-    public static final int TIMEOUT_NO_LIMIT = -1; // TODO rename and change value
-    public static final int TIMEOUT_NOW = 0;
+    /** The value passed to {@link #process(int)} to indicate that the thread should wait without timeout. */
+    public static final int WAIT_NO_LIMIT = -1;
+
+    /** The value passed to {@link #process(int)} to indicate that the thread should not wait. */
+    public static final int RETRY_IMMEDIATELY = 0;
 
     protected TaskLoop() {
         taskQueue_ = new ConcurrentLinkedQueue<>();
@@ -60,7 +63,7 @@ public abstract class TaskLoop<L extends TaskLoop<L>> implements Runnable, Compa
         }
 
         Queue<Task<L>> taskBuffer = new LinkedList<>();
-        int waitTimeMillis = TIMEOUT_NOW;
+        int waitTimeMillis = RETRY_IMMEDIATELY;
         Queue<Task<L>> taskQueue = taskQueue_;
         try {
             onOpen();
@@ -74,7 +77,7 @@ public abstract class TaskLoop<L extends TaskLoop<L>> implements Runnable, Compa
                 } catch (Exception e) {
                     if (thread_ != null) {
                         logger_.warn("[run] process failed.", e);
-                        waitTimeMillis = TIMEOUT_NOW;
+                        waitTimeMillis = RETRY_IMMEDIATELY;
                     }
                 }
             }
@@ -105,7 +108,7 @@ public abstract class TaskLoop<L extends TaskLoop<L>> implements Runnable, Compa
             }
         }
         if (minWaitTimeMillis == Integer.MAX_VALUE) {
-            return TIMEOUT_NO_LIMIT;
+            return WAIT_NO_LIMIT;
         } else {
             queue.addAll(buffer);
             buffer.clear();

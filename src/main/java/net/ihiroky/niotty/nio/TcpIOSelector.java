@@ -86,7 +86,7 @@ public class TcpIOSelector extends AbstractSelector<TcpIOSelector> {
                     logger_.error("failed to flush buffer to " + transport, ioe);
                     transport.closeSelectableChannel();
                 }
-                return TIMEOUT_NO_LIMIT;
+                return WAIT_NO_LIMIT;
             }
         });
     }

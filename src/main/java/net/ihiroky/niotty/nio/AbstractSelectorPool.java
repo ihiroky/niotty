@@ -23,7 +23,7 @@ public abstract class AbstractSelectorPool<S extends AbstractSelector<S>> extend
             @Override
             public int execute(S eventLoop) {
                 eventLoop.register(channel, ops, transport);
-                return TaskLoop.TIMEOUT_NO_LIMIT;
+                return TaskLoop.WAIT_NO_LIMIT;
             }
         });
     }

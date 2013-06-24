@@ -77,7 +77,7 @@ public interface WriteQueue {
         /**
          * The result of all data in the {@code WriteQueue} is flushed.
          */
-        FLUSHED(TaskLoop.TIMEOUT_NO_LIMIT),
+        FLUSHED(TaskLoop.WAIT_NO_LIMIT),
 
         /**
          * The result of all data in the {@code WriteQueue} is not flushed.
@@ -87,7 +87,7 @@ public interface WriteQueue {
         /**
          * The result of data in the {@code WriteQueue} is remaining but not flushed because of some limitation.
          */
-        SKIP(TaskLoop.TIMEOUT_NOW);
+        SKIP(TaskLoop.RETRY_IMMEDIATELY);
 
         /** a wait time for I/O round operation. */
         final int waitTimeMillis_;

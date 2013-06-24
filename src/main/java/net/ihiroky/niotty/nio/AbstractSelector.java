@@ -128,7 +128,7 @@ public abstract class AbstractSelector<S extends AbstractSelector<S>>
                     @Override
                     public int execute(S eventLoop) throws Exception {
                         event.execute();
-                        return TaskLoop.TIMEOUT_NO_LIMIT;
+                        return TaskLoop.WAIT_NO_LIMIT;
                     }
             });
         }
