@@ -194,7 +194,8 @@ public abstract class TaskLoopGroup<L extends TaskLoop<L>> {
                 weightedUnderThreshold.accept(selection);
                 return weightedUnderThreshold;
             }
-            if (taskWeightThreshold_ > 0
+            if (minWeight > 0 // There is non idle task loop.
+                    && taskWeightThreshold_ > 0
                     && taskLoops_.size() < executor_.getMaximumPoolSize()) {
                 weightedUnderThreshold = addTaskLoop();
                 weightedUnderThreshold.accept(selection);
