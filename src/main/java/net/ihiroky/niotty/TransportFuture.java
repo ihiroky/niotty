@@ -10,10 +10,12 @@ import java.util.concurrent.TimeUnit;
 public interface TransportFuture {
 
     Transport transport();
-    boolean isCancelled();
     boolean isDone();
+    boolean isSuccessful();
+    boolean isCancelled();
     Throwable throwable();
-    void throwIfFailed();
+    void throwRuntimeExceptionIfFailed();
+    void throwExceptionIfFailed() throws Exception;
     TransportFuture waitForCompletion() throws InterruptedException;
     TransportFuture waitForCompletion(long timeout, TimeUnit unit) throws InterruptedException;
     TransportFuture waitForCompletionUninterruptibly();

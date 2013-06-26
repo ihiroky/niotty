@@ -10,11 +10,20 @@ public class SucceededTransportFuture extends CompletedTransportFuture {
     }
 
     @Override
+    public boolean isSuccessful() {
+        return true;
+    }
+
+    @Override
     public Throwable throwable() {
         return null;
     }
 
     @Override
-    public void throwIfFailed() {
+    public void throwRuntimeExceptionIfFailed() {
+    }
+
+    @Override
+    public void throwExceptionIfFailed() throws Exception {
     }
 }
