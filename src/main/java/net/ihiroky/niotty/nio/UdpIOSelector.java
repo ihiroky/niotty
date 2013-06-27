@@ -58,6 +58,7 @@ public class UdpIOSelector extends AbstractSelector<UdpIOSelector> {
                         if (logger_.isDebugEnabled()) {
                             logger_.debug("transport reaches the end of its stream:" + transport);
                         }
+                        // TODO Discuss to call loadEvent(TransportEvent) and change ops to achieve have close
                         transport.doCloseSelectableChannel(true);
                         continue;
                     }
