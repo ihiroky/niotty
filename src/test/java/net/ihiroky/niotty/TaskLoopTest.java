@@ -55,14 +55,14 @@ public class TaskLoopTest {
         executor_.execute(sut_);
         final boolean[] executed = new boolean[1];
         @SuppressWarnings("unchecked")
-        TaskLoop.Task<TaskLoopMock> t = mock(TaskLoop.Task.class);
+        TaskLoop.Task t = mock(TaskLoop.Task.class);
         doAnswer(new Answer<Integer>() {
             @Override
             public Integer answer(InvocationOnMock invocation) throws Throwable {
                 executed[0] = true;
                 return TaskLoop.RETRY_IMMEDIATELY;
             }
-        }).when(t).execute(sut_);
+        }).when(t).execute();
 
         sut_.offerTask(t);
 
@@ -78,8 +78,8 @@ public class TaskLoopTest {
     public void testProcessTask_ExecuteAgainLater() throws Exception {
         executor_.execute(sut_);
         @SuppressWarnings("unchecked")
-        TaskLoop.Task<TaskLoopMock> t = mock(TaskLoop.Task.class);
-        doReturn(10).when(t).execute(sut_);
+        TaskLoop.Task t = mock(TaskLoop.Task.class);
+        doReturn(10).when(t).execute();
 
         sut_.offerTask(t);
 
@@ -101,14 +101,14 @@ public class TaskLoopTest {
         executor_.execute(sut_);
         final boolean[] isInLoopThread = new boolean[1];
         @SuppressWarnings("unchecked")
-        TaskLoop.Task<TaskLoopMock> t = mock(TaskLoop.Task.class);
+        TaskLoop.Task t = mock(TaskLoop.Task.class);
         doAnswer(new Answer<Integer>() {
             @Override
             public Integer answer(InvocationOnMock invocation) throws Throwable {
                 isInLoopThread[0] = sut_.isInLoopThread();
                 return TaskLoop.RETRY_IMMEDIATELY;
             }
-        }).when(t).execute(sut_);
+        }).when(t).execute();
 
         sut_.offerTask(t);
 
@@ -153,7 +153,7 @@ public class TaskLoopTest {
 
     @Test
     public void testCompareTo_ReturnsPositiveIfSutIsTheWeigher() throws Exception {
-        TaskLoop<TaskLoopMock> t = new TaskLoopMock();
+        TaskLoop t = new TaskLoopMock();
         TaskSelection weight1 = mock(TaskSelection.class);
         when(weight1.weight()).thenReturn(1);
         TaskSelection weight2 = mock(TaskSelection.class);
@@ -167,7 +167,7 @@ public class TaskLoopTest {
 
     @Test
     public void testCompareTo_ReturnsNegativeIfSutIsTheLighter() throws Exception {
-        TaskLoop<TaskLoopMock> t = new TaskLoopMock();
+        TaskLoop t = new TaskLoopMock();
         TaskSelection weight1 = mock(TaskSelection.class);
         when(weight1.weight()).thenReturn(1);
         TaskSelection weight2 = mock(TaskSelection.class);
@@ -181,7 +181,7 @@ public class TaskLoopTest {
 
     @Test
     public void testCompareTo_Return0IfTheSameWeight() throws Exception {
-        TaskLoop<TaskLoopMock> t = new TaskLoopMock();
+        TaskLoop t = new TaskLoopMock();
         TaskSelection weight1 = mock(TaskSelection.class);
         when(weight1.weight()).thenReturn(1);
         TaskSelection weight2 = mock(TaskSelection.class);

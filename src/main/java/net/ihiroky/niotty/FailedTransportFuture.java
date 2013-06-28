@@ -7,7 +7,7 @@ public class FailedTransportFuture extends CompletedTransportFuture {
 
     private Throwable throwable_;
 
-    public FailedTransportFuture(Transport transport, Throwable throwable) {
+    public FailedTransportFuture(AbstractTransport<?> transport, Throwable throwable) {
         super(transport);
 
         this.throwable_ = throwable;

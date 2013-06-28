@@ -131,7 +131,7 @@ public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> 
     }
 
     public TransportFuture shutdownOutput() {
-        TcpIOSelector selector = eventLoop();
+        TcpIOSelector selector = taskLoop();
         if (selector == null) {
             return new SucceededTransportFuture(this);
         }
@@ -155,7 +155,7 @@ public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> 
     }
 
     public TransportFuture shutdownInput() {
-        TcpIOSelector selector = eventLoop();
+        TcpIOSelector selector = taskLoop();
         if (selector == null) {
             return new SucceededTransportFuture(this);
         }

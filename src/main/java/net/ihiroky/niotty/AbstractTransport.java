@@ -13,16 +13,16 @@ import java.util.concurrent.atomic.AtomicReference;
  * <p>This class holds a load (inbound) and store (outbound) pipeline, an attachment reference and an event listener.
  * {@link net.ihiroky.niotty.TaskLoop} is also held by this class, which handles asynchronous I/O operations</p>
  *
- * @param <L> The type of {@link net.ihiroky.niotty.TaskLoop}
+ * @param <T> The type of {@link net.ihiroky.niotty.TaskLoop}
  * @author Hiroki Itoh
  */
-public abstract class AbstractTransport<L extends TaskLoop<L>> implements Transport, TaskSelection {
+public abstract class AbstractTransport<T extends TaskLoop> implements Transport, TaskSelection {
 
     private volatile DefaultLoadPipeline loadPipeline_;
     private volatile DefaultStorePipeline storePipeline_;
     private final AtomicReference<Object> attachmentReference_;
     private TransportListener transportListener_;
-    private L loop_;
+    private T loop_;
     private final int weight_;
 
     private static final TransportListener NULL_LISTENER = new NullListener();
@@ -170,16 +170,16 @@ public abstract class AbstractTransport<L extends TaskLoop<L>> implements Transp
      * Sets the instance of {@link net.ihiroky.niotty.TaskLoop}.
      * @param loop the the instance of {@code TaskLoop}.
      */
-    public final void setEventLoop(L loop) {
+    public final void setTaskLoop(T loop) {
         Objects.requireNonNull(loop, "loop");
         this.loop_ = loop;
     }
 
     /**
      * Gets the instance of {@link net.ihiroky.niotty.TaskLoop}.
-     * @return <L> the TaskLoop.
+     * @return <T> the TaskLoop.
      */
-    protected final L eventLoop() {
+    protected final T taskLoop() {
         return loop_;
     }
 

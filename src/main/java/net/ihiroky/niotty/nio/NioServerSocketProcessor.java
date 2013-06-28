@@ -95,7 +95,7 @@ public class NioServerSocketProcessor extends AbstractProcessor<NioServerSocketT
         return acceptSelectorPool_;
     }
 
-    AbstractSelectorPool<TcpIOSelector> getMessageIOSelectorPool() {
+    TcpIOSelectorPool getMessageIOSelectorPool() {
         return ioSelectorPool_;
     }
 

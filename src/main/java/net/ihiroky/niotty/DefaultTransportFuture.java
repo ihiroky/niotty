@@ -1,82 +1,77 @@
 package net.ihiroky.niotty;
 
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Created on 13/01/11, 17:29
  *
  * @author Hiroki Itoh
  */
-public class DefaultTransportFuture implements TransportFuture {
+public class DefaultTransportFuture extends AbstractTransportFuture {
 
-    private final Transport transport_;
-    private volatile AtomicBoolean done_;
-    private volatile Throwable throwable_;
-    private volatile boolean cancelled_;
+    private volatile Object result_;
 
-    public DefaultTransportFuture(Transport transport) {
-        this.transport_ = transport;
-        this.done_ = new AtomicBoolean();
-    }
+    private static final Object DONE = new Object();
+    private static final Object CANCELLED = new Object();
 
-    @Override
-    public Transport transport() {
-        return transport_;
+    public DefaultTransportFuture(AbstractTransport<?> transport) {
+        super(transport);
     }
 
     @Override
     public boolean isCancelled() {
-        return cancelled_;
+        return result_ == CANCELLED;
     }
 
     @Override
     public boolean isDone() {
-        return done_.get();
+        return result_ != null;
     }
 
     @Override
     public boolean isSuccessful() {
-        return done_.get() && throwable_ == null;
+        return result_ == DONE;
     }
 
     @Override
     public Throwable throwable() {
-        return throwable_;
+        return (result_ instanceof Throwable) ? (Throwable) result_ : null;
     }
 
     @Override
     public void throwRuntimeExceptionIfFailed() {
-        if (throwable_ != null) {
-            if (throwable_ instanceof RuntimeException) {
-                throw (RuntimeException) throwable_;
-            } else if (throwable_ instanceof Exception) {
-                throw new RuntimeException(throwable_);
-            } else if (throwable_ instanceof Error) {
-                throw (Error) throwable_;
+        Throwable t = throwable();
+        if (t != null) {
+            if (t instanceof RuntimeException) {
+                throw (RuntimeException) t;
+            } else if (t instanceof Exception) {
+                throw new RuntimeException(t);
+            } else if (t instanceof Error) {
+                throw (Error) t;
             }
-            throw new AssertionError("Unexpected throwable", throwable_);
+            throw new AssertionError("Unexpected throwable", t);
         }
     }
 
     @Override
     public void throwExceptionIfFailed() throws Exception {
-        if (throwable_ != null) {
-            if (throwable_ instanceof RuntimeException) {
-                throw (RuntimeException) throwable_;
-            } else if (throwable_ instanceof Exception) {
-                throw (Exception) throwable_;
-            } else if (throwable_ instanceof Error) {
-                throw (Error) throwable_;
+        Throwable t = throwable();
+        if (t != null) {
+            if (t instanceof RuntimeException) {
+                throw (RuntimeException) t;
+            } else if (t instanceof Exception) {
+                throw (Exception) t;
+            } else if (t instanceof Error) {
+                throw (Error) t;
             }
-            throw new AssertionError("Unexpected throwable", throwable_);
+            throw new AssertionError("Unexpected throwable", t);
         }
     }
 
     @Override
     public TransportFuture waitForCompletion() throws InterruptedException {
         synchronized (this) {
-            while (!done_.get()) {
+            while (!isDone()) {
                 wait();
             }
         }
@@ -89,7 +84,7 @@ public class DefaultTransportFuture implements TransportFuture {
         synchronized (this) {
             long start = System.currentTimeMillis();
             long now;
-            while (!done_.get() && left > 0) {
+            while (!isDone() && left > 0) {
                 wait(left);
                 now = System.currentTimeMillis();
                 left -= (now - start);
@@ -103,7 +98,7 @@ public class DefaultTransportFuture implements TransportFuture {
     public TransportFuture waitForCompletionUninterruptibly() {
         boolean interrupted = false;
         synchronized (this) {
-            while (!done_.get()) {
+            while (!isDone()) {
                 try {
                     wait();
                 } catch (InterruptedException ie) {
@@ -124,7 +119,7 @@ public class DefaultTransportFuture implements TransportFuture {
         synchronized (this) {
             long start = System.currentTimeMillis();
             long now;
-            while (!done_.get() && left > 0) {
+            while (!isDone() && left > 0) {
                 try {
                     wait(left);
                 } catch (InterruptedException ie) {
@@ -142,20 +137,32 @@ public class DefaultTransportFuture implements TransportFuture {
     }
 
     public void done() {
-        if (done_.compareAndSet(false, true)) {
-            synchronized (this) {
+        synchronized (this) {
+            if (result_ == null) {
+                result_ = DONE;
                 notifyAll();
             }
         }
+        fireOnComplete();
     }
 
     public void cancel() {
-        cancelled_ = true;
-        done();
+        synchronized (this) {
+            if (result_ == null) {
+                result_ = CANCELLED;
+                notifyAll();
+            }
+        }
+        fireOnComplete();
     }
 
     public void setThrowable(Throwable t) {
-        throwable_ = t;
-        done();
+        synchronized (this) {
+            if (result_ == null) {
+                result_ = t;
+                notifyAll();
+            }
+        }
+        fireOnComplete();
     }
 }

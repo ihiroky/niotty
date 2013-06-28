@@ -21,8 +21,7 @@ import java.util.Set;
  *
  * @author Hiroki Itoh
  */
-public abstract class AbstractSelector<S extends AbstractSelector<S>>
-        extends TaskLoop<S> implements StoreStage<BufferSink, Void> {
+public abstract class AbstractSelector extends TaskLoop implements StoreStage<BufferSink, Void> {
 
     private Selector selector_;
 
@@ -89,7 +88,7 @@ public abstract class AbstractSelector<S extends AbstractSelector<S>>
     }
 
 
-    void register(SelectableChannel channel, int ops, NioSocketTransport<S> transport) {
+    void register(SelectableChannel channel, int ops, NioSocketTransport<?> transport) {
         try {
             SelectionKey key = channel.register(selector_, ops, transport);
             transport.setSelectionKey(key);
@@ -100,7 +99,7 @@ public abstract class AbstractSelector<S extends AbstractSelector<S>>
         }
     }
 
-    void unregister(SelectionKey key, NioSocketTransport<S> transport) {
+    void unregister(SelectionKey key, NioSocketTransport<?> transport) {
         key.cancel();
         transport.loadEvent(new DefaultTransportStateEvent(TransportState.INTEREST_OPS, 0));
         reject(transport);
@@ -124,9 +123,9 @@ public abstract class AbstractSelector<S extends AbstractSelector<S>>
         if (isInLoopThread()) {
             event.execute();
         } else {
-            offerTask(new Task<S>() {
+            offerTask(new Task() {
                     @Override
-                    public int execute(S eventLoop) throws Exception {
+                    public int execute() throws Exception {
                         event.execute();
                         return TaskLoop.WAIT_NO_LIMIT;
                     }

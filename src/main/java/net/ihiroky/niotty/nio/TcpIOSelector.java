@@ -20,7 +20,7 @@ import java.util.Set;
  *
  * @author Hiroki Itoh
  */
-public class TcpIOSelector extends AbstractSelector<TcpIOSelector> {
+public class TcpIOSelector extends AbstractSelector {
 
     private final ByteBuffer readBuffer_;
     private Logger logger_ = LoggerFactory.getLogger(TcpIOSelector.class);
@@ -78,9 +78,9 @@ public class TcpIOSelector extends AbstractSelector<TcpIOSelector> {
     public void store(StageContext<Void> context, BufferSink input) {
         final NioClientSocketTransport transport = (NioClientSocketTransport) context.transport();
         transport.readyToWrite(new AttachedMessage<>(input, context.transportParameter()));
-        offerTask(new TaskLoop.Task<TcpIOSelector>() {
+        offerTask(new TaskLoop.Task() {
             @Override
-            public int execute(TcpIOSelector eventLoop) throws Exception {
+            public int execute() throws Exception {
                 try {
                     return transport.flush();
                 } catch (IOException ioe) {

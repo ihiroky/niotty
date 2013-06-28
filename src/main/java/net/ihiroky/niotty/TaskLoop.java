@@ -19,9 +19,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author Hiroki Itoh
  */
-public abstract class TaskLoop<L extends TaskLoop<L>> implements Runnable, Comparable<TaskLoop<L>> {
+public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
 
-    private final Queue<Task<L>> taskQueue_;
+    private final Queue<Task> taskQueue_;
     private volatile Thread thread_;
     private final Set<TaskSelection> selectionSet_;
     private final AtomicInteger weight_ = new AtomicInteger();
@@ -39,7 +39,7 @@ public abstract class TaskLoop<L extends TaskLoop<L>> implements Runnable, Compa
         selectionSet_ = new HashSet<>();
     }
 
-    public void offerTask(Task<L> task) {
+    public void offerTask(Task task) {
         taskQueue_.offer(task);
         wakeUp();
     }
@@ -62,9 +62,9 @@ public abstract class TaskLoop<L extends TaskLoop<L>> implements Runnable, Compa
             notifyAll();
         }
 
-        Queue<Task<L>> taskBuffer = new LinkedList<>();
+        Queue<Task> taskBuffer = new LinkedList<>();
         int waitTimeMillis = RETRY_IMMEDIATELY;
-        Queue<Task<L>> taskQueue = taskQueue_;
+        Queue<Task> taskQueue = taskQueue_;
         try {
             onOpen();
             while (thread_ != null) {
@@ -91,15 +91,14 @@ public abstract class TaskLoop<L extends TaskLoop<L>> implements Runnable, Compa
         }
     }
 
-    private int processTasks(Queue<Task<L>> queue, Queue<Task<L>> buffer) throws Exception {
-        @SuppressWarnings("unchecked") L loop = (L) this;
+    private int processTasks(Queue<Task> queue, Queue<Task> buffer) throws Exception {
         int minWaitTimeMillis = Integer.MAX_VALUE;
-        for (Task<L> task;;) {
+        for (Task task;;) {
             task = queue.poll();
             if (task == null) {
                 break;
             }
-            int waitTimeMillis = task.execute(loop);
+            int waitTimeMillis = task.execute();
             if (waitTimeMillis >= 0) {
                 buffer.offer(task);
                 if (minWaitTimeMillis > waitTimeMillis) {
@@ -139,7 +138,7 @@ public abstract class TaskLoop<L extends TaskLoop<L>> implements Runnable, Compa
     }
 
     @Override
-    public int compareTo(TaskLoop<L> that) {
+    public int compareTo(TaskLoop that) {
         return this.weight_.get() - that.weight_.get();
     }
 
@@ -203,7 +202,7 @@ public abstract class TaskLoop<L extends TaskLoop<L>> implements Runnable, Compa
     protected abstract void process(int waitTimeMillis) throws Exception;
     protected abstract void wakeUp();
 
-    public interface Task<L extends TaskLoop<L>> {
-        int execute(L eventLoop) throws Exception;
+    public interface Task {
+        int execute() throws Exception;
     }
 }

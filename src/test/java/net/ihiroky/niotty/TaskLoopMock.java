@@ -3,7 +3,7 @@ package net.ihiroky.niotty;
 /**
 * @author Hiroki Itoh
 */
-class TaskLoopMock extends TaskLoop<TaskLoopMock> {
+class TaskLoopMock extends TaskLoop {
 
     private final Object mutex_ = new Object();
 

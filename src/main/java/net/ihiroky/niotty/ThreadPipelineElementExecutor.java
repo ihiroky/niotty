@@ -8,7 +8,7 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * @author Hiroki Itoh
  */
-public class ThreadPipelineElementExecutor extends TaskLoop<ThreadPipelineElementExecutor> implements PipelineElementExecutor {
+public class ThreadPipelineElementExecutor extends TaskLoop implements PipelineElementExecutor {
 
     private final Lock lock_;
     private final Condition condition_;
@@ -63,9 +63,9 @@ public class ThreadPipelineElementExecutor extends TaskLoop<ThreadPipelineElemen
 
     @Override
     public <I> void execute(final PipelineElement<I, ?> context, final I input) {
-        offerTask(new Task<ThreadPipelineElementExecutor>() {
+        offerTask(new Task() {
             @Override
-            public int execute(ThreadPipelineElementExecutor eventLoop) throws Exception {
+            public int execute() throws Exception {
                 context.fire(input);
                 return WAIT_NO_LIMIT;
             }
@@ -74,9 +74,9 @@ public class ThreadPipelineElementExecutor extends TaskLoop<ThreadPipelineElemen
 
     @Override
     public <I> void execute(final PipelineElement<I, ?> context, final I input, final TransportParameter parameter) {
-        offerTask(new Task<ThreadPipelineElementExecutor>() {
+        offerTask(new Task() {
             @Override
-            public int execute(ThreadPipelineElementExecutor eventLoop) throws Exception {
+            public int execute() throws Exception {
                 context.fire(input, parameter);
                 return WAIT_NO_LIMIT;
             }
@@ -85,9 +85,9 @@ public class ThreadPipelineElementExecutor extends TaskLoop<ThreadPipelineElemen
 
     @Override
     public void execute(final PipelineElement<?, ?> context, final TransportStateEvent event) {
-        offerTask(new Task<ThreadPipelineElementExecutor>() {
+        offerTask(new Task() {
             @Override
-            public int execute(ThreadPipelineElementExecutor eventLoop) throws Exception {
+            public int execute() throws Exception {
                 context.fire(event);
                 context.proceed(event);
                 return WAIT_NO_LIMIT;

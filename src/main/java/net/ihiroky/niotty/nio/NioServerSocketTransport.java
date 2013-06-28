@@ -104,7 +104,7 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
 
     @Override
     public TransportFuture close() {
-        if (eventLoop() != null) {
+        if (taskLoop() != null) {
             return closeSelectableChannel();
         }
         try {

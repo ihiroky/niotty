@@ -23,7 +23,7 @@ import java.util.Set;
  *
  * @author Hiroki Itoh
  */
-public class UdpIOSelector extends AbstractSelector<UdpIOSelector> {
+public class UdpIOSelector extends AbstractSelector {
 
     private final ByteBuffer readBuffer_;
     private final ByteBuffer writeBuffer_; // TODO Use ByteBufferPool
@@ -96,9 +96,9 @@ public class UdpIOSelector extends AbstractSelector<UdpIOSelector> {
     public void store(StageContext<Void> context, BufferSink input) {
         final NioDatagramSocketTransport transport = (NioDatagramSocketTransport) context.transport();
         transport.readyToWrite(new AttachedMessage<>(input, context.transportParameter()));
-        offerTask(new TaskLoop.Task<UdpIOSelector>() {
+        offerTask(new TaskLoop.Task() {
             @Override
-            public int execute(UdpIOSelector eventLoop) throws Exception {
+            public int execute() throws Exception {
                 try {
                     return transport.flush(writeBuffer_);
                 } catch (IOException ioe) {

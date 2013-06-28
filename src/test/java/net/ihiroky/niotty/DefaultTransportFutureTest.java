@@ -36,7 +36,11 @@ public class DefaultTransportFutureTest {
 
     @Before
     public void setUp() {
-        Transport transport = mock(Transport.class);
+        @SuppressWarnings("unchecked")
+        AbstractTransport<TaskLoop> transport = mock(AbstractTransport.class);
+        TaskLoop taskLoop = mock(TaskLoop.class);
+        when(taskLoop.isInLoopThread()).thenReturn(true);
+        transport.setTaskLoop(taskLoop);
         sut_ = new DefaultTransportFuture(transport);
     }
 

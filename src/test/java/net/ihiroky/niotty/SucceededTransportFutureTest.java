@@ -13,14 +13,18 @@ public class SucceededTransportFutureTest {
 
     @Test
     public void testIsSuccessful_ReturnsTrueIfDoneAndNoThrowable() throws Exception {
-        FailedTransportFuture sut = new FailedTransportFuture(mock(Transport.class), new Exception());
+        @SuppressWarnings("unchecked")
+        AbstractTransport<?> transport = mock(AbstractTransport.class);
+        FailedTransportFuture sut = new FailedTransportFuture(transport, new Exception());
         assertThat(sut.isSuccessful(), is(false));
     }
 
     @Test
     public void testThrowable_ReturnNullIfNotSetThrowable() throws Exception {
+        @SuppressWarnings("unchecked")
+        AbstractTransport<?> transport = mock(AbstractTransport.class);
         Exception e = new Exception();
-        FailedTransportFuture sut = new FailedTransportFuture(mock(Transport.class), e);
+        FailedTransportFuture sut = new FailedTransportFuture(transport, e);
         assertThat(sut.throwable(), is((Throwable) e));
     }
 }

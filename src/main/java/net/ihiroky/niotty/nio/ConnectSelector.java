@@ -19,7 +19,7 @@ import java.util.Set;
  *
  * @author Hiroki Itoh
  */
-public class ConnectSelector extends AbstractSelector<ConnectSelector> {
+public class ConnectSelector extends AbstractSelector {
 
     private final TcpIOSelectorPool ioSelectorPool_;
     private Logger logger_ = LoggerFactory.getLogger(ConnectSelector.class);

@@ -20,7 +20,7 @@ import java.util.Objects;
  * TODO fire TransportStateEvent on closed
  * @author Hiroki Itoh
  */
-public abstract class NioSocketTransport<S extends AbstractSelector<S>> extends AbstractTransport<S> {
+public abstract class NioSocketTransport<S extends AbstractSelector> extends AbstractTransport<S> {
 
     private SelectionKey key_;
 
@@ -42,7 +42,7 @@ public abstract class NioSocketTransport<S extends AbstractSelector<S>> extends 
     }
 
     final TransportFuture closeSelectableChannel() {
-        S selector = eventLoop();
+        S selector = taskLoop();
         if (selector == null) {
             closePipelines();
             return new SucceededTransportFuture(this);
@@ -71,7 +71,7 @@ public abstract class NioSocketTransport<S extends AbstractSelector<S>> extends 
     final TransportFuture doCloseSelectableChannel(boolean executeStoreClosed) {
         if (key_ != null && key_.isValid()) {
             SelectableChannel channel = key_.channel();
-            eventLoop().unregister(key_, this); // decrement register count
+            taskLoop().unregister(key_, this); // decrement register count
             try {
                 channel.close();
             } catch (IOException e) {

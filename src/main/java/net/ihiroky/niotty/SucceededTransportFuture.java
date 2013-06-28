@@ -5,7 +5,7 @@ package net.ihiroky.niotty;
  */
 public class SucceededTransportFuture extends CompletedTransportFuture {
 
-    public SucceededTransportFuture(Transport transport) {
+    public SucceededTransportFuture(AbstractTransport<?> transport) {
         super(transport);
     }
 

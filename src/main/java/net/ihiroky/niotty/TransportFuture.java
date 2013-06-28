@@ -20,4 +20,6 @@ public interface TransportFuture {
     TransportFuture waitForCompletion(long timeout, TimeUnit unit) throws InterruptedException;
     TransportFuture waitForCompletionUninterruptibly();
     TransportFuture waitForCompletionUninterruptibly(long timeout, TimeUnit unit);
+    TransportFuture addListener(TransportFutureListener listener);
+    TransportFuture removeListener(TransportFutureListener listener);
 }

@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit;
  * @param <L> the actual type of the TaskLoop
  * @author Hiroki Itoh
  */
-public abstract class TaskLoopGroup<L extends TaskLoop<L>> {
+public abstract class TaskLoopGroup<L extends TaskLoop> {
 
     private final Collection<L> taskLoops_;
     private ThreadPoolExecutor executor_;
@@ -124,7 +124,7 @@ public abstract class TaskLoopGroup<L extends TaskLoop<L>> {
      * Offers a task for each task loop.
      * @param task the task to be executed in the task loops
      */
-    public void offerTask(TaskLoop.Task<L> task) {
+    public void offerTask(TaskLoop.Task task) {
         synchronized (taskLoops_) {
             for (L loop : taskLoops_) {
                 loop.offerTask(task);

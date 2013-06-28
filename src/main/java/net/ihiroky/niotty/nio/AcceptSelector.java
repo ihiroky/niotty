@@ -14,7 +14,7 @@ import java.util.Set;
  *
  * @author Hiroki Itoh
  */
-public class AcceptSelector extends AbstractSelector<AcceptSelector> {
+public class AcceptSelector extends AbstractSelector {
 
     private Logger logger_ = LoggerFactory.getLogger(AcceptSelector.class);
 
