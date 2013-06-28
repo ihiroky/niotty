@@ -187,10 +187,6 @@ public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> 
         return writeQueue_.flushTo(clientChannel_).waitTimeMillis_;
     }
 
-    void fireOnConnect() {
-        transportListener().onConnect(this, remoteAddress());
-    }
-
     @Override
     void onCloseSelectableChannel() {
         writeQueue_.clear();

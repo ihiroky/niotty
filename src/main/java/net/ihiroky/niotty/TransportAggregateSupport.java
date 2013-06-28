@@ -1,6 +1,5 @@
 package net.ihiroky.niotty;
 
-import java.net.SocketAddress;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -8,7 +7,7 @@ import java.util.concurrent.ConcurrentMap;
 /**
  * @author Hiroki Itoh
  */
-public class TransportAggregateSupport implements TransportAggregate, TransportListener {
+public class TransportAggregateSupport implements TransportAggregate, TransportFutureListener {
 
     private final ConcurrentMap<Transport, Boolean> transportMap_;
     private final boolean removeOnClose_;
@@ -47,7 +46,7 @@ public class TransportAggregateSupport implements TransportAggregate, TransportL
         }
         AbstractTransport<?> abstractTransport = (AbstractTransport<?>) transport;
         if (transportMap_.putIfAbsent(abstractTransport, Boolean.FALSE) == null && removeOnClose_) {
-            transport.addListener(this);
+            transport.closeFuture().addListener(this);
         }
         // log
     }
@@ -62,15 +61,7 @@ public class TransportAggregateSupport implements TransportAggregate, TransportL
     }
 
     @Override
-    public void onAccept(Transport transport, SocketAddress remoteAddress) {
-    }
-
-    @Override
-    public void onConnect(Transport transport, SocketAddress remoteAddress) {
-    }
-
-    @Override
-    public void onClose(Transport transport) {
-        transportMap_.remove(transport);
+    public void onComplete(TransportFuture future) {
+        transportMap_.remove(future.transport());
     }
 }

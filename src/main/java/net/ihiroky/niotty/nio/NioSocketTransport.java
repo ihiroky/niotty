@@ -62,10 +62,10 @@ public abstract class NioSocketTransport<S extends AbstractSelector> extends Abs
      * Closes the channel.
      *
      * The key is cancelled and the channel is closed if the key is non null and valid.
-     * {@link net.ihiroky.niotty.TransportListener#onClose(net.ihiroky.niotty.Transport)} if it is registered and
-     * {@link #executeLoad(net.ihiroky.niotty.TransportStateEvent)} is called after the channel is closed.
-     * This method calls {@code #onCloseSelectableChannel} and {@link #closePipelines()} before the channel close
-     * operation.
+     * {@link #executeLoad(net.ihiroky.niotty.TransportStateEvent)} and
+     * {@link #executeStore(net.ihiroky.niotty.TransportStateEvent)} (optional) is called
+     * after the channel is closed. This method calls {@code #onCloseSelectableChannel} and
+     * {@link #closePipelines()} after the channel close operation.
      * @return succeeded future
      */
     final TransportFuture doCloseSelectableChannel(boolean executeStoreClosed) {
@@ -74,10 +74,10 @@ public abstract class NioSocketTransport<S extends AbstractSelector> extends Abs
             taskLoop().unregister(key_, this); // decrement register count
             try {
                 channel.close();
+                closeFuture().done();
             } catch (IOException e) {
-                e.printStackTrace();
+                closeFuture().setThrowable(e);
             }
-            transportListener().onClose(this);
             TransportStateEvent event = new DefaultTransportStateEvent(TransportState.CLOSED, null);
             if (executeStoreClosed) {
                 executeStore(event);

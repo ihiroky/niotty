@@ -125,7 +125,7 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
         processor_.getMessageIOSelectorPool().register(channel, SelectionKey.OP_READ, child);
         childAggregate_.add(child);
 
-        transportListener().onAccept(child, remoteAddress);
+        // TODO Set socket options for child.
     }
 
     public Set<Transport> childSet() {

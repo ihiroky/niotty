@@ -48,18 +48,10 @@ public interface Transport {
     void write(Object message, TransportParameter parameter);
 
     /**
-     * Adds the listener.
-     * @param listener the listener
-     * @throws NullPointerException if the listener is null
+     * Returns the future which represents an asynchronous close operation..
+     * @return the future
      */
-    void addListener(TransportListener listener);
-
-    /**
-     * Removes the listener.
-     * @param listener the listener
-     * @throws NullPointerException if the listener is null
-     */
-    void removeListener(TransportListener listener);
+    TransportFuture closeFuture();
 
     /**
      * Returns the local address that this transport's socket is bound to.

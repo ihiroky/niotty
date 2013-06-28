@@ -54,7 +54,6 @@ public class ConnectSelector extends AbstractSelector {
     void registerReadLater(SelectableChannel channel,
             NioClientSocketTransport transport, DefaultTransportFuture future) throws IOException {
         InetSocketAddress remoteAddress = transport.remoteAddress();
-        transport.fireOnConnect();
         transport.loadEvent(new DefaultTransportStateEvent(TransportState.CONNECTED, remoteAddress));
         ioSelectorPool_.register(channel, SelectionKey.OP_READ, transport);
 

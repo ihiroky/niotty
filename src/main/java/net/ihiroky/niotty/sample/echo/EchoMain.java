@@ -3,8 +3,6 @@ package net.ihiroky.niotty.sample.echo;
 import net.ihiroky.niotty.LoadPipeline;
 import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.StorePipeline;
-import net.ihiroky.niotty.Transport;
-import net.ihiroky.niotty.TransportListener;
 import net.ihiroky.niotty.codec.FrameLengthPrependEncoder;
 import net.ihiroky.niotty.codec.FrameLengthRemoveDecoder;
 import net.ihiroky.niotty.codec.StringDecoder;
@@ -17,7 +15,6 @@ import net.ihiroky.niotty.nio.NioServerSocketProcessor;
 import net.ihiroky.niotty.nio.NioServerSocketTransport;
 
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 
 /**
  * Created on 13/01/18, 12:59
@@ -61,18 +58,6 @@ public class EchoMain {
         client.start();
 
         final NioServerSocketTransport serverTransport = server.createTransport(new NioServerSocketConfig());
-        serverTransport.addListener(new TransportListener() {
-            @Override
-            public void onAccept(Transport transport, SocketAddress remoteAddress) {
-                serverTransport.write("new Transport " + transport + " is accepted on " + Thread.currentThread());
-            }
-            @Override
-            public void onConnect(Transport transport, SocketAddress remoteAddress) {
-            }
-            @Override
-            public void onClose(Transport transport) {
-            }
-        });
         NioClientSocketTransport clientTransport = client.createTransport(new NioClientSocketConfig());
 
         try {

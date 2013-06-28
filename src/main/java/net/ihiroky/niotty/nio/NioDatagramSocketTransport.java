@@ -127,7 +127,6 @@ public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector
             public void execute() {
                 try {
                     channel_.connect(remote);
-                    transportListener().onConnect(NioDatagramSocketTransport.this, remote);
                     future.done();
                 } catch (IOException ioe) {
                     future.setThrowable(ioe);
@@ -160,7 +159,6 @@ public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector
             public void execute() {
                 try {
                     channel_.disconnect();
-                    transportListener().onConnect(NioDatagramSocketTransport.this, null);
                     future.done();
                 } catch (IOException ioe) {
                     future.setThrowable(ioe);

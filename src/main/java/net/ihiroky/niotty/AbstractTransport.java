@@ -2,9 +2,7 @@ package net.ihiroky.niotty;
 
 import net.ihiroky.niotty.buffer.BufferSink;
 
-import java.net.SocketAddress;
 import java.util.Objects;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -21,11 +19,9 @@ public abstract class AbstractTransport<T extends TaskLoop> implements Transport
     private volatile DefaultLoadPipeline loadPipeline_;
     private volatile DefaultStorePipeline storePipeline_;
     private final AtomicReference<Object> attachmentReference_;
-    private TransportListener transportListener_;
+    private DefaultTransportFuture closeFuture_;
     private T loop_;
     private final int weight_;
-
-    private static final TransportListener NULL_LISTENER = new NullListener();
 
     /**
      * Creates a new instance.
@@ -38,7 +34,7 @@ public abstract class AbstractTransport<T extends TaskLoop> implements Transport
         }
 
         attachmentReference_ = new AtomicReference<>();
-        transportListener_ = NULL_LISTENER;
+        closeFuture_ = new DefaultTransportFuture(this);
         weight_ = weight;
         setUpPipelines(name, pipelineComposer);
     }
@@ -183,12 +179,9 @@ public abstract class AbstractTransport<T extends TaskLoop> implements Transport
         return loop_;
     }
 
-    /**
-     * Returns the listener.
-     * @return the listener.
-     */
-    protected TransportListener transportListener() {
-        return transportListener_;
+    @Override
+    public DefaultTransportFuture closeFuture() {
+        return closeFuture_;
     }
 
     @Override
@@ -213,47 +206,6 @@ public abstract class AbstractTransport<T extends TaskLoop> implements Transport
     public void write(Object message, int priority) {
         executeStore(message, new DefaultTransportParameter(priority));
     }
-
-    @Override
-    public void addListener(TransportListener listener) {
-        Objects.requireNonNull(listener, "listener");
-
-        synchronized (this) {
-            TransportListener oldListener = transportListener_;
-            if (oldListener == null) {
-                transportListener_ = listener;
-                return;
-            }
-            if (oldListener instanceof ListenerList) {
-                ((ListenerList) oldListener).list_.add(listener);
-                return;
-            }
-            ListenerList listenerList = new ListenerList();
-            listenerList.list_.add(oldListener);
-            listenerList.list_.add(listener);
-            transportListener_ = listenerList;
-        }
-    }
-
-    @Override
-    public void removeListener(TransportListener listener) {
-        Objects.requireNonNull(listener, "listener");
-
-        synchronized (this) {
-            if (transportListener_ == listener) {
-                transportListener_ = NULL_LISTENER;
-                return;
-            }
-            if (transportListener_ instanceof ListenerList) {
-                ListenerList listenerList = (ListenerList) transportListener_;
-                listenerList.list_.remove(transportListener_);
-                if (listenerList.list_.size() == 1) {
-                    transportListener_ = listenerList.list_.get(0);
-                }
-            }
-        }
-    }
-
     @Override
     public Object attach(Object attachment) {
         return attachmentReference_.getAndSet(attachment);
@@ -262,49 +214,5 @@ public abstract class AbstractTransport<T extends TaskLoop> implements Transport
     @Override
     public Object attachment() {
         return attachmentReference_.get();
-    }
-
-    /**
-     * A null object for TransportListener.
-     */
-    private static class NullListener implements TransportListener {
-        @Override
-        public void onAccept(Transport transport, SocketAddress remote) {
-        }
-        @Override
-        public void onConnect(Transport transport, SocketAddress remote) {
-        }
-        @Override
-        public void onClose(Transport transport) {
-        }
-    }
-
-    /**
-     * An aggregator for TransportListener.
-     */
-    private static class ListenerList implements TransportListener {
-
-        CopyOnWriteArrayList<TransportListener> list_ = new CopyOnWriteArrayList<>();
-
-        @Override
-        public void onAccept(Transport transport, SocketAddress remote) {
-            for (TransportListener listener : list_) {
-                listener.onAccept(transport, remote);
-            }
-        }
-
-        @Override
-        public void onConnect(Transport transport, SocketAddress remote) {
-            for (TransportListener listener : list_) {
-                listener.onConnect(transport, remote);
-            }
-        }
-
-        @Override
-        public void onClose(Transport transport) {
-            for (TransportListener listener : list_) {
-                listener.onClose(transport);
-            }
-        }
     }
 }

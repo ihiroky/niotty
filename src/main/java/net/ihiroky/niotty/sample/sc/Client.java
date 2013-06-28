@@ -4,8 +4,8 @@ import net.ihiroky.niotty.LoadPipeline;
 import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.StageKeys;
 import net.ihiroky.niotty.StorePipeline;
-import net.ihiroky.niotty.Transport;
-import net.ihiroky.niotty.TransportListener;
+import net.ihiroky.niotty.TransportFuture;
+import net.ihiroky.niotty.TransportFutureListener;
 import net.ihiroky.niotty.codec.DelimiterDecoder;
 import net.ihiroky.niotty.codec.DelimiterEncoder;
 import net.ihiroky.niotty.codec.StringDecoder;
@@ -15,7 +15,6 @@ import net.ihiroky.niotty.nio.NioClientSocketProcessor;
 import net.ihiroky.niotty.nio.NioClientSocketTransport;
 
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.util.Date;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -46,22 +45,17 @@ public class Client {
         transport.connect(new InetSocketAddress(serverPort));
 
         ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
-        final Future<?> future = executor.scheduleAtFixedRate(new Runnable() {
+        final Future<?> scheduledFuture = executor.scheduleAtFixedRate(new Runnable() {
             @Override
             public void run() {
                 transport.write(new Date().toString());
             }
         }, 1, 1, TimeUnit.SECONDS);
-        transport.addListener(new TransportListener() {
+        transport.closeFuture().addListener(new TransportFutureListener() {
             @Override
-            public void onAccept(Transport transport, SocketAddress remoteAddress) {
-            }
-            @Override
-            public void onConnect(Transport transport, SocketAddress remoteAddress) {
-            }
-            @Override
-            public void onClose(Transport transport) {
-                future.cancel(true);
+            public void onComplete(TransportFuture future) {
+                System.out.println("Cancel the scheduler.");
+                scheduledFuture.cancel(true);
             }
         });
 
