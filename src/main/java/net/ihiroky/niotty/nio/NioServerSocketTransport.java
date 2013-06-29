@@ -94,7 +94,7 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
     @Override
     public TransportFuture bind(SocketAddress socketAddress) {
         try {
-            serverChannel_.bind(socketAddress, config_.getBacklog());
+            serverChannel_.bind(socketAddress, config_.backlog());
             processor_.acceptSelectorPool().register(serverChannel_, SelectionKey.OP_ACCEPT, this);
             return new SuccessfulTransportFuture(this);
         } catch (IOException ioe) {
@@ -118,14 +118,13 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
     void registerReadLater(SelectableChannel channel) throws IOException {
         // SocketChannel#getRemoteAddress() may throw IOException, so get remoteAddress first.
         InetSocketAddress remoteAddress = (InetSocketAddress) ((SocketChannel) channel).getRemoteAddress();
+        config_.applySocketOptions((SocketChannel) channel);
 
         NioClientSocketTransport child = new NioClientSocketTransport(
                 config_, processor_.pipelineComposer(), DEFAULT_WEIGHT, processor_.name(), (SocketChannel) channel);
         child.loadEvent(new DefaultTransportStateEvent(TransportState.CONNECTED, remoteAddress));
         processor_.ioSelectorPool().register(channel, SelectionKey.OP_READ, child);
         childAggregate_.add(child);
-
-        // TODO Set socket options for child.
     }
 
     public Set<Transport> childSet() {

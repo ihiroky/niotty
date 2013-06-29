@@ -12,6 +12,8 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
+ * A configuration for {@code java.nio.channels.DatagramChannel}.
+ *
  * @author Hiroki Itoh
  */
 public class NioDatagramSocketConfig {
@@ -21,6 +23,9 @@ public class NioDatagramSocketConfig {
 
     private Logger logger_ = LoggerFactory.getLogger(NioDatagramSocketConfig.class);
 
+    /**
+     * Constructs a new instance.
+     */
     public NioDatagramSocketConfig() {
         socketOptionMap_ = new HashMap<>();
         writeQueueFactory_ = new SimpleWriteQueueFactory();
@@ -28,12 +33,28 @@ public class NioDatagramSocketConfig {
         setOption(StandardSocketOptions.SO_REUSEADDR, true);
     }
 
+    /**
+     * Sets a socket option.
+     *
+     * @param option a name of the option
+     * @param value a value of the option
+     * @param <T> a type of the value
+     * @return this config
+     */
     @SuppressWarnings("unchecked")
-    public <T> void setOption(SocketOption<T> option, T value) {
+    public <T> NioDatagramSocketConfig setOption(SocketOption<T> option, T value) {
         socketOptionMap_.put(option, value);
+        return this;
     }
 
-    public <T> T getOption(SocketOption<T> option) {
+    /**
+     * Returns a socket option.
+     *
+     * @param option a name of the option
+     * @param <T> a type of the option's value
+     * @return a value of the option
+     */
+    public <T> T option(SocketOption<T> option) {
         Object value = socketOptionMap_.get(option);
         return option.type().cast(value);
     }
@@ -67,8 +88,15 @@ public class NioDatagramSocketConfig {
         return writeQueueFactory_.newWriteQueue();
     }
 
-    public void setWriteQueueFactory_(WriteQueueFactory writeQueueFactory) {
+    /**
+     * Sets a write queue factory for a socket.
+     *
+     * @param writeQueueFactory the write queue factory
+     * @return this config
+     */
+    public NioDatagramSocketConfig setWriteQueueFactory_(WriteQueueFactory writeQueueFactory) {
         Objects.requireNonNull(writeQueueFactory, "writeQueueFactory");
         this.writeQueueFactory_ = writeQueueFactory;
+        return this;
     }
 }
