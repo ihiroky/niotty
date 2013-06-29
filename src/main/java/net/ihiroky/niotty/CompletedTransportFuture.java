@@ -12,11 +12,6 @@ abstract class CompletedTransportFuture extends AbstractTransportFuture {
     }
 
     @Override
-    public boolean isCancelled() {
-        return false;
-    }
-
-    @Override
     public boolean isDone() {
         return true;
     }

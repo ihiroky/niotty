@@ -4,7 +4,7 @@ import net.ihiroky.niotty.DefaultTransportParameter;
 import net.ihiroky.niotty.DefaultTransportStateEvent;
 import net.ihiroky.niotty.FailedTransportFuture;
 import net.ihiroky.niotty.PipelineComposer;
-import net.ihiroky.niotty.SucceededTransportFuture;
+import net.ihiroky.niotty.SuccessfulTransportFuture;
 import net.ihiroky.niotty.Transport;
 import net.ihiroky.niotty.TransportAggregate;
 import net.ihiroky.niotty.TransportAggregateSupport;
@@ -95,8 +95,8 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
     public TransportFuture bind(SocketAddress socketAddress) {
         try {
             serverChannel_.bind(socketAddress, config_.getBacklog());
-            processor_.getAcceptSelectorPool().register(serverChannel_, SelectionKey.OP_ACCEPT, this);
-            return new SucceededTransportFuture(this);
+            processor_.acceptSelectorPool().register(serverChannel_, SelectionKey.OP_ACCEPT, this);
+            return new SuccessfulTransportFuture(this);
         } catch (IOException ioe) {
             return new FailedTransportFuture(this, ioe);
         }
@@ -112,7 +112,7 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
         } catch (IOException ioe) {
             ioe.printStackTrace();
         }
-        return new SucceededTransportFuture(this);
+        return new SuccessfulTransportFuture(this);
     }
 
     void registerReadLater(SelectableChannel channel) throws IOException {
@@ -122,7 +122,7 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
         NioClientSocketTransport child = new NioClientSocketTransport(
                 config_, processor_.pipelineComposer(), DEFAULT_WEIGHT, processor_.name(), (SocketChannel) channel);
         child.loadEvent(new DefaultTransportStateEvent(TransportState.CONNECTED, remoteAddress));
-        processor_.getMessageIOSelectorPool().register(channel, SelectionKey.OP_READ, child);
+        processor_.ioSelectorPool().register(channel, SelectionKey.OP_READ, child);
         childAggregate_.add(child);
 
         // TODO Set socket options for child.

@@ -91,19 +91,19 @@ public class NioServerSocketProcessor extends AbstractProcessor<NioServerSocketT
         this.useDirectBuffer_ = useDirectBuffer;
     }
 
-    AcceptSelectorPool getAcceptSelectorPool() {
+    AcceptSelectorPool acceptSelectorPool() {
         return acceptSelectorPool_;
     }
 
-    TcpIOSelectorPool getMessageIOSelectorPool() {
+    TcpIOSelectorPool ioSelectorPool() {
         return ioSelectorPool_;
     }
 
-    int getReadBufferSize() {
+    int readBufferSize() {
         return readBufferSize_;
     }
 
-    int getWriteBufferSize() {
+    int writeBufferSize() {
         return writeBufferSize_;
     }
 

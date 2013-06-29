@@ -1,9 +1,11 @@
 package net.ihiroky.niotty.nio;
 
+import net.ihiroky.niotty.CancelledTransportFuture;
 import net.ihiroky.niotty.DefaultTransportFuture;
+import net.ihiroky.niotty.DefaultTransportStateEvent;
 import net.ihiroky.niotty.FailedTransportFuture;
 import net.ihiroky.niotty.PipelineComposer;
-import net.ihiroky.niotty.SucceededTransportFuture;
+import net.ihiroky.niotty.SuccessfulTransportFuture;
 import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.TransportState;
 import net.ihiroky.niotty.TransportStateEvent;
@@ -22,15 +24,16 @@ import java.util.Objects;
 public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> {
 
     private final SocketChannel clientChannel_;
-    private final ConnectSelectorPool connector_;
+    private final NioClientSocketProcessor processor_;
     private final WriteQueue writeQueue_;
 
     NioClientSocketTransport(
             NioClientSocketConfig config, PipelineComposer composer, int weight,
-            String name, ConnectSelectorPool connector) {
+            String name, NioClientSocketProcessor processor) {
         super(name, composer, weight);
 
         Objects.requireNonNull(config, "config");
+        Objects.requireNonNull(processor, "processor");
 
         try {
             SocketChannel clientChannel = SocketChannel.open();
@@ -38,7 +41,7 @@ public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> 
             config.applySocketOptions(clientChannel);
 
             clientChannel_ = clientChannel;
-            connector_ = connector;
+            processor_ = processor;
             writeQueue_ = config.newWriteQueue();
         } catch (Exception e) {
             throw new RuntimeException("failed to open client socket channel.", e);
@@ -54,7 +57,7 @@ public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> 
         Objects.requireNonNull(child, "child");
 
         clientChannel_ = child;
-        connector_ = null;
+        processor_ = null;
         writeQueue_ = config.newWriteQueue();
     }
 
@@ -62,7 +65,7 @@ public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> 
     public TransportFuture bind(SocketAddress local) {
         try {
             clientChannel_.bind(local);
-            return new SucceededTransportFuture(this);
+            return new SuccessfulTransportFuture(this);
         } catch (IOException ioe) {
             return new FailedTransportFuture(this, ioe);
         }
@@ -101,28 +104,45 @@ public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> 
     }
 
     public TransportFuture connect(SocketAddress remote) {
-        if (connector_ == null) {
-            throw new IllegalStateException(
-                    "Channel is an accepted channel or asynchronous connection is not supported.");
+        if (clientChannel_.isConnectionPending() || clientChannel_.isConnected()) {
+            return new CancelledTransportFuture(this);
         }
-        try {
-            if (clientChannel_.connect(remote)) {
-                return new SucceededTransportFuture(this);
-            }
-            DefaultTransportFuture future = new DefaultTransportFuture(this);
-            connector_.register(clientChannel_, SelectionKey.OP_CONNECT, new ConnectionWaitTransport(this, future));
-            return future;
-        } catch (IOException ioe) {
-            return new FailedTransportFuture(this, ioe);
-        }
-    }
 
-    public void blockingConnect(SocketAddress remote) throws IOException {
-        clientChannel_.configureBlocking(true);
+        NioClientSocketProcessor processor = processor_;
+        if (processor == null) {
+            throw new IllegalStateException("No NioClientSocketProcessor is found.");
+        }
+
+        if (processor.hasConnectSelector()) {
+            // try non blocking connection
+            try {
+                if (clientChannel_.connect(remote)) {
+                    return new SuccessfulTransportFuture(this);
+                }
+                DefaultTransportFuture future = new DefaultTransportFuture(this);
+                processor.connectSelectorPool().register(
+                        clientChannel_, SelectionKey.OP_CONNECT, new ConnectionWaitTransport(this, future));
+                return future;
+            } catch (IOException ioe) {
+                return new FailedTransportFuture(this, ioe);
+            }
+        }
+
+        // try blocking connection
         try {
+            clientChannel_.configureBlocking(true);
             clientChannel_.connect(remote);
-        } finally {
             clientChannel_.configureBlocking(false);
+            loadEvent(new DefaultTransportStateEvent(TransportState.CONNECTED, remote));
+            processor.ioSelectorPool().register(clientChannel_, SelectionKey.OP_READ, this);
+            return new SuccessfulTransportFuture(this);
+        } catch (IOException ioe) {
+            try {
+                clientChannel_.configureBlocking(false);
+            } catch (IOException ioe0) {
+                ioe0.printStackTrace();
+            }
+            return new FailedTransportFuture(this, ioe);
         }
     }
 
@@ -133,7 +153,7 @@ public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> 
     public TransportFuture shutdownOutput() {
         TcpIOSelector selector = taskLoop();
         if (selector == null) {
-            return new SucceededTransportFuture(this);
+            return new SuccessfulTransportFuture(this);
         }
         final DefaultTransportFuture future = new DefaultTransportFuture(this);
         executeStore(new TransportStateEvent(TransportState.SHUTDOWN_OUTPUT) {
@@ -157,7 +177,7 @@ public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> 
     public TransportFuture shutdownInput() {
         TcpIOSelector selector = taskLoop();
         if (selector == null) {
-            return new SucceededTransportFuture(this);
+            return new SuccessfulTransportFuture(this);
         }
         final DefaultTransportFuture future = new DefaultTransportFuture(this);
         executeStore(new TransportStateEvent(TransportState.SHUTDOWN_INPUT) {

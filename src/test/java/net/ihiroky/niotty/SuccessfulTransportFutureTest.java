@@ -9,7 +9,7 @@ import static org.mockito.Mockito.*;
 /**
  * @author Hiroki Itoh
  */
-public class SucceededTransportFutureTest {
+public class SuccessfulTransportFutureTest {
 
     @Test
     public void testIsSuccessful_ReturnsTrueIfDoneAndNoThrowable() throws Exception {

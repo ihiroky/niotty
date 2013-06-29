@@ -4,7 +4,7 @@ import net.ihiroky.niotty.AbstractTransport;
 import net.ihiroky.niotty.DefaultTransportFuture;
 import net.ihiroky.niotty.DefaultTransportStateEvent;
 import net.ihiroky.niotty.PipelineComposer;
-import net.ihiroky.niotty.SucceededTransportFuture;
+import net.ihiroky.niotty.SuccessfulTransportFuture;
 import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.TransportParameter;
 import net.ihiroky.niotty.TransportState;
@@ -45,7 +45,7 @@ public abstract class NioSocketTransport<S extends AbstractSelector> extends Abs
         S selector = taskLoop();
         if (selector == null) {
             closePipelines();
-            return new SucceededTransportFuture(this);
+            return new SuccessfulTransportFuture(this);
         }
         final DefaultTransportFuture future = new DefaultTransportFuture(this);
         executeStore(new TransportStateEvent(TransportState.CLOSED) {
@@ -87,7 +87,7 @@ public abstract class NioSocketTransport<S extends AbstractSelector> extends Abs
         }
         onCloseSelectableChannel();
         closePipelines();
-        return new SucceededTransportFuture(this);
+        return new SuccessfulTransportFuture(this);
     }
 
     void onCloseSelectableChannel() {

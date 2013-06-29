@@ -19,6 +19,11 @@ public class FailedTransportFuture extends CompletedTransportFuture {
     }
 
     @Override
+    public boolean isCancelled() {
+        return false;
+    }
+
+    @Override
     public Throwable throwable() {
         return throwable_;
     }

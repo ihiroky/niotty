@@ -3,14 +3,20 @@ package net.ihiroky.niotty;
 /**
  * @author Hiroki Itoh
  */
-public class SucceededTransportFuture extends CompletedTransportFuture {
+public class CancelledTransportFuture extends CompletedTransportFuture {
 
-    public SucceededTransportFuture(AbstractTransport<?> transport) {
+
+    public CancelledTransportFuture(AbstractTransport<?> transport) {
         super(transport);
     }
 
     @Override
     public boolean isSuccessful() {
+        return false;
+    }
+
+    @Override
+    public boolean isCancelled() {
         return true;
     }
 

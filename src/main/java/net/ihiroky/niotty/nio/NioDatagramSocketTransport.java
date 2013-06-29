@@ -4,7 +4,7 @@ import net.ihiroky.niotty.DefaultTransportFuture;
 import net.ihiroky.niotty.DefaultTransportParameter;
 import net.ihiroky.niotty.FailedTransportFuture;
 import net.ihiroky.niotty.PipelineComposer;
-import net.ihiroky.niotty.SucceededTransportFuture;
+import net.ihiroky.niotty.SuccessfulTransportFuture;
 import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.TransportState;
 import net.ihiroky.niotty.TransportStateEvent;
@@ -74,7 +74,7 @@ public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector
     public TransportFuture bind(SocketAddress local) {
         try {
             channel_.bind(local);
-            return new SucceededTransportFuture(this);
+            return new SuccessfulTransportFuture(this);
         } catch (IOException ioe) {
             return new FailedTransportFuture(this, ioe);
         }
@@ -224,13 +224,13 @@ public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector
     public TransportFuture joinGroup(InetAddress group, NetworkInterface networkInterface) {
         final GroupKey key = new GroupKey(group, networkInterface);
         if (membershipKeyMap_.containsKey(key)) {
-            return new SucceededTransportFuture(this);
+            return new SuccessfulTransportFuture(this);
         }
 
         try {
             MembershipKey membershipKey = channel_.join(key.group_, key.networkInterface_);
             membershipKeyMap_.put(key, membershipKey);
-            return new SucceededTransportFuture(this);
+            return new SuccessfulTransportFuture(this);
         } catch (Exception e) {
             return new FailedTransportFuture(this, e);
         }
@@ -248,13 +248,13 @@ public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector
     public TransportFuture joinGroup(InetAddress group, NetworkInterface networkInterface, final InetAddress source) {
         final GroupKey key = new GroupKey(group, networkInterface);
         if (membershipKeyMap_.containsKey(key)) {
-            return new SucceededTransportFuture(this);
+            return new SuccessfulTransportFuture(this);
         }
 
         try {
             MembershipKey membershipKey = channel_.join(key.group_, key.networkInterface_, source);
             membershipKeyMap_.put(key, membershipKey);
-            return new SucceededTransportFuture(this);
+            return new SuccessfulTransportFuture(this);
         } catch (Exception e) {
             return new FailedTransportFuture(this, e);
         }
@@ -272,13 +272,13 @@ public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector
     public TransportFuture leaveGroup(InetAddress group, NetworkInterface networkInterface) {
         final GroupKey key = new GroupKey(group, networkInterface);
         if (!membershipKeyMap_.containsKey(key)) {
-            return new SucceededTransportFuture(this);
+            return new SuccessfulTransportFuture(this);
         }
 
         final DefaultTransportFuture future = new DefaultTransportFuture(this);
         MembershipKey membershipKey = membershipKeyMap_.remove(key);
         membershipKey.drop();
-        return new SucceededTransportFuture(this);
+        return new SuccessfulTransportFuture(this);
     }
 
     /**
@@ -293,12 +293,12 @@ public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector
         GroupKey key = new GroupKey(group, networkInterface);
         final MembershipKey membershipKey = membershipKeyMap_.get(key);
         if (membershipKey == null) {
-            return new SucceededTransportFuture(this);
+            return new SuccessfulTransportFuture(this);
         }
 
         try {
             membershipKey.block(source);
-            return new SucceededTransportFuture(this);
+            return new SuccessfulTransportFuture(this);
         } catch (Exception e) {
             return new FailedTransportFuture(this, e);
         }
@@ -316,12 +316,12 @@ public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector
         GroupKey key = new GroupKey(group, networkInterface);
         final MembershipKey membershipKey = membershipKeyMap_.get(key);
         if (membershipKey == null) {
-            return new SucceededTransportFuture(this);
+            return new SuccessfulTransportFuture(this);
         }
 
         try {
             membershipKey.unblock(source);
-            return new SucceededTransportFuture(this);
+            return new SuccessfulTransportFuture(this);
         } catch (Exception e) {
             return new FailedTransportFuture(this, e);
         }

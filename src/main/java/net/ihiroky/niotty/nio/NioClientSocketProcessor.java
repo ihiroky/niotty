@@ -41,8 +41,7 @@ public class NioClientSocketProcessor extends AbstractProcessor<NioClientSocketT
     @Override
     public NioClientSocketTransport createTransport(NioClientSocketConfig config) {
         return new NioClientSocketTransport(config, pipelineComposer(),
-                NioClientSocketTransport.DEFAULT_WEIGHT, name(),
-                (numberOfConnectThread_ > 0) ? connectSelectorPool_ : null);
+                NioClientSocketTransport.DEFAULT_WEIGHT, name(), this);
     }
 
     /**
@@ -53,8 +52,7 @@ public class NioClientSocketProcessor extends AbstractProcessor<NioClientSocketT
      * @return the transport.
      */
     public NioClientSocketTransport createTransport(NioClientSocketConfig config, int weight) {
-        return new NioClientSocketTransport(config, pipelineComposer(), weight, name(),
-                (numberOfConnectThread_ > 0) ? connectSelectorPool_ : null);
+        return new NioClientSocketTransport(config, pipelineComposer(), weight, name(), this);
     }
 
     @Override
@@ -110,19 +108,23 @@ public class NioClientSocketProcessor extends AbstractProcessor<NioClientSocketT
         ioSelectorPool_.setTaskWeightThreshold(threshold);
     }
 
-    ConnectSelectorPool getConnectSelectorPool() {
+    boolean hasConnectSelector() {
+        return numberOfConnectThread_ > 0;
+    }
+
+    ConnectSelectorPool connectSelectorPool() {
         return connectSelectorPool_;
     }
 
-    AbstractSelectorPool<TcpIOSelector> getMessageIOSelectorPool() {
+    AbstractSelectorPool<TcpIOSelector> ioSelectorPool() {
         return ioSelectorPool_;
     }
 
-    public int getReadBufferSize() {
+    public int readBufferSize() {
         return readBufferSize_;
     }
 
-    public int getWriteBufferSize() {
+    public int writeBufferSize() {
         return writeBufferSize_;
     }
 
@@ -130,7 +132,7 @@ public class NioClientSocketProcessor extends AbstractProcessor<NioClientSocketT
         return useDirectBuffer_;
     }
 
-    public int getTaskWeightThresholdOfIOSelectorPool() {
+    public int taskWeightThresholdOfIOSelectorPool() {
         return ioSelectorPool_.getTaskWeightThreshold();
     }
 }
