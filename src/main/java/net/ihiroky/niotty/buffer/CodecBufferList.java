@@ -1011,7 +1011,7 @@ public class CodecBufferList extends AbstractCodecBuffer {
 
     @Override
     public String toString() {
-        StringBuffer b = new StringBuffer();
+        StringBuilder b = new StringBuilder();
         b.append('[');
         int index = beginningBufferIndex_;
         int end = endBufferIndex_;
