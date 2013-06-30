@@ -14,9 +14,6 @@ public abstract class PipelineElement<I, O> implements StageContext<O>, TaskSele
     private volatile PipelineElement<O, Object> next_;
     private final PipelineElementExecutor executor_;
 
-    // TODO add address field to hold DatagramChannel#send()/receive()
-    // TODO add getter for address
-
     private static final PipelineElementExecutor DEFAULT_EXECUTOR = new DefaultPipelineElementExecutor();
 
     protected PipelineElement(Pipeline<?> pipeline, StageKey key, PipelineElementExecutorPool pool) {
