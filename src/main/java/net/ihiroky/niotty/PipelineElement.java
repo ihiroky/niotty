@@ -56,28 +56,17 @@ public abstract class PipelineElement<I, O> implements StageContext<O>, TaskSele
         executor_.close(this);
     }
 
-    protected void execute(I input) {
-        executor_.execute(this, input);
-    }
-
-    protected void execute(I input, TransportParameter parameter) {
-        executor_.execute(this, input, parameter);
-    }
-    protected void execute(TransportStateEvent event) {
-        executor_.execute(this, event);
-    }
-
     @Override
     public void proceed(O output) {
-        next_.execute(output);
+        next_.executor_.execute(next_, output);
     }
 
     protected void proceed(O output, TransportParameter parameter) {
-        next_.execute(output, parameter);
+        next_.executor_.execute(next_, output, parameter);
     }
 
     protected void proceed(TransportStateEvent event) {
-        next_.execute(event);
+        next_.executor_.execute(next_, event);
     }
 
     protected StageContext<O> wrappedStageContext(PipelineElement<?, O> context, TransportParameter parameter) {

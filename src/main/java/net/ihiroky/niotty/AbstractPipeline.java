@@ -293,15 +293,18 @@ public abstract class AbstractPipeline<S> implements Pipeline<S> {
     }
 
     public void execute(Object input) {
-        head_.next().execute(input);
+        PipelineElement<Object, Object> next = head_.next();
+        next.executor().execute(next, input);
     }
 
     public void execute(Object input, TransportParameter parameter) {
-        head_.next().execute(input, parameter);
+        PipelineElement<Object, Object> next = head_.next();
+        next.executor().execute(next, input, parameter);
     }
 
     public void execute(TransportStateEvent event) {
-        head_.next().execute(event);
+        PipelineElement<?, ?> next = head_.next();
+        next.executor().execute(next, event);
     }
 
     @Override
@@ -330,7 +333,7 @@ public abstract class AbstractPipeline<S> implements Pipeline<S> {
 
     private static class NullPipelineElement extends PipelineElement<Object, Object> {
         protected NullPipelineElement() {
-            super(null, null, null);
+            super(null, null, NullPipelineElementExecutorPool.INSTANCE);
         }
         @Override
         protected Object stage() {
@@ -349,15 +352,45 @@ public abstract class AbstractPipeline<S> implements Pipeline<S> {
         public TransportParameter transportParameter() {
             return DefaultTransportParameter.NO_PARAMETER;
         }
+    }
+
+    private static class NullPipelineElementExecutorPool implements PipelineElementExecutorPool {
+
+        static final NullPipelineElementExecutorPool INSTANCE = new NullPipelineElementExecutorPool();
 
         @Override
-        protected void execute(Object input) {
+        public PipelineElementExecutor assign(PipelineElement<?, ?> context) {
+            return NullPipelineElementExecutor.INSTANCE;
         }
+
         @Override
-        protected void execute(Object input, TransportParameter parameter) {
+        public void close() {
         }
+    }
+
+    private static class NullPipelineElementExecutor implements PipelineElementExecutor {
+
+        static final NullPipelineElementExecutor INSTANCE = new NullPipelineElementExecutor();
+
         @Override
-        protected void execute(TransportStateEvent event) {
+        public <I> void execute(PipelineElement<I, ?> context, I input) {
+        }
+
+        @Override
+        public <I> void execute(PipelineElement<I, ?> context, I input, TransportParameter parameter) {
+        }
+
+        @Override
+        public void execute(PipelineElement<?, ?> context, TransportStateEvent event) {
+        }
+
+        @Override
+        public PipelineElementExecutorPool pool() {
+            return NullPipelineElementExecutorPool.INSTANCE;
+        }
+
+        @Override
+        public void close(PipelineElement<?, ?> context) {
         }
     }
 
