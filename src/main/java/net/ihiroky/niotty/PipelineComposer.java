@@ -29,7 +29,7 @@ import java.util.List;
  */
 public abstract class PipelineComposer {
 
-    private List<AutoCloseable> closeableList_;
+    private final List<AutoCloseable> closeableList_;
 
     private static final int INITIAL_CAPACITY = 3;
 
@@ -81,7 +81,9 @@ public abstract class PipelineComposer {
      * @param closeable the objects which is closed with proper timing.
      */
     protected void addCloseable(AutoCloseable closeable) {
-        closeableList_.add(closeable);
+        synchronized (closeableList_) {
+            closeableList_.add(closeable);
+        }
     }
 
     /**
@@ -100,14 +102,16 @@ public abstract class PipelineComposer {
      * overridden or should be called by sub class if {@link #addCloseable(AutoCloseable)} is used.</p>
      */
     public void close() {
-        for (AutoCloseable closeable : closeableList_) {
-            try {
-                closeable.close();
-            } catch (Throwable t) {
-                t.printStackTrace();
+        synchronized (closeableList_) {
+            for (AutoCloseable closeable : closeableList_) {
+                try {
+                    closeable.close();
+                } catch (Throwable t) {
+                    t.printStackTrace();
+                }
             }
+            closeableList_.clear();
         }
-        closeableList_.clear();
     }
 
     /**
