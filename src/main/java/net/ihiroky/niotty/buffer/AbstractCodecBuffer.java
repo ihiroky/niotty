@@ -143,8 +143,8 @@ public abstract class AbstractCodecBuffer implements CodecBuffer {
             return (magnitude == 0) ? null : -magnitude;
         }
         long value = readTrailingVariableByte(b);
-        boolean within32Bits = ((value & CodecUtil.VB_BIT32) == value);
-        return within32Bits ? (int) value : value;
+        int intValue = (int) value;
+        return (intValue == value) ? intValue : value;
     }
 
     /**

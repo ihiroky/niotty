@@ -196,6 +196,14 @@ public class AbstractCodecBufferTest {
     }
 
     @Test
+    public void testReadVariableByteNumber_32bitLong() throws Exception {
+        long expected = Integer.MAX_VALUE + 1L;
+        sut_.writeVariableByteLong(expected);
+        Number actual = sut_.readVariableByteNumber();
+        assertThat(actual, is((Number) expected));
+    }
+
+    @Test
     public void testReadVariableByteLong0() throws Exception {
         AbstractCodecBuffer sut = newInstance(new byte[]{(byte) 0x80}, 0, 1);
         long actual = sut.readVariableByteLong();

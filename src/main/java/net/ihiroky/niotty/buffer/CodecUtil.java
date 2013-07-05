@@ -33,7 +33,6 @@ final class CodecUtil {
     static final int VB_SIGN_BIT = 0x40;
     static final int VB_LONG_MIN_LAST = 0x02;
     static final int VB_INT_MIN_LAST = 0x10;
-    static final long VB_BIT32 = 0xFFFFFFFFL;
 
     static int variableByteLength(int value) {
         if (value == Integer.MIN_VALUE) return 5;
