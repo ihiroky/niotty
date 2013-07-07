@@ -1098,7 +1098,7 @@ public class CodecBufferTestAbstract {
         protected CodecBuffer createDirectCodecBuffer(byte[] data, int offset, int length) {
             ByteBuffer buffer = ByteBuffer.allocateDirect(length);
             buffer.put(data, offset, length).flip();
-            return new ByteBufferCodecBuffer(buffer);
+            return new ByteBufferCodecBuffer(buffer, true);
         }
 
         @Test

@@ -81,8 +81,8 @@ public final class Buffers {
     /**
      * Creates a new {@code CodecBuffer} which is backed by a specified byte array.
      *
-     * If some data is written into the {@code CodecBuffer}, then the backed byte array is also modified
-     * and vice versa. The new {@code CodecBuffer}'s beginning is {@code offset} and end is {@code offset + length}.
+     * If some data is written into the {@code CodecBuffer}, then the backed byte array is also modified.
+     * The new {@code CodecBuffer}'s beginning is {@code offset} and end is {@code offset + length}.
      *
      * An invocation of this method behaves in exactly the same way as the invocation
      * {@code wrap(buffer, beginning, length, DefaultTransportParameter.NO_PARAMETER)}.
@@ -116,21 +116,40 @@ public final class Buffers {
     /**
      * Creates a new {@code CodecBuffer} which is backed by a specified byte buffer.
      *
-     * <p>If some data is written into the {@code CodecBuffer}, then the backed {@code ByteBuffer} is also modified
-     * and vice versa. The new {@code CodecBuffer}'s beginning is buffer' position and end is buffer's limit.</p>
+     * <p>If some data is written into the {@code CodecBuffer}, then the backed {@code ByteBuffer} is also modified.
+     * The new {@code CodecBuffer}'s beginning is buffer' position and end is buffer's limit.</p>
+     *
+     * An invocation of this method behaves in exactly the same way as the invocation
+     * {@code wrap(byteBuffer, false)}.
      *
      * @param byteBuffer the backed {@code ByteBuffer}
      * @return the new {@code CodecBuffer}
      */
     public static CodecBuffer wrap(ByteBuffer byteBuffer) {
-        return new ByteBufferCodecBuffer(byteBuffer);
+        return wrap(byteBuffer, false);
     }
 
     /**
      * Creates a new {@code CodecBuffer} which is backed by a specified byte buffer.
      *
-     * <p>If some data is written into the {@code DecodeBuffer}, then the backed {@code ByteBuffer} is also modified
-     * and vice versa. The new {@code DecodeBuffer}'s beginning is buffer' position and end is buffer's limit.</p>
+     * <p>If some data is written into the {@code CodecBuffer}, then the backed {@code ByteBuffer} is also modified.
+     * The new {@code CodecBuffer}'s beginning is buffer' position and end is buffer's limit.</p>
+     *
+     * @param byteBuffer the backed {@code ByteBuffer}
+     * @param cleanOnDispose true if {@code java.nio.DirectBuffer#clean()} is called
+     *                       when {@link net.ihiroky.niotty.buffer.CodecBuffer#dispose()} is called;
+     *                       this has an effect when {@code byteBuffer} is direct buffer.
+     * @return the new {@code CodecBuffer}
+     */
+    public static CodecBuffer wrap(ByteBuffer byteBuffer, boolean cleanOnDispose) {
+        return new ByteBufferCodecBuffer(byteBuffer, cleanOnDispose);
+    }
+
+    /**
+     * Creates a new {@code CodecBuffer} which is backed by a specified byte buffer.
+     *
+     * <p>If some data is written into the {@code DecodeBuffer}, then the backed {@code ByteBuffer} is also modified.
+     * The new {@code DecodeBuffer}'s beginning is buffer' position and end is buffer's limit.</p>
      *
      * <p>An allocation of the new buffer's content is controlled by a specified {@code chunkPool}.</p>
      *

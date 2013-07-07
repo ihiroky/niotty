@@ -40,10 +40,24 @@ public class ByteBufferChunkFactoryTest {
     }
 
     @Test
-    public void testRelease() throws Throwable {
-        ByteBufferChunk chunk = spy(new ByteBufferChunk(ByteBuffer.allocate(10), ByteBufferChunkFactory.heap()));
-        ByteBufferChunkFactory.heap().release(chunk);
+    public void testRelease_CallRelease() throws Throwable {
+        ByteBufferChunk chunk = spy(
+                new ByteBufferChunk(ByteBuffer.allocateDirect(10), ByteBufferChunkFactory.direct(true)));
+        ByteBufferChunkFactory.direct(true).release(chunk);
 
         verify(chunk, times(1)).clear();
+    }
+
+    @Test
+    public void testRelease_NotCallRelease() throws Throwable {
+        ByteBufferChunk chunk0 = spy(
+                new ByteBufferChunk(ByteBuffer.allocateDirect(10), ByteBufferChunkFactory.heap()));
+        ByteBufferChunkFactory.heap().release(chunk0);
+        ByteBufferChunk chunk1 = spy(
+                new ByteBufferChunk(ByteBuffer.allocateDirect(10), ByteBufferChunkFactory.direct()));
+        ByteBufferChunkFactory.direct().release(chunk1);
+
+        verify(chunk0, never()).clear();
+        verify(chunk1, never()).clear();
     }
 }

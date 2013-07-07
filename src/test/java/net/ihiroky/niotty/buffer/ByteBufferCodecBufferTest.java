@@ -50,7 +50,7 @@ public class ByteBufferCodecBufferTest {
             }
             ByteBuffer directBuffer = ByteBuffer.allocateDirect(16);
             directBuffer.limit(0);
-            CodecBuffer sut = new ByteBufferCodecBuffer(directBuffer);
+            CodecBuffer sut = new ByteBufferCodecBuffer(directBuffer, true);
             sut.writeBytes(data, 0, data.length);
 
             sut.beginning(3);
@@ -99,7 +99,7 @@ public class ByteBufferCodecBufferTest {
             Arrays.fill(data, (byte) '0');
             ByteBuffer bb = ByteBuffer.allocateDirect(10);
             bb.put(data).position(0);
-            ByteBufferCodecBuffer b = new ByteBufferCodecBuffer(bb);
+            ByteBufferCodecBuffer b = new ByteBufferCodecBuffer(bb, true);
 
             byte[] array = b.array();
             assertThat(array, is(data));

@@ -59,7 +59,7 @@ public class TcpIOSelector extends AbstractSelector {
                 }
 
                 localByteBuffer.flip();
-                transport.loadEvent(Buffers.wrap(localByteBuffer));
+                transport.loadEvent(Buffers.wrap(localByteBuffer, false));
             } catch (ClosedByInterruptException ie) {
                 if (logger_.isDebugEnabled()) {
                     logger_.debug("failed to read from transport by interruption:" + transport, ie);

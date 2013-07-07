@@ -775,6 +775,14 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer {
                 + "(beginning:" + beginning_ + ", end:" + end_ + ", capacity:" + buffer_.length + ')';
     }
 
+    /**
+     * Returns a reference count of a chunk which manages an internal byte array.
+     * @return the reference count
+     */
+    public int referenceCount() {
+        return chunk_.referenceCount();
+    }
+
     Chunk<byte[]> chunk() {
         return chunk_;
     }

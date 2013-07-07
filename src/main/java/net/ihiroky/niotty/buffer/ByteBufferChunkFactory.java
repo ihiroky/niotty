@@ -26,7 +26,25 @@ public abstract class ByteBufferChunkFactory extends ChunkManager<ByteBuffer> {
         }
     };
 
-    private static final ByteBufferChunkFactory DIRECT = new ByteBufferChunkFactory() {
+    private static final ByteBufferChunkFactory DIRECT_RELEASE = new ByteBufferChunkFactory() {
+        private Logger logger_ = LoggerFactory.getLogger(ByteBufferChunkFactory.class);
+        @Override
+        protected ByteBufferChunk newChunk(int bytes) {
+            ByteBufferChunk c = new ByteBufferChunk(ByteBuffer.allocateDirect(bytes), this);
+            c.ready();
+            return c;
+        }
+        @Override
+        protected void release(Chunk<ByteBuffer> chunk) {
+            try {
+                ((ByteBufferChunk) chunk).clear();
+            } catch (Throwable t) {
+                logger_.debug("[release] failed to release chunk.", t);
+            }
+        }
+    };
+
+    private static final ByteBufferChunkFactory DIRECT_NO_RELEASE = new ByteBufferChunkFactory() {
         @Override
         protected ByteBufferChunk newChunk(int bytes) {
             ByteBufferChunk c = new ByteBufferChunk(ByteBuffer.allocateDirect(bytes), this);
@@ -34,8 +52,6 @@ public abstract class ByteBufferChunkFactory extends ChunkManager<ByteBuffer> {
             return c;
         }
     };
-
-    private Logger logger_ = LoggerFactory.getLogger(ByteBufferChunkFactory.class);
 
     /**
      * Returns the instance of this class that creates heap {@code ByteBufferChunk}.
@@ -47,10 +63,21 @@ public abstract class ByteBufferChunkFactory extends ChunkManager<ByteBuffer> {
 
     /**
      * Returns the instance of this class that creates direct {@code ByteBufferChunk}.
+     * {@code java.nio.DirectBuffer#clean()} is called when {@link #release(Chunk)} is called.
      * @return the instance of this class that creates direct {@code ByteBufferChunk}.
      */
     public static ByteBufferChunkFactory direct() {
-        return DIRECT;
+        return direct(false);
+    }
+
+    /**
+     * Returns the instance of this class that creates direct {@code ByteBufferChunk}.
+     * @param cleanOnRelease true if {@code java.nio.DirectBuffer#clean()} is called
+     *                       when {@link #release(Chunk)} is called.
+     * @return the instance of this class that creates direct {@code ByteBufferChunk}.
+     */
+    public static ByteBufferChunkFactory direct(boolean cleanOnRelease) {
+        return cleanOnRelease ? DIRECT_RELEASE : DIRECT_NO_RELEASE;
     }
 
     /**
@@ -61,11 +88,6 @@ public abstract class ByteBufferChunkFactory extends ChunkManager<ByteBuffer> {
 
     @Override
     protected void release(Chunk<ByteBuffer> chunk) {
-        try {
-            ((ByteBufferChunk) chunk).clear();
-        } catch (Throwable t) {
-            logger_.debug("[release] failed to release chunk.", t);
-        }
     }
 
     /**

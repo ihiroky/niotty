@@ -31,8 +31,8 @@ public class DelimiterDecoder implements LoadStage<CodecBuffer, CodecBuffer> {
     @Override
     public void load(StageContext<CodecBuffer> context, CodecBuffer input) {
         int end;
+        CodecBuffer b = bufferOfInput(input);
         for (;;) {
-            CodecBuffer b = bufferOfInput(input);
             end = b.indexOf(delimiter_, 0);
             if (end == -1) {
                 if (buffer_ != null) {
@@ -43,11 +43,12 @@ public class DelimiterDecoder implements LoadStage<CodecBuffer, CodecBuffer> {
                     }
                     return;
                 }
-                int remaining = b.remainingBytes();
+                int remaining = input.remainingBytes();
                 if (remaining > 0) {
                     buffer_ = Buffers.newCodecBuffer(remaining);
                     buffer_.drainFrom(input);
                 }
+                input.dispose();
                 return;
             }
 
@@ -70,6 +71,7 @@ public class DelimiterDecoder implements LoadStage<CodecBuffer, CodecBuffer> {
             return input;
         }
         buffer_.drainFrom(input);
+        input.dispose();
         return buffer_;
     }
 

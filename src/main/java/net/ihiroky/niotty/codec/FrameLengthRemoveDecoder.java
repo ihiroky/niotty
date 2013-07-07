@@ -59,6 +59,7 @@ public class FrameLengthRemoveDecoder implements LoadStage<CodecBuffer, CodecBuf
             poolingFrameBytes_ = 0;
             context.proceed(output);
         }
+        input.dispose();
     }
 
     @Override
@@ -94,10 +95,10 @@ public class FrameLengthRemoveDecoder implements LoadStage<CodecBuffer, CodecBuf
         if (remainingBytes >= requiredLength) {
             return noCopyIfEnough ? input : copy(input, requiredLength);
         }
-        if (remainingBytes == 0) {
-            return null;
+        if (remainingBytes > 0) {
+            buffer_ = copy(input, requiredLength);
         }
-        buffer_ = copy(input, requiredLength);
+        input.dispose();
         return null;
     }
 

@@ -42,9 +42,13 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer {
         mode_ = Mode.WRITE;
     }
 
-    ByteBufferCodecBuffer(ByteBuffer buffer) {
+    ByteBufferCodecBuffer(ByteBuffer buffer, boolean cleanOnDispose) {
         Objects.requireNonNull(buffer, "buffer");
-        ByteBufferChunk c = new ByteBufferChunk(buffer, ByteBufferChunkFactory.heap());
+
+        ByteBufferChunkFactory chunkManager = buffer.isDirect()
+                ? ByteBufferChunkFactory.direct(cleanOnDispose)
+                : ByteBufferChunkFactory.heap();
+        ByteBufferChunk c = new ByteBufferChunk(buffer, chunkManager);
         c.ready();
         chunk_ = c;
         buffer_ = chunk_.initialize();
@@ -818,6 +822,14 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer {
         return ByteBufferCodecBuffer.class.getName()
                 + "(beginning:" + beginning_ + ", end:" + end_ + ", capacity:" + buffer_.capacity()
                 + ", attachment:" + ')';
+    }
+
+    /**
+     * Returns a reference count of a chunk which manages an internal byte array.
+     * @return the reference count
+     */
+    public int referenceCount() {
+        return chunk_.referenceCount();
     }
 
     Chunk<ByteBuffer> chunk() {

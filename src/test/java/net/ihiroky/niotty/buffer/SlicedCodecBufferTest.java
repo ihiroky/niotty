@@ -42,7 +42,7 @@ public class SlicedCodecBufferTest {
             }
             ByteBuffer directBuffer = ByteBuffer.allocateDirect(16);
             directBuffer.limit(0);
-            CodecBuffer b = new ByteBufferCodecBuffer(directBuffer);
+            CodecBuffer b = new ByteBufferCodecBuffer(directBuffer, true);
             b.writeBytes(data, 0, data.length);
             b.beginning(1); // The offset of sliced buffer sets to 1.
             CodecBuffer sut = new SlicedCodecBuffer(b);

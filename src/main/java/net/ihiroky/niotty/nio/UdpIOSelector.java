@@ -63,7 +63,7 @@ public class UdpIOSelector extends AbstractSelector {
                         continue;
                     }
                     localByteBuffer.flip();
-                    CodecBuffer buffer = Buffers.wrap(localByteBuffer);
+                    CodecBuffer buffer = Buffers.wrap(localByteBuffer, false);
                     transport.loadEvent(buffer);
                 } else {
                     SocketAddress source = channel.receive(localByteBuffer);
