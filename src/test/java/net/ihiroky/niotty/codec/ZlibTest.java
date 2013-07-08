@@ -38,7 +38,7 @@ public class ZlibTest {
         if (context_.pollEvent() != null) {
             Assert.fail();
         }
-        InflateDecoder decoder = new InflateDecoder();
+        InflaterDecoder decoder = new InflaterDecoder();
         decoder.load(context_, inflaterInput);
 
         CodecBuffer inflated = context_.pollEvent();
@@ -73,7 +73,7 @@ public class ZlibTest {
         if (context_.pollEvent() != null) {
             Assert.fail();
         }
-        InflateDecoder decoder = new InflateDecoder();
+        InflaterDecoder decoder = new InflaterDecoder();
         decoder.load(context_, inflaterInput);
 
         assertProcessedData(data);
@@ -95,7 +95,7 @@ public class ZlibTest {
         if (context_.pollEvent() != null) {
             Assert.fail();
         }
-        InflateDecoder decoder = new InflateDecoder(1024, dictionary, false);
+        InflaterDecoder decoder = new InflaterDecoder(1024, dictionary, false);
         decoder.load(context_, inflaterInput);
 
         assertProcessedData(data);
@@ -115,7 +115,7 @@ public class ZlibTest {
         if (context_.pollEvent() != null) {
             Assert.fail();
         }
-        InflateDecoder decoder = new InflateDecoder();
+        InflaterDecoder decoder = new InflaterDecoder();
         decoder.load(context_, inflaterInput.slice(8));
         decoder.load(context_, inflaterInput);
 
@@ -135,7 +135,7 @@ public class ZlibTest {
         if (context_.pollEvent() != null) {
             Assert.fail();
         }
-        InflateDecoder decoder = new InflateDecoder();
+        InflaterDecoder decoder = new InflaterDecoder();
         decoder.load(context_, inflaterInput);
 
         assertProcessedData(data);
@@ -155,7 +155,7 @@ public class ZlibTest {
         if (context_.pollEvent() != null) {
             Assert.fail();
         }
-        InflateDecoder decoder = new InflateDecoder(8, null, false);
+        InflaterDecoder decoder = new InflaterDecoder(8, null, false);
         decoder.load(context_, inflaterInput);
 
         assertProcessedData(data);
@@ -177,7 +177,7 @@ public class ZlibTest {
         if (context_.pollEvent() != null) {
             Assert.fail();
         }
-        InflateDecoder decoder = new InflateDecoder(8, null, false);
+        InflaterDecoder decoder = new InflaterDecoder(8, null, false);
         decoder.load(context_, inflaterInput0);
         decoder.load(context_, inflaterInput1);
 

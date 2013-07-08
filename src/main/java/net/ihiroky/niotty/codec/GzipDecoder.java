@@ -11,7 +11,7 @@ import java.util.zip.Inflater;
 /**
  * @author Hiroki Itoh
  */
-public class GzipDecoder extends InflateDecoder {
+public class GzipDecoder extends InflaterDecoder {
 
     private CRC32 crc32_;
     private GzipHeaderParser headerParser_;
