@@ -1,6 +1,7 @@
 package net.ihiroky.niotty.buffer;
 
 import java.io.IOException;
+import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.GatheringByteChannel;
@@ -93,7 +94,7 @@ public class FileBufferSink implements BufferSink {
                 channel_.read(buffer, beginning_);
                 buffer.limit(limit);
             } else {
-                channel_.read(buffer, beginning_);
+                throw new BufferOverflowException();
             }
 
             footer_.transferTo(buffer);

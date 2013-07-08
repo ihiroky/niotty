@@ -1,6 +1,7 @@
 package net.ihiroky.niotty.buffer;
 
 import java.io.IOException;
+import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.channels.GatheringByteChannel;
@@ -388,9 +389,10 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer {
         int space = byteBuffer.remaining();
         int beginning = beginning_;
         int remaining = end_ - beginning;
-        int read = (space <= remaining) ? space : remaining;
-        byteBuffer.put(buffer_, beginning_, read);
-        // beginning is not changed.
+        if (space < remaining) {
+            throw new BufferOverflowException();
+        }
+        byteBuffer.put(buffer_, beginning_, remaining);
     }
 
     @Override

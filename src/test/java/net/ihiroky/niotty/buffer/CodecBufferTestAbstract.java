@@ -9,6 +9,7 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import java.io.IOException;
+import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.channels.GatheringByteChannel;
 import java.nio.charset.StandardCharsets;
@@ -1071,14 +1072,10 @@ public class CodecBufferTestAbstract {
             assertThat(buffer.array(), is(sut_.array()));
         }
 
-        @Test
+        @Test(expected = BufferOverflowException.class)
         public void testTransferTo_ByteBufferPart() throws Exception {
             ByteBuffer buffer = ByteBuffer.allocate(sut_.remainingBytes() - 1);
-
             sut_.transferTo(buffer);
-
-            assertThat(sut_.remainingBytes(), is(32)); // remaining all
-            assertThat(buffer.array(), is(Arrays.copyOf(sut_.array(), 31)));
         }
 
         @Test

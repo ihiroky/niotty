@@ -75,7 +75,6 @@ public class SimpleWriteQueue implements WriteQueue {
     FlushStatus flushTo(DatagramChannel channel, ByteBuffer byteBuffer, int limitBytes) throws IOException {
         int flushedBytes = 0;
 
-        byteBuffer.clear();
         for (;;) {
             AttachedMessage<BufferSink> message = queue_.peek();
             if (message == null) {
@@ -84,6 +83,7 @@ public class SimpleWriteQueue implements WriteQueue {
             }
 
             BufferSink buffer = message.message();
+            byteBuffer.clear();
             buffer.transferTo(byteBuffer);
             byteBuffer.flip();
             SocketAddress target = (SocketAddress) message.parameter().argument();

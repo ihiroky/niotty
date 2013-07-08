@@ -14,6 +14,7 @@ import org.mockito.stubbing.Answer;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.GatheringByteChannel;
@@ -239,16 +240,12 @@ public class FileBufferSinkTest {
         assertThat(buffer.array(), is(originalData_));
     }
 
-    @Test
+    @Test(expected = BufferOverflowException.class)
     public void testTransferTo_ByteBufferPart() throws Exception {
         FileBufferSink sut = new FileBufferSink(channel_, 0, 32);
         ByteBuffer buffer = ByteBuffer.allocate(sut.remainingBytes() - 1);
 
         sut.transferTo(buffer);
-
-        assertThat(sut.remainingBytes(), is(32)); // remaining all
-        assertThat(channel_.position(), is(0L));
-        assertThat(buffer.array(), is(Arrays.copyOf(originalData_, 31)));
     }
 
     @Test
