@@ -3,7 +3,7 @@ apply plugin: 'idea'
 
 defaultTasks 'clean', 'test'
 
-version = '0.1'
+version = '0.2'
 project.ext['rootPackage'] = 'net.ihiroky.niotty'
 project.ext['encoding'] = 'UTF-8'
 def jdkVersion = 1.7
