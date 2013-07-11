@@ -1,12 +1,13 @@
 package net.ihiroky.niotty.buffer;
 
-import java.nio.charset.CharsetDecoder;
-
 /**
  * A skeletal implementation of {@link net.ihiroky.niotty.buffer.CodecBuffer}.
  * @author Hiroki Itoh
  */
 public abstract class AbstractCodecBuffer implements CodecBuffer {
+
+    /** A factor to expand internal buffer. */
+    protected static final int EXPAND_MULTIPLIER = 2;
 
     /**
      * Writes {@code Long.MIN_VALUE} with signed VBC.
@@ -142,8 +143,8 @@ public abstract class AbstractCodecBuffer implements CodecBuffer {
             return (magnitude == 0) ? null : -magnitude;
         }
         long value = readTrailingVariableByte(b);
-        boolean within32Bits = ((value & CodecUtil.VB_BIT32) == value);
-        return within32Bits ? (int) value : value;
+        int intValue = (int) value;
+        return (intValue == value) ? intValue : value;
     }
 
     /**
@@ -220,14 +221,6 @@ public abstract class AbstractCodecBuffer implements CodecBuffer {
         // -Integer.MIN_VALUE == Integer.MIN_VALUE
         value |= (b & CodecUtil.VB_MASK_BIT7) << shift;
         return isPositiveOrZero ? value : -value;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public String readString(CharsetDecoder charsetDecoder) {
-        int bytes = readVariableByteInteger();
-        return readString(charsetDecoder, bytes);
     }
 
     /**

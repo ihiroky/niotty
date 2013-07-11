@@ -5,22 +5,10 @@ import java.util.concurrent.TimeUnit;
 /**
  * @author Hiroki Itoh
  */
-abstract class CompletedTransportFuture implements TransportFuture {
+abstract class CompletedTransportFuture extends AbstractTransportFuture {
 
-    private Transport transport_;
-
-    protected CompletedTransportFuture(Transport transport) {
-        this.transport_ = transport;
-    }
-
-    @Override
-    public Transport transport() {
-        return transport_;
-    }
-
-    @Override
-    public boolean isCancelled() {
-        return false;
+    protected CompletedTransportFuture(AbstractTransport<?> transport) {
+        super(transport);
     }
 
     @Override

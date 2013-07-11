@@ -1,15 +1,23 @@
 package net.ihiroky.niotty;
 
 /**
- * Created on 13/01/11, 13:52
+ * Changes in state of {@code Transport} which asynchronously executed.
  *
  * @author Hiroki Itoh
  */
 public enum TransportState {
-    BOUND,
+    /** The state to connect. */
     CONNECTED,
+
+    /** The state to change interest set. */
     INTEREST_OPS,
-    STALE,
-    RECOVERED,
-    ;
+
+    /** The state to close the transport. */
+    CLOSED,
+
+    /** The state to disconnect. */
+    DISCONNECT,
+
+    SHUTDOWN_OUTPUT,
+    SHUTDOWN_INPUT,
 }

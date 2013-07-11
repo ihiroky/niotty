@@ -9,15 +9,15 @@ import java.util.Objects;
  */
 public class ConnectSelectorPool extends AbstractSelectorPool<ConnectSelector> {
 
-    private final MessageIOSelectorPool messageIOSelectorPool_;
+    private final TcpIOSelectorPool ioSelectorPool_;
 
-    public ConnectSelectorPool(MessageIOSelectorPool messageIOSelectorPool) {
-        Objects.requireNonNull(messageIOSelectorPool, "messageIOSelectorPool");
-        messageIOSelectorPool_ = messageIOSelectorPool;
+    public ConnectSelectorPool(TcpIOSelectorPool ioSelectorPool) {
+        Objects.requireNonNull(ioSelectorPool, "ioSelectorPool");
+        ioSelectorPool_ = ioSelectorPool;
     }
 
     @Override
-    protected ConnectSelector newEventLoop() {
-        return new ConnectSelector(messageIOSelectorPool_);
+    protected ConnectSelector newTaskLoop() {
+        return new ConnectSelector(ioSelectorPool_);
     }
 }

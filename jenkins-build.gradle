@@ -6,19 +6,53 @@ apply plugin: 'pmd'
 defaultTasks 'clean', 'build'
 
 def buildNumber = System.getenv()['BUILD_NUMBER'];
-if (!buildNumber) {
-    buildNumber = new Date().format("yyyyMMdd-HHmmss")
-}
+buildNumber = buildNumber ?: new Date().format("yyyyMMdd-HHmmss")
 
 configurations {
+    doclet
     cobertura
 }
 
 dependencies {
+    doclet 'org.umlgraph:umlgraph:5.6'
     checkstyle 'com.puppycrawl.tools:checkstyle:5.6'
-    findbugs 'com.google.code.findbugs:findbugs:+'
+    findbugs 'com.google.code.findbugs:findbugs:2.0.1'
     pmd 'pmd:pmd:4.3'
-    cobertura 'net.sourceforge.cobertura:cobertura:1.9.+'
+    cobertura 'net.sourceforge.cobertura:cobertura:1.9.4.1'
+}
+
+// Override the javadoc task to use umlgraph doclet.  This depends on the presence
+// of GraphViz on the path in your environment (http://www.graphviz.org)
+//
+task javadoc(overwrite: true) {
+    setDescription('Generates Javadoc API documentation with apiviz diagrams')
+    setGroup(JavaBasePlugin.DOCUMENTATION_GROUP)
+
+    doLast {
+        ant.javadoc(classpath: configurations.runtime.asPath,
+                    sourcepath: 'src/main/java',
+                    doctitle: "Niotty API Reference (${version}, ${buildNumber})",
+                    encoding: encoding,
+                    packagenames: '*',
+                    destdir: docsDir,
+                    locale: 'en_US',
+                    docletpath: configurations.doclet.asPath) {
+            doclet(name: 'org.umlgraph.doclet.UmlGraphDoc') {
+                param(name: '-verbose')
+                param(name: '-inferrel')
+                param(name: '-inferdep')
+                param(name: '-inferdepvis', value: 'protected')
+                param(name: '-qualify')
+                param(name: '-postfixpackage')
+                param(name: '-hide', value: '(java.*|org.*)')
+                param(name: '-collpackages', value: 'java.util.*')
+                param(name: '-nodefontsize', value: '9')
+                param(name: '-nodefontpackagesize', value: '7')
+                param(name: '-link', value: 'http://docs.oracle.com/javase/7/docs/jdk/api/javadoc/doclet/')
+                param(name: '-link', value: 'http://docs.oracle.com/javase/7/docs/api/')
+            }
+        }
+    }
 }
 
 checkstyleMain.configFile = file('checkstyle/main.xml')

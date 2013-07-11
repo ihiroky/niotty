@@ -16,10 +16,6 @@ import java.nio.charset.CharsetEncoder;
  * by a difference between the beginning and the end, and space (writable) data size is calculated by the a difference
  * between the end and the capacity.
  * <p></p>
- * Almost read and write methods are relative operation; the beginning and the end are changed by the operation.
- * But {@link #readByte(int)} and {@link #writeByte(int, int)} are absolute operation; the beginning and
- * the end are not changed.
- * <p></p>
  * {@code CodecBuffer} supports primitive and string write and read operations. And supports a signed integer
  * encoding with variable length, signed VBC (Variable Byte Codes). The encoding has an end bit,
  * a sign bit and data bits. Each MSB per byte is the end bit. The end bit in last byte is 1, otherwise 0.
@@ -49,15 +45,6 @@ public interface CodecBuffer extends BufferSink {
     void writeByte(int value);
 
     /**
-     * Writes a {@code value} as byte at a specified {@code position}.
-     * The value of the end is not changed.
-     *
-     * @param position index to write the {@code value}
-     * @param value byte value
-     */
-    void writeByte(int position, int value);
-
-    /**
      * Writes a specified byte array.
      *
      * @param bytes the byte array to be written
@@ -74,24 +61,6 @@ public interface CodecBuffer extends BufferSink {
      * @param byteBuffer the byte buffer to be written
      */
     void writeBytes(ByteBuffer byteBuffer);
-
-    /**
-     * Writes a specified {@code bits}, which byte size is specified {@code bytes}. The {@code bits} is right-aligned,
-     * and is written into this buffer with big endian.
-     *
-     * @param bits the set of bit to be written
-     * @param bytes byte size of the {@code bits}; must be non-positive and less than or equal to 4
-     */
-    void writeBytes4(int bits, int bytes);
-
-    /**
-     * Writes a specified {@code bits}, which byte size is specified {@code bytes}. The {@code bits} is right-aligned,
-     * and is written into this buffer with big endian.
-     *
-     * @param bits the set of bit to be written
-     * @param bytes byte size of the {@code bits}; must be non-positive and less than or equal to 8
-     */
-    void writeBytes8(long bits, int bytes);
 
     /**
      * Writes a specified short {@code value}. The value is written into this buffer with two byte big endian.
@@ -159,24 +128,12 @@ public interface CodecBuffer extends BufferSink {
     void writeVariableByteLong(Long value);
 
     /**
-     * Writes a specified string using a specified {@code charsetEncoder}.
-     * At first, the encoded byte size is written using VBC, and then the encoded byte is written.
-     * If an {@code java.nio.charset.CharacterCodingException} happens, this method throws
-     * {@code java.lang.RuntimeException} which has {@code CharacterCodingException} as its cause.
+     * Writes a specified string as bytes with a specified {@code encoder}.
      *
-     * @param charsetEncoder encoder to encode the given string {@code s}.
      * @param s string to be written
+     * @param encoder encoder to convert the string {@code s} to bytes written into this buffer
      */
-    void writeString(CharsetEncoder charsetEncoder, String s);
-
-    /**
-     * Reads a byte from the buffer.
-     *
-     * @param position index to read from
-     * @return a byte.
-     * @throws java.lang.RuntimeException if the beginning exceeds the end
-     */
-    int    readByte(int position);
+    void writeString(String s, CharsetEncoder encoder);
 
     /**
      * Reads a byte from the buffer at a specified {@code position}.
@@ -194,10 +151,9 @@ public interface CodecBuffer extends BufferSink {
      *               must be non-negative and less than or equal to {@code length}
      * @param length maximum number of bytes to be written into the {@code bytes};
      *               must be non-negative and less than or equal to {@code bytes.length - offset}
-     * @throws java.lang.RuntimeException if the beginning exceeds the end,
-     *         or {@code offset} or {@code length} is invalid for the buffer
+     * @return the total number of byte read into the {@code bytes}
      */
-    void   readBytes(byte[] bytes, int offset, int length);
+    int   readBytes(byte[] bytes, int offset, int length);
 
     /**
      * Reads bytes from the buffer.
@@ -205,32 +161,9 @@ public interface CodecBuffer extends BufferSink {
      * all. If not, the {@code byteBuffer} is filled with the part of this buffer data.
      *
      * @param byteBuffer a {@code ByteBuffer} into which is data is written
+     * @return the total number of byte read into the {@code bytes}
      */
-    void   readBytes(ByteBuffer byteBuffer);
-
-    /**
-     * Reads specified end of bytes. The result is stored in {@code int} with right aligned big endian.
-     * The buffer has {@code [0x30, 0x31, 0x32]} and call readBytes4(2), its result is 0x3031.
-     * This method can return data up to 4 byte.
-     *
-     * @param bytes end of bytes to be read
-     * @return int value which holds result bytes.
-     * @throws IllegalArgumentException if the {@code bytes} is negative or more than 4 byte
-     * @throws java.lang.RuntimeException if the remaining data in the buffer is less than {@code byte}
-     */
-    int    readBytes4(int bytes);
-
-    /**
-     * Reads specified end of bytes. The result is stored in {@code int} with right aligned big endian.
-     * The buffer has {@code [0x30, 0x31, 0x32]} and call readBytes8(2), its result is 0x3031 of long.
-     * This method can return data up to 8 byte.
-     *
-     * @param bytes end of bytes to be read
-     * @return long value which holds result bytes.
-     * @throws IllegalArgumentException if the {@code bytes} is negative or more than 8 byte
-     * @throws java.lang.RuntimeException if the remaining data in the buffer is less than {@code byte}
-     */
-    long   readBytes8(int bytes);
+    int   readBytes(ByteBuffer byteBuffer);
 
     /**
      * Reads char value from the buffer.
@@ -299,32 +232,19 @@ public interface CodecBuffer extends BufferSink {
     int readVariableByteInteger();
 
     /**
-     * Reads a string from the buffer using a specified {@code charsetDecoder}.
-     * At first, the encoded byte size is read using VBC, and then the encoded byte is read. The encoded byte is
-     * decoded by {@code charsetDecoder}. If some {@code java.nio.charset.CharacterCodingException} happens,
-     * this method throws {@code java.lang.RuntimeException} which has {@code CharacterCodingException} as its cause.
-     *
-     * @param charsetDecoder decoder to decode byte data
-     * @throws java.lang.RuntimeException if an error happens
-     * @return string value read from the buffer
-     */
-    String readString(CharsetDecoder charsetDecoder);
-
-    /**
-     * Reads a string from the buffer using a specified {@code charsetDecoder}.
+     * Reads a string from the buffer using a specified {@code decoder} to convert bytes into the string.
      * The string length of encoded byte format is given as {@code bytes}. If some
      * {@code java.nio.charset.CharacterCodingException} happens, this method throws
      * {@code java.lang.RuntimeException} which has {@code CharacterCodingException} as its cause.
      *
-     * @param charsetDecoder decoder to decode byte data
-     * @param bytes length of byte data to be decoded by {@code charsetDecoder}
-     * @throws java.lang.RuntimeException if an error happens
+     * @param decoder decoder to convert the buffer to a string.
+     * @param bytes length of byte data to be decoded by {@code decoder}
      * @return string value read from the buffer
      */
-    String readString(CharsetDecoder charsetDecoder, int bytes);
+    String readString(CharsetDecoder decoder, int bytes);
 
     /**
-     * Skips to read by specified size of byte of this buffer.
+     * Skips read bytes by specified size of byte of this buffer.
      *
      * The actual number of {@code n} of bytes to be skipped is the smaller of {@code bytes} and
      * {@link #remainingBytes()}, and {@code n - remainingBytes() >= 0}. The value {@code n} is added to the position
@@ -336,21 +256,21 @@ public interface CodecBuffer extends BufferSink {
     int skipBytes(int bytes);
 
     /**
-     * Returns size of remaining data by byte.
-     * This is equals to difference between the limit and the current position.
-     * @return size of remaining data by byte
+     * Returns the size of remaining data by the byte.
+     * This is equals to difference between the beginning and the end.
+     * @return the size of remaining data by the byte
      */
     int remainingBytes();
 
     /**
-     * Returns the size of space to be written data in byte.
-     * @return the size of space to be written data in byte
+     * Returns the size of space to be written data by the byte.
+     * @return the size of space to be written data by the byte
      */
     int spaceBytes();
 
     /**
-     * Returns the capacity of this buffer.
-     * @return the capacity of this buffer
+     * Returns the capacity of this buffer by the byte.
+     * @return the capacity of this buffer by the byte
      */
     int capacityBytes();
 
@@ -383,7 +303,7 @@ public interface CodecBuffer extends BufferSink {
     CodecBuffer end(int end);
 
     /**
-     * Drains from a specified {@code decodeBuffer}'s contents to this instance. The {@code decodeBuffer} is read
+     * Drains from a specified {@code buffer}'s contents to this instance. The {@code decodeBuffer} is read
      * by this instance and gets empty.
      *
      * @param buffer buffer which is drained from.
@@ -392,7 +312,7 @@ public interface CodecBuffer extends BufferSink {
     int drainFrom(CodecBuffer buffer);
 
     /**
-     * Drains from a specified {@code decodeBuffer}'s contents to this instance at most specified {@code bytes}.
+     * Drains from a specified {@code buffer}'s contents to this instance at most specified {@code bytes}.
      *
      * @param buffer buffer which is drained from.
      * @param bytes the number by byte to be transferred
@@ -400,22 +320,38 @@ public interface CodecBuffer extends BufferSink {
      */
     int drainFrom(CodecBuffer buffer, int bytes);
 
-    /**
-     * Creates new {@code DecodeBuffer} that shares this buffer's base content.
-     * The beginning of the new {@code DecodeBuffer} is the one of the this buffer.
-     * The end of the new {@code DecodeBuffer} is the {@code beginning + bytes}.
-     * The two {@code DecodeBuffer}'s beginning and end are independent.
-     * After this method is called, the beginning of this buffer increases {@code bytes}.
-     *
-     * @param bytes size of content to slice
-     * @throws IllegalArgumentException if {@code bytes} exceeds this buffer's remaining.
-     * @return the new {@code DecodeBuffer}
-     */
+    @Override
     CodecBuffer slice(int bytes);
 
     /**
-     * Shrinks unusable region; from index 0 to the beginning. The byte at the beginning is copied into the index 0,
-     * the byte at beginning + 1 and the end - 1 is copied into end - 1 - beginning.
+     * Creates a new buffer whose content is a shared subsequence of this buffer's content.
+     * The content of the new buffer will start at this buffer's current beginning.
+     * Changes to this buffer's content will be visible in the new buffer, and vice versa; the two buffers' beginning
+     * and end will be independent. The new buffer's beginning will be zero, its capacity and its end will be
+     * the number of bytes remaining in this buffer.
+     *
+     * @return the new buffer
+     */
+    CodecBuffer slice();
+
+    /**
+     * Creates a new buffer that shares this buffer's content.
+     * The content of the new buffer will be that of this buffer. Changes to this buffer's content will be visible
+     * in the new buffer, and vice versa; the two buffers' beginning and end values will be independent.
+     * The new buffer's capacity, beginning and end values will be identical to those of this buffer.
+     *
+     * @return the new buffer
+     */
+    CodecBuffer duplicate();
+
+    /**
+     * <p>Compacts this buffer.</p>
+     *
+     * <p>The bytes between the buffer's current beginning and end are copied to the head of
+     * the region in this buffer. The byte at index {@code beginning} is copied to index zero,
+     * the byte at index {@code beginning + 1} is copied to index one, and so forth until the byte
+     * at index {@code end - 1} is copied to index {@code end - beginning}. The beginning is then
+     * set to {@code 0} and the end is set to {@code end - beginning}.</p>
      * @return this {@code CodecBuffer}
      */
     CodecBuffer compact();
@@ -432,30 +368,70 @@ public interface CodecBuffer extends BufferSink {
      * the {@code ByteBuffer}, then this buffer is also modified and vice versa.
      * @return {@code java.nio.ByteBuffer}
      */
-    ByteBuffer toByteBuffer();
+    ByteBuffer byteBuffer();
 
-    /**
-     * Returns true if this buffer is backed by a byte array.
-     * @return true if this buffer is backed by a byte array
-     */
+    @Override
     boolean hasArray();
 
-    /**
-     * Returns a byte array that backs this buffer.
-     * Modification to this buffer's content modifies the byte array, and vice versa as long as this buffer does not
-     * expands its size. If {@link #hasArray()} returns false, this method throws
-     * {@code java.lang.UnsupportedOperationException}.
-     *
-     * @return a byte array that backs this buffer
-     * @throws UnsupportedOperationException if this buffer is not backed by a byte array
-     */
-    byte[] toArray();
+    @Override
+    byte[] array();
+
+    @Override
+    int arrayOffset();
 
     /**
-     * Returns an offset for a first byte in byte array that backs this buffer.
-     * If {@link #hasArray()} returns false, this method throws {@code java.lang.UnsupportedOperationException}.
-     * @return an offset for a first byte in byte array that backs this buffer
-     * @throws UnsupportedOperationException if this buffer is not backed by a byte array
+     * Returns the index within this buffer of the first occurrence of a specified byte,
+     * starting the search at a specified index and to the ascending direction.
+     * There is no restriction on the value of fromIndex. If it is negative, it has the same effect
+     * as if it were zero: this entire buffer may be searched. If it is greater than the remaining of this buffer,
+     * it has the same effect as if it were equal to the length of this buffer: -1 is returned.
+     *
+     * @param b the byte to be searched
+     * @param fromIndex the index to start the search from
+     * @return the index of the first occurrence of the {@code b} in this buffer that is greater than
+     * or equal to {@code fromIndex}, or -1 if the {@code b} does not occur.
      */
-    int arrayOffset();
+    int indexOf(int b, int fromIndex);
+
+    /**
+     * Returns the index within this buffer of the first occurrence of specified bytes,
+     * starting the search at a specified index and to the ascending direction. The index of the beginning is 0.
+     * There is no restriction on the value of fromIndex. If it is negative, it has the same effect
+     * as if it were zero: this entire buffer may be searched. If it is greater than the remaining of this buffer,
+     * it has the same effect as if it were equal to the length of this buffer: -1 is returned.
+     *
+     * @param b the bytes to be searched
+     * @param fromIndex the index to start the search from
+     * @return the index of the first occurrence of the {@code b} in this buffer that is greater than
+     * or equal to {@code fromIndex}, or -1 if the {@code b} does not occur.
+     */
+    int indexOf(byte[] b, int fromIndex);
+
+    /**
+     * Returns the index within this buffer of the first occurrence of a specified byte,
+     * starting the search at a specified index and to the descending direction. The index of the beginning is 0.
+     * There is no restriction on the value of fromIndex. If it is greater than or equal to the remaining
+     * of this buffer, it has the same effect as if it were equal to one less than the remaining of this buffer:
+     * this entire buffer may be searched. If it is negative, it has the same effect as if it were -1: -1 is returned.
+     *
+     * @param b the byte to be searched
+     * @param fromIndex the index to start the search from
+     * @return the index of the first occurrence of the {@code b} in this buffer that is greater than
+     * or equal to {@code fromIndex}, or -1 if the {@code b} does not occur.
+     */
+    int lastIndexOf(int b, int fromIndex);
+
+    /**
+     * Returns the index within this buffer of the first occurrence of specified bytes,
+     * starting the search at a specified index and to the descending direction. The index of the beginning is 0.
+     * There is no restriction on the value of fromIndex. If it is greater than or equal to the remaining
+     * of this buffer, it has the same effect as if it were equal to one less than the remaining of this buffer:
+     * this entire buffer may be searched. If it is negative, it has the same effect as if it were -1: -1 is returned.
+     *
+     * @param b the bytes to be searched
+     * @param fromIndex the index to start the search from
+     * @return the index of the first occurrence of the {@code b} in this buffer that is greater than
+     * or equal to {@code fromIndex}, or -1 if the {@code b} does not occur.
+     */
+    int lastIndexOf(byte[] b, int fromIndex);
 }

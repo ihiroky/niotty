@@ -10,7 +10,7 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 
 /**
- * Created on 13/01/10, 17:21
+ * A skeletal implemention of {@link Pipeline}.
  *
  * @author Hiroki Itoh
  */
@@ -18,15 +18,15 @@ public abstract class AbstractPipeline<S> implements Pipeline<S> {
 
     private final String name_;
     private final Transport transport_;
-    private final StageContext<Object, Object> head_;
+    private final PipelineElement<Object, Object> head_;
     private static Logger logger_ = LoggerFactory.getLogger(AbstractPipeline.class);
 
-    private static final StageContext<Object, Object> TERMINAL = new NullContext();
+    private static final PipelineElement<Object, Object> TERMINAL = new NullPipelineElement();
     private static final int INPUT_TYPE = 0;
     private static final int OUTPUT_TYPE = 1;
 
     protected AbstractPipeline(String name, Transport transport) {
-        StageContext<Object, Object> head = new NullContext();
+        PipelineElement<Object, Object> head = new NullPipelineElement();
         head.setNext(TERMINAL);
 
         name_ = name;
@@ -40,24 +40,24 @@ public abstract class AbstractPipeline<S> implements Pipeline<S> {
     }
 
     @Override
-    public Pipeline<S> add(StageKey key, S stage, StageContextExecutorPool pool) {
+    public Pipeline<S> add(StageKey key, S stage, PipelineElementExecutorPool pool) {
         Objects.requireNonNull(key, "key");
         Objects.requireNonNull(stage, "stage");
 
         synchronized (head_) {
             if (head_.next() == TERMINAL) {
-                StageContext<Object, Object> newContext = createContext(key, stage, pool);
+                PipelineElement<Object, Object> newContext = createContext(key, stage, pool);
                 head_.setNext(newContext);
                 newContext.setNext(TERMINAL);
                 return this;
             } else {
-                for (StageContextIterator i = new StageContextIterator(head_); i.hasNext();) {
-                    StageContext<Object, Object> context = i.next();
+                for (PipelineElementIterator i = new PipelineElementIterator(head_); i.hasNext();) {
+                    PipelineElement<Object, Object> context = i.next();
                     if (context.key().equals(key)) {
                         throw new IllegalArgumentException("key " + key + " already exists.");
                     }
                     if (context.next() == TERMINAL) {
-                        StageContext<Object, Object> newContext = createContext(key, stage, pool);
+                        PipelineElement<Object, Object> newContext = createContext(key, stage, pool);
                         newContext.setNext(TERMINAL);
                         context.setNext(newContext);
                         break;
@@ -74,16 +74,16 @@ public abstract class AbstractPipeline<S> implements Pipeline<S> {
     }
 
     @Override
-    public Pipeline<S> addBefore(StageKey baseKey, StageKey key, S stage, StageContextExecutorPool pool) {
+    public Pipeline<S> addBefore(StageKey baseKey, StageKey key, S stage, PipelineElementExecutorPool pool) {
         Objects.requireNonNull(baseKey, "baseKey");
         Objects.requireNonNull(key, "key");
         Objects.requireNonNull(stage, "stage");
 
         synchronized (head_) {
-            StageContext<Object, Object> prev = null;
-            StageContext<Object, Object> target = null;
-            for (StageContextIterator i = new StageContextIterator(head_); i.hasNext();) {
-                StageContext<Object, Object> context = i.next();
+            PipelineElement<Object, Object> prev = null;
+            PipelineElement<Object, Object> target = null;
+            for (PipelineElementIterator i = new PipelineElementIterator(head_); i.hasNext();) {
+                PipelineElement<Object, Object> context = i.next();
                 StageKey ikey = context.key();
                 if (ikey.equals(key)) {
                     throw new IllegalArgumentException("key " + key + " already exists.");
@@ -94,7 +94,7 @@ public abstract class AbstractPipeline<S> implements Pipeline<S> {
                 }
             }
             if (target != null) {
-                StageContext<Object, Object> newContext = createContext(key, stage, pool);
+                PipelineElement<Object, Object> newContext = createContext(key, stage, pool);
                 newContext.setNext(target);
                 prev.setNext(newContext);
                 return this;
@@ -109,15 +109,15 @@ public abstract class AbstractPipeline<S> implements Pipeline<S> {
     }
 
     @Override
-    public Pipeline<S> addAfter(StageKey baseKey, StageKey key, S stage, StageContextExecutorPool pool) {
+    public Pipeline<S> addAfter(StageKey baseKey, StageKey key, S stage, PipelineElementExecutorPool pool) {
         Objects.requireNonNull(baseKey, "baseKey");
         Objects.requireNonNull(key, "key");
         Objects.requireNonNull(stage, "stage");
 
         synchronized (head_) {
-            StageContext<Object, Object> target = null;
-            for (StageContextIterator i = new StageContextIterator(head_); i.hasNext();) {
-                StageContext<Object, Object> context = i.next();
+            PipelineElement<Object, Object> target = null;
+            for (PipelineElementIterator i = new PipelineElementIterator(head_); i.hasNext();) {
+                PipelineElement<Object, Object> context = i.next();
                 StageKey ikey = context.key();
                 if (ikey.equals(key)) {
                     throw new IllegalArgumentException("key " + key + " already exists.");
@@ -127,8 +127,8 @@ public abstract class AbstractPipeline<S> implements Pipeline<S> {
                 }
             }
             if (target != null) {
-                StageContext<Object, Object> next = target.next();
-                StageContext<Object, Object> newContext = createContext(key, stage, pool);
+                PipelineElement<Object, Object> next = target.next();
+                PipelineElement<Object, Object> newContext = createContext(key, stage, pool);
                 newContext.setNext(next);
                 target.setNext(newContext);
                 return this;
@@ -142,10 +142,10 @@ public abstract class AbstractPipeline<S> implements Pipeline<S> {
         Objects.requireNonNull(key, "key");
 
         synchronized (head_) {
-            for (StageContextIterator i = new StageContextIterator(head_); i.hasNext();) {
-                StageContext<Object, Object> context = i.next();
+            for (PipelineElementIterator i = new PipelineElementIterator(head_); i.hasNext();) {
+                PipelineElement<Object, Object> context = i.next();
                 if (context.key().equals(key)) {
-                    StageContext<Object, Object> prev = i.prev();
+                    PipelineElement<Object, Object> prev = i.prev();
                     prev.setNext(context.next());
                     context.close();
                     return this;
@@ -161,16 +161,16 @@ public abstract class AbstractPipeline<S> implements Pipeline<S> {
     }
 
     @Override
-    public Pipeline<S> replace(StageKey oldKey, StageKey newKey, S newStage, StageContextExecutorPool pool) {
+    public Pipeline<S> replace(StageKey oldKey, StageKey newKey, S newStage, PipelineElementExecutorPool pool) {
         Objects.requireNonNull(oldKey, "oldKey");
         Objects.requireNonNull(newKey, "newKey");
         Objects.requireNonNull(newStage, "newStage");
 
         synchronized (head_) {
-            StageContext<Object, Object> prev = null;
-            StageContext<Object, Object> target = null;
-            for (StageContextIterator i = new StageContextIterator(head_); i.hasNext();) {
-                StageContext<Object, Object> context = i.next();
+            PipelineElement<Object, Object> prev = null;
+            PipelineElement<Object, Object> target = null;
+            for (PipelineElementIterator i = new PipelineElementIterator(head_); i.hasNext();) {
+                PipelineElement<Object, Object> context = i.next();
                 StageKey ikey = context.key();
                 if (ikey.equals(newKey)) {
                     throw new IllegalArgumentException("newKey " + newKey + " already exists.");
@@ -181,8 +181,8 @@ public abstract class AbstractPipeline<S> implements Pipeline<S> {
                 }
             }
             if (target != null) {
-                StageContext<Object, Object> next = target.next();
-                StageContext<Object, Object> newContext = createContext(newKey, newStage, pool);
+                PipelineElement<Object, Object> next = target.next();
+                PipelineElement<Object, Object> newContext = createContext(newKey, newStage, pool);
                 newContext.setNext(next);
                 prev.setNext(newContext);
                 target.close();
@@ -192,10 +192,11 @@ public abstract class AbstractPipeline<S> implements Pipeline<S> {
         throw new NoSuchElementException("oldKey " + oldKey + " is not found.");
     }
 
-    protected abstract StageContext<Object, Object> createContext(StageKey key, S stage, StageContextExecutorPool pool);
+    protected abstract PipelineElement<Object, Object> createContext(
+            StageKey key, S stage, PipelineElementExecutorPool pool);
 
     public void close() {
-        for (StageContext<Object, Object> ctx = head_; ctx != TERMINAL; ctx = ctx.next()) {
+        for (PipelineElement<Object, Object> ctx = head_; ctx != TERMINAL; ctx = ctx.next()) {
             ctx.close();
         }
     }
@@ -209,7 +210,7 @@ public abstract class AbstractPipeline<S> implements Pipeline<S> {
         int counter = 0;
         Class<?> prevOutputClass = null;
         Class<?> prevStageClass = null;
-        for (StageContextIterator i = new StageContextIterator(head_); i.hasNext();) {
+        for (PipelineElementIterator i = new PipelineElementIterator(head_); i.hasNext();) {
             Class<?> stageClass = i.next().stage().getClass();
             for (Type type : stageClass.getGenericInterfaces()) {
                 Type[] actualTypeArguments = stageTypeParameters(type);
@@ -292,11 +293,18 @@ public abstract class AbstractPipeline<S> implements Pipeline<S> {
     }
 
     public void execute(Object input) {
-        head_.next().execute(input);
+        PipelineElement<Object, Object> next = head_.next();
+        next.executor().execute(next, input);
+    }
+
+    public void execute(Object input, TransportParameter parameter) {
+        PipelineElement<Object, Object> next = head_.next();
+        next.executor().execute(next, input, parameter);
     }
 
     public void execute(TransportStateEvent event) {
-        head_.next().execute(event);
+        PipelineElement<?, ?> next = head_.next();
+        next.executor().execute(next, event);
     }
 
     @Override
@@ -309,9 +317,9 @@ public abstract class AbstractPipeline<S> implements Pipeline<S> {
         return transport_;
     }
 
-    protected StageContext<Object, Object> search(StageKey key) {
-        for (StageContextIterator i = new StageContextIterator(head_); i.hasNext();) {
-            StageContext<Object, Object> context = i.next();
+    protected PipelineElement<Object, Object> search(StageKey key) {
+        for (PipelineElementIterator i = new PipelineElementIterator(head_); i.hasNext();) {
+            PipelineElement<Object, Object> context = i.next();
             if (context.key() == key) {
                 return context;
             }
@@ -319,13 +327,13 @@ public abstract class AbstractPipeline<S> implements Pipeline<S> {
         return null;
     }
 
-    protected Iterator<StageContext<Object, Object>> iterator() {
-        return new StageContextIterator(head_);
+    protected Iterator<PipelineElement<Object, Object>> iterator() {
+        return new PipelineElementIterator(head_);
     }
 
-    private static class NullContext extends StageContext<Object, Object> {
-        protected NullContext() {
-            super(null, null, null);
+    private static class NullPipelineElement extends PipelineElement<Object, Object> {
+        protected NullPipelineElement() {
+            super(null, null, NullPipelineElementExecutorPool.INSTANCE);
         }
         @Override
         protected Object stage() {
@@ -335,24 +343,71 @@ public abstract class AbstractPipeline<S> implements Pipeline<S> {
         protected void fire(Object input) {
         }
         @Override
+        protected void fire(Object input, TransportParameter parameter) {
+        }
+        @Override
         protected void fire(TransportStateEvent event) {
+        }
+        @Override
+        public TransportParameter transportParameter() {
+            return DefaultTransportParameter.NO_PARAMETER;
+        }
+    }
+
+    private static class NullPipelineElementExecutorPool implements PipelineElementExecutorPool {
+
+        static final NullPipelineElementExecutorPool INSTANCE = new NullPipelineElementExecutorPool();
+
+        @Override
+        public PipelineElementExecutor assign(PipelineElement<?, ?> context) {
+            return NullPipelineElementExecutor.INSTANCE;
+        }
+
+        @Override
+        public void close() {
+        }
+    }
+
+    private static class NullPipelineElementExecutor implements PipelineElementExecutor {
+
+        static final NullPipelineElementExecutor INSTANCE = new NullPipelineElementExecutor();
+
+        @Override
+        public <I> void execute(PipelineElement<I, ?> context, I input) {
+        }
+
+        @Override
+        public <I> void execute(PipelineElement<I, ?> context, I input, TransportParameter parameter) {
+        }
+
+        @Override
+        public void execute(PipelineElement<?, ?> context, TransportStateEvent event) {
+        }
+
+        @Override
+        public PipelineElementExecutorPool pool() {
+            return NullPipelineElementExecutorPool.INSTANCE;
+        }
+
+        @Override
+        public void close(PipelineElement<?, ?> context) {
         }
     }
 
     /**
-     * Iterates {@code StageContext} chain from head context.
+     * Iterates {@code PipelineElement} chain from head context.
      */
-    private static class StageContextIterator implements Iterator<StageContext<Object, Object>> {
+    private static class PipelineElementIterator implements Iterator<PipelineElement<Object, Object>> {
 
-        private StageContext<Object, Object> context_;
-        private final StageContext<Object, Object> terminal_;
-        private StageContext<Object, Object> prev_;
+        private PipelineElement<Object, Object> context_;
+        private final PipelineElement<Object, Object> terminal_;
+        private PipelineElement<Object, Object> prev_;
 
-        StageContextIterator(StageContext<Object, Object> head) {
+        PipelineElementIterator(PipelineElement<Object, Object> head) {
             this(head, TERMINAL);
         }
 
-        StageContextIterator(StageContext<Object, Object> head, StageContext<Object, Object> terminal) {
+        PipelineElementIterator(PipelineElement<Object, Object> head, PipelineElement<Object, Object> terminal) {
             context_ = head;
             terminal_ = terminal;
             prev_ = null;
@@ -364,7 +419,7 @@ public abstract class AbstractPipeline<S> implements Pipeline<S> {
         }
 
         @Override
-        public StageContext<Object, Object> next() {
+        public PipelineElement<Object, Object> next() {
             prev_ = context_;
             context_ = context_.next();
             if (context_ == terminal_) {
@@ -378,7 +433,7 @@ public abstract class AbstractPipeline<S> implements Pipeline<S> {
             throw new UnsupportedOperationException();
         }
 
-        public StageContext<Object, Object> prev() {
+        public PipelineElement<Object, Object> prev() {
             return prev_;
         }
     }

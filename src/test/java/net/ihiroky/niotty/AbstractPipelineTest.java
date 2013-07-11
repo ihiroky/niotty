@@ -29,8 +29,8 @@ public class AbstractPipelineTest {
         sut.add(key0, stage0);
         sut.add(key1, stage1);
 
-        Iterator<StageContext<Object, Object>> i = sut.iterator();
-        StageContext<Object, Object> context = i.next();
+        Iterator<PipelineElement<Object, Object>> i = sut.iterator();
+        PipelineElement<Object, Object> context = i.next();
         assertThat(context.key(), is(key0));
         assertThat(context.stage(), is(stage0));
         context = i.next();
@@ -68,8 +68,8 @@ public class AbstractPipelineTest {
         sut.addBefore(key0, key1, stage1);
         sut.addBefore(key0, key2, stage2);
 
-        Iterator<StageContext<Object, Object>> i = sut.iterator();
-        StageContext<Object, Object> context = i.next();
+        Iterator<PipelineElement<Object, Object>> i = sut.iterator();
+        PipelineElement<Object, Object> context = i.next();
         assertThat(context.key(), is(key1));
         assertThat(context.stage(), is(stage1));
         context = i.next();
@@ -131,8 +131,8 @@ public class AbstractPipelineTest {
         sut.addAfter(key0, key1, stage1);
         sut.addAfter(key0, key2, stage2);
 
-        Iterator<StageContext<Object, Object>> i = sut.iterator();
-        StageContext<Object, Object> context = i.next();
+        Iterator<PipelineElement<Object, Object>> i = sut.iterator();
+        PipelineElement<Object, Object> context = i.next();
         assertThat(context.key(), is(key0));
         assertThat(context.stage(), is(stage0));
         context = i.next();
@@ -195,8 +195,8 @@ public class AbstractPipelineTest {
         sut.add(key2, stage2);
         sut.remove(key0);
 
-        Iterator<StageContext<Object, Object>> i = sut.iterator();
-        StageContext<Object, Object> context = i.next();
+        Iterator<PipelineElement<Object, Object>> i = sut.iterator();
+        PipelineElement<Object, Object> context = i.next();
         assertThat(context.key(), is(key1));
         assertThat(context.stage(), is(stage1));
         context = i.next();
@@ -220,8 +220,8 @@ public class AbstractPipelineTest {
         sut.add(key2, stage2);
         sut.remove(key1);
 
-        Iterator<StageContext<Object, Object>> i = sut.iterator();
-        StageContext<Object, Object> context = i.next();
+        Iterator<PipelineElement<Object, Object>> i = sut.iterator();
+        PipelineElement<Object, Object> context = i.next();
         assertThat(context.key(), is(key0));
         assertThat(context.stage(), is(stage0));
         context = i.next();
@@ -245,8 +245,8 @@ public class AbstractPipelineTest {
         sut.add(key2, stage2);
         sut.remove(key2);
 
-        Iterator<StageContext<Object, Object>> i = sut.iterator();
-        StageContext<Object, Object> context = i.next();
+        Iterator<PipelineElement<Object, Object>> i = sut.iterator();
+        PipelineElement<Object, Object> context = i.next();
         assertThat(context.key(), is(key0));
         assertThat(context.stage(), is(stage0));
         context = i.next();
@@ -288,8 +288,8 @@ public class AbstractPipelineTest {
         sut.add(key2, stage2);
         sut.replace(key0, key3, stage3);
 
-        Iterator<StageContext<Object, Object>> i = sut.iterator();
-        StageContext<Object, Object> context = i.next();
+        Iterator<PipelineElement<Object, Object>> i = sut.iterator();
+        PipelineElement<Object, Object> context = i.next();
         assertThat(context.key(), is(key3));
         assertThat(context.stage(), is(stage3));
         context = i.next();
@@ -318,8 +318,8 @@ public class AbstractPipelineTest {
         sut.add(key2, stage2);
         sut.replace(key1, key3, stage3);
 
-        Iterator<StageContext<Object, Object>> i = sut.iterator();
-        StageContext<Object, Object> context = i.next();
+        Iterator<PipelineElement<Object, Object>> i = sut.iterator();
+        PipelineElement<Object, Object> context = i.next();
         assertThat(context.key(), is(key0));
         assertThat(context.stage(), is(stage0));
         context = i.next();
@@ -348,8 +348,8 @@ public class AbstractPipelineTest {
         sut.add(key2, stage2);
         sut.replace(key2, key3, stage3);
 
-        Iterator<StageContext<Object, Object>> i = sut.iterator();
-        StageContext<Object, Object> context = i.next();
+        Iterator<PipelineElement<Object, Object>> i = sut.iterator();
+        PipelineElement<Object, Object> context = i.next();
         assertThat(context.key(), is(key0));
         assertThat(context.stage(), is(stage0));
         context = i.next();
@@ -407,9 +407,9 @@ public class AbstractPipelineTest {
         }
 
         @Override
-        protected StageContext<Object, Object> createContext(
-                StageKey key, final Object stage, StageContextExecutorPool pool) {
-            return new StageContext<Object, Object>(this, key, pool) {
+        protected PipelineElement<Object, Object> createContext(
+                StageKey key, final Object stage, PipelineElementExecutorPool pool) {
+            return new PipelineElement<Object, Object>(this, key, pool) {
                 @Override
                 protected Object stage() {
                     return stage;
@@ -418,7 +418,14 @@ public class AbstractPipelineTest {
                 protected void fire(Object input) {
                 }
                 @Override
+                protected void fire(Object input, TransportParameter parameter) {
+                }
+                @Override
                 protected void fire(TransportStateEvent event) {
+                }
+                @Override
+                public TransportParameter transportParameter() {
+                    return DefaultTransportParameter.NO_PARAMETER;
                 }
             };
         }

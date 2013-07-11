@@ -1,11 +1,9 @@
 package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.DefaultTransportFuture;
+import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.TransportFuture;
-import net.ihiroky.niotty.buffer.BufferSink;
 
-import java.net.InetAddress;
-import java.net.NetworkInterface;
 import java.net.SocketAddress;
 
 /**
@@ -17,6 +15,7 @@ public class ConnectionWaitTransport extends NioSocketTransport<ConnectSelector>
     private final DefaultTransportFuture future_;
 
     ConnectionWaitTransport(NioClientSocketTransport transport, DefaultTransportFuture future) {
+        super("ConnectionPending", PipelineComposer.empty(), DEFAULT_WEIGHT);
         transport_ = transport;
         future_ = future;
     }
@@ -30,17 +29,7 @@ public class ConnectionWaitTransport extends NioSocketTransport<ConnectSelector>
     }
 
     @Override
-    protected void writeDirect(BufferSink buffer) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void bind(SocketAddress local) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public TransportFuture connect(SocketAddress remote) {
+    public TransportFuture bind(SocketAddress local) {
         throw new UnsupportedOperationException();
     }
 
@@ -50,22 +39,7 @@ public class ConnectionWaitTransport extends NioSocketTransport<ConnectSelector>
     }
 
     @Override
-    public void join(InetAddress group, NetworkInterface networkInterface) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void join(InetAddress group, NetworkInterface networkInterface, InetAddress source) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public void write(Object message) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void write(Object message, SocketAddress remote) {
         throw new UnsupportedOperationException();
     }
 

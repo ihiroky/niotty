@@ -1,50 +1,66 @@
 package net.ihiroky.niotty.buffer;
 
 import java.io.IOException;
+import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
-import java.nio.channels.WritableByteChannel;
+import java.nio.channels.GatheringByteChannel;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CoderResult;
-import java.util.Arrays;
+import java.util.Objects;
 
 /**
  * Implementation of {@link net.ihiroky.niotty.buffer.CodecBuffer} using {@code byte[]}.
  *
  * @author Hiroki Itoh
  */
-public class ArrayCodecBuffer extends AbstractCodecBuffer implements CodecBuffer {
+public class ArrayCodecBuffer extends AbstractCodecBuffer {
 
+    private Chunk<byte[]> chunk_;
     private byte[] buffer_;
-    private int offset_;
     private int beginning_;
     private int end_;
 
-    private static final int EXPAND_MULTIPLIER = 2;
-    private static final int DEFAULT_CAPACITY = 512;
-
     ArrayCodecBuffer() {
-        this(DEFAULT_CAPACITY);
+        this(ArrayChunkFactory.instance(), Buffers.DEFAULT_CAPACITY);
     }
 
-    ArrayCodecBuffer(int initialCapacity) {
+    ArrayCodecBuffer(ChunkManager<byte[]> manager, int initialCapacity) {
+        Objects.requireNonNull(manager, "manager");
         if (initialCapacity < 0) {
             throw new IllegalArgumentException("initialCapacity must not be negative.");
         }
-        buffer_ = new byte[initialCapacity];
+        chunk_ = manager.newChunk(initialCapacity);
+        buffer_ = chunk_.initialize();
     }
 
-    ArrayCodecBuffer(byte[] b, int offset, int length) {
-        if (offset + length > b.length) {
-            throw new IndexOutOfBoundsException(
-                    "offset + length (" + (offset + length) + ") exceeds buffer capacity " + b.length);
+    ArrayCodecBuffer(byte[] b, int beginning, int length) {
+        Objects.requireNonNull(b, "b");
+        if (beginning < 0) {
+            throw new IllegalArgumentException("beginning must be zero or positive.");
         }
-        buffer_ = b;
-        this.offset_ = offset;
-        beginning_ = offset;
-        end_ = offset + length;
+        if (length < 0) {
+            throw new IllegalArgumentException("length must be zero or positive.");
+        }
+        if (beginning + length > b.length) {
+            throw new IndexOutOfBoundsException(
+                    "offset + length (" + (beginning + length) + ") exceeds buffer capacity " + b.length);
+        }
+        ArrayChunk c = new ArrayChunk(b, ArrayChunkFactory.instance());
+        c.ready();
+        chunk_ = c;
+        buffer_ = c.initialize();
+        beginning_ = beginning;
+        end_ = beginning + length;
+    }
+
+    private ArrayCodecBuffer(ArrayCodecBuffer b) {
+        chunk_ = b.chunk_;
+        buffer_ = b.chunk_.retain();
+        beginning_ = b.beginning_;
+        end_ = b.end_;
     }
 
     /**
@@ -54,11 +70,18 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer implements CodecBuffer
      * @param space the size of byte to be written
      */
     void ensureSpace(int space) {
-        int capacity = buffer_.length;
-        int required = end_ + space;
-        if (required > capacity) {
-            int twice = capacity * EXPAND_MULTIPLIER;
-            buffer_ = Arrays.copyOf(buffer_, (required >= twice) ? required : twice);
+        int mySpace = buffer_.length - end_;
+        if (space > mySpace) {
+            int remaining = end_ - beginning_;
+            int minExpandBase = (beginning_ == 0) ? chunk_.size() : remaining;
+            int newCapacity = Math.max(remaining + space, minExpandBase * EXPAND_MULTIPLIER);
+            Chunk<byte[]> newChunk = chunk_.reallocate(newCapacity);
+            byte[] newBuffer = newChunk.initialize();
+            System.arraycopy(buffer_, beginning_, newBuffer, 0, remaining);
+            beginning_ = 0;
+            end_ = remaining;
+            chunk_ = newChunk;
+            buffer_ = newBuffer;
         }
     }
 
@@ -69,14 +92,6 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer implements CodecBuffer
     public void writeByte(int value) {
         ensureSpace(1);
         buffer_[end_++] = (byte) value;
-    }
-
-    @Override
-    public void writeByte(int position, int value) {
-        if (position < offset_ || position >= buffer_.length) {
-            throw new IndexOutOfBoundsException("position must be in [" + offset_ + ", " + buffer_.length + ")");
-        }
-        buffer_[position] = (byte) value;
     }
 
     /**
@@ -103,49 +118,12 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer implements CodecBuffer
      * {@inheritDoc}
      */
     @Override
-    public void writeBytes4(int bits, int bytes) {
-        if (bytes < 0 || bytes > CodecUtil.INT_BYTES) {
-            throw new IllegalArgumentException("bytes must be in int bytes.");
-        }
-
-        ensureSpace(bytes);
-        int bytesMinus1 = bytes - 1;
-        int base = end_;
-        byte[] b = buffer_;
-        for (int i = 0; i < bytes; i++) {
-            b[base + i] = (byte) ((bits >>> (bytesMinus1 - i)) & CodecUtil.BYTE_MASK);
-        }
-        end_ = base + bytes;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void writeBytes8(long bits, int bytes) {
-        if (bytes < 0 || bytes > CodecUtil.LONG_BYTES) {
-            throw new IllegalArgumentException("bytes must be in long bytes.");
-        }
-
-        ensureSpace(bytes);
-        int bytesMinus1 = bytes - 1;
-        int base = end_;
-        byte[] b = buffer_;
-        for (int i = 0; i < bytes; i++) {
-            b[base + i] = (byte) ((bits >>> (bytesMinus1 - i)) & CodecUtil.BYTE_MASK);
-        }
-        end_ = base + bytes;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public void writeShort(short value) {
         ensureSpace(CodecUtil.SHORT_BYTES);
         int c = end_;
-        buffer_[c] = (byte) ((value >>> CodecUtil.BYTE_SHIFT1) & CodecUtil.BYTE_MASK);
-        buffer_[c + 1] = (byte) (value & CodecUtil.BYTE_MASK);
+        byte[] b = buffer_;
+        b[c] = (byte) ((value >>> CodecUtil.BYTE_SHIFT1) & CodecUtil.BYTE_MASK);
+        b[c + 1] = (byte) (value & CodecUtil.BYTE_MASK);
         end_ = c + CodecUtil.SHORT_BYTES;
     }
 
@@ -156,8 +134,9 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer implements CodecBuffer
     public void writeChar(char value) {
         ensureSpace(CodecUtil.CHAR_BYTES);
         int c = end_;
-        buffer_[c] = (byte) ((value >>> CodecUtil.BYTE_SHIFT1) & CodecUtil.BYTE_MASK);
-        buffer_[c + 1] = (byte) (value & CodecUtil.BYTE_MASK);
+        byte[] b = buffer_;
+        b[c] = (byte) ((value >>> CodecUtil.BYTE_SHIFT1) & CodecUtil.BYTE_MASK);
+        b[c + 1] = (byte) (value & CodecUtil.BYTE_MASK);
         end_ = c + CodecUtil.CHAR_BYTES;
     }
 
@@ -200,33 +179,28 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer implements CodecBuffer
     /**
      * {@inheritDoc}
      */
-    public void writeString(CharsetEncoder charsetEncoder, String s) {
-        if (s == null) {
-            throw new NullPointerException("s must not be null.");
-        }
+    public void writeString(String s, CharsetEncoder encoder) {
+        Objects.requireNonNull(encoder, "encoder");
+        Objects.requireNonNull(s, "s");
 
-        if (StringCache.writeEmptyOrOneCharAscii(this, charsetEncoder, s)) {
-            return;
-        }
-
-        int length = s.length();
-        int expectedLengthBytes = CodecUtil.variableByteLength(
-                Buffers.outputByteBufferSize(charsetEncoder.averageBytesPerChar(), length));
-        ensureSpace(expectedLengthBytes);
-        end_ += expectedLengthBytes;
-        int startPosition = end_;
+        int end = end_;
         CharBuffer input = CharBuffer.wrap(s);
-        ByteBuffer output = ByteBuffer.wrap(buffer_, end_, buffer_.length - end_);
+        ByteBuffer output = ByteBuffer.wrap(buffer_, end, buffer_.length - end);
         for (;;) {
-            CoderResult cr = charsetEncoder.encode(input, output, true);
-            if (!cr.isError() && !cr.isOverflow()) {
-                end_ = output.position();
-                break;
+            CoderResult cr = encoder.encode(input, output, true);
+            if (cr.isUnderflow()) {
+                cr = encoder.flush(output);
+                if (cr.isUnderflow()) {
+                    end_ = output.position();
+                    encoder.reset();
+                    break;
+                }
             }
             if (cr.isOverflow()) {
-                end_ = output.position();
-                ensureSpace((int) (charsetEncoder.averageBytesPerChar() * input.remaining() + 1));
-                output = ByteBuffer.wrap(buffer_, end_, buffer_.length - end_);
+                end = output.position();
+                end_ = end;
+                ensureSpace(Buffers.outputByteBufferSize(encoder, input.remaining()));
+                output = ByteBuffer.wrap(buffer_, end, buffer_.length - end);
                 continue;
             }
             if (cr.isError()) {
@@ -238,26 +212,6 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer implements CodecBuffer
                 }
             }
         }
-        int outputLength = end_ - startPosition;
-        int lengthBytes = CodecUtil.variableByteLength(outputLength);
-        if (lengthBytes != expectedLengthBytes) {
-            int delta = lengthBytes - expectedLengthBytes;
-            ensureSpace(delta);
-            System.arraycopy(buffer_, startPosition, buffer_, startPosition + delta, outputLength);
-            end_ += delta;
-        }
-        int tmp = end_;
-        end_ = startPosition - expectedLengthBytes;
-        writeVariableByteInteger(outputLength);
-        end_ = tmp;
-    }
-
-    @Override
-    public int readByte(int position) {
-        if (position < offset_ || position >= buffer_.length) {
-            throw new IndexOutOfBoundsException("position must be in [" + offset_ + ", " + buffer_.length + ")");
-        }
-        return buffer_[position] & CodecUtil.BYTE_MASK;
     }
 
     /**
@@ -275,71 +229,31 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer implements CodecBuffer
      * {@inheritDoc}
      */
     @Override
-    public void readBytes(byte[] bytes, int offset, int length) {
-        int beginning = beginning_;
-        if (beginning + length > end_) {
-            throw new IndexOutOfBoundsException("beginning exceeds end if " + length + " byte is read.");
+    public int readBytes(byte[] bytes, int offset, int length) {
+        if (bytes.length < offset + length) {
+            throw new IllegalArgumentException(
+                    "length of bytes is too short to read " + length + " bytes from offset " + offset + ".");
         }
-        System.arraycopy(buffer_, beginning, bytes, offset, length);
-        beginning_ += length;
+        int beginning = beginning_;
+        int remaining = end_ - beginning;
+        int read = (length <= remaining) ? length : remaining;
+        System.arraycopy(buffer_, beginning, bytes, offset, read);
+        beginning_ += read;
+        return read;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void readBytes(ByteBuffer byteBuffer) {
+    public int readBytes(ByteBuffer byteBuffer) {
         int space = byteBuffer.remaining();
-        int remaining = remainingBytes();
+        int beginning = beginning_;
+        int remaining = end_ - beginning;
         int read = (space <= remaining) ? space : remaining;
         byteBuffer.put(buffer_, beginning_, read);
         beginning_ += read;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int readBytes4(int bytes) {
-        if (bytes < 0 || bytes > CodecUtil.INT_BYTES) {
-            throw new IllegalArgumentException("bytes must be in [0, 4].");
-        }
-
-        int pos = beginning_;
-        if (pos + bytes > end_) {
-            throw new IndexOutOfBoundsException("beginning exceeds end if " + bytes + " byte is read.");
-        }
-
-        byte[] b = buffer_;
-        int decoded = 0;
-        for (int i = 0; i < bytes; i++) {
-            decoded = (decoded << CodecUtil.BITS_PER_BYTE) | (b[pos++] & CodecUtil.BYTE_MASK);
-        }
-        beginning_ = pos;
-        return decoded;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public long readBytes8(int bytes) {
-        if (bytes < 0 || bytes > CodecUtil.LONG_BYTES) {
-            throw new IllegalArgumentException("bytes must be in [0, 8].");
-        }
-
-        int pos = beginning_;
-        if (pos + bytes > end_) {
-            throw new IndexOutOfBoundsException("beginning exceeds end if " + bytes + " byte is read.");
-        }
-
-        byte[] b = buffer_;
-        long decoded = 0L;
-        for (int i = 0; i < bytes; i++) {
-            decoded = (decoded << CodecUtil.BITS_PER_BYTE) | (b[pos++] & CodecUtil.BYTE_MASK);
-        }
-        beginning_ = pos;
-        return decoded;
+        return read;
     }
 
     /**
@@ -350,8 +264,9 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer implements CodecBuffer
         if (beginning_ + CodecUtil.CHAR_BYTES > end_) {
             throw new IndexOutOfBoundsException("position exceeds the end of buffer if read char.");
         }
-        return (char) (((buffer_[beginning_++] & CodecUtil.BYTE_MASK) << CodecUtil.BYTE_SHIFT1)
-                | (buffer_[beginning_++] & CodecUtil.BYTE_MASK));
+        byte[] b = buffer_;
+        return (char) (((b[beginning_++] & CodecUtil.BYTE_MASK) << CodecUtil.BYTE_SHIFT1)
+                | (b[beginning_++] & CodecUtil.BYTE_MASK));
     }
 
     /**
@@ -362,8 +277,9 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer implements CodecBuffer
         if (beginning_ + CodecUtil.SHORT_BYTES > end_) {
             throw new IndexOutOfBoundsException("position exceeds the end of buffer if read short.");
         }
-        return (short) (((buffer_[beginning_++] & CodecUtil.BYTE_MASK) << CodecUtil.BYTE_SHIFT1)
-                | (buffer_[beginning_++] & CodecUtil.BYTE_MASK));
+        byte[] b = buffer_;
+        return (short) (((b[beginning_++] & CodecUtil.BYTE_MASK) << CodecUtil.BYTE_SHIFT1)
+                | (b[beginning_++] & CodecUtil.BYTE_MASK));
     }
 
     /**
@@ -407,23 +323,26 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer implements CodecBuffer
     }
 
     @Override
-    public String readString(CharsetDecoder charsetDecoder, int bytes) {
-        String cached = StringCache.getCachedValue(this, charsetDecoder, bytes);
+    public String readString(CharsetDecoder decoder, int bytes) {
+        String cached = StringCache.getCachedValue(this, decoder, bytes);
         if (cached != null) {
             return cached;
         }
 
-        float charsPerByte = charsetDecoder.averageCharsPerByte();
         ByteBuffer input = ByteBuffer.wrap(buffer_, beginning_, bytes);
-        CharBuffer output = CharBuffer.allocate(Buffers.outputCharBufferSize(charsPerByte, bytes));
+        CharBuffer output = CharBuffer.allocate(Buffers.outputCharBufferSize(decoder, bytes));
         for (;;) {
-            CoderResult cr = charsetDecoder.decode(input, output, true);
-            if (!cr.isError() && !cr.isOverflow()) {
-                beginning_ = input.position();
-                break;
+            CoderResult cr = decoder.decode(input, output, true);
+            if (cr.isUnderflow()) {
+                cr = decoder.flush(output);
+                if (cr.isUnderflow()) {
+                    beginning_ = input.position();
+                    decoder.reset();
+                    break;
+                }
             }
             if (cr.isOverflow()) {
-                output = Buffers.expand(output, charsPerByte, input.remaining());
+                output = Buffers.expand(output, decoder, input.remaining());
                 continue;
             }
             if (cr.isError()) {
@@ -432,7 +351,7 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer implements CodecBuffer
             }
         }
         output.flip();
-        return StringCache.toString(output, charsetDecoder);
+        return StringCache.toString(output, decoder);
     }
 
     /**
@@ -453,25 +372,104 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer implements CodecBuffer
      * {@inheritDoc}
      */
     @Override
-    public boolean transferTo(WritableByteChannel channel, ByteBuffer writeBuffer) throws IOException {
+    public boolean transferTo(GatheringByteChannel channel) throws IOException {
         int remaining = end_ - beginning_;
-        while (remaining > 0) {
-            int space = writeBuffer.remaining();
-            int readyToWrite = (remaining <= space) ? remaining : space;
-            writeBuffer.put(buffer_, beginning_, readyToWrite);
-            writeBuffer.flip();
-            int writeBytes = channel.write(writeBuffer);
-            remaining -= writeBytes;
-            // Some bytes remains in writeBuffer. Stop this round
-            if (writeBytes < readyToWrite) {
-                beginning_ += writeBytes;
-                writeBuffer.clear();
-                return false;
-            }
-            writeBuffer.clear();
+        if (remaining == 0) {
+            return true;
         }
-        beginning_ = end_;
-        return true;
+
+        ByteBuffer byteBuffer = ByteBuffer.wrap(buffer_, beginning_, remaining);
+        int writeBytes = channel.write(byteBuffer);
+        beginning_ += writeBytes;
+        return writeBytes == remaining;
+    }
+
+    @Override
+    public void transferTo(ByteBuffer byteBuffer) {
+        int space = byteBuffer.remaining();
+        int beginning = beginning_;
+        int remaining = end_ - beginning;
+        if (space < remaining) {
+            throw new BufferOverflowException();
+        }
+        byteBuffer.put(buffer_, beginning_, remaining);
+    }
+
+    @Override
+    public ArrayCodecBuffer addFirst(CodecBuffer buffer) {
+        Objects.requireNonNull(buffer, "buffer");
+        int inputSize = buffer.remainingBytes();
+        if (inputSize == 0) {
+            return this;
+        }
+
+        int beginning = beginning_;
+        int frontSpace = beginning;
+
+        if (frontSpace < inputSize) {
+            int wantedBytes = inputSize - frontSpace;
+            if (spaceBytes() >= wantedBytes) {
+                System.arraycopy(buffer_, beginning, buffer_, beginning + wantedBytes, remainingBytes());
+                beginning += wantedBytes;
+                end_ += wantedBytes;
+            } else {
+                int remaining = remainingBytes();
+                int newEnd = remaining + inputSize;
+                int newCapacity = Math.max(remaining * EXPAND_MULTIPLIER, newEnd);
+                Chunk<byte[]> newChunk = chunk_.reallocate(newCapacity);
+                byte[] newBuffer = newChunk.initialize();
+                System.arraycopy(buffer_, beginning, newBuffer, inputSize, remaining);
+                beginning = inputSize;
+                end_ = newEnd;
+                chunk_ = newChunk;
+                buffer_ = newBuffer;
+            }
+        }
+
+        if (buffer.hasArray()) {
+            System.arraycopy(buffer.array(), buffer.beginning(), buffer_, beginning - inputSize, inputSize);
+        } else {
+            buffer.readBytes(buffer_, beginning - inputSize, inputSize);
+        }
+        beginning_ = beginning - inputSize;
+        return this;
+    }
+
+    @Override
+    public ArrayCodecBuffer addLast(CodecBuffer buffer) {
+        Objects.requireNonNull(buffer, "buffer");
+        int inputSize = buffer.remainingBytes();
+        if (inputSize == 0) {
+            return this;
+        }
+
+        int backSpace = spaceBytes();
+        if (inputSize > backSpace) {
+            int remaining = remainingBytes();
+            int frontSpace = beginning_;
+            int required = inputSize - backSpace;
+            if (frontSpace >= required) {
+                System.arraycopy(buffer_, beginning_, buffer_, 0, remaining);
+                beginning_ -= frontSpace;
+                end_ -= frontSpace;
+            } else {
+                int newCapacity = Math.max(remaining * EXPAND_MULTIPLIER, remaining + inputSize);
+                Chunk<byte[]> newChunk = chunk_.reallocate(newCapacity);
+                byte[] newBuffer = newChunk.initialize();
+                System.arraycopy(buffer_, beginning_, newBuffer, 0, remaining);
+                beginning_ = 0;
+                end_ = remaining;
+                chunk_ = newChunk;
+                buffer_ = newBuffer;
+            }
+        }
+        if (buffer.hasArray()) {
+            System.arraycopy(buffer.array(), buffer.beginning(), buffer_, end_, inputSize);
+        } else {
+            buffer.readBytes(buffer_, end_, inputSize);
+        }
+        end_ += inputSize;
+        return this;
     }
 
     /**
@@ -486,15 +484,9 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer implements CodecBuffer
      * {@inheritDoc}
      */
     @Override
-    public int priority() {
-        return Buffers.DEFAULT_PRIORITY;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public void dispose() {
+        // TODO discuss whether flag to control the call chunk_.release only once is needed.
+        chunk_.release();
     }
 
     /**
@@ -566,7 +558,6 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer implements CodecBuffer
     @Override
     public CodecBuffer clear() {
         beginning_ = 0;
-        offset_ = 0;
         end_ = 0;
         return this;
     }
@@ -575,7 +566,7 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer implements CodecBuffer
      * {@inheritDoc}
      */
     @Override
-    public ByteBuffer toByteBuffer() {
+    public ByteBuffer byteBuffer() {
         return ByteBuffer.wrap(buffer_, beginning_, (end_ - beginning_));
     }
 
@@ -591,7 +582,7 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer implements CodecBuffer
      * {@inheritDoc}
      */
     @Override
-    public byte[] toArray() {
+    public byte[] array() {
         return buffer_;
     }
 
@@ -599,7 +590,112 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer implements CodecBuffer
      * {@inheritDoc}
      */
     public int arrayOffset() {
-        return offset_;
+        return 0;
+    }
+
+    @Override
+    public int indexOf(int b, int fromIndex) {
+        byte bb = (byte) b;
+        int end = end_;
+
+        if (fromIndex < 0) {
+            fromIndex = 0;
+        }
+        int fromIndexInContent = fromIndex + beginning_;
+        if (fromIndexInContent >= end) {
+            return -1;
+        }
+
+        byte[] buffer = buffer_;
+        for (int i = fromIndexInContent; i < end; i++) {
+            if (buffer[i] == bb) {
+                return i - beginning_;
+            }
+        }
+        return -1;
+    }
+
+    @Override
+    public int indexOf(byte[] b, int fromIndex) {
+        if (b == null || b.length == 0) {
+            return -1;
+        }
+
+        int end = end_;
+        if (fromIndex < 0) {
+            fromIndex = 0;
+        }
+        int fromIndexInContent = fromIndex + beginning_;
+        if (fromIndexInContent >= end) {
+            return -1;
+        }
+
+        byte[] buffer = buffer_;
+        int e = end - b.length;
+        for (int i = fromIndexInContent; i <= e; i++) {
+            if (buffer[i] != b[0]) {
+                continue;
+            }
+            for (int bi = 1; bi < b.length; bi++) {
+                if (buffer[i + bi] == b[bi]) {
+                    return i - beginning_;
+                }
+            }
+        }
+        return -1;
+    }
+
+    @Override
+    public int lastIndexOf(int b, int fromIndex) {
+        byte bb = (byte) b;
+        int beginning = beginning_;
+        int end = end_;
+
+        int fromIndexInContent = fromIndex + beginning;
+        if (fromIndexInContent < beginning) {
+            return -1;
+        }
+        if (fromIndexInContent >= end) {
+            fromIndexInContent = end - 1;
+        }
+
+
+        byte[] buffer = buffer_;
+        for (int i = fromIndexInContent; i >= beginning; i--) {
+            if (buffer[i] == bb) {
+                return i - beginning;
+            }
+        }
+        return -1;
+    }
+
+    @Override
+    public int lastIndexOf(byte[] b, int fromIndex) {
+        if (b == null || b.length == 0 || fromIndex < 0) {
+            return -1;
+        }
+
+        int beginning = beginning_;
+        int end = end_;
+        int fromIndexInContent = fromIndex + beginning;
+        if (fromIndexInContent > end - b.length) {
+            fromIndexInContent = end - b.length;
+        }
+
+
+        byte[] buffer = buffer_;
+        BUFFER_LOOP: for (int i = fromIndexInContent; i >= beginning; i--) {
+            if (buffer[i] != b[0]) {
+                continue;
+            }
+            for (int bi = 1; bi < b.length; bi++) {
+                if (buffer[i + bi] != b[bi]) {
+                    continue BUFFER_LOOP;
+                }
+            }
+            return i - beginning;
+        }
+        return -1;
     }
 
     /**
@@ -640,24 +736,34 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer implements CodecBuffer
      */
     @Override
     public CodecBuffer slice(int bytes) {
-        if (bytes < 0 || bytes > remainingBytes()) {
+        if (bytes <= 0 || bytes > remainingBytes()) {
             throw new IllegalArgumentException("Invalid input " + bytes + ". " + remainingBytes() + " byte remains.");
         }
-        int position = beginning_;
+        CodecBuffer sliced = new SlicedCodecBuffer(duplicate(), bytes);
         beginning_ += bytes;
-        return new ArrayCodecBuffer(buffer_, position, bytes);
+        return sliced;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    @Override
+    public CodecBuffer slice() {
+        return new SlicedCodecBuffer(duplicate());
+    }
+
+    @Override
+    public CodecBuffer duplicate() {
+        return new ArrayCodecBuffer(this);
+    }
+
     @Override
     public CodecBuffer compact() {
-        int remaining = remainingBytes();
-        System.arraycopy(buffer_, beginning_, buffer_, 0, remaining);
+        int beginning = beginning_;
+        if (beginning == 0) {
+            return this;
+        }
+
+        System.arraycopy(buffer_, beginning, buffer_, 0, end_ - beginning);
+        end_ -= beginning;
         beginning_ = 0;
-        end_ = remaining;
-        offset_ = 0;
         return this;
     }
 
@@ -667,7 +773,19 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer implements CodecBuffer
      */
     @Override
     public String toString() {
-        return "(beginning:" + beginning_ + ", end:" + end_ + ", capacity:" + buffer_.length
-                + ", priority:" + priority() + ')';
+        return ArrayCodecBuffer.class.getName()
+                + "(beginning:" + beginning_ + ", end:" + end_ + ", capacity:" + buffer_.length + ')';
+    }
+
+    /**
+     * Returns a reference count of a chunk which manages an internal byte array.
+     * @return the reference count
+     */
+    public int referenceCount() {
+        return chunk_.referenceCount();
+    }
+
+    Chunk<byte[]> chunk() {
+        return chunk_;
     }
 }

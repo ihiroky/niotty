@@ -10,20 +10,20 @@ import java.nio.channels.SelectableChannel;
  *
  * @author Hiroki Itoh
  */
-public abstract class AbstractSelectorPool<S extends AbstractSelector<S>> extends TaskLoopGroup<S> {
+public abstract class AbstractSelectorPool<S extends AbstractSelector> extends TaskLoopGroup<S> {
 
     public void register(final SelectableChannel channel, final int ops, final NioSocketTransport<S> transport) {
-        S target = searchLowMemberCountLoop();
+        final S target = assign(transport);
         if (target == null) {
-            throw new AssertionError("should not reach here.");
+            throw new AssertionError("I should not reach here. Task threads may be stopped.");
         }
-        transport.addIOStage(target.ioStoreStage());
-        transport.setEventLoop(target);
-        target.offerTask(new TaskLoop.Task<S>() {
+        transport.addIOStage(target);
+        transport.setTaskLoop(target);
+        target.offerTask(new TaskLoop.Task() {
             @Override
-            public int execute(S eventLoop) {
-                eventLoop.register(channel, ops, transport);
-                return TaskLoop.TIMEOUT_NO_LIMIT;
+            public int execute() {
+                target.register(channel, ops, transport);
+                return TaskLoop.WAIT_NO_LIMIT;
             }
         });
     }

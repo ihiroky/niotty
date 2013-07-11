@@ -1,0 +1,153 @@
+package net.ihiroky.niotty;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.Mockito;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
+import static org.hamcrest.CoreMatchers.*;
+import static org.hamcrest.MatcherAssert.*;
+import static org.mockito.Mockito.*;
+
+/**
+ * @author Hiroki Itoh
+ */
+public class AbstractTransportFutureTest {
+
+    private DefaultTransportFuture sut_;
+    private AbstractTransport<?> transport_;
+
+    @Before
+    public void setUp() {
+        @SuppressWarnings("unchecked")
+        AbstractTransport<TaskLoop> transport = mock(AbstractTransport.class);
+        TaskLoop taskLoop = mock(TaskLoop.class);
+        transport.setTaskLoop(taskLoop);
+
+        transport_ = transport;
+        sut_ = new DefaultTransportFuture(transport);
+    }
+
+    @Test
+    public void testOneListenerIsCalledOnCompleteIfNotDoneAtAdded() throws Exception {
+        TransportFutureListener listener = mock(TransportFutureListener.class);
+        when(transport_.taskLoop().isInLoopThread()).thenReturn(true);
+
+        sut_.addListener(listener);
+        sut_.fireOnComplete();
+
+        verify(listener).onComplete(sut_);
+    }
+
+    @Test
+    public void testListenersIsCalledOnCompleteIfNotDoneAtAdded() throws Exception {
+        when(transport_.taskLoop().isInLoopThread()).thenReturn(true);
+        TransportFutureListener listener0 = mock(TransportFutureListener.class);
+        TransportFutureListener listener1 = mock(TransportFutureListener.class);
+        TransportFutureListener listener2 = mock(TransportFutureListener.class);
+
+        sut_.addListener(listener0);
+        sut_.addListener(listener1);
+        sut_.addListener(listener2);
+        sut_.fireOnComplete();
+
+        verify(listener0).onComplete(sut_);
+        verify(listener1).onComplete(sut_);
+        verify(listener2).onComplete(sut_);
+    }
+
+    @Test
+    public void testOneListenerIsCalledOnAddListenerIfDone() throws Exception {
+        when(transport_.taskLoop().isInLoopThread()).thenReturn(true);
+        TransportFutureListener listener = mock(TransportFutureListener.class);
+
+        sut_.done();
+        sut_.addListener(listener);
+
+        verify(listener).onComplete(sut_);
+    }
+
+    @Test
+    public void testListenersIsCalledOnAddListenerIfDone() throws Exception {
+        when(transport_.taskLoop().isInLoopThread()).thenReturn(true);
+        TransportFutureListener listener0 = mock(TransportFutureListener.class);
+        TransportFutureListener listener1 = mock(TransportFutureListener.class);
+        TransportFutureListener listener2 = mock(TransportFutureListener.class);
+
+        sut_.done();
+        sut_.addListener(listener0);
+        sut_.addListener(listener1);
+        sut_.addListener(listener2);
+
+        verify(listener0).onComplete(sut_);
+        verify(listener1).onComplete(sut_);
+        verify(listener2).onComplete(sut_);
+    }
+
+    @Test
+    public void testRemoveListener_InternalListenerGetsNullListener() throws Exception {
+        when(transport_.taskLoop().isInLoopThread()).thenReturn(true);
+        TransportFutureListener listener = mock(TransportFutureListener.class);
+
+        sut_.addListener(listener);
+        sut_.removeListener(listener);
+        sut_.fireOnComplete();
+
+        verify(listener, never()).onComplete(sut_);
+    }
+
+    @Test
+    public void testRemoveListener_InternalListenerGetsNormalListener() throws Exception {
+        when(transport_.taskLoop().isInLoopThread()).thenReturn(true);
+        TransportFutureListener listener0 = mock(TransportFutureListener.class);
+        TransportFutureListener listener1 = mock(TransportFutureListener.class);
+
+        sut_.addListener(listener0);
+        sut_.addListener(listener1);
+        sut_.removeListener(listener0);
+        sut_.fireOnComplete();
+
+        verify(listener0, never()).onComplete(sut_);
+        verify(listener1).onComplete(sut_);
+    }
+
+    @Test
+    public void testRemoveListener_InternalListenerGetsListenerList() throws Exception {
+        when(transport_.taskLoop().isInLoopThread()).thenReturn(true);
+        TransportFutureListener listener0 = mock(TransportFutureListener.class);
+        TransportFutureListener listener1 = mock(TransportFutureListener.class);
+        TransportFutureListener listener2 = mock(TransportFutureListener.class);
+
+        sut_.addListener(listener0);
+        sut_.addListener(listener1);
+        sut_.addListener(listener2);
+        sut_.removeListener(listener0);
+        sut_.fireOnComplete();
+
+        verify(listener0, never()).onComplete(sut_);
+        verify(listener1).onComplete(sut_);
+        verify(listener2).onComplete(sut_);
+    }
+
+    @Test
+    public void testFireOnComplete_CallsOfferTask() throws Exception {
+        final int[] taskResult = new int[]{0};
+        when(transport_.taskLoop().isInLoopThread()).thenReturn(false);
+        doAnswer(new Answer<Void>() {
+            @Override
+            public Void answer(InvocationOnMock invocation) throws Throwable {
+                TaskLoop.Task task = (TaskLoop.Task) invocation.getArguments()[0];
+                taskResult[0] = task.execute();
+                return null;
+            }
+        }).when(transport_.taskLoop()).offerTask(Mockito.any(TaskLoop.Task.class));
+        TransportFutureListener listener = mock(TransportFutureListener.class);
+
+        sut_.addListener(listener);
+        sut_.fireOnComplete();
+
+        verify(listener).onComplete(sut_);
+        assertThat(taskResult[0], is(-1));
+    }
+}

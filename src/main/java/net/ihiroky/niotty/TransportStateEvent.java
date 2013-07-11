@@ -1,22 +1,23 @@
 package net.ihiroky.niotty;
 
+import java.util.Objects;
+
 /**
  * Created on 13/01/11, 13:47
  *
  * @author Hiroki Itoh
  */
-public class TransportStateEvent {
+public abstract class TransportStateEvent {
 
     private TransportState state_;
     private Object value_;
-    private DefaultTransportFuture future_;
 
-    public TransportStateEvent(TransportState state, Object value) {
-        this(state, value, null);
+    public TransportStateEvent(TransportState state) {
+        this(state, null);
     }
 
-    public TransportStateEvent(TransportState state, Object value, DefaultTransportFuture future) {
-        future_ = future;
+    public TransportStateEvent(TransportState state, Object value) {
+        Objects.requireNonNull(state, "state");
         state_ = state;
         value_ = value;
     }
@@ -29,12 +30,30 @@ public class TransportStateEvent {
         return value_;
     }
 
-    public DefaultTransportFuture future() {
-        return future_;
+    protected void setValue(Object value) {
+        value_ = value;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(state_, value_);
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        if (object instanceof TransportStateEvent) {
+            TransportStateEvent that = (TransportStateEvent) object;
+            boolean stateEqual = this.state_ == that.state_;
+            boolean valueEqual = (this.value_ != null) ? this.value_.equals(that.value_) : that.value_ == null;
+            return stateEqual && valueEqual;
+        }
+        return false;
     }
 
     @Override
     public String toString() {
-        return "state:[" + state_ + "], value:[" + value_ + ']';
+        return "(state: " + state_ + ", value: " + value_ + ')';
     }
+
+    public abstract void execute();
 }

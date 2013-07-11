@@ -3,13 +3,15 @@ package net.ihiroky.niotty.buffer;
 /**
  * @author Hiroki Itoh
  */
-public final class CodecUtil {
+final class CodecUtil {
 
     private CodecUtil() {
         throw new AssertionError();
     }
 
     static final int BYTE_MASK = 0xFF;
+    static final int SHORT_MASK = 0xFFFF;
+    static final long INT_MASK = 0xFFFFFFFFL;
     static final int CHAR_BYTES = Character.SIZE / Byte.SIZE;
     static final int SHORT_BYTES = Short.SIZE / Byte.SIZE;
     static final int INT_BYTES = Integer.SIZE / Byte.SIZE;
@@ -31,16 +33,14 @@ public final class CodecUtil {
     static final int VB_SIGN_BIT = 0x40;
     static final int VB_LONG_MIN_LAST = 0x02;
     static final int VB_INT_MIN_LAST = 0x10;
-    static final long VB_BIT32 = 0xFFFFFFFFL;
 
     static int variableByteLength(int value) {
         if (value == Integer.MIN_VALUE) return 5;
 
         int magnitude = (value >= 0) ? value : -value;
-        int bits = VB_BIT_IN_FIRST_BYTE;
-        if (magnitude < (1 << bits)) return 1; // 6 bits
+        if (magnitude < (1 << VB_BIT_IN_FIRST_BYTE)) return 1; // 6 bits
 
-        bits += VB_BIT_IN_BYTE;
+        int bits = VB_BIT_IN_FIRST_BYTE + VB_BIT_IN_BYTE;
         if (magnitude < (1 << bits)) return 2; // 13 bits
 
         bits += VB_BIT_IN_BYTE;

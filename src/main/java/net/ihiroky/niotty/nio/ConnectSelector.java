@@ -1,8 +1,8 @@
 package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.DefaultTransportFuture;
+import net.ihiroky.niotty.DefaultTransportStateEvent;
 import net.ihiroky.niotty.TransportState;
-import net.ihiroky.niotty.TransportStateEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,13 +19,13 @@ import java.util.Set;
  *
  * @author Hiroki Itoh
  */
-public class ConnectSelector extends AbstractSelector<ConnectSelector> {
+public class ConnectSelector extends AbstractSelector {
 
-    private final MessageIOSelectorPool messageIOSelectorPool_;
+    private final TcpIOSelectorPool ioSelectorPool_;
     private Logger logger_ = LoggerFactory.getLogger(ConnectSelector.class);
 
-    ConnectSelector(MessageIOSelectorPool messageIOSelectorPool) {
-        messageIOSelectorPool_ = messageIOSelectorPool;
+    ConnectSelector(TcpIOSelectorPool ioSelectorPool) {
+        ioSelectorPool_ = ioSelectorPool;
     }
 
     @Override
@@ -54,9 +54,10 @@ public class ConnectSelector extends AbstractSelector<ConnectSelector> {
     void registerReadLater(SelectableChannel channel,
             NioClientSocketTransport transport, DefaultTransportFuture future) throws IOException {
         InetSocketAddress remoteAddress = transport.remoteAddress();
+        transport.loadEvent(new DefaultTransportStateEvent(TransportState.CONNECTED, remoteAddress));
+        ioSelectorPool_.register(channel, SelectionKey.OP_READ, transport);
+
+        // The done() must be called after register() to ensure that the SelectionKey of IO selector is fixed.
         future.done();
-        messageIOSelectorPool_.register(channel, SelectionKey.OP_READ, transport);
-        transport.fireOnConnect();
-        transport.loadEvent(new TransportStateEvent(TransportState.CONNECTED, remoteAddress));
     }
 }

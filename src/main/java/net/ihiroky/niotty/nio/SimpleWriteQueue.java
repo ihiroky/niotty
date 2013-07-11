@@ -3,8 +3,10 @@ package net.ihiroky.niotty.nio;
 import net.ihiroky.niotty.buffer.BufferSink;
 
 import java.io.IOException;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.channels.WritableByteChannel;
+import java.nio.channels.DatagramChannel;
+import java.nio.channels.GatheringByteChannel;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -15,7 +17,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  */
 public class SimpleWriteQueue implements WriteQueue {
 
-    private Queue<BufferSink> queue_;
+    private Queue<AttachedMessage<BufferSink>> queue_;
     private int lastFlushedBytes_;
 
     SimpleWriteQueue() {
@@ -23,43 +25,87 @@ public class SimpleWriteQueue implements WriteQueue {
     }
 
     @Override
-    public boolean offer(BufferSink bufferSink) {
-        return queue_.offer(bufferSink);
+    public boolean offer(AttachedMessage<BufferSink> message) {
+        return queue_.offer(message);
     }
 
     @Override
-    public FlushStatus flushTo(WritableByteChannel channel, ByteBuffer writeBuffer) throws IOException {
-        return flushTo(channel, writeBuffer, Integer.MAX_VALUE);
+    public FlushStatus flushTo(GatheringByteChannel channel) throws IOException {
+        return flushTo(channel, Integer.MAX_VALUE);
     }
 
-    FlushStatus flushTo(WritableByteChannel channel, ByteBuffer writeBuffer, int limitBytes) throws IOException {
+    FlushStatus flushTo(GatheringByteChannel channel, int limitBytes) throws IOException {
         int flushedBytes = 0;
 
         for (;;) {
-            BufferSink pendingBuffer = queue_.peek();
-            if (pendingBuffer == null) {
+            AttachedMessage<BufferSink> message = queue_.peek();
+            if (message == null) {
                 lastFlushedBytes_ = flushedBytes;
                 return FlushStatus.FLUSHED;
             }
-            int beforeTransfer = pendingBuffer.remainingBytes();
+
+            BufferSink buffer = message.message();
+            int beforeTransfer = buffer.remainingBytes();
             limitBytes -= beforeTransfer;
             if (limitBytes < 0) {
                 lastFlushedBytes_ = flushedBytes;
                 return FlushStatus.SKIP;
             }
-            if (pendingBuffer.transferTo(channel, writeBuffer)) {
+            if (buffer.transferTo(channel)) {
                 flushedBytes += beforeTransfer;
+                buffer.dispose();
                 queue_.poll();
                 if (flushedBytes >= limitBytes) {
                     lastFlushedBytes_ = flushedBytes;
                     return queue_.isEmpty() ? FlushStatus.FLUSHED : FlushStatus.SKIP;
                 }
             } else {
-                lastFlushedBytes_ = flushedBytes + (beforeTransfer - pendingBuffer.remainingBytes());
+                lastFlushedBytes_ = flushedBytes + (beforeTransfer - buffer.remainingBytes());
                 return FlushStatus.FLUSHING;
             }
         }
     }
+
+    // TODO change the writeBuffer to a chunk pool to avoid BufferOverflowException.
+    @Override
+    public FlushStatus flushTo(DatagramChannel channel, ByteBuffer writeBuffer) throws IOException {
+        return flushTo(channel, writeBuffer, Integer.MAX_VALUE);
+    }
+
+    FlushStatus flushTo(DatagramChannel channel, ByteBuffer byteBuffer, int limitBytes) throws IOException {
+        int flushedBytes = 0;
+
+        for (;;) {
+            AttachedMessage<BufferSink> message = queue_.peek();
+            if (message == null) {
+                lastFlushedBytes_ = flushedBytes;
+                return FlushStatus.FLUSHED;
+            }
+
+            BufferSink buffer = message.message();
+            byteBuffer.clear();
+            buffer.transferTo(byteBuffer);
+            byteBuffer.flip();
+            SocketAddress target = (SocketAddress) message.parameter().argument();
+
+            // transfer all data or not.
+            int transferred = (target != null) ? channel.send(byteBuffer, target) : channel.write(byteBuffer);
+
+            if (transferred > 0) {
+                flushedBytes += transferred;
+                buffer.dispose();
+                queue_.poll();
+                if (flushedBytes >= limitBytes) {
+                    lastFlushedBytes_ = flushedBytes;
+                    return queue_.isEmpty() ? FlushStatus.FLUSHED : FlushStatus.SKIP;
+                }
+            } else {
+                lastFlushedBytes_ = flushedBytes;
+                return FlushStatus.SKIP;
+            }
+        }
+    }
+
     @Override
     public int size() {
         return queue_.size();
@@ -77,8 +123,8 @@ public class SimpleWriteQueue implements WriteQueue {
 
     @Override
     public void clear() {
-        for (BufferSink bufferSink : queue_) {
-            bufferSink.dispose();
+        for (AttachedMessage<BufferSink> message : queue_) {
+            message.message().dispose();
         }
         queue_.clear();
     }

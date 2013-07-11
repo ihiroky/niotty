@@ -1,100 +1,71 @@
 package net.ihiroky.niotty.nio;
 
+import net.ihiroky.niotty.CancelledTransportFuture;
 import net.ihiroky.niotty.DefaultTransportFuture;
+import net.ihiroky.niotty.DefaultTransportStateEvent;
 import net.ihiroky.niotty.FailedTransportFuture;
-import net.ihiroky.niotty.SucceededTransportFuture;
-import net.ihiroky.niotty.TaskLoop;
+import net.ihiroky.niotty.PipelineComposer;
+import net.ihiroky.niotty.SuccessfulTransportFuture;
 import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.TransportState;
+import net.ihiroky.niotty.TransportStateEvent;
 import net.ihiroky.niotty.buffer.BufferSink;
 
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.NetworkInterface;
 import java.net.SocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
-import java.nio.channels.WritableByteChannel;
 import java.util.Objects;
 
 /**
  * @author Hiroki Itoh
  */
-public class NioClientSocketTransport extends NioSocketTransport<MessageIOSelector> {
+public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> {
 
     private final SocketChannel clientChannel_;
-    private final ConnectSelectorPool connector_;
+    private final NioClientSocketProcessor processor_;
     private final WriteQueue writeQueue_;
 
-    NioClientSocketTransport(NioClientSocketConfig config, String name, ConnectSelectorPool connector) {
+    NioClientSocketTransport(
+            NioClientSocketConfig config, PipelineComposer composer, int weight,
+            String name, NioClientSocketProcessor processor) {
+        super(name, composer, weight);
+
         Objects.requireNonNull(config, "config");
-        Objects.requireNonNull(name, "name");
-        Objects.requireNonNull(connector, "connector");
+        Objects.requireNonNull(processor, "processor");
 
         try {
             SocketChannel clientChannel = SocketChannel.open();
             clientChannel.configureBlocking(false);
             config.applySocketOptions(clientChannel);
 
-            setUpPipelines(name, config.getPipelineInitializer());
-
             clientChannel_ = clientChannel;
-            connector_ = connector;
+            processor_ = processor;
             writeQueue_ = config.newWriteQueue();
         } catch (Exception e) {
             throw new RuntimeException("failed to open client socket channel.", e);
         }
     }
 
-    NioClientSocketTransport(NioServerSocketConfig config, String name, SocketChannel child) {
+    NioClientSocketTransport(
+            NioServerSocketConfig config, PipelineComposer composer, int weight,
+            String name, SocketChannel child) {
+        super(name, composer, weight);
+
         Objects.requireNonNull(config, "config");
-        Objects.requireNonNull(name, "name");
         Objects.requireNonNull(child, "child");
 
-        setUpPipelines(name, config.getPipelineInitializer());
-
         clientChannel_ = child;
-        connector_ = null;
+        processor_ = null;
         writeQueue_ = config.newWriteQueue();
     }
 
     @Override
-    protected void writeDirect(final BufferSink buffer) {
-        if (isInLoopThread()) {
-            writeBufferSink(buffer);
-        } else {
-            offerTask(new TaskLoop.Task<MessageIOSelector>() {
-                @Override
-                public int execute(MessageIOSelector eventLoop) throws Exception {
-                    writeBufferSink(buffer);
-                    return TaskLoop.TIMEOUT_NO_LIMIT;
-                }
-            });
-        }
-    }
-
-    @Override
-    public void bind(SocketAddress local) throws IOException {
-        if (connector_ == null) {
-            throw new IllegalStateException("Channel is an accepted channel.");
-        }
-        clientChannel_.bind(local);
-    }
-
-    @Override
-    public TransportFuture connect(SocketAddress remote) {
-        if (connector_ == null) {
-            throw new IllegalStateException("Channel is an accepted channel.");
-        }
+    public TransportFuture bind(SocketAddress local) {
         try {
-            if (clientChannel_.connect(remote)) {
-                return new SucceededTransportFuture(this);
-            }
-            DefaultTransportFuture future = new DefaultTransportFuture(this);
-            connector_.register(clientChannel_, SelectionKey.OP_CONNECT, new ConnectionWaitTransport(this, future));
-            return future;
+            clientChannel_.bind(local);
+            return new SuccessfulTransportFuture(this);
         } catch (IOException ioe) {
             return new FailedTransportFuture(this, ioe);
         }
@@ -102,27 +73,7 @@ public class NioClientSocketTransport extends NioSocketTransport<MessageIOSelect
 
     @Override
     public TransportFuture close() {
-        return isInLoopThread() ? closeSelectableChannel() : closeSelectableChannelLater(TransportState.CONNECTED);
-    }
-
-    @Override
-    public void join(InetAddress group, NetworkInterface networkInterface) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void join(InetAddress group, NetworkInterface networkInterface, InetAddress source) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void write(Object message) {
-        executeStore(message);
-    }
-
-    @Override
-    public void write(Object message, SocketAddress remote) {
-        throw new UnsupportedOperationException();
+        return closeSelectableChannel();
     }
 
     @Override
@@ -148,26 +99,112 @@ public class NioClientSocketTransport extends NioSocketTransport<MessageIOSelect
         return clientChannel_.isOpen();
     }
 
+    public int pendingWriteBuffers() {
+        return writeQueue_.size();
+    }
+
+    public TransportFuture connect(SocketAddress remote) {
+        if (clientChannel_.isConnectionPending() || clientChannel_.isConnected()) {
+            return new CancelledTransportFuture(this);
+        }
+
+        NioClientSocketProcessor processor = processor_;
+        if (processor == null) {
+            throw new IllegalStateException("No NioClientSocketProcessor is found.");
+        }
+
+        if (processor.hasConnectSelector()) {
+            // try non blocking connection
+            try {
+                if (clientChannel_.connect(remote)) {
+                    return new SuccessfulTransportFuture(this);
+                }
+                DefaultTransportFuture future = new DefaultTransportFuture(this);
+                processor.connectSelectorPool().register(
+                        clientChannel_, SelectionKey.OP_CONNECT, new ConnectionWaitTransport(this, future));
+                return future;
+            } catch (IOException ioe) {
+                return new FailedTransportFuture(this, ioe);
+            }
+        }
+
+        // try blocking connection
+        try {
+            clientChannel_.configureBlocking(true);
+            clientChannel_.connect(remote);
+            clientChannel_.configureBlocking(false);
+            loadEvent(new DefaultTransportStateEvent(TransportState.CONNECTED, remote));
+            processor.ioSelectorPool().register(clientChannel_, SelectionKey.OP_READ, this);
+            return new SuccessfulTransportFuture(this);
+        } catch (IOException ioe) {
+            try {
+                clientChannel_.configureBlocking(false);
+            } catch (IOException ioe0) {
+                ioe0.printStackTrace();
+            }
+            return new FailedTransportFuture(this, ioe);
+        }
+    }
+
     public boolean isConnected() {
         return clientChannel_.isConnected();
     }
 
-    void writeBufferSink(BufferSink buffer) {
-        writeQueue_.offer(buffer);
+    public TransportFuture shutdownOutput() {
+        TcpIOSelector selector = taskLoop();
+        if (selector == null) {
+            return new SuccessfulTransportFuture(this);
+        }
+        final DefaultTransportFuture future = new DefaultTransportFuture(this);
+        executeStore(new TransportStateEvent(TransportState.SHUTDOWN_OUTPUT) {
+            @Override
+            public void execute() {
+                SelectionKey key = key();
+                if (key != null && key.isValid()) {
+                    SocketChannel channel = (SocketChannel) key.channel();
+                    try {
+                        channel.shutdownOutput();
+                        future.done();
+                    } catch (IOException ioe) {
+                        future.setThrowable(ioe);
+                    }
+                }
+            }
+        });
+        return future;
     }
 
-    int flush(ByteBuffer byteBuffer) throws IOException {
-        WritableByteChannel channel = (WritableByteChannel) getSelectionKey().channel();
-        WriteQueue.FlushStatus status = writeQueue_.flushTo(channel, byteBuffer);
-        return status.waitTimeMillis_;
+    public TransportFuture shutdownInput() {
+        TcpIOSelector selector = taskLoop();
+        if (selector == null) {
+            return new SuccessfulTransportFuture(this);
+        }
+        final DefaultTransportFuture future = new DefaultTransportFuture(this);
+        executeStore(new TransportStateEvent(TransportState.SHUTDOWN_INPUT) {
+            @Override
+            public void execute() {
+                SelectionKey key = key();
+                if (key != null && key.isValid()) {
+                    SocketChannel channel = (SocketChannel) key.channel();
+                    try {
+                        channel.shutdownInput();
+                        future.done();
+                    } catch (IOException ioe) {
+                        future.setThrowable(ioe);
+                    }
+                }
+            }
+        });
+        return future;
+
     }
 
-    void loadEvent(Object message) {
-        executeLoad(message);
+    void readyToWrite(AttachedMessage<BufferSink> message) {
+        writeQueue_.offer(message);
     }
 
-    void fireOnConnect() {
-        getTransportListener().onConnect(this, remoteAddress());
+    int flush() throws IOException {
+        return writeQueue_.flushTo(clientChannel_).waitTimeMillis_;
     }
 
     @Override

@@ -5,13 +5,13 @@ import java.util.Objects;
 /**
  * @author Hiroki Itoh
  */
-public class LoadStageContext<I, O> extends StageContext<I, O> {
+public class LoadStageContext<I, O> extends PipelineElement<I, O> {
 
     private LoadStage<I, O> stage_;
 
     @SuppressWarnings("unchecked")
     public LoadStageContext(Pipeline<?> pipeline,
-                            StageKey key, LoadStage<Object, Object> stage, StageContextExecutorPool pool) {
+                            StageKey key, LoadStage<Object, Object> stage, PipelineElementExecutorPool pool) {
         super(pipeline, key, pool);
         Objects.requireNonNull(stage, "stage");
         this.stage_ = (LoadStage<I, O>) stage;
@@ -28,6 +28,12 @@ public class LoadStageContext<I, O> extends StageContext<I, O> {
     }
 
     @Override
+    protected void fire(I input, TransportParameter parameter) {
+        StageContext<O> context = wrappedStageContext(this, parameter);
+        stage_.load(context, input);
+    }
+
+    @Override
     protected void fire(TransportStateEvent event) {
         stage_.load(this, event);
     }
@@ -35,5 +41,10 @@ public class LoadStageContext<I, O> extends StageContext<I, O> {
     @Override
     public String toString() {
         return "(load stage:" + stage_ + ')';
+    }
+
+    @Override
+    public TransportParameter transportParameter() {
+        return DefaultTransportParameter.NO_PARAMETER;
     }
 }

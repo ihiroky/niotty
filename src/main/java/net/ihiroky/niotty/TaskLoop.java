@@ -3,14 +3,15 @@ package net.ihiroky.niotty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.AbstractQueue;
-import java.util.Collections;
-import java.util.Iterator;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -18,41 +19,27 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author Hiroki Itoh
  */
-public abstract class TaskLoop<L extends TaskLoop<L>> implements Runnable, Comparable<TaskLoop<L>> {
+public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
 
-    private volatile Queue<Task<L>> taskQueue_;
+    private final Queue<Task> taskQueue_;
     private volatile Thread thread_;
-
-    protected final AtomicInteger processingMemberCount_ = new AtomicInteger();
+    private final Set<TaskSelection> selectionSet_;
+    private final AtomicInteger weight_ = new AtomicInteger();
 
     private Logger logger_ = LoggerFactory.getLogger(TaskLoop.class);
 
-    public static final int TIMEOUT_NO_LIMIT = -1;
-    public static final int TIMEOUT_NOW = 0;
+    /** The value passed to {@link #process(int)} to indicate that the thread should wait without timeout. */
+    public static final int WAIT_NO_LIMIT = -1;
+
+    /** The value passed to {@link #process(int)} to indicate that the thread should not wait. */
+    public static final int RETRY_IMMEDIATELY = 0;
 
     protected TaskLoop() {
         taskQueue_ = new ConcurrentLinkedQueue<>();
+        selectionSet_ = new HashSet<>();
     }
 
-    synchronized void openWith(ThreadFactory tf) {
-        Objects.requireNonNull(tf, "tf");
-
-        onOpen();
-        if (thread_ == null) {
-            thread_ = tf.newThread(this);
-            thread_.start();
-        }
-    }
-
-    public synchronized void close() {
-        Thread t = thread_;
-        thread_ = null;
-        if (t != null) {
-            t.interrupt();
-        }
-    }
-
-    public void offerTask(Task<L> task) {
+    public void offerTask(Task task) {
         taskQueue_.offer(task);
         wakeUp();
     }
@@ -61,55 +48,66 @@ public abstract class TaskLoop<L extends TaskLoop<L>> implements Runnable, Compa
         return taskQueue_.isEmpty();
     }
 
-    public void run() {
-        Queue<Task<L>> taskBuffer = new LinkedList<Task<L>>();
-        int waitTimeMillis = 0;
-        try {
-            while (thread_ != null) {
-                try {
-                    process(waitTimeMillis);
-                } catch (Exception e) {
-                    if (thread_ != null) {
-                        logger_.warn("[run] process failed.", e);
-                    }
-                }
-                waitTimeMillis = processTasks(taskQueue_, taskBuffer);
-            }
-        } finally {
-            Queue<Task<L>> queue = taskQueue_;
-            taskQueue_ = EmptyQueue.emptyQueue();
-            queue.clear();
-            onClose();
-            synchronized (this) {
-                thread_ = null;
+    void waitUntilStarted() throws InterruptedException {
+        synchronized (this) {
+            while (thread_ == null) {
+                wait();
             }
         }
     }
 
-    private int processTasks(Queue<Task<L>> queue, Queue<Task<L>> buffer) {
-        @SuppressWarnings("unchecked") L loop = (L) this;
+    public void run() {
+        synchronized (this) {
+            thread_ = Thread.currentThread();
+            notifyAll();
+        }
+
+        Queue<Task> taskBuffer = new LinkedList<>();
+        int waitTimeMillis = RETRY_IMMEDIATELY;
+        Queue<Task> taskQueue = taskQueue_;
+        try {
+            onOpen();
+            while (thread_ != null) {
+                try {
+                    process(waitTimeMillis);
+                    waitTimeMillis = processTasks(taskQueue, taskBuffer);
+                } catch (InterruptedException ie) {
+                    logger_.debug("[run] Interrupted.", ie);
+                    break;
+                } catch (Exception e) {
+                    if (thread_ != null) {
+                        logger_.warn("[run] process failed.", e);
+                        waitTimeMillis = RETRY_IMMEDIATELY;
+                    }
+                }
+            }
+        } finally {
+            onClose();
+            thread_ = null;
+            taskQueue.clear();
+            synchronized (selectionSet_) {
+                selectionSet_.clear();
+            }
+        }
+    }
+
+    private int processTasks(Queue<Task> queue, Queue<Task> buffer) throws Exception {
         int minWaitTimeMillis = Integer.MAX_VALUE;
-        for (Task<L> task;;) {
+        for (Task task;;) {
             task = queue.poll();
             if (task == null) {
                 break;
             }
-            try {
-                int waitTimeMillis = task.execute(loop);
-                if (waitTimeMillis >= 0) {
-                    buffer.offer(task);
-                    if (minWaitTimeMillis > waitTimeMillis) {
-                        minWaitTimeMillis = waitTimeMillis;
-                    }
-                }
-            } catch (Exception e) {
-                if (thread_ != null) {
-                    logger_.warn("failed to execute task : " + task, e);
+            int waitTimeMillis = task.execute();
+            if (waitTimeMillis >= 0) {
+                buffer.offer(task);
+                if (minWaitTimeMillis > waitTimeMillis) {
+                    minWaitTimeMillis = waitTimeMillis;
                 }
             }
         }
         if (minWaitTimeMillis == Integer.MAX_VALUE) {
-            return TIMEOUT_NO_LIMIT;
+            return WAIT_NO_LIMIT;
         } else {
             queue.addAll(buffer);
             buffer.clear();
@@ -117,22 +115,86 @@ public abstract class TaskLoop<L extends TaskLoop<L>> implements Runnable, Compa
         }
     }
 
-    public int processingMemberCount() {
-        return processingMemberCount_.get();
-    }
-
     protected boolean isInLoopThread() {
         return Thread.currentThread() == thread_;
     }
 
-    @Override
-    public String toString() {
-        return (thread_ != null) ? thread_.getName() : "[NOT WORKING]";
+    protected boolean isAlive() {
+        Thread t = thread_;
+        return (t != null) && t.isAlive();
+    }
+
+    void close() {
+        Thread t = thread_;
+        if (t != null) {
+            t.interrupt();
+            thread_ = null;
+        }
     }
 
     @Override
-    public int compareTo(TaskLoop<L> that) {
-        return this.processingMemberCount_.get() - that.processingMemberCount_.get();
+    public String toString() {
+        return (thread_ != null) ? thread_.getName() : super.toString();
+    }
+
+    @Override
+    public int compareTo(TaskLoop that) {
+        return this.weight_.get() - that.weight_.get();
+    }
+
+    public boolean contains(TaskSelection selection) {
+        synchronized (selectionSet_) {
+            return selectionSet_.contains(selection);
+        }
+    }
+
+    public int accept(TaskSelection selection) {
+        Objects.requireNonNull(selection, "selection");
+        int weight = -1;
+        synchronized (selectionSet_) {
+            if (!selectionSet_.contains(selection)) {
+                weight = addWeight(selection.weight());
+                selectionSet_.add(selection);
+            }
+        }
+        return weight;
+    }
+
+    public int reject(TaskSelection selection) {
+        Objects.requireNonNull(selection, "selection");
+        int weight = -1;
+        synchronized (selectionSet_) {
+            if (selectionSet_.contains(selection)) {
+                weight = addWeight(-selection.weight());
+                selectionSet_.remove(selection);
+            }
+        }
+        return weight;
+    }
+
+    public Collection<TaskSelection> selectionView() {
+        List<TaskSelection> copy;
+        synchronized (selectionSet_) {
+            copy = new ArrayList<>(selectionSet_);
+        }
+        return copy;
+    }
+
+    private int addWeight(int weight) {
+        for (;;) {
+            int value = weight_.get();
+            int added = value + weight;
+            if (added < 0) {
+                added = (weight > 0) ? Integer.MAX_VALUE : 0;
+            }
+            if (weight_.compareAndSet(value, added)) {
+                return added;
+            }
+        }
+    }
+
+    protected int weight() {
+        return weight_.get();
     }
 
     protected abstract void onOpen();
@@ -140,42 +202,7 @@ public abstract class TaskLoop<L extends TaskLoop<L>> implements Runnable, Compa
     protected abstract void process(int waitTimeMillis) throws Exception;
     protected abstract void wakeUp();
 
-    public interface Task<L extends TaskLoop<L>> {
-        int execute(L eventLoop) throws Exception;
-    }
-
-    private static class EmptyQueue extends AbstractQueue<Object> {
-
-        private static final EmptyQueue INSTANCE = new EmptyQueue();
-
-        @SuppressWarnings("unchecked")
-        static <E> Queue<E> emptyQueue() {
-            return (Queue<E>) INSTANCE;
-        }
-
-        @Override
-        public Iterator<Object> iterator() {
-            return Collections.emptyIterator();
-        }
-
-        @Override
-        public int size() {
-            return 0;
-        }
-
-        @Override
-        public boolean offer(Object task) {
-            return false;
-        }
-
-        @Override
-        public Object poll() {
-            return null;
-        }
-
-        @Override
-        public Object peek() {
-            return null;
-        }
+    public interface Task {
+        int execute() throws Exception;
     }
 }

@@ -2,7 +2,7 @@ package net.ihiroky.niotty.buffer;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.WritableByteChannel;
+import java.nio.channels.GatheringByteChannel;
 import java.util.Objects;
 
 /**
@@ -13,29 +13,86 @@ import java.util.Objects;
  */
 public class BufferSinkList implements BufferSink {
 
-    private BufferSink car_;
-    private BufferSink cdr_;
-    private int priority_;
+    private final BufferSink car_;
+    private final BufferSink cdr_;
 
     BufferSinkList(BufferSink car, BufferSink cdr) {
-        this(car, cdr, Buffers.DEFAULT_PRIORITY);
-    }
-
-    BufferSinkList(BufferSink car, BufferSink cdr, int priority) {
         Objects.requireNonNull(car, "car");
         Objects.requireNonNull(cdr, "cdr");
         car_ = car;
         cdr_ = cdr;
-        priority_ = priority;
     }
 
-    /**
-     * Writes data in the pair which is given order at the constructor.
-     * {@inheritDoc}
-     */
     @Override
-    public boolean transferTo(WritableByteChannel channel, ByteBuffer writeBuffer) throws IOException {
-        return car_.transferTo(channel, writeBuffer) && cdr_.transferTo(channel, writeBuffer);
+    public boolean transferTo(GatheringByteChannel channel) throws IOException {
+        return car_.transferTo(channel) && cdr_.transferTo(channel);
+    }
+
+    @Override
+    public void transferTo(ByteBuffer buffer) {
+        car_.transferTo(buffer);
+        car_.transferTo(buffer);
+    }
+
+
+    @Override
+    public BufferSinkList addFirst(CodecBuffer buffer) {
+        car_.addFirst(buffer);
+        return this;
+    }
+
+    @Override
+    public BufferSinkList addLast(CodecBuffer buffer) {
+        cdr_.addLast(buffer);
+        return this;
+    }
+
+    @Override
+    public BufferSink slice(int bytes) {
+        int carRemaining = car_.remainingBytes();
+        int cdrRemaining = cdr_.remainingBytes();
+        if (bytes < 0 || bytes > carRemaining + cdrRemaining) {
+            throw new IllegalArgumentException("Invalid input " + bytes + ". "
+                    + (carRemaining + cdrRemaining) + " byte remains.");
+        }
+        BufferSink carSliced = null;
+        if (carRemaining > 0) {
+            if (carRemaining >= bytes) {
+                return car_.slice(bytes);
+            }
+            carSliced = car_.slice(carRemaining);
+            bytes -= carRemaining;
+        }
+
+        if (cdrRemaining > 0) {
+            return (carSliced != null) ? Buffers.wrap(carSliced, cdr_.slice(bytes)) : cdr_.slice(bytes);
+        }
+
+        // empty && bytes == 0
+        return Buffers.newCodecBuffer(0);
+    }
+
+    @Override
+    public BufferSinkList duplicate() {
+        return new BufferSinkList(car_.duplicate(), cdr_.duplicate());
+    }
+
+    @Override
+    public boolean hasArray() {
+        return false;
+    }
+
+    @Override
+    public byte[] array() {
+        int remaining = remainingBytes();
+        ByteBuffer bb = ByteBuffer.allocate(remaining);
+        transferTo(bb);
+        return bb.array();
+    }
+
+    @Override
+    public int arrayOffset() {
+        return 0;
     }
 
     /**
@@ -47,17 +104,17 @@ public class BufferSinkList implements BufferSink {
         return (sum <= Integer.MAX_VALUE) ? (int) sum : Integer.MAX_VALUE;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int priority() {
-        return priority_;
-    }
-
     @Override
     public void dispose() {
         car_.dispose();
         cdr_.dispose();
+    }
+
+    BufferSink car() {
+        return car_;
+    }
+
+    BufferSink cdr() {
+        return cdr_;
     }
 }
