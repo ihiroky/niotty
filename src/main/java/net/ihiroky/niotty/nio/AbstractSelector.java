@@ -15,6 +15,7 @@ import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created on 13/01/10, 17:56
@@ -45,11 +46,11 @@ public abstract class AbstractSelector extends TaskLoop implements StoreStage<Bu
     }
 
     @Override
-    protected void process(int waitTimeMillis) throws Exception {
+    protected void process(long timeout, TimeUnit timeUnit) throws Exception {
         int selected;
-        if (waitTimeMillis > 0) {
-            selected = selector_.select(waitTimeMillis);
-        } else if (waitTimeMillis == 0) {
+        if (timeout > 0) {
+            selected = selector_.select(timeUnit.toMillis(timeout));
+        } else if (timeout == 0) {
             selected = selector_.selectNow();
         } else { // if (timeout < 0) {
             selected = selector_.select();
@@ -125,7 +126,7 @@ public abstract class AbstractSelector extends TaskLoop implements StoreStage<Bu
         } else {
             offerTask(new Task() {
                     @Override
-                    public int execute() throws Exception {
+                    public long execute(TimeUnit timeUnit) throws Exception {
                         event.execute();
                         return TaskLoop.WAIT_NO_LIMIT;
                     }

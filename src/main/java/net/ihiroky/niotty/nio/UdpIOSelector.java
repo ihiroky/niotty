@@ -17,6 +17,7 @@ import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectionKey;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created on 13/01/15, 15:35
@@ -98,9 +99,10 @@ public class UdpIOSelector extends AbstractSelector {
         transport.readyToWrite(new AttachedMessage<>(input, context.transportParameter()));
         offerTask(new TaskLoop.Task() {
             @Override
-            public int execute() throws Exception {
+            public long execute(TimeUnit timeUnit) throws Exception {
                 try {
-                    return transport.flush(writeBuffer_);
+                    long waitTime = transport.flush(writeBuffer_);
+                    return timeUnit.convert(waitTime, TimeUnit.MILLISECONDS);
                 } catch (IOException ioe) {
                     logger_.error("failed to flush buffer to " + transport, ioe);
                     transport.closeSelectableChannel();

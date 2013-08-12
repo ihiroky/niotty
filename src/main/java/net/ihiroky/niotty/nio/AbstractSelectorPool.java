@@ -4,6 +4,7 @@ import net.ihiroky.niotty.TaskLoop;
 import net.ihiroky.niotty.TaskLoopGroup;
 
 import java.nio.channels.SelectableChannel;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created on 13/01/10, 18:43
@@ -21,7 +22,7 @@ public abstract class AbstractSelectorPool<S extends AbstractSelector> extends T
         transport.setTaskLoop(target);
         target.offerTask(new TaskLoop.Task() {
             @Override
-            public int execute() {
+            public long execute(TimeUnit timeUnit) {
                 target.register(channel, ops, transport);
                 return TaskLoop.WAIT_NO_LIMIT;
             }

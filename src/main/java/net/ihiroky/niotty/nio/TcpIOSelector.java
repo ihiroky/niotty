@@ -14,6 +14,7 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SelectionKey;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created on 13/01/15, 15:35
@@ -80,9 +81,10 @@ public class TcpIOSelector extends AbstractSelector {
         transport.readyToWrite(new AttachedMessage<>(input, context.transportParameter()));
         offerTask(new TaskLoop.Task() {
             @Override
-            public int execute() throws Exception {
+            public long execute(TimeUnit timeUnit) throws Exception {
                 try {
-                    return transport.flush();
+                    long waitMillis = transport.flush();
+                    return timeUnit.convert(waitMillis, TimeUnit.MILLISECONDS);
                 } catch (IOException ioe) {
                     logger_.error("failed to flush buffer to " + transport, ioe);
                     transport.closeSelectableChannel();

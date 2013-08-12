@@ -90,9 +90,9 @@ public interface WriteQueue {
         SKIP(TaskLoop.RETRY_IMMEDIATELY);
 
         /** a wait time for I/O round operation. */
-        final int waitTimeMillis_;
+        final long waitTimeMillis_;
 
-        private FlushStatus(int waitTimeMillis) {
+        private FlushStatus(long waitTimeMillis) {
             waitTimeMillis_ = waitTimeMillis;
         }
     }

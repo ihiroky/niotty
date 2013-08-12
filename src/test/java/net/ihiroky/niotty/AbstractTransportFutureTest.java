@@ -6,6 +6,8 @@ import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import java.util.concurrent.TimeUnit;
+
 import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.MatcherAssert.*;
 import static org.mockito.Mockito.*;
@@ -132,13 +134,13 @@ public class AbstractTransportFutureTest {
 
     @Test
     public void testFireOnComplete_CallsOfferTask() throws Exception {
-        final int[] taskResult = new int[]{0};
+        final long[] taskResult = new long[]{0L};
         when(transport_.taskLoop().isInLoopThread()).thenReturn(false);
         doAnswer(new Answer<Void>() {
             @Override
             public Void answer(InvocationOnMock invocation) throws Throwable {
                 TaskLoop.Task task = (TaskLoop.Task) invocation.getArguments()[0];
-                taskResult[0] = task.execute();
+                taskResult[0] = task.execute(TimeUnit.MILLISECONDS);
                 return null;
             }
         }).when(transport_.taskLoop()).offerTask(Mockito.any(TaskLoop.Task.class));
@@ -148,6 +150,6 @@ public class AbstractTransportFutureTest {
         sut_.fireOnComplete();
 
         verify(listener).onComplete(sut_);
-        assertThat(taskResult[0], is(-1));
+        assertThat(taskResult[0], is(-1L));
     }
 }

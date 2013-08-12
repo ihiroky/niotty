@@ -11,6 +11,7 @@ import org.mockito.stubbing.Answer;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.MatcherAssert.*;
@@ -56,13 +57,13 @@ public class TaskLoopTest {
         final boolean[] executed = new boolean[1];
         @SuppressWarnings("unchecked")
         TaskLoop.Task t = mock(TaskLoop.Task.class);
-        doAnswer(new Answer<Integer>() {
+        doAnswer(new Answer<Long>() {
             @Override
-            public Integer answer(InvocationOnMock invocation) throws Throwable {
+            public Long answer(InvocationOnMock invocation) throws Throwable {
                 executed[0] = true;
                 return TaskLoop.RETRY_IMMEDIATELY;
             }
-        }).when(t).execute();
+        }).when(t).execute(TimeUnit.MILLISECONDS);
 
         sut_.offerTask(t);
 
@@ -79,7 +80,7 @@ public class TaskLoopTest {
         executor_.execute(sut_);
         @SuppressWarnings("unchecked")
         TaskLoop.Task t = mock(TaskLoop.Task.class);
-        doReturn(10).when(t).execute();
+        doReturn(10L).when(t).execute(TimeUnit.MILLISECONDS);
 
         sut_.offerTask(t);
 
@@ -102,13 +103,13 @@ public class TaskLoopTest {
         final boolean[] isInLoopThread = new boolean[1];
         @SuppressWarnings("unchecked")
         TaskLoop.Task t = mock(TaskLoop.Task.class);
-        doAnswer(new Answer<Integer>() {
+        doAnswer(new Answer<Long>() {
             @Override
-            public Integer answer(InvocationOnMock invocation) throws Throwable {
+            public Long answer(InvocationOnMock invocation) throws Throwable {
                 isInLoopThread[0] = sut_.isInLoopThread();
                 return TaskLoop.RETRY_IMMEDIATELY;
             }
-        }).when(t).execute();
+        }).when(t).execute(TimeUnit.MILLISECONDS);
 
         sut_.offerTask(t);
 

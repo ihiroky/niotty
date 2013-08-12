@@ -203,7 +203,7 @@ public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> 
         writeQueue_.offer(message);
     }
 
-    int flush() throws IOException {
+    long flush() throws IOException {
         return writeQueue_.flushTo(clientChannel_).waitTimeMillis_;
     }
 

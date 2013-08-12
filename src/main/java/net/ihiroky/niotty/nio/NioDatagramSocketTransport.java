@@ -205,7 +205,7 @@ public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector
         writeQueue_.offer(message);
     }
 
-    int flush(ByteBuffer writeBuffer) throws IOException {
+    long flush(ByteBuffer writeBuffer) throws IOException {
         return writeQueue_.flushTo(channel_, writeBuffer).waitTimeMillis_;
     }
 

@@ -31,11 +31,11 @@ public class ThreadPipelineElementExecutor extends TaskLoop implements PipelineE
     }
 
     @Override
-    protected void process(int timeout) throws InterruptedException {
+    protected void process(long timeout, TimeUnit timeUnit) throws InterruptedException {
         lock_.lock();
         try {
             if (timeout > 0) {
-                long timeoutNanos = TimeUnit.MILLISECONDS.toNanos(timeout);
+                long timeoutNanos = timeUnit.toNanos(timeout);
                 while (!signaled_) {
                     timeoutNanos = condition_.awaitNanos(timeoutNanos);
                 }
@@ -65,7 +65,7 @@ public class ThreadPipelineElementExecutor extends TaskLoop implements PipelineE
     public <I> void execute(final PipelineElement<I, ?> context, final I input) {
         offerTask(new Task() {
             @Override
-            public int execute() throws Exception {
+            public long execute(TimeUnit timeUnit) throws Exception {
                 context.fire(input);
                 return WAIT_NO_LIMIT;
             }
@@ -76,7 +76,7 @@ public class ThreadPipelineElementExecutor extends TaskLoop implements PipelineE
     public <I> void execute(final PipelineElement<I, ?> context, final I input, final TransportParameter parameter) {
         offerTask(new Task() {
             @Override
-            public int execute() throws Exception {
+            public long execute(TimeUnit timeUnit) throws Exception {
                 context.fire(input, parameter);
                 return WAIT_NO_LIMIT;
             }
@@ -87,7 +87,7 @@ public class ThreadPipelineElementExecutor extends TaskLoop implements PipelineE
     public void execute(final PipelineElement<?, ?> context, final TransportStateEvent event) {
         offerTask(new Task() {
             @Override
-            public int execute() throws Exception {
+            public long execute(TimeUnit timeUnit) throws Exception {
                 context.fire(event);
                 context.proceed(event);
                 return WAIT_NO_LIMIT;

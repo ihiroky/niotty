@@ -2,6 +2,7 @@ package net.ihiroky.niotty;
 
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Hiroki Itoh
@@ -53,7 +54,7 @@ public abstract class AbstractTransportFuture implements TransportFuture {
             @SuppressWarnings("unchecked")
             TaskLoop.Task task = new TaskLoop.Task() {
                 @Override
-                public int execute() throws Exception {
+                public long execute(TimeUnit timeUnit) throws Exception {
                     listener.onComplete(AbstractTransportFuture.this);
                     return TaskLoop.WAIT_NO_LIMIT;
                 }
@@ -94,7 +95,7 @@ public abstract class AbstractTransportFuture implements TransportFuture {
         } else {
             taskLoop.offerTask(new TaskLoop.Task() {
                 @Override
-                public int execute() throws Exception {
+                public long execute(TimeUnit timeUnit) throws Exception {
                     listener_.onComplete(AbstractTransportFuture.this);
                     return TaskLoop.WAIT_NO_LIMIT;
                 }
