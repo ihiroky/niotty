@@ -175,7 +175,7 @@ public abstract class AbstractTransport<T extends TaskLoop> implements Transport
      * Gets the instance of {@link net.ihiroky.niotty.TaskLoop}.
      * @return <T> the TaskLoop.
      */
-    protected final T taskLoop() {
+    public final T taskLoop() {
         return loop_;
     }
 
