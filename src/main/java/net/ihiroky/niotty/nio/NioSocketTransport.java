@@ -31,6 +31,13 @@ public abstract class NioSocketTransport<S extends AbstractSelector> extends Abs
         super(name, pipelineComposer, weight);
     }
 
+    protected void setTaskLoopOnce(S loop) {
+        if (taskLoop() != null) {
+            throw new IllegalStateException("The task loop is already set.");
+        }
+        super.setTaskLoop(loop);
+    }
+
     @Override
     public String toString() {
         return (key_ != null) ? key_.channel().toString() : "unregistered";

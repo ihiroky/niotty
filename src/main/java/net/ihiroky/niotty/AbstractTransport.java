@@ -166,7 +166,7 @@ public abstract class AbstractTransport<T extends TaskLoop> implements Transport
      * Sets the instance of {@link net.ihiroky.niotty.TaskLoop}.
      * @param loop the the instance of {@code TaskLoop}.
      */
-    public final void setTaskLoop(T loop) {
+    protected final void setTaskLoop(T loop) {
         Objects.requireNonNull(loop, "loop");
         this.loop_ = loop;
     }

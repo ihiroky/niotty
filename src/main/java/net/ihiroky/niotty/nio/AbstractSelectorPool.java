@@ -19,7 +19,7 @@ public abstract class AbstractSelectorPool<S extends AbstractSelector> extends T
             throw new AssertionError("I should not reach here. Task threads may be stopped.");
         }
         transport.addIOStage(target);
-        transport.setTaskLoop(target);
+        transport.setTaskLoopOnce(target);
         target.offerTask(new TaskLoop.Task() {
             @Override
             public long execute(TimeUnit timeUnit) {
