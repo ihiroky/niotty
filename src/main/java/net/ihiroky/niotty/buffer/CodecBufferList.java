@@ -59,7 +59,7 @@ public class CodecBufferList extends AbstractCodecBuffer {
 
     CodecBufferList(CodecBuffer buffer0, CodecBuffer buffer1, CodecBuffer... buffers) {
         Objects.requireNonNull(buffer0, "buffer0");
-        Objects.requireNonNull(buffer0, "buffer1");
+        Objects.requireNonNull(buffer1, "buffer1");
         Objects.requireNonNull(buffers, "buffers");
         if (buffers.length >= MAX_BUFFER_COUNT) {
             throw new IllegalArgumentException("length of buffers must be less than " + MAX_BUFFER_COUNT + ".");

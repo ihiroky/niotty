@@ -187,6 +187,19 @@ public final class Buffers {
     }
 
     /**
+     * Creates a new {@code CodecBuffer} which consists of the specified {@code buffer}.
+     *
+     * <p>The new buffer allocates a new {@code CodecBuffer} in the heap if the object needs more space
+     * on write operations. The maximum elements that can be held by the object is 1024.</p>
+     *
+     * @param buffer the first {@code CodecBuffer} in the new {@code CodecBuffer}.
+     * @return the new {@code CodecBuffer}.
+     */
+    public static CodecBuffer wrap(CodecBuffer buffer) {
+        return new CodecBufferList(buffer);
+    }
+
+    /**
      * Creates a new {@code CodecBuffer} which consists of the specified {@code first} and {@code second}.
      * The order of {@code CodecBuffer} in the new buffer is the argument order; the first is {@code first},
      * the second is {@code second}.
