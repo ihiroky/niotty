@@ -32,6 +32,7 @@ public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector
 
     private DatagramChannel channel_;
     private WriteQueue writeQueue_;
+    private WriteQueue.FlushStatus flushStatus_;
     private final Map<GroupKey, MembershipKey> membershipKeyMap_;
 
     NioDatagramSocketTransport(NioDatagramSocketConfig config, PipelineComposer composer, int weight,
@@ -205,8 +206,13 @@ public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector
         writeQueue_.offer(message);
     }
 
-    long flush(ByteBuffer writeBuffer) throws IOException {
-        return writeQueue_.flushTo(channel_, writeBuffer).waitTimeMillis_;
+    WriteQueue.FlushStatus flush(ByteBuffer writeBuffer) throws IOException {
+        flushStatus_ = writeQueue_.flushTo(channel_, writeBuffer);
+        return flushStatus_;
+    }
+
+    WriteQueue.FlushStatus flushStatus() {
+        return flushStatus_;
     }
 
     @Override

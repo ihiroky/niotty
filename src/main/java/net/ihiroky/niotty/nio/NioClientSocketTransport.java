@@ -26,6 +26,7 @@ public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> 
     private final SocketChannel clientChannel_;
     private final NioClientSocketProcessor processor_;
     private final WriteQueue writeQueue_;
+    private WriteQueue.FlushStatus flushStatus_;
 
     NioClientSocketTransport(
             NioClientSocketConfig config, PipelineComposer composer, int weight,
@@ -203,8 +204,13 @@ public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> 
         writeQueue_.offer(message);
     }
 
-    long flush() throws IOException {
-        return writeQueue_.flushTo(clientChannel_).waitTimeMillis_;
+    WriteQueue.FlushStatus flush() throws IOException {
+        flushStatus_ = writeQueue_.flushTo(clientChannel_);
+        return flushStatus_;
+    }
+
+    WriteQueue.FlushStatus flushStatus() {
+        return flushStatus_;
     }
 
     @Override

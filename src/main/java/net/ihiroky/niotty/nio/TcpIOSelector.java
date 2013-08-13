@@ -1,7 +1,6 @@
 package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.StageContext;
-import net.ihiroky.niotty.TaskLoop;
 import net.ihiroky.niotty.buffer.BufferSink;
 import net.ihiroky.niotty.buffer.Buffers;
 import org.slf4j.Logger;
@@ -79,18 +78,35 @@ public class TcpIOSelector extends AbstractSelector {
     public void store(StageContext<Void> context, BufferSink input) {
         final NioClientSocketTransport transport = (NioClientSocketTransport) context.transport();
         transport.readyToWrite(new AttachedMessage<>(input, context.transportParameter()));
-        offerTask(new TaskLoop.Task() {
-            @Override
-            public long execute(TimeUnit timeUnit) throws Exception {
-                try {
-                    long waitMillis = transport.flush();
-                    return timeUnit.convert(waitMillis, TimeUnit.MILLISECONDS);
-                } catch (IOException ioe) {
-                    logger_.error("failed to flush buffer to " + transport, ioe);
-                    transport.closeSelectableChannel();
-                }
-                return WAIT_NO_LIMIT;
-            }
-        });
+        offerTask(new FlushTask(transport, logger_));
     }
+
+    static class FlushTask implements Task {
+
+        final Logger logger_;
+        final NioClientSocketTransport transport_;
+        WriteQueue.FlushStatus flushStatus_;
+
+        FlushTask(NioClientSocketTransport transport, Logger logger) {
+            transport_ = transport;
+            logger_ = logger;
+        }
+
+        public long execute(TimeUnit timeUnit) throws Exception {
+            // Prevent tasks from writing data to stuck queue
+            // Only the task which flushing can flush. The others do nothing.
+            if (transport_.flushStatus() != WriteQueue.FlushStatus.FLUSHING
+                    || flushStatus_ == WriteQueue.FlushStatus.FLUSHING) {
+                try {
+                    flushStatus_ = transport_.flush();
+                    return timeUnit.convert(flushStatus_.waitTimeMillis_, TimeUnit.MILLISECONDS);
+                } catch (IOException ioe) {
+                    logger_.error("failed to flush buffer to " + transport_, ioe);
+                    transport_.closeSelectableChannel();
+                }
+            }
+            return WAIT_NO_LIMIT;
+        }
+    }
+
 }

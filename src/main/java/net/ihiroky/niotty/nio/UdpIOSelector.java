@@ -2,7 +2,6 @@ package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.DefaultTransportParameter;
 import net.ihiroky.niotty.StageContext;
-import net.ihiroky.niotty.TaskLoop;
 import net.ihiroky.niotty.buffer.BufferSink;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.CodecBuffer;
@@ -97,18 +96,34 @@ public class UdpIOSelector extends AbstractSelector {
     public void store(StageContext<Void> context, BufferSink input) {
         final NioDatagramSocketTransport transport = (NioDatagramSocketTransport) context.transport();
         transport.readyToWrite(new AttachedMessage<>(input, context.transportParameter()));
-        offerTask(new TaskLoop.Task() {
-            @Override
-            public long execute(TimeUnit timeUnit) throws Exception {
+        offerTask(new FlushTask(transport, this));
+    }
+
+    static class FlushTask implements Task {
+
+        final UdpIOSelector selector_;
+        final NioDatagramSocketTransport transport_;
+        WriteQueue.FlushStatus flushStatus_;
+
+        FlushTask(NioDatagramSocketTransport transport, UdpIOSelector selector) {
+            selector_ = selector;
+            transport_ = transport;
+        }
+
+        public long execute(TimeUnit timeUnit) throws Exception {
+            // Prevent tasks from writing data to stuck queue
+            // Only the task which flushing can flush. The others do nothing.
+            if (transport_.flushStatus() != WriteQueue.FlushStatus.FLUSHING
+                    || flushStatus_ == WriteQueue.FlushStatus.FLUSHING) {
                 try {
-                    long waitTime = transport.flush(writeBuffer_);
-                    return timeUnit.convert(waitTime, TimeUnit.MILLISECONDS);
+                    flushStatus_ = transport_.flush(selector_.writeBuffer_);
+                    return timeUnit.convert(flushStatus_.waitTimeMillis_, TimeUnit.MILLISECONDS);
                 } catch (IOException ioe) {
-                    logger_.error("failed to flush buffer to " + transport, ioe);
-                    transport.closeSelectableChannel();
+                    selector_.logger_.error("failed to flush buffer to " + transport_, ioe);
+                    transport_.closeSelectableChannel();
                 }
-                return WAIT_NO_LIMIT;
             }
-        });
+            return WAIT_NO_LIMIT;
+        }
     }
 }
