@@ -149,7 +149,7 @@ public class TaskLoopTest {
     @Test
     public void testToString_ReturnsDefaultIfSutIsNotExecuted() throws Exception {
         String actual = sut_.toString();
-        assertThat(actual, actual.matches("net\\.ihiroky\\.niotty\\.TaskLoopMock@[0-9a-f]+"), is(true));
+        assertThat(actual, actual.matches(".*\\.TaskLoopMock@[0-9a-f]+"), is(true));
     }
 
     @Test
