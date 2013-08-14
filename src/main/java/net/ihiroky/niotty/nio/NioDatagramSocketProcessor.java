@@ -62,6 +62,47 @@ public class NioDatagramSocketProcessor
         return new NioDatagramSocketTransport(config, pipelineComposer(), weight, name(), ioSelectorPool_);
     }
 
+    public void setNumberOfMessageIOThread(int numberOfMessageIOThread) {
+        if (numberOfMessageIOThread <= 0) {
+            throw new IllegalArgumentException("numberOfMessageIOThread must be positive.");
+        }
+        this.numberOfMessageIOThread_ = numberOfMessageIOThread;
+    }
+
+    public int numberOfMessageIOThread() {
+        return numberOfMessageIOThread_;
+    }
+
+    public void setReadBufferSize(int readBufferSize) {
+        if (readBufferSize <= 0) {
+            throw new IllegalArgumentException("readBufferSize must be positive.");
+        }
+        this.readBufferSize_ = readBufferSize;
+    }
+
+    public int readBufferSize() {
+        return readBufferSize_;
+    }
+
+    public void setWriteBufferSize(int writeBufferSize) {
+        if (writeBufferSize <= 0) {
+            throw new IllegalArgumentException("writeBufferSize must be positive.");
+        }
+        this.writeBufferSize_ = writeBufferSize;
+    }
+
+    public int writeBufferSize() {
+        return writeBufferSize_;
+    }
+
+    public void setUseDirectBuffer(boolean useDirectBuffer) {
+        this.useDirectBuffer_ = useDirectBuffer;
+    }
+
+    public boolean isUseDirectBuffer() {
+        return useDirectBuffer_;
+    }
+
     public void setTaskWeightThresholdOfIOSelectorPool(int threshold) {
         ioSelectorPool_.setTaskWeightThreshold(threshold);
     }

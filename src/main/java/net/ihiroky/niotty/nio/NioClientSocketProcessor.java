@@ -28,7 +28,7 @@ public class NioClientSocketProcessor extends AbstractProcessor<NioClientSocketT
 
     public NioClientSocketProcessor() {
         ioSelectorPool_ = new TcpIOSelectorPool();
-        connectSelectorPool_ = new ConnectSelectorPool(ioSelectorPool_);
+        connectSelectorPool_ = new ConnectSelectorPool();
 
         numberOfConnectThread_ = DEFAULT_NUMBER_OF_CONNECT_THREAD;
         numberOfMessageIOThread_ = DEFAULT_NUMBER_OF_MESSAGE_IO_THREAD;
@@ -41,7 +41,7 @@ public class NioClientSocketProcessor extends AbstractProcessor<NioClientSocketT
     @Override
     public NioClientSocketTransport createTransport(NioClientSocketConfig config) {
         return new NioClientSocketTransport(config, pipelineComposer(),
-                NioClientSocketTransport.DEFAULT_WEIGHT, name(), this);
+                NioClientSocketTransport.DEFAULT_WEIGHT, name(), connectSelectorPool_, ioSelectorPool_);
     }
 
     /**
@@ -52,7 +52,8 @@ public class NioClientSocketProcessor extends AbstractProcessor<NioClientSocketT
      * @return the transport.
      */
     public NioClientSocketTransport createTransport(NioClientSocketConfig config, int weight) {
-        return new NioClientSocketTransport(config, pipelineComposer(), weight, name(), this);
+        return new NioClientSocketTransport(config, pipelineComposer(), weight, name(),
+                connectSelectorPool_, ioSelectorPool_);
     }
 
     @Override
@@ -118,6 +119,14 @@ public class NioClientSocketProcessor extends AbstractProcessor<NioClientSocketT
 
     AbstractSelectorPool<TcpIOSelector> ioSelectorPool() {
         return ioSelectorPool_;
+    }
+
+    public int numberOfConnectThread() {
+        return numberOfConnectThread_;
+    }
+
+    public int numberOfMessageIOThread() {
+        return numberOfMessageIOThread_;
     }
 
     public int readBufferSize() {

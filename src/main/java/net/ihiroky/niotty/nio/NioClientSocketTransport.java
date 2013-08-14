@@ -26,17 +26,28 @@ import java.util.concurrent.TimeUnit;
 public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> {
 
     private final SocketChannel clientChannel_;
-    private final NioClientSocketProcessor processor_;
+    private final Pools pools_;
     private final WriteQueue writeQueue_;
     private WriteQueue.FlushStatus flushStatus_;
 
+    private static class Pools {
+        final ConnectSelectorPool connectorPool_;
+        final TcpIOSelectorPool ioPool_;
+
+        Pools(ConnectSelectorPool connectorPool, TcpIOSelectorPool ioPool) {
+            connectorPool_ = connectorPool;
+            ioPool_ = ioPool;
+        }
+    }
+
     NioClientSocketTransport(
             NioClientSocketConfig config, PipelineComposer composer, int weight,
-            String name, NioClientSocketProcessor processor) {
+            String name, ConnectSelectorPool connectorPool, TcpIOSelectorPool ioPool) {
         super(name, composer, weight);
 
         Objects.requireNonNull(config, "config");
-        Objects.requireNonNull(processor, "processor");
+        Objects.requireNonNull(connectorPool, "connectorPool");
+        Objects.requireNonNull(ioPool, "ioPool");
 
         try {
             SocketChannel clientChannel = SocketChannel.open();
@@ -44,7 +55,7 @@ public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> 
             config.applySocketOptions(clientChannel);
 
             clientChannel_ = clientChannel;
-            processor_ = processor;
+            pools_ = new Pools(connectorPool, ioPool);
             writeQueue_ = config.newWriteQueue();
         } catch (Exception e) {
             throw new RuntimeException("failed to open client socket channel.", e);
@@ -60,7 +71,7 @@ public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> 
         Objects.requireNonNull(child, "child");
 
         clientChannel_ = child;
-        processor_ = null;
+        pools_ = null;
         writeQueue_ = config.newWriteQueue();
     }
 
@@ -111,19 +122,19 @@ public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> 
             return new CancelledTransportFuture(this);
         }
 
-        NioClientSocketProcessor processor = processor_;
-        if (processor == null) {
-            throw new IllegalStateException("No NioClientSocketProcessor is found.");
+        Pools pools = pools_;
+        if (pools == null) {
+            throw new IllegalStateException("No ConnectSelectorPool is found.");
         }
 
-        if (processor.hasConnectSelector()) {
+        if (pools.connectorPool_.isOpen()) {
             // try non blocking connection
             try {
                 if (clientChannel_.connect(remote)) {
                     return new SuccessfulTransportFuture(this);
                 }
                 DefaultTransportFuture future = new DefaultTransportFuture(this);
-                processor.connectSelectorPool().register(
+                pools.connectorPool_.register(
                         clientChannel_, SelectionKey.OP_CONNECT, new ConnectionWaitTransport(this, future));
                 return future;
             } catch (IOException ioe) {
@@ -137,7 +148,7 @@ public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> 
             clientChannel_.connect(remote);
             clientChannel_.configureBlocking(false);
             loadEvent(new DefaultTransportStateEvent(TransportState.CONNECTED, remote));
-            processor.ioSelectorPool().register(clientChannel_, SelectionKey.OP_READ, this);
+            pools.ioPool_.register(clientChannel_, SelectionKey.OP_READ, this);
             return new SuccessfulTransportFuture(this);
         } catch (IOException ioe) {
             try {
@@ -202,6 +213,10 @@ public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> 
         });
         return future;
 
+    }
+
+    TcpIOSelectorPool ioSelectorPool() {
+        return pools_.ioPool_;
     }
 
     void readyToWrite(AttachedMessage<BufferSink> message) {

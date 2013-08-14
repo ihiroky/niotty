@@ -99,15 +99,23 @@ public class NioServerSocketProcessor extends AbstractProcessor<NioServerSocketT
         return ioSelectorPool_;
     }
 
-    int readBufferSize() {
+    public int numberOfAcceptThread() {
+        return numberOfAcceptThread_;
+    }
+
+    public int numberOfMessageIOThread() {
+        return numberOfMessageIOThread_;
+    }
+
+    public int readBufferSize() {
         return readBufferSize_;
     }
 
-    int writeBufferSize() {
+    public int writeBufferSize() {
         return writeBufferSize_;
     }
 
-    boolean isUseDirectBuffer() {
+    public boolean isUseDirectBuffer() {
         return useDirectBuffer_;
     }
 }

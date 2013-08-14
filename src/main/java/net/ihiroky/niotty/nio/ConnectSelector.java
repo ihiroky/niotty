@@ -23,12 +23,7 @@ import java.util.Set;
  */
 public class ConnectSelector extends AbstractSelector {
 
-    private final TcpIOSelectorPool ioSelectorPool_;
     private Logger logger_ = LoggerFactory.getLogger(ConnectSelector.class);
-
-    ConnectSelector(TcpIOSelectorPool ioSelectorPool) {
-        ioSelectorPool_ = ioSelectorPool;
-    }
 
     @Override
     protected void processSelectedKeys(Set<SelectionKey> selectedKeys) throws Exception {
@@ -57,7 +52,7 @@ public class ConnectSelector extends AbstractSelector {
             NioClientSocketTransport transport, DefaultTransportFuture future) throws IOException {
         InetSocketAddress remoteAddress = transport.remoteAddress();
         transport.loadEvent(new DefaultTransportStateEvent(TransportState.CONNECTED, remoteAddress));
-        ioSelectorPool_.register(channel, SelectionKey.OP_READ, transport);
+        transport.ioSelectorPool().register(channel, SelectionKey.OP_READ, transport);
 
         // The done() must be called after register() to ensure that the SelectionKey of IO selector is fixed.
         future.done();
