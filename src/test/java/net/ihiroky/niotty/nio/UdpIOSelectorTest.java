@@ -27,7 +27,7 @@ public class UdpIOSelectorTest {
     public void setUp() throws Exception {
         sut_ = spy(new UdpIOSelector(256, 256, false));
         flushTaskCaptor_ = ArgumentCaptor.forClass(UdpIOSelector.FlushTask.class);
-        doNothing().when(sut_).offerTask(flushTaskCaptor_.capture());
+        doNothing().when(sut_).executeTask(flushTaskCaptor_.capture());
     }
 
     @Test
@@ -40,7 +40,7 @@ public class UdpIOSelectorTest {
         UdpIOSelector.FlushTask task = flushTaskCaptor_.getValue();
         task.execute(TimeUnit.MILLISECONDS);
 
-        assertThat(task.flushStatus_.waitTimeMillis_, is(TaskLoop.WAIT_NO_LIMIT));
+        assertThat(task.flushStatus_.waitTimeMillis_, is(TaskLoop.DONE));
         verify(transport).readyToWrite(Mockito.any(AttachedMessage.class));
     }
 

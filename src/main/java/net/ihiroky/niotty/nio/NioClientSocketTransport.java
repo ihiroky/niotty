@@ -6,6 +6,7 @@ import net.ihiroky.niotty.DefaultTransportStateEvent;
 import net.ihiroky.niotty.FailedTransportFuture;
 import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.SuccessfulTransportFuture;
+import net.ihiroky.niotty.TaskLoop;
 import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.TransportState;
 import net.ihiroky.niotty.TransportStateEvent;
@@ -17,6 +18,7 @@ import java.net.SocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Hiroki Itoh
@@ -159,7 +161,7 @@ public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> 
         final DefaultTransportFuture future = new DefaultTransportFuture(this);
         executeStore(new TransportStateEvent(TransportState.SHUTDOWN_OUTPUT) {
             @Override
-            public void execute() {
+            public long execute(TimeUnit timeUnit) {
                 SelectionKey key = key();
                 if (key != null && key.isValid()) {
                     SocketChannel channel = (SocketChannel) key.channel();
@@ -170,6 +172,7 @@ public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> 
                         future.setThrowable(ioe);
                     }
                 }
+                return TaskLoop.DONE;
             }
         });
         return future;
@@ -183,7 +186,7 @@ public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> 
         final DefaultTransportFuture future = new DefaultTransportFuture(this);
         executeStore(new TransportStateEvent(TransportState.SHUTDOWN_INPUT) {
             @Override
-            public void execute() {
+            public long execute(TimeUnit timeUnit) {
                 SelectionKey key = key();
                 if (key != null && key.isValid()) {
                     SocketChannel channel = (SocketChannel) key.channel();
@@ -194,6 +197,7 @@ public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> 
                         future.setThrowable(ioe);
                     }
                 }
+                return TaskLoop.DONE;
             }
         });
         return future;

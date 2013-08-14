@@ -76,9 +76,9 @@ public class TcpIOSelector extends AbstractSelector {
 
     @Override
     public void store(StageContext<Void> context, BufferSink input) {
-        final NioClientSocketTransport transport = (NioClientSocketTransport) context.transport();
+        NioClientSocketTransport transport = (NioClientSocketTransport) context.transport();
         transport.readyToWrite(new AttachedMessage<>(input, context.transportParameter()));
-        offerTask(new FlushTask(transport, logger_));
+        executeTask(new FlushTask(transport, logger_));
     }
 
     static class FlushTask implements Task {
@@ -105,7 +105,7 @@ public class TcpIOSelector extends AbstractSelector {
                     transport_.closeSelectableChannel();
                 }
             }
-            return WAIT_NO_LIMIT;
+            return DONE;
         }
     }
 

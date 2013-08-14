@@ -116,21 +116,7 @@ public abstract class AbstractSelector extends TaskLoop implements StoreStage<Bu
     }
 
     @Override
-    public void store(StageContext<Void> context, BufferSink input) {
-    }
-
-    @Override
     public void store(StageContext<Void> context, final TransportStateEvent event) {
-        if (isInLoopThread()) {
-            event.execute();
-        } else {
-            offerTask(new Task() {
-                    @Override
-                    public long execute(TimeUnit timeUnit) throws Exception {
-                        event.execute();
-                        return TaskLoop.WAIT_NO_LIMIT;
-                    }
-            });
-        }
+        executeTask(event);
     }
 }

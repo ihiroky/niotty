@@ -5,6 +5,7 @@ import net.ihiroky.niotty.DefaultTransportFuture;
 import net.ihiroky.niotty.DefaultTransportStateEvent;
 import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.SuccessfulTransportFuture;
+import net.ihiroky.niotty.TaskLoop;
 import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.TransportParameter;
 import net.ihiroky.niotty.TransportState;
@@ -14,6 +15,7 @@ import java.io.IOException;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created on 13/01/11, 13:40
@@ -57,9 +59,10 @@ public abstract class NioSocketTransport<S extends AbstractSelector> extends Abs
         final DefaultTransportFuture future = new DefaultTransportFuture(this);
         executeStore(new TransportStateEvent(TransportState.CLOSED) {
             @Override
-            public void execute() {
+            public long execute(TimeUnit timeUnit) {
                 NioSocketTransport.this.doCloseSelectableChannel(false);
                 future.done();
+                return TaskLoop.DONE;
             }
         });
         return future;

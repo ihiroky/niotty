@@ -9,5 +9,4 @@ public interface TaskTimer {
     void start();
     void stop();
     void offer(TaskLoop taskLoop, TaskLoop.Task task, long delay, TimeUnit timeUnit);
-    long flush(TimeUnit timeUnit);
 }

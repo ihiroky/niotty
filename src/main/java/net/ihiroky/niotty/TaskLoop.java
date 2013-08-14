@@ -3,10 +3,11 @@ package net.ihiroky.niotty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Deque;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
@@ -48,12 +49,13 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
     private Logger logger_ = LoggerFactory.getLogger(TaskLoop.class);
 
     /** The value passed to {@link #process(long, TimeUnit)} to indicate that the thread should wait without timeout. */
-    public static final long WAIT_NO_LIMIT = -1L;
+    public static final long DONE = -1L;
 
     /** The value passed to {@link #process(long, TimeUnit)} to indicate that the thread should not wait. */
     public static final long RETRY_IMMEDIATELY = 0L;
 
     private static final TimeUnit TIME_UNIT = TimeUnit.MILLISECONDS;
+    private static final int INITIAL_TASK_BUFFER_SIZE = 1024;
 
     /**
      * Creates a new instance.
@@ -61,7 +63,7 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
     protected TaskLoop() {
         taskQueue_ = new ConcurrentLinkedQueue<>();
         selectionSet_ = new HashSet<>();
-        timer_ = new DefaultTaskTimer(this);
+        timer_ = new PseudoTaskTimer();
     }
 
     /**
@@ -91,12 +93,37 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
      * @param task the task to be registered to the timer
      * @param delay the delay of task execution
      * @param timeUnit unit of the delay
+     * @throws NullPointerException if task or timeUnit is null
      */
     public void offerTask(Task task, long delay, TimeUnit timeUnit) {
         Objects.requireNonNull(task, "task");
         Objects.requireNonNull(timeUnit, "timeUnit");
 
         timer_.offer(this, task, delay, timeUnit);
+    }
+
+    /**
+     * If a caller is executed in the loop thread, run the task immediately.
+     * Otherwise, inserts the task to the task queue.
+     * @param task the task
+     * @throws NullPointerException if the task is null
+     */
+    public void executeTask(Task task) {
+        if (isInLoopThread()) {
+            try {
+                long waitTimeMillis = task.execute(TIME_UNIT);
+                if (waitTimeMillis > 0) {
+                    timer_.offer(this, task, waitTimeMillis, TIME_UNIT);
+                } else if (waitTimeMillis == RETRY_IMMEDIATELY) {
+                    taskQueue_.offer(task);
+                }
+            } catch (Exception e) {
+                logger_.warn("[runTask] Unexpected exception.", e);
+            }
+        } else {
+            taskQueue_.offer(task);
+            wakeUp();
+        }
     }
 
     /**
@@ -119,9 +146,9 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
      * Executes the loop especially on a thread provided by {@link net.ihiroky.niotty.TaskLoopGroup}.
      */
     public void run() {
-        Queue<Task> taskBuffer = new LinkedList<>();
+        Deque<Task> taskBuffer = new ArrayDeque<>(INITIAL_TASK_BUFFER_SIZE);
         Queue<Task> taskQueue = taskQueue_;
-        long waitTimeMillis = RETRY_IMMEDIATELY;
+        long waitTime = RETRY_IMMEDIATELY;
         try {
             synchronized (this) {
                 thread_ = Thread.currentThread();
@@ -132,15 +159,15 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
 
             while (thread_ != null) {
                 try {
-                    process(waitTimeMillis, TIME_UNIT);
-                    waitTimeMillis = processTasks(taskQueue, taskBuffer);
+                    process(waitTime, TIME_UNIT);
+                    waitTime = processTasks(taskQueue, taskBuffer);
                 } catch (InterruptedException ie) {
                     logger_.debug("[run] Interrupted.", ie);
                     break;
                 } catch (Exception e) {
                     if (thread_ != null) {
                         logger_.warn("[run] Unexpected exception.", e);
-                        waitTimeMillis = RETRY_IMMEDIATELY;
+                        waitTime = RETRY_IMMEDIATELY;
                     }
                 }
             }
@@ -155,26 +182,38 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
         }
     }
 
-    private long processTasks(Queue<Task> queue, Queue<Task> buffer) throws Exception {
-        for (Task task;;) {
+    private long processTasks(Queue<Task> queue, Deque<Task> buffer) throws Exception {
+        long minRetryDelay = Long.MAX_VALUE;
+        Task task;
+        for (;;) {
             task = queue.poll();
             if (task == null) {
                 break;
             }
-
-            long waitTimeMillis = task.execute(TIME_UNIT);
-            if (waitTimeMillis > 0) {
-                timer_.offer(this, task, waitTimeMillis, TIME_UNIT);
-            } else if (waitTimeMillis == RETRY_IMMEDIATELY) {
-                buffer.offer(task);
+            buffer.offerLast(task);
+        }
+        for (;;) {
+            task = buffer.pollFirst();
+            if (task == null) {
+                break;
+            }
+            long retryDelay = task.execute(TIME_UNIT);
+            if (retryDelay <= DONE) {
+                continue;
+            }
+            if (retryDelay == RETRY_IMMEDIATELY) {
+                queue.offer(task);
+                minRetryDelay = RETRY_IMMEDIATELY;
+            } else { // if (retryDelay > 0) {
+                timer_.offer(this, task, retryDelay, TIME_UNIT);
+                if (minRetryDelay > retryDelay) {
+                    minRetryDelay = retryDelay;
+                }
             }
         }
-        if (buffer.isEmpty()) {
-            return timer_.flush(TIME_UNIT);
-        }
-        queue.addAll(buffer); // These tasks is required to be executed immediately.
-        timer_.flush(TIME_UNIT);
-        return RETRY_IMMEDIATELY;
+        return (minRetryDelay > 0)
+                ? ((minRetryDelay == Long.MAX_VALUE) ? DONE : minRetryDelay)
+                : RETRY_IMMEDIATELY;
     }
 
     /**
@@ -327,7 +366,7 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
         /**
          * Executes the task procedure.
          * @param timeUnit unit of time returned by this method
-         * @return {@link net.ihiroky.niotty.TaskLoop WAIT_NO_LIMIT} if task is normally finished,
+         * @return {@link net.ihiroky.niotty.TaskLoop DONE} if task is normally finished,
          *   {@link net.ihiroky.niotty.TaskLoop RETRY_IMMEDIATELY} if task is required to execute again immediately,
          *   {@code timeUnit.convert(delay, unitOfDelay)} if task is required to execute again with the specified
          *   delay.
@@ -337,19 +376,9 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
     }
 
     /**
-     * Default task timer, which handles wait time using {@link #process(long, java.util.concurrent.TimeUnit)}.
+     * Pseudo task timer, which handles wait time using {@link #process(long, java.util.concurrent.TimeUnit)}.
      */
-    private static class DefaultTaskTimer implements TaskTimer {
-
-        TaskLoop taskLoop_;
-        Queue<Task> buffer_;
-        long minWaitTimeMillis_;
-
-        DefaultTaskTimer(TaskLoop taskLoop) {
-            taskLoop_ = taskLoop;
-            buffer_ = new LinkedList<>();
-            minWaitTimeMillis_ = Long.MAX_VALUE;
-        }
+    private static class PseudoTaskTimer implements TaskTimer {
 
         @Override
         public void start() {
@@ -361,22 +390,7 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
 
         @Override
         public void offer(TaskLoop taskLoop, Task task, long delay, TimeUnit timeUnit) {
-            buffer_.offer(task);
-            long waitTimeMillis = timeUnit.toMillis(delay);
-            if (minWaitTimeMillis_ > waitTimeMillis) {
-                minWaitTimeMillis_ = waitTimeMillis;
-            }
-        }
-
-        @Override
-        public long flush(TimeUnit timeUnit) {
-            for (Task task : buffer_) {
-                taskLoop_.taskQueue_.offer(task);
-            }
-            long waitTimeMillis = (minWaitTimeMillis_ != Long.MAX_VALUE) ? minWaitTimeMillis_ : WAIT_NO_LIMIT;
-            minWaitTimeMillis_ = Long.MAX_VALUE;
-            buffer_.clear();
-            return timeUnit.convert(waitTimeMillis, TimeUnit.MILLISECONDS);
+            taskLoop.taskQueue_.offer(task);
         }
     }
 }

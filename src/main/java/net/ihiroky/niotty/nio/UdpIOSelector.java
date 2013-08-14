@@ -96,7 +96,7 @@ public class UdpIOSelector extends AbstractSelector {
     public void store(StageContext<Void> context, BufferSink input) {
         final NioDatagramSocketTransport transport = (NioDatagramSocketTransport) context.transport();
         transport.readyToWrite(new AttachedMessage<>(input, context.transportParameter()));
-        offerTask(new FlushTask(transport, this));
+        executeTask(new FlushTask(transport, this));
     }
 
     static class FlushTask implements Task {
@@ -123,7 +123,7 @@ public class UdpIOSelector extends AbstractSelector {
                     transport_.closeSelectableChannel();
                 }
             }
-            return WAIT_NO_LIMIT;
+            return DONE;
         }
     }
 }

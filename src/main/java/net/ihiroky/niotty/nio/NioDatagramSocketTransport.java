@@ -5,6 +5,7 @@ import net.ihiroky.niotty.DefaultTransportParameter;
 import net.ihiroky.niotty.FailedTransportFuture;
 import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.SuccessfulTransportFuture;
+import net.ihiroky.niotty.TaskLoop;
 import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.TransportState;
 import net.ihiroky.niotty.TransportStateEvent;
@@ -22,6 +23,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 /**
  * A Transport implementation for {@code java.nio.channels.DatagramChannel}.
@@ -125,13 +127,14 @@ public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector
         final DefaultTransportFuture future = new DefaultTransportFuture(this);
         executeStore(new TransportStateEvent(TransportState.CONNECTED) {
             @Override
-            public void execute() {
+            public long execute(TimeUnit timeUnit) {
                 try {
                     channel_.connect(remote);
                     future.done();
                 } catch (IOException ioe) {
                     future.setThrowable(ioe);
                 }
+                return TaskLoop.DONE;
             }
         });
         return future;
@@ -157,13 +160,14 @@ public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector
         final DefaultTransportFuture future = new DefaultTransportFuture(this);
         executeStore(new TransportStateEvent(TransportState.DISCONNECT) {
             @Override
-            public void execute() {
+            public long execute(TimeUnit timeUnit) {
                 try {
                     channel_.disconnect();
                     future.done();
                 } catch (IOException ioe) {
                     future.setThrowable(ioe);
                 }
+                return TaskLoop.DONE;
             }
         });
         return future;

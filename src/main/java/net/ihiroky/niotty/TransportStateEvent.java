@@ -7,7 +7,7 @@ import java.util.Objects;
  *
  * @author Hiroki Itoh
  */
-public abstract class TransportStateEvent {
+public abstract class TransportStateEvent implements TaskLoop.Task {
 
     private TransportState state_;
     private Object value_;
@@ -54,6 +54,4 @@ public abstract class TransportStateEvent {
     public String toString() {
         return "(state: " + state_ + ", value: " + value_ + ')';
     }
-
-    public abstract void execute();
 }

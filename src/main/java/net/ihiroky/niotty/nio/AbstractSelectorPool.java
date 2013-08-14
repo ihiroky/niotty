@@ -24,7 +24,7 @@ public abstract class AbstractSelectorPool<S extends AbstractSelector> extends T
             @Override
             public long execute(TimeUnit timeUnit) {
                 target.register(channel, ops, transport);
-                return TaskLoop.WAIT_NO_LIMIT;
+                return TaskLoop.DONE;
             }
         });
     }

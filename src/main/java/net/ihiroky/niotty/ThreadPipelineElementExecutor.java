@@ -67,7 +67,7 @@ public class ThreadPipelineElementExecutor extends TaskLoop implements PipelineE
             @Override
             public long execute(TimeUnit timeUnit) throws Exception {
                 context.fire(input);
-                return WAIT_NO_LIMIT;
+                return DONE;
             }
         });
     }
@@ -78,7 +78,7 @@ public class ThreadPipelineElementExecutor extends TaskLoop implements PipelineE
             @Override
             public long execute(TimeUnit timeUnit) throws Exception {
                 context.fire(input, parameter);
-                return WAIT_NO_LIMIT;
+                return DONE;
             }
         });
     }
@@ -90,7 +90,7 @@ public class ThreadPipelineElementExecutor extends TaskLoop implements PipelineE
             public long execute(TimeUnit timeUnit) throws Exception {
                 context.fire(event);
                 context.proceed(event);
-                return WAIT_NO_LIMIT;
+                return DONE;
             }
         });
     }

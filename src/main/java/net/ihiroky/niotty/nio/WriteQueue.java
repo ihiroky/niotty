@@ -77,7 +77,7 @@ public interface WriteQueue {
         /**
          * The result of all data in the {@code WriteQueue} is flushed.
          */
-        FLUSHED(TaskLoop.WAIT_NO_LIMIT),
+        FLUSHED(TaskLoop.DONE),
 
         /**
          * The result of all data in the {@code WriteQueue} is not flushed.

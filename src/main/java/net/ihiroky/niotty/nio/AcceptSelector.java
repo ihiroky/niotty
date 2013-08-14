@@ -1,5 +1,7 @@
 package net.ihiroky.niotty.nio;
 
+import net.ihiroky.niotty.StageContext;
+import net.ihiroky.niotty.buffer.BufferSink;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,5 +34,9 @@ public class AcceptSelector extends AbstractSelector {
 
             transport.registerReadLater(childChannel);
         }
+    }
+
+    @Override
+    public void store(StageContext<Void> context, BufferSink input) {
     }
 }

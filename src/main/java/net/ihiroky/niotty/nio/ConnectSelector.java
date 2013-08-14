@@ -2,7 +2,9 @@ package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.DefaultTransportFuture;
 import net.ihiroky.niotty.DefaultTransportStateEvent;
+import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.TransportState;
+import net.ihiroky.niotty.buffer.BufferSink;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,5 +61,9 @@ public class ConnectSelector extends AbstractSelector {
 
         // The done() must be called after register() to ensure that the SelectionKey of IO selector is fixed.
         future.done();
+    }
+
+    @Override
+    public void store(StageContext<Void> context, BufferSink input) {
     }
 }

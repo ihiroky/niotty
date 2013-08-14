@@ -21,9 +21,9 @@ import static org.mockito.Mockito.*;
 /**
  *
  */
-public class TaskTimerImplTest {
+public class DefaultTaskTimerTest {
 
-    private TaskTimerImpl sut_;
+    private DefaultTaskTimer sut_;
     private TaskLoopMock taskLoop_;
 
     private static ExecutorService executor_;
@@ -41,7 +41,7 @@ public class TaskTimerImplTest {
     @Before
     public void setUp() {
         taskLoop_ = new TaskLoopMock();
-        sut_ = new TaskTimerImpl("test", 16);
+        sut_ = new DefaultTaskTimer("test", 16);
         sut_.start();
     }
 
@@ -60,7 +60,7 @@ public class TaskTimerImplTest {
             @Override
             public Long answer(InvocationOnMock invocation) throws Throwable {
                 done[0] = true;
-                return TaskLoop.WAIT_NO_LIMIT;
+                return TaskLoop.DONE;
             }
         });
         TaskLoop.Task task1 = mock(TaskLoop.Task.class);
@@ -68,7 +68,7 @@ public class TaskTimerImplTest {
             @Override
             public Long answer(InvocationOnMock invocation) throws Throwable {
                 done[1] = true;
-                return TaskLoop.WAIT_NO_LIMIT;
+                return TaskLoop.DONE;
             }
         });
 
@@ -91,7 +91,7 @@ public class TaskTimerImplTest {
             @Override
             public Long answer(InvocationOnMock invocation) throws Throwable {
                 order.offer(0);
-                return TaskLoop.WAIT_NO_LIMIT;
+                return TaskLoop.DONE;
             }
         });
         when(task0.toString()).thenReturn("task0");
@@ -100,7 +100,7 @@ public class TaskTimerImplTest {
             @Override
             public Long answer(InvocationOnMock invocation) throws Throwable {
                 order.offer(1);
-                return TaskLoop.WAIT_NO_LIMIT;
+                return TaskLoop.DONE;
             }
         });
         when(task1.toString()).thenReturn("task1");
@@ -115,10 +115,5 @@ public class TaskTimerImplTest {
         assertThat(order.poll(), is(0));
         verify(task0, timeout(220)).execute(TimeUnit.MILLISECONDS);
         verify(task1, timeout(120)).execute(TimeUnit.MILLISECONDS);
-    }
-
-    @Test
-    public void testFlush() throws Exception {
-        assertThat(sut_.flush(TimeUnit.MILLISECONDS), is(-1L));
     }
 }

@@ -14,7 +14,7 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  *
  */
-class TaskTimerImpl implements Runnable, TaskTimer {
+class DefaultTaskTimer implements Runnable, TaskTimer {
 
     private final PriorityQueue<TimerEntry> queue_;
     private final String name_;
@@ -22,9 +22,9 @@ class TaskTimerImpl implements Runnable, TaskTimer {
     private final Condition condition_;
     private volatile Thread thread_;
 
-    private Logger logger_ = LoggerFactory.getLogger(TaskTimerImpl.class);
+    private Logger logger_ = LoggerFactory.getLogger(DefaultTaskTimer.class);
 
-    public TaskTimerImpl(String name, int initialCapacity) {
+    public DefaultTaskTimer(String name, int initialCapacity) {
         queue_ = new PriorityQueue<>(initialCapacity);
         lock_ = new ReentrantLock();
         condition_ = lock_.newCondition();
@@ -57,11 +57,6 @@ class TaskTimerImpl implements Runnable, TaskTimer {
         } finally {
             lock_.unlock();
         }
-    }
-
-    @Override
-    public long flush(TimeUnit timeUnit) {
-        return TaskLoop.WAIT_NO_LIMIT;
     }
 
     @Override

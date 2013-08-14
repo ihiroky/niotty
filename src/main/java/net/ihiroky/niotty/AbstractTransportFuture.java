@@ -56,7 +56,7 @@ public abstract class AbstractTransportFuture implements TransportFuture {
                 @Override
                 public long execute(TimeUnit timeUnit) throws Exception {
                     listener.onComplete(AbstractTransportFuture.this);
-                    return TaskLoop.WAIT_NO_LIMIT;
+                    return TaskLoop.DONE;
                 }
             };
             taskLoop.offerTask(task);
@@ -97,7 +97,7 @@ public abstract class AbstractTransportFuture implements TransportFuture {
                 @Override
                 public long execute(TimeUnit timeUnit) throws Exception {
                     listener_.onComplete(AbstractTransportFuture.this);
-                    return TaskLoop.WAIT_NO_LIMIT;
+                    return TaskLoop.DONE;
                 }
             });
         }
