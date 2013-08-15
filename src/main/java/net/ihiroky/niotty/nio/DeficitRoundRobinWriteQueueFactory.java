@@ -15,8 +15,8 @@ import java.util.Objects;
  */
 public class DeficitRoundRobinWriteQueueFactory implements WriteQueueFactory {
 
-    private int baseQueueLimit_;
-    private int[] weights_;
+    private final int initialBaseQuantum_;
+    private final float[] weights_;
 
     private static final int DEFAULT_BASE_ROUND_LIMIT = 4096;
 
@@ -32,17 +32,17 @@ public class DeficitRoundRobinWriteQueueFactory implements WriteQueueFactory {
     /**
      * Creates the factory of {@link net.ihiroky.niotty.nio.DeficitRoundRobinWriteQueue}.
      *
-     * @param baseQueueLimit a byte length to limit the flush size of the base queue at one time
+     * @param initialBaseQuantum an initial value of the smoothed flush size for the base queue
      * @param weights flush size weights of the queues other than the base queue
      */
-    public DeficitRoundRobinWriteQueueFactory(int baseQueueLimit, float...weights) {
-        if (baseQueueLimit <= 0) {
-            throw new IllegalArgumentException("baseQueueLimit must be positive.");
+    public DeficitRoundRobinWriteQueueFactory(int initialBaseQuantum, float...weights) {
+        if (initialBaseQuantum <= 0) {
+            throw new IllegalArgumentException("initialBaseQuantum must be positive.");
         }
         Objects.requireNonNull(weights, "weights");
 
-        baseQueueLimit_ = baseQueueLimit;
-        weights_ = DeficitRoundRobinWriteQueue.convertWeightsRateToPercent(baseQueueLimit, weights);
+        initialBaseQuantum_ = initialBaseQuantum;
+        weights_ = weights.clone();
     }
 
     /**
@@ -50,6 +50,6 @@ public class DeficitRoundRobinWriteQueueFactory implements WriteQueueFactory {
      */
     @Override
     public WriteQueue newWriteQueue() {
-        return new DeficitRoundRobinWriteQueue(baseQueueLimit_, weights_);
+        return new DeficitRoundRobinWriteQueue(initialBaseQuantum_, weights_);
     }
 }

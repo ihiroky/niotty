@@ -59,7 +59,7 @@ public class DrrMain {
         clientProcessor.start();
 
         NioServerSocketConfig config = new NioServerSocketConfig();
-        config.setWriteQueueFactory(new DeficitRoundRobinWriteQueueFactory(0.5f));
+        config.setWriteQueueFactory(new DeficitRoundRobinWriteQueueFactory(1024, 0.5f));
         NioServerSocketTransport serverTransport = serverProcessor.createTransport(config);
         NioClientSocketTransport clientTransport = clientProcessor.createTransport(new NioClientSocketConfig());
         try {

@@ -47,12 +47,12 @@ public class DeficitRoundRobinWriteQueueTest {
 
     @Test
     public void testConstructor() throws Exception {
-        DeficitRoundRobinWriteQueue sut = new DeficitRoundRobinWriteQueue(32, 50, 25);
+        DeficitRoundRobinWriteQueue sut = new DeficitRoundRobinWriteQueue(32, 0.5f, 0.25f);
         assertThat(sut.weights(0), is(50));
         assertThat(sut.weights(1), is(25));
         assertThat(sut.deficitCounter(0), is(0));
         assertThat(sut.deficitCounter(1), is(0));
-        assertThat(sut.baseQueueLimit(), is(32));
+        assertThat(sut.smoothedBaseQuantum(), is(32));
         assertThat(sut.queueIndex(), is(-1));
     }
 
@@ -92,7 +92,7 @@ public class DeficitRoundRobinWriteQueueTest {
 
     @Test
     public void testFlushTo_BaseIsFlushing() throws Exception {
-        DeficitRoundRobinWriteQueue sut = new DeficitRoundRobinWriteQueue(32, 100, 50, 25);
+        DeficitRoundRobinWriteQueue sut = new DeficitRoundRobinWriteQueue(32, 1f, 0.5f, 0.25f);
         GatheringByteChannel channel = mock(GatheringByteChannel.class);
         when(channel.write(Mockito.any(ByteBuffer.class))).thenAnswer(new FlushSizeAnswer(4));
         byte[] data = new byte[] {
@@ -115,7 +115,7 @@ public class DeficitRoundRobinWriteQueueTest {
 
     @Test
     public void testFlushTo_DeficitCounterGetsZeroIfQueueIsEmpty() throws Exception {
-        DeficitRoundRobinWriteQueue sut = new DeficitRoundRobinWriteQueue(32, 100, 50);
+        DeficitRoundRobinWriteQueue sut = new DeficitRoundRobinWriteQueue(32, 1f, 0.5f);
         GatheringByteChannel channel = mock(GatheringByteChannel.class);
         when(channel.write(Mockito.any(ByteBuffer.class))).thenAnswer(new FlushAllAnswer());
         byte[] data = new byte[] {
@@ -138,7 +138,7 @@ public class DeficitRoundRobinWriteQueueTest {
 
     @Test
     public void testFlushTo_DoNotFlushToPartiallyIfDeficitCounterIsShort() throws Exception {
-        DeficitRoundRobinWriteQueue sut = new DeficitRoundRobinWriteQueue(32, 100, 50);
+        DeficitRoundRobinWriteQueue sut = new DeficitRoundRobinWriteQueue(32, 1f, 0.5f);
         GatheringByteChannel channel = mock(GatheringByteChannel.class);
         when(channel.write(Mockito.any(ByteBuffer.class))).thenAnswer(new FlushAllAnswer());
         byte[] data = new byte[] {
@@ -163,7 +163,7 @@ public class DeficitRoundRobinWriteQueueTest {
 
     @Test
     public void testFlushTo_PriorityQueueIsFlushing() throws Exception {
-        DeficitRoundRobinWriteQueue sut = new DeficitRoundRobinWriteQueue(64, 100, 50);
+        DeficitRoundRobinWriteQueue sut = new DeficitRoundRobinWriteQueue(64, 1f, 0.5f);
         GatheringByteChannel channel = mock(GatheringByteChannel.class);
         when(channel.write(Mockito.any(ByteBuffer.class)))
                 .thenAnswer(new FlushAllAnswer())
@@ -191,7 +191,7 @@ public class DeficitRoundRobinWriteQueueTest {
 
     @Test
     public void testFlushTo_UseRoundBonusIfBaseQueueIsEmpty() throws Exception {
-        DeficitRoundRobinWriteQueue sut = new DeficitRoundRobinWriteQueue(64, 100, 50);
+        DeficitRoundRobinWriteQueue sut = new DeficitRoundRobinWriteQueue(64, 1f, 0.5f);
         GatheringByteChannel channel = mock(GatheringByteChannel.class);
         when(channel.write(Mockito.any(ByteBuffer.class))).thenAnswer(new FlushAllAnswer());
         byte[] data = new byte[] {
@@ -215,7 +215,7 @@ public class DeficitRoundRobinWriteQueueTest {
 
     @Test
     public void testFlushTo_RecursiveCallIfQueueIndexIsNotMinus1() throws Exception {
-        DeficitRoundRobinWriteQueue sut = new DeficitRoundRobinWriteQueue(64, 100, 50);
+        DeficitRoundRobinWriteQueue sut = new DeficitRoundRobinWriteQueue(64, 1f, 0.5f);
         GatheringByteChannel channel = mock(GatheringByteChannel.class);
         when(channel.write(Mockito.any(ByteBuffer.class))).thenAnswer(new FlushAllAnswer());
         byte[] data = new byte[] {
@@ -248,7 +248,7 @@ public class DeficitRoundRobinWriteQueueTest {
         BufferSink bufferSink2 = mock(BufferSink.class);
         doNothing().when(bufferSink2).dispose();
 
-        DeficitRoundRobinWriteQueue sut = new DeficitRoundRobinWriteQueue(64, 100, 100);
+        DeficitRoundRobinWriteQueue sut = new DeficitRoundRobinWriteQueue(64, 1f, 0.5f);
         sut.offer(new AttachedMessage<>(bufferSink0, DefaultTransportParameter.NO_PARAMETER));
         sut.offer(new AttachedMessage<>(bufferSink1, new DefaultTransportParameter(0)));
         sut.offer(new AttachedMessage<>(bufferSink2, new DefaultTransportParameter(1)));
