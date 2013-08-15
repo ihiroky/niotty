@@ -2,18 +2,22 @@ package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.AbstractProcessor;
 import net.ihiroky.niotty.NameCountThreadFactory;
+import net.ihiroky.niotty.PipelineComposer;
+
+import java.net.ProtocolFamily;
+import java.util.Objects;
 
 /**
- * @author Hiroki Itoh
+ * An implementation of {@link net.ihiroky.niotty.Processor} for NIO {@code DatagramChannel}.
  */
-public class NioDatagramSocketProcessor
-        extends AbstractProcessor<NioDatagramSocketTransport, NioDatagramSocketConfig> {
+public class NioDatagramSocketProcessor extends AbstractProcessor<NioDatagramSocketTransport> {
 
     UdpIOSelectorPool ioSelectorPool_;
     private int numberOfMessageIOThread_;
     private int readBufferSize_;
     private int writeBufferSize_;
     private boolean useDirectBuffer_;
+    private WriteQueueFactory writeQueueFactory_;
 
     private static final int DEFAULT_NUMBER_OF_MESSAGE_IO_THREAD =
             Math.max(Runtime.getRuntime().availableProcessors() / 2, 2);
@@ -24,11 +28,12 @@ public class NioDatagramSocketProcessor
 
     public NioDatagramSocketProcessor() {
         ioSelectorPool_ = new UdpIOSelectorPool();
-
         numberOfMessageIOThread_ = DEFAULT_NUMBER_OF_MESSAGE_IO_THREAD;
         readBufferSize_ = DEFAULT_BUFFER_SIZE;
         writeBufferSize_ = DEFAULT_BUFFER_SIZE;
         useDirectBuffer_ = DEFAULT_DIRECT_BUFFER;
+        writeQueueFactory_ = new SimpleWriteQueueFactory();
+        setName(DEFAULT_NAME);
     }
 
     @Override
@@ -46,68 +51,94 @@ public class NioDatagramSocketProcessor
     }
 
     @Override
-    public NioDatagramSocketTransport createTransport(NioDatagramSocketConfig config) {
-        return new NioDatagramSocketTransport(config, pipelineComposer(),
-                NioDatagramSocketTransport.DEFAULT_WEIGHT, name(), ioSelectorPool_);
+    public NioDatagramSocketTransport createTransport() {
+        return new NioDatagramSocketTransport(
+                pipelineComposer(), null, name(), ioSelectorPool_, writeQueueFactory_);
     }
 
     /**
      * Constructs the transport.
+     * The {@code protocolFamily} parameter is used to specify the {@code ProtocolFamily}.
+     * If the datagram channel is to be used for IP multicasing then this should correspond to
+     * the address type of the multicast groups that this channel will join.
      *
-     * @param config a configuration to construct the transport.
-     * @param weight a weight to choose I/O thread.
+     * @param protocolFamily the protocolFamily
      * @return the transport.
      */
-    public NioDatagramSocketTransport createTransport(NioDatagramSocketConfig config, int weight) {
-        return new NioDatagramSocketTransport(config, pipelineComposer(), weight, name(), ioSelectorPool_);
+    public NioDatagramSocketTransport createTransport(ProtocolFamily protocolFamily) {
+        return new NioDatagramSocketTransport(
+                pipelineComposer(), protocolFamily, name(), ioSelectorPool_, writeQueueFactory_);
     }
 
-    public void setNumberOfMessageIOThread(int numberOfMessageIOThread) {
+    @Override
+    public NioDatagramSocketProcessor setName(String name) {
+        super.setName(name);
+        return this;
+    }
+
+    @Override
+    public NioDatagramSocketProcessor setPipelineComposer(PipelineComposer composer) {
+        super.setPipelineComposer(composer);
+        return this;
+    }
+
+    public NioDatagramSocketProcessor setNumberOfMessageIOThread(int numberOfMessageIOThread) {
         if (numberOfMessageIOThread <= 0) {
             throw new IllegalArgumentException("numberOfMessageIOThread must be positive.");
         }
         this.numberOfMessageIOThread_ = numberOfMessageIOThread;
+        return this;
     }
 
     public int numberOfMessageIOThread() {
         return numberOfMessageIOThread_;
     }
 
-    public void setReadBufferSize(int readBufferSize) {
+    public NioDatagramSocketProcessor setReadBufferSize(int readBufferSize) {
         if (readBufferSize <= 0) {
             throw new IllegalArgumentException("readBufferSize must be positive.");
         }
         this.readBufferSize_ = readBufferSize;
+        return this;
     }
 
     public int readBufferSize() {
         return readBufferSize_;
     }
 
-    public void setWriteBufferSize(int writeBufferSize) {
+    public NioDatagramSocketProcessor setWriteBufferSize(int writeBufferSize) {
         if (writeBufferSize <= 0) {
             throw new IllegalArgumentException("writeBufferSize must be positive.");
         }
         this.writeBufferSize_ = writeBufferSize;
+        return this;
     }
 
     public int writeBufferSize() {
         return writeBufferSize_;
     }
 
-    public void setUseDirectBuffer(boolean useDirectBuffer) {
+    public NioDatagramSocketProcessor setUseDirectBuffer(boolean useDirectBuffer) {
         this.useDirectBuffer_ = useDirectBuffer;
+        return this;
     }
 
     public boolean isUseDirectBuffer() {
         return useDirectBuffer_;
     }
 
-    public void setTaskWeightThresholdOfIOSelectorPool(int threshold) {
+    public NioDatagramSocketProcessor setTaskWeightThresholdOfIOSelectorPool(int threshold) {
         ioSelectorPool_.setTaskWeightThreshold(threshold);
+        return this;
     }
 
     public int getTaskWeightThresholdOfIOSelectorPool() {
         return ioSelectorPool_.getTaskWeightThreshold();
+    }
+
+    public NioDatagramSocketProcessor setWriteQueueFactory(WriteQueueFactory writeQueueFactory) {
+        Objects.requireNonNull(writeQueueFactory, "writeQueueFactory");
+        writeQueueFactory_ = writeQueueFactory;
+        return this;
     }
 }

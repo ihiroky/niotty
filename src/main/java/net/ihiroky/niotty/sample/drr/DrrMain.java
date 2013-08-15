@@ -10,17 +10,15 @@ import net.ihiroky.niotty.buffer.CodecBuffer;
 import net.ihiroky.niotty.codec.FrameLengthPrependEncoder;
 import net.ihiroky.niotty.codec.FrameLengthRemoveDecoder;
 import net.ihiroky.niotty.nio.DeficitRoundRobinWriteQueueFactory;
-import net.ihiroky.niotty.nio.NioClientSocketConfig;
 import net.ihiroky.niotty.nio.NioClientSocketProcessor;
 import net.ihiroky.niotty.nio.NioClientSocketTransport;
-import net.ihiroky.niotty.nio.NioServerSocketConfig;
 import net.ihiroky.niotty.nio.NioServerSocketProcessor;
 import net.ihiroky.niotty.nio.NioServerSocketTransport;
 
 import java.net.InetSocketAddress;
 
 /**
- * @author Hiroki Itoh
+ * A sample using {@link net.ihiroky.niotty.nio.DeficitRoundRobinWriteQueue}.
  */
 public class DrrMain {
 
@@ -37,15 +35,16 @@ public class DrrMain {
     private void execute(String[] args) {
         final int serverPort = 10000;
 
-        NioServerSocketProcessor serverProcessor = new NioServerSocketProcessor();
-        serverProcessor.setPipelineComposer(new PipelineComposer() {
-            @Override
-            public void compose(LoadPipeline loadPipeline, StorePipeline storePipeline) {
-                loadPipeline.add(MyStageKey.FRAMING, new FrameLengthRemoveDecoder())
-                        .add(MyStageKey.GENERATOR, new NumberGenerator());
-                storePipeline.add(MyStageKey.FRAMING, new FrameLengthPrependEncoder());
-            }
-        });
+        NioServerSocketProcessor serverProcessor = new NioServerSocketProcessor()
+                .setPipelineComposer(new PipelineComposer() {
+                    @Override
+                    public void compose(LoadPipeline loadPipeline, StorePipeline storePipeline) {
+                        loadPipeline.add(MyStageKey.FRAMING, new FrameLengthRemoveDecoder())
+                                .add(MyStageKey.GENERATOR, new NumberGenerator());
+                        storePipeline.add(MyStageKey.FRAMING, new FrameLengthPrependEncoder());
+                    }
+                }).setWriteQueueFactory(new DeficitRoundRobinWriteQueueFactory(1024, 0.5f));
+
         NioClientSocketProcessor clientProcessor = new NioClientSocketProcessor();
         clientProcessor.setPipelineComposer(new PipelineComposer() {
             @Override
@@ -58,10 +57,8 @@ public class DrrMain {
         serverProcessor.start();
         clientProcessor.start();
 
-        NioServerSocketConfig config = new NioServerSocketConfig();
-        config.setWriteQueueFactory(new DeficitRoundRobinWriteQueueFactory(1024, 0.5f));
-        NioServerSocketTransport serverTransport = serverProcessor.createTransport(config);
-        NioClientSocketTransport clientTransport = clientProcessor.createTransport(new NioClientSocketConfig());
+        NioServerSocketTransport serverTransport = serverProcessor.createTransport();
+        NioClientSocketTransport clientTransport = clientProcessor.createTransport();
         try {
             InetSocketAddress endpoint = new InetSocketAddress(serverPort);
             serverTransport.bind(endpoint);

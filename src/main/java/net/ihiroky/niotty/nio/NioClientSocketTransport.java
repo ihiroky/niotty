@@ -15,13 +15,14 @@ import net.ihiroky.niotty.buffer.BufferSink;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.net.SocketOption;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 /**
- * @author Hiroki Itoh
+ * An implementation of {@link net.ihiroky.niotty.Transport} for NIO {@code SocketChannel}.
  */
 public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> {
 
@@ -41,38 +42,60 @@ public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> 
     }
 
     NioClientSocketTransport(
-            NioClientSocketConfig config, PipelineComposer composer, int weight,
-            String name, ConnectSelectorPool connectorPool, TcpIOSelectorPool ioPool) {
+            PipelineComposer composer, int weight, String name,
+            ConnectSelectorPool connectorPool, TcpIOSelectorPool ioPool, WriteQueueFactory writeQueueFactory) {
         super(name, composer, weight);
 
-        Objects.requireNonNull(config, "config");
         Objects.requireNonNull(connectorPool, "connectorPool");
         Objects.requireNonNull(ioPool, "ioPool");
+        Objects.requireNonNull(writeQueueFactory, "writeQueueFactory");
 
         try {
             SocketChannel clientChannel = SocketChannel.open();
             clientChannel.configureBlocking(false);
-            config.applySocketOptions(clientChannel);
 
             clientChannel_ = clientChannel;
             pools_ = new Pools(connectorPool, ioPool);
-            writeQueue_ = config.newWriteQueue();
+            writeQueue_ = writeQueueFactory.newWriteQueue();
         } catch (Exception e) {
             throw new RuntimeException("failed to open client socket channel.", e);
         }
     }
 
-    NioClientSocketTransport(
-            NioServerSocketConfig config, PipelineComposer composer, int weight,
-            String name, SocketChannel child) {
+    NioClientSocketTransport(PipelineComposer composer, int weight, String name,
+                             WriteQueueFactory writeQueueFactory, SocketChannel child) {
         super(name, composer, weight);
 
-        Objects.requireNonNull(config, "config");
+        Objects.requireNonNull(writeQueueFactory, "writeQueueFactory");
         Objects.requireNonNull(child, "child");
 
         clientChannel_ = child;
         pools_ = null;
-        writeQueue_ = config.newWriteQueue();
+        writeQueue_ = writeQueueFactory.newWriteQueue();
+    }
+
+    /**
+     * Set a socket option.
+     * @param name the name of the option
+     * @param value the value of the option
+     * @param <T> the type of the option
+     * @return this object
+     * @throws IOException if an I/O error occurs
+     */
+    public <T> NioClientSocketTransport setOption(SocketOption<T> name, T value) throws IOException {
+        clientChannel_.setOption(name, value);
+        return this;
+    }
+
+    /**
+     * Retrun a socket option value for a specified name.
+     * @param name the name
+     * @param <T> the type of the value
+     * @return the value
+     * @throws IOException if I/O error occurs
+     */
+    public <T> T option(SocketOption<T> name) throws IOException {
+        return clientChannel_.getOption(name);
     }
 
     @Override

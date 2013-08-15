@@ -3,13 +3,11 @@ package net.ihiroky.niotty;
 import java.util.Objects;
 
 /**
- * <p>A skeletal implemetation of {@link Processor}.</p>
+ * <p>A skeletal implementation of {@link Processor}.</p>
  *
  * <p>This class has a name and a pipeline composer.</p>
- *
- * @author Hiroki Itoh
  */
-public abstract class AbstractProcessor<T extends Transport, C> implements Processor<T, C> {
+public abstract class AbstractProcessor<T extends Transport> implements Processor<T> {
 
     private String name_;
     private PipelineComposer pipelineComposer_;
@@ -47,14 +45,15 @@ public abstract class AbstractProcessor<T extends Transport, C> implements Proce
     }
 
     @Override
-    public void setPipelineComposer(PipelineComposer composer) {
+    public AbstractProcessor<T> setPipelineComposer(PipelineComposer composer) {
         Objects.requireNonNull(composer, "composer");
         pipelineComposer_ = composer;
+        return this;
     }
 
     /**
      * <p>Returns the pipeline composer.</p>
-     * @return the pipeline compoesr.
+     * @return the pipeline composer.
      */
     public PipelineComposer pipelineComposer() {
         return pipelineComposer_;
@@ -64,9 +63,10 @@ public abstract class AbstractProcessor<T extends Transport, C> implements Proce
      * <p>Sets a name of this instance.</p>
      * @param name a name of this instance
      */
-    public void setName(String name) {
+    public AbstractProcessor<T> setName(String name) {
         Objects.requireNonNull(name, "name");
         this.name_ = name;
+        return this;
     }
 
     /**

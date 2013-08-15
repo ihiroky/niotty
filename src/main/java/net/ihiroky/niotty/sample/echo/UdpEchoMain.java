@@ -6,7 +6,6 @@ import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.StorePipeline;
 import net.ihiroky.niotty.codec.StringDecoder;
 import net.ihiroky.niotty.codec.StringEncoder;
-import net.ihiroky.niotty.nio.NioDatagramSocketConfig;
 import net.ihiroky.niotty.nio.NioDatagramSocketProcessor;
 import net.ihiroky.niotty.nio.NioDatagramSocketTransport;
 
@@ -33,7 +32,7 @@ public class UdpEchoMain {
             }
         });
         server.start();
-        NioDatagramSocketTransport serverTransport = server.createTransport(new NioDatagramSocketConfig());
+        NioDatagramSocketTransport serverTransport = server.createTransport();
 
         NioDatagramSocketProcessor client = new NioDatagramSocketProcessor();
         client.setPipelineComposer(new PipelineComposer() {
@@ -45,7 +44,7 @@ public class UdpEchoMain {
             }
         });
         client.start();
-        NioDatagramSocketTransport clientTransport = client.createTransport(new NioDatagramSocketConfig());
+        NioDatagramSocketTransport clientTransport = client.createTransport();
 
         try {
             SocketAddress serverEndpoint = new InetSocketAddress("localhost", serverPort);

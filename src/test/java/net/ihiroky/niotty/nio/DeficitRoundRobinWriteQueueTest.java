@@ -209,8 +209,8 @@ public class DeficitRoundRobinWriteQueueTest {
         assertThat(status, is(WriteQueue.FlushStatus.FLUSHED));
         assertThat(sut.lastFlushedBytes(), is(8 + 8));
         assertThat(sut.queueIndex(), is(-1));
-        assertThat(sut.deficitCounter(0), is(64 / 2 - 8)); // 64 / 2 * 1.0
-        assertThat(sut.deficitCounter(1), is(64 / 4 - 8)); // 64 / 2 * 0.5
+        assertThat(sut.deficitCounter(0), is(64 / 4 - 8)); // 64 / 4 * 1.0
+        assertThat(sut.deficitCounter(1), is(64 / 8 - 8)); // 64 / 4 * 0.5
     }
 
     @Test

@@ -14,7 +14,9 @@ import net.ihiroky.niotty.buffer.BufferSink;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
+import java.net.ProtocolFamily;
 import java.net.SocketAddress;
+import java.net.SocketOption;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.MembershipKey;
@@ -26,9 +28,7 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 /**
- * A Transport implementation for {@code java.nio.channels.DatagramChannel}.
- *
- * @author Hiroki Itoh
+ * An implementation of {@link net.ihiroky.niotty.Transport} for NIO {@code DatagramChannel}.
  */
 public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector> {
 
@@ -37,16 +37,16 @@ public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector
     private WriteQueue.FlushStatus flushStatus_;
     private final Map<GroupKey, MembershipKey> membershipKeyMap_;
 
-    NioDatagramSocketTransport(NioDatagramSocketConfig config, PipelineComposer composer, int weight,
-                               String name, UdpIOSelectorPool selectorPool) {
-        super(name, composer, weight);
+    NioDatagramSocketTransport(PipelineComposer composer, ProtocolFamily protocolFamily,
+                               String name, UdpIOSelectorPool selectorPool, WriteQueueFactory writeQueueFactory) {
+        super(name, composer, DEFAULT_WEIGHT);
 
         Objects.requireNonNull(selectorPool, "selectorPool");
+        Objects.requireNonNull(writeQueueFactory, "writeQueueFactory");
 
         DatagramChannel channel = null;
         try {
-            channel = DatagramChannel.open();
-            config.applySocketOptions(channel);
+            channel = (protocolFamily != null) ? DatagramChannel.open(protocolFamily) : DatagramChannel.open();
             channel.configureBlocking(false);
         } catch (IOException ioe) {
             if (channel != null) {
@@ -60,12 +60,36 @@ public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector
         }
 
         channel_ = channel;
-        writeQueue_ = config.newWriteQueue();
+        writeQueue_ = writeQueueFactory.newWriteQueue();
         membershipKeyMap_ = Collections.synchronizedMap(new HashMap<GroupKey, MembershipKey>());
 
         // TODO attach a thread for remote ip from a pool.
         // TODO set read buffer size to 64k.
         selectorPool.register(channel, SelectionKey.OP_READ, this);
+    }
+
+    /**
+     * Set a socket optoin.
+     * @param name the name of the option
+     * @param value the value of the option
+     * @param <T> the type of the option
+     * @return this object
+     * @throws IOException if an I/O error occurs
+     */
+    public <T> NioDatagramSocketTransport setOption(SocketOption<T> name, T value) throws IOException {
+        channel_.setOption(name, value);
+        return this;
+    }
+
+    /**
+     * Returns a socket option value for a specified name.
+     * @param name the name
+     * @param <T> the type of the value
+     * @return the value
+     * @throws IOException if I/O error occurs
+     */
+    public <T> T option(SocketOption<T> name) throws IOException {
+        return channel_.getOption(name);
     }
 
     @Override

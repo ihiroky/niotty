@@ -9,10 +9,8 @@ import net.ihiroky.niotty.codec.FrameLengthPrependEncoder;
 import net.ihiroky.niotty.codec.FrameLengthRemoveDecoder;
 import net.ihiroky.niotty.codec.StringDecoder;
 import net.ihiroky.niotty.codec.StringEncoder;
-import net.ihiroky.niotty.nio.NioClientSocketConfig;
 import net.ihiroky.niotty.nio.NioClientSocketProcessor;
 import net.ihiroky.niotty.nio.NioClientSocketTransport;
-import net.ihiroky.niotty.nio.NioServerSocketConfig;
 import net.ihiroky.niotty.nio.NioServerSocketProcessor;
 import net.ihiroky.niotty.nio.NioServerSocketTransport;
 
@@ -62,8 +60,8 @@ public class FileMain {
         serverProcessor.start();
         clientProcessor.start();
 
-        NioServerSocketTransport serverTransport = serverProcessor.createTransport(new NioServerSocketConfig());
-        NioClientSocketTransport clientTransport = clientProcessor.createTransport(new NioClientSocketConfig());
+        NioServerSocketTransport serverTransport = serverProcessor.createTransport();
+        NioClientSocketTransport clientTransport = clientProcessor.createTransport();
         try {
             serverTransport.bind(new InetSocketAddress(serverPort));
             TransportFuture connectFuture = clientTransport.connect(new InetSocketAddress("localhost", serverPort));

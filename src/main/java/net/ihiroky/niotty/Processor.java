@@ -11,10 +11,8 @@ package net.ihiroky.niotty;
  * It is used by the transport implementation to set up pipelines.</p>
  *
  * @param <T> the type of the transport to be created by this class.
- * @param <C> the type of the transport configuration.
- * @author Hiroki Itoh
  */
-public interface Processor<T extends Transport, C> {
+public interface Processor<T extends Transport> {
 
     /**
      * Starts I/O threads.
@@ -36,12 +34,11 @@ public interface Processor<T extends Transport, C> {
      * Sets a {@link PipelineComposer}.
      * @param composer a {@code PipelineComposer}.
      */
-    void setPipelineComposer(PipelineComposer composer);
+    Processor<T> setPipelineComposer(PipelineComposer composer);
 
     /**
      * Constructs the transport.
-     * @param config a configuration to construct the transport.
      * @return the transport.
      */
-    T createTransport(C config);
+    T createTransport();
 }

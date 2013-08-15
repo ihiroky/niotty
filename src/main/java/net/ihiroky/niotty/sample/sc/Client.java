@@ -10,7 +10,6 @@ import net.ihiroky.niotty.codec.DelimiterDecoder;
 import net.ihiroky.niotty.codec.DelimiterEncoder;
 import net.ihiroky.niotty.codec.StringDecoder;
 import net.ihiroky.niotty.codec.StringEncoder;
-import net.ihiroky.niotty.nio.NioClientSocketConfig;
 import net.ihiroky.niotty.nio.NioClientSocketProcessor;
 import net.ihiroky.niotty.nio.NioClientSocketTransport;
 
@@ -41,7 +40,7 @@ public class Client {
             }
         });
         processor.start();
-        final NioClientSocketTransport transport = processor.createTransport(new NioClientSocketConfig());
+        final NioClientSocketTransport transport = processor.createTransport();
         transport.connect(new InetSocketAddress(serverPort));
 
         ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();

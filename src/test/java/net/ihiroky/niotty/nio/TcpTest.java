@@ -27,8 +27,8 @@ public class TcpTest {
         clientSocketProcessor_ = new NioClientSocketProcessor();
         serverSocketProcessor_.start();
         clientSocketProcessor_.start();
-        serverSut_ = serverSocketProcessor_.createTransport(new NioServerSocketConfig());
-        clientSut_ = clientSocketProcessor_.createTransport(new NioClientSocketConfig());
+        serverSut_ = serverSocketProcessor_.createTransport();
+        clientSut_ = clientSocketProcessor_.createTransport();
     }
 
     @After
@@ -88,7 +88,7 @@ public class TcpTest {
         p.setNumberOfConnectThread(0);
         try {
             p.start();
-            NioClientSocketTransport clientSut = p.createTransport(new NioClientSocketConfig());
+            NioClientSocketTransport clientSut = p.createTransport();
 
             serverSut_.bind(SERVER_ENDPOINT);
             clientSut.connect(SERVER_ENDPOINT);

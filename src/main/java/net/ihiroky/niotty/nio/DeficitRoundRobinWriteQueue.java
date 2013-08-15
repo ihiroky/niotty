@@ -49,7 +49,7 @@ public class DeficitRoundRobinWriteQueue implements WriteQueue {
     private static final float MAX_WEIGHT = 1f;
     private static final int SMOOTH_SHIFT = 3;
     private static final int QUOTER_BY_SHIFT = 2;
-    private static final int MIN_BASE_QUANTUM = 256;
+    private static final int MIN_BASE_QUANTUM = 1;
 
     /**
      * Creates a instance of {@code DeficitRoundRobinWriteQueue}.
@@ -89,7 +89,7 @@ public class DeficitRoundRobinWriteQueue implements WriteQueue {
         for (int i = 0; i < length; i++) {
             float weight = weights[i];
             if (weight < MIN_WEIGHT || weight > MAX_WEIGHT) {
-                throw new IllegalArgumentException("weight must be in [" + MIN_WEIGHT + ", " + MAX_WEIGHT + "]");
+                throw new IllegalArgumentException("The weight must be in [" + MIN_WEIGHT + ", " + MAX_WEIGHT + "]");
             }
             ps[i] = (int) Math.round(BASE_WEIGHT * (double) weights[i]);
         }

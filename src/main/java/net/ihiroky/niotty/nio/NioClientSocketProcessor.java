@@ -2,13 +2,14 @@ package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.AbstractProcessor;
 import net.ihiroky.niotty.NameCountThreadFactory;
+import net.ihiroky.niotty.PipelineComposer;
+
+import java.util.Objects;
 
 /**
- * Created on 13/01/18, 12:38
- *
- * @author Hiroki Itoh
+ * An implementation of {@link net.ihiroky.niotty.Processor} for NIO {@code SocketChannel}.
  */
-public class NioClientSocketProcessor extends AbstractProcessor<NioClientSocketTransport, NioClientSocketConfig> {
+public class NioClientSocketProcessor extends AbstractProcessor<NioClientSocketTransport> {
 
     private ConnectSelectorPool connectSelectorPool_;
     private TcpIOSelectorPool ioSelectorPool_;
@@ -17,6 +18,7 @@ public class NioClientSocketProcessor extends AbstractProcessor<NioClientSocketT
     private int readBufferSize_;
     private int writeBufferSize_;
     private boolean useDirectBuffer_;
+    private WriteQueueFactory writeQueueFactory_;
 
     private static final int DEFAULT_NUMBER_OF_CONNECT_THREAD = 1;
     private static final int DEFAULT_NUMBER_OF_MESSAGE_IO_THREAD =
@@ -29,6 +31,7 @@ public class NioClientSocketProcessor extends AbstractProcessor<NioClientSocketT
     public NioClientSocketProcessor() {
         ioSelectorPool_ = new TcpIOSelectorPool();
         connectSelectorPool_ = new ConnectSelectorPool();
+        writeQueueFactory_ = new SimpleWriteQueueFactory();
 
         numberOfConnectThread_ = DEFAULT_NUMBER_OF_CONNECT_THREAD;
         numberOfMessageIOThread_ = DEFAULT_NUMBER_OF_MESSAGE_IO_THREAD;
@@ -39,21 +42,20 @@ public class NioClientSocketProcessor extends AbstractProcessor<NioClientSocketT
     }
 
     @Override
-    public NioClientSocketTransport createTransport(NioClientSocketConfig config) {
-        return new NioClientSocketTransport(config, pipelineComposer(),
-                NioClientSocketTransport.DEFAULT_WEIGHT, name(), connectSelectorPool_, ioSelectorPool_);
+    public NioClientSocketTransport createTransport() {
+        return new NioClientSocketTransport(pipelineComposer(), NioClientSocketTransport.DEFAULT_WEIGHT, name(),
+                connectSelectorPool_, ioSelectorPool_, writeQueueFactory_);
     }
 
     /**
      * Constructs the transport.
      *
-     * @param config a configuration to construct the transport.
      * @param weight a weight to choose I/O thread.
      * @return the transport.
      */
-    public NioClientSocketTransport createTransport(NioClientSocketConfig config, int weight) {
-        return new NioClientSocketTransport(config, pipelineComposer(), weight, name(),
-                connectSelectorPool_, ioSelectorPool_);
+    public NioClientSocketTransport createTransport(int weight) {
+        return new NioClientSocketTransport(pipelineComposer(), weight, name(),
+                connectSelectorPool_, ioSelectorPool_, writeQueueFactory_);
     }
 
     @Override
@@ -72,41 +74,65 @@ public class NioClientSocketProcessor extends AbstractProcessor<NioClientSocketT
         connectSelectorPool_.close();
     }
 
-    public void setNumberOfConnectThread(int numberOfConnectThread) {
+    @Override
+    public NioClientSocketProcessor setPipelineComposer(PipelineComposer composer) {
+        super.setPipelineComposer(composer);
+        return this;
+    }
+
+    @Override
+    public NioClientSocketProcessor setName(String name) {
+        super.setName(name);
+        return this;
+    }
+
+    public NioClientSocketProcessor setNumberOfConnectThread(int numberOfConnectThread) {
         if (numberOfConnectThread < 0) {
             throw new IllegalArgumentException("numberOfConnectThread must be positive or zero.");
         }
         // TODO Set null if numberOfConnectThread is zero and create instance if it changes from zero to positive.
         this.numberOfConnectThread_ = numberOfConnectThread;
+        return this;
     }
 
-    public void setNumberOfMessageIOThread(int numberOfMessageIOThread) {
+    public NioClientSocketProcessor setNumberOfMessageIOThread(int numberOfMessageIOThread) {
         if (numberOfMessageIOThread <= 0) {
             throw new IllegalArgumentException("numberOfMessageIOThread must be positive.");
         }
         this.numberOfMessageIOThread_ = numberOfMessageIOThread;
+        return this;
     }
 
-    public void setReadBufferSize(int readBufferSize) {
+    public NioClientSocketProcessor setReadBufferSize(int readBufferSize) {
         if (readBufferSize <= 0) {
             throw new IllegalArgumentException("readBufferSize must be positive.");
         }
         this.readBufferSize_ = readBufferSize;
+        return this;
     }
 
-    public void setWriteBufferSize(int writeBufferSize) {
+    public NioClientSocketProcessor setWriteBufferSize(int writeBufferSize) {
         if (writeBufferSize <= 0) {
             throw new IllegalArgumentException("writeBufferSize must be positive.");
         }
         this.writeBufferSize_ = writeBufferSize;
+        return this;
     }
 
-    public void setUseDirectBuffer(boolean useDirectBuffer) {
+    public NioClientSocketProcessor setUseDirectBuffer(boolean useDirectBuffer) {
         this.useDirectBuffer_ = useDirectBuffer;
+        return this;
     }
 
-    public void setTaskWeightThresholdOfIOSelectorPool(int threshold) {
+    public NioClientSocketProcessor setTaskWeightThresholdOfIOSelectorPool(int threshold) {
         ioSelectorPool_.setTaskWeightThreshold(threshold);
+        return this;
+    }
+
+    public NioClientSocketProcessor setWriteQueueFactory(WriteQueueFactory writeQueueFactory) {
+        Objects.requireNonNull(writeQueueFactory, "writeQueueFactory");
+        writeQueueFactory_ = writeQueueFactory;
+        return this;
     }
 
     boolean hasConnectSelector() {

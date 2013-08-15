@@ -2,16 +2,16 @@ package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.AbstractProcessor;
 import net.ihiroky.niotty.NameCountThreadFactory;
+import net.ihiroky.niotty.PipelineComposer;
 
 /**
- * Created on 13/01/10, 14:37
- *
- * @author Hiroki Itoh
+ * An implementation of {@link net.ihiroky.niotty.Processor} for NIO {@code ServerSocketChannel}.
  */
-public class NioServerSocketProcessor extends AbstractProcessor<NioServerSocketTransport, NioServerSocketConfig> {
+public class NioServerSocketProcessor extends AbstractProcessor<NioServerSocketTransport> {
 
     private AcceptSelectorPool acceptSelectorPool_;
     private TcpIOSelectorPool ioSelectorPool_;
+    private WriteQueueFactory writeQueueFactory_;
     private int readBufferSize_;
     private int writeBufferSize_;
     private boolean useDirectBuffer_;
@@ -30,6 +30,7 @@ public class NioServerSocketProcessor extends AbstractProcessor<NioServerSocketT
     public NioServerSocketProcessor() {
         acceptSelectorPool_ = new AcceptSelectorPool();
         ioSelectorPool_ = new TcpIOSelectorPool();
+        writeQueueFactory_ = new SimpleWriteQueueFactory();
 
         numberOfAcceptThread_ = DEFAULT_NUMBER_OF_ACCEPT_THREAD;
         numberOfMessageIOThread_ = DEFAULT_NUMBER_OF_MESSAGE_IO_THREAD;
@@ -55,40 +56,62 @@ public class NioServerSocketProcessor extends AbstractProcessor<NioServerSocketT
     }
 
     @Override
-    public NioServerSocketTransport createTransport(NioServerSocketConfig config) {
-        return new NioServerSocketTransport(config, this);
+    public NioServerSocketTransport createTransport() {
+        return new NioServerSocketTransport(this);
     }
 
-    public void setNumberOfAcceptThread(int numberOfAcceptThread) {
+    @Override
+    public NioServerSocketProcessor setName(String name) {
+        super.setName(name);
+        return this;
+    }
+
+    @Override
+    public NioServerSocketProcessor setPipelineComposer(PipelineComposer composer) {
+        super.setPipelineComposer(composer);
+        return this;
+    }
+
+    public NioServerSocketProcessor setNumberOfAcceptThread(int numberOfAcceptThread) {
         if (numberOfAcceptThread <= 0) {
             throw new IllegalArgumentException("numberOfAcceptThread must be positive.");
         }
         this.numberOfAcceptThread_ = numberOfAcceptThread;
+        return this;
     }
 
-    public void setNumberOfMessageIOThread(int numberOfMessageIOThread) {
+    public NioServerSocketProcessor setNumberOfMessageIOThread(int numberOfMessageIOThread) {
         if (numberOfMessageIOThread <= 0) {
             throw new IllegalArgumentException("numberOfMessageIOThread must be positive.");
         }
         this.numberOfMessageIOThread_ = numberOfMessageIOThread;
+        return this;
     }
 
-    public void setReadBufferSize(int readBufferSize) {
+    public NioServerSocketProcessor setReadBufferSize(int readBufferSize) {
         if (readBufferSize <= 0) {
             throw new IllegalArgumentException("readBufferSize must be positive.");
         }
         this.readBufferSize_ = readBufferSize;
+        return this;
     }
 
-    public void setWriteBufferSize(int writeBufferSize) {
+    public NioServerSocketProcessor setWriteBufferSize(int writeBufferSize) {
         if (writeBufferSize <= 0) {
             throw new IllegalArgumentException("writeBufferSize must be positive.");
         }
         this.writeBufferSize_ = writeBufferSize;
+        return this;
     }
 
-    public void setUseDirectBuffer(boolean useDirectBuffer) {
+    public NioServerSocketProcessor setUseDirectBuffer(boolean useDirectBuffer) {
         this.useDirectBuffer_ = useDirectBuffer;
+        return this;
+    }
+
+    public NioServerSocketProcessor setWriteQueueFactory(WriteQueueFactory writeQueueFactory) {
+        writeQueueFactory_ = writeQueueFactory;
+        return this;
     }
 
     AcceptSelectorPool acceptSelectorPool() {
@@ -97,6 +120,10 @@ public class NioServerSocketProcessor extends AbstractProcessor<NioServerSocketT
 
     TcpIOSelectorPool ioSelectorPool() {
         return ioSelectorPool_;
+    }
+
+    WriteQueueFactory writeQueueFactory(){
+        return writeQueueFactory_;
     }
 
     public int numberOfAcceptThread() {

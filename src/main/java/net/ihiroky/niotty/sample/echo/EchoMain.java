@@ -7,10 +7,8 @@ import net.ihiroky.niotty.codec.FrameLengthPrependEncoder;
 import net.ihiroky.niotty.codec.FrameLengthRemoveDecoder;
 import net.ihiroky.niotty.codec.StringDecoder;
 import net.ihiroky.niotty.codec.StringEncoder;
-import net.ihiroky.niotty.nio.NioClientSocketConfig;
 import net.ihiroky.niotty.nio.NioClientSocketProcessor;
 import net.ihiroky.niotty.nio.NioClientSocketTransport;
-import net.ihiroky.niotty.nio.NioServerSocketConfig;
 import net.ihiroky.niotty.nio.NioServerSocketProcessor;
 import net.ihiroky.niotty.nio.NioServerSocketTransport;
 
@@ -57,8 +55,8 @@ public class EchoMain {
         server.start();
         client.start();
 
-        final NioServerSocketTransport serverTransport = server.createTransport(new NioServerSocketConfig());
-        NioClientSocketTransport clientTransport = client.createTransport(new NioClientSocketConfig());
+        final NioServerSocketTransport serverTransport = server.createTransport();
+        NioClientSocketTransport clientTransport = client.createTransport();
 
         try {
             serverTransport.bind(new InetSocketAddress(port));
