@@ -70,7 +70,7 @@ public class BufferSinkListTest {
     }
 
     @Test
-    public void testTransferTo_CareAndCdrIsFalse() throws Exception {
+    public void testTransferTo_CarAndCdrIsFalse() throws Exception {
         GatheringByteChannel channel = mock(GatheringByteChannel.class);
         BufferSink car = mock(BufferSink.class);
         doReturn(false).when(car).transferTo(channel);
@@ -83,6 +83,23 @@ public class BufferSinkListTest {
         assertThat(result, is(false));
         verify(car, times(1)).transferTo(channel);
         verify(cdr, never()).transferTo(channel);
+    }
+
+    @Test
+    public void testTransferTo_WriteAllDataIfByteBufferIsLargeEnough() throws Exception {
+        byte[] carData = new byte[]{0};
+        BufferSink car = Buffers.wrap(carData, 0, carData.length);
+        byte[] cdrData = new byte[]{1, 2};
+        BufferSink cdr = Buffers.wrap(cdrData, 0, cdrData.length);
+        ByteBuffer buffer = ByteBuffer.allocate(3);
+
+        BufferSinkList sut = new BufferSinkList(car, cdr);
+        sut.transferTo(buffer);
+        buffer.flip();
+
+        assertThat(buffer, is(ByteBuffer.wrap(new byte[]{0, 1, 2})));
+        assertThat(car.remainingBytes(), is(1));
+        assertThat(cdr.remainingBytes(), is(2));
     }
 
     @Test
@@ -180,10 +197,6 @@ public class BufferSinkListTest {
         assertThat(sliced.remainingBytes(), is(3));
         assertThat(car.remainingBytes(), is(0));
         assertThat(cdr.remainingBytes(), is(2));
-    }
-
-    public BufferSinkListTest() {
-        super();    //To change body of overridden methods use File | Settings | File Templates.
     }
 
     @Test

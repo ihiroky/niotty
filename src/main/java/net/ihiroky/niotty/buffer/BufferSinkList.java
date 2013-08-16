@@ -31,7 +31,7 @@ public class BufferSinkList implements BufferSink {
     @Override
     public void transferTo(ByteBuffer buffer) {
         car_.transferTo(buffer);
-        car_.transferTo(buffer);
+        cdr_.transferTo(buffer);
     }
 
 
