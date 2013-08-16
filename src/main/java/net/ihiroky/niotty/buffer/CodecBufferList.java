@@ -120,11 +120,11 @@ public class CodecBufferList extends AbstractCodecBuffer {
     }
 
     @Override
-    public void transferTo(ByteBuffer buffer) {
+    public void copyTo(ByteBuffer buffer) {
         int end = endBufferIndex_;
         List<CodecBuffer> buffers = buffers_;
         for (int i = beginningBufferIndex_; i <= end; i++) {
-            buffers.get(i).transferTo(buffer);
+            buffers.get(i).copyTo(buffer);
         }
     }
 
@@ -829,7 +829,7 @@ public class CodecBufferList extends AbstractCodecBuffer {
         }
         int remaining = remainingBytes();
         ByteBuffer bb = ByteBuffer.allocate(remaining);
-        transferTo(bb);
+        copyTo(bb);
         return bb.array();
     }
 

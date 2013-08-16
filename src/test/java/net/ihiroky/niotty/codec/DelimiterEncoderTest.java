@@ -27,7 +27,7 @@ public class DelimiterEncoderTest {
         sut.store(context, b);
 
         ByteBuffer buffer = ByteBuffer.allocate(16);
-        b.transferTo(buffer);
+        b.copyTo(buffer);
         buffer.flip();
 
         byte[] expected = new byte[data.length + 2];

@@ -82,9 +82,9 @@ public class FileBufferSink implements BufferSink {
     }
 
     @Override
-    public void transferTo(ByteBuffer buffer) {
+    public void copyTo(ByteBuffer buffer) {
         try {
-            header_.transferTo(buffer);
+            header_.copyTo(buffer);
 
             int space = buffer.remaining();
             int remaining = (int) (end_ - beginning_);
@@ -97,7 +97,7 @@ public class FileBufferSink implements BufferSink {
                 throw new BufferOverflowException();
             }
 
-            footer_.transferTo(buffer);
+            footer_.copyTo(buffer);
         } catch (IOException ioe) {
             dispose();
             throw new RuntimeException(ioe);
@@ -250,7 +250,7 @@ public class FileBufferSink implements BufferSink {
     public byte[] array() {
         int remaining = remainingBytes();
         ByteBuffer bb = ByteBuffer.allocate(remaining);
-        transferTo(bb);
+        copyTo(bb);
         return bb.array();
     }
 

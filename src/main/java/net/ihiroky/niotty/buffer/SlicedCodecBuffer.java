@@ -260,8 +260,8 @@ public class SlicedCodecBuffer extends AbstractCodecBuffer {
     }
 
     @Override
-    public void transferTo(ByteBuffer buffer) {
-        base_.transferTo(buffer);
+    public void copyTo(ByteBuffer buffer) {
+        base_.copyTo(buffer);
     }
 
     @Override

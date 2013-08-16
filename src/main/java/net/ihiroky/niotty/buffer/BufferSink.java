@@ -27,13 +27,13 @@ public interface BufferSink {
     boolean transferTo(GatheringByteChannel channel) throws IOException;
 
     /**
-     * Writes data between the beginning and the end to the given {@code buffer}.
-     * The beginning and end is not changed.
+     * Copies data between the beginning and the end to the given {@code buffer}.
+     * The beginning and end of this object is not changed.
      *
      * @param buffer the buffer to be written into
      * @throws java.nio.BufferOverflowException if {@link #remainingBytes()} is larger than the buffer's remaining.
      */
-    void transferTo(ByteBuffer buffer);
+    void copyTo(ByteBuffer buffer);
 
     /**
      * Adds a specified buffer before data which already exists in this instance.

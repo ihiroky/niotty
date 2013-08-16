@@ -391,7 +391,7 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer {
     }
 
     @Override
-    public void transferTo(ByteBuffer byteBuffer) {
+    public void copyTo(ByteBuffer byteBuffer) {
         changeModeToRead();
         ByteBuffer myBuffer = buffer_;
         int position = myBuffer.position();
@@ -641,7 +641,7 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer {
         }
         int remaining = remainingBytes();
         ByteBuffer bb = ByteBuffer.allocate(remaining);
-        transferTo(bb);
+        copyTo(bb);
         return bb.array();
     }
 

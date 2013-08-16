@@ -84,7 +84,7 @@ public class SimpleWriteQueue implements WriteQueue {
 
             BufferSink buffer = message.message();
             byteBuffer.clear();
-            buffer.transferTo(byteBuffer);
+            buffer.copyTo(byteBuffer);
             byteBuffer.flip();
             SocketAddress target = (SocketAddress) message.parameter().argument();
 

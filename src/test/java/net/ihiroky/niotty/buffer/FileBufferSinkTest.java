@@ -229,11 +229,11 @@ public class FileBufferSinkTest {
     }
 
     @Test
-    public void testTransferTo_ByteBufferAll() throws Exception {
+    public void testCopyTo_ByteBufferAll() throws Exception {
         FileBufferSink sut = new FileBufferSink(channel_, 0, 32);
         ByteBuffer buffer = ByteBuffer.allocate(sut.remainingBytes());
 
-        sut.transferTo(buffer);
+        sut.copyTo(buffer);
 
         assertThat(sut.remainingBytes(), is(32)); // remaining all
         assertThat(channel_.position(), is(0L));
@@ -241,11 +241,11 @@ public class FileBufferSinkTest {
     }
 
     @Test(expected = BufferOverflowException.class)
-    public void testTransferTo_ByteBufferPart() throws Exception {
+    public void testCopyTo_ByteBufferPart() throws Exception {
         FileBufferSink sut = new FileBufferSink(channel_, 0, 32);
         ByteBuffer buffer = ByteBuffer.allocate(sut.remainingBytes() - 1);
 
-        sut.transferTo(buffer);
+        sut.copyTo(buffer);
     }
 
     @Test

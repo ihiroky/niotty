@@ -29,9 +29,9 @@ public class BufferSinkList implements BufferSink {
     }
 
     @Override
-    public void transferTo(ByteBuffer buffer) {
-        car_.transferTo(buffer);
-        cdr_.transferTo(buffer);
+    public void copyTo(ByteBuffer buffer) {
+        car_.copyTo(buffer);
+        cdr_.copyTo(buffer);
     }
 
 
@@ -86,7 +86,7 @@ public class BufferSinkList implements BufferSink {
     public byte[] array() {
         int remaining = remainingBytes();
         ByteBuffer bb = ByteBuffer.allocate(remaining);
-        transferTo(bb);
+        copyTo(bb);
         return bb.array();
     }
 

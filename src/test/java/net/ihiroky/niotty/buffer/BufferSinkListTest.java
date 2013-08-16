@@ -86,7 +86,7 @@ public class BufferSinkListTest {
     }
 
     @Test
-    public void testTransferTo_WriteAllDataIfByteBufferIsLargeEnough() throws Exception {
+    public void testCopyTo_WriteAllDataIfByteBufferIsLargeEnough() throws Exception {
         byte[] carData = new byte[]{0};
         BufferSink car = Buffers.wrap(carData, 0, carData.length);
         byte[] cdrData = new byte[]{1, 2};
@@ -94,7 +94,7 @@ public class BufferSinkListTest {
         ByteBuffer buffer = ByteBuffer.allocate(3);
 
         BufferSinkList sut = new BufferSinkList(car, cdr);
-        sut.transferTo(buffer);
+        sut.copyTo(buffer);
         buffer.flip();
 
         assertThat(buffer, is(ByteBuffer.wrap(new byte[]{0, 1, 2})));

@@ -622,19 +622,19 @@ public class CodecBufferListTest {
         }
 
         @Test
-        public void testTransferTo_ByteBufferAll() throws Exception {
+        public void testCopyTo_ByteBufferAll() throws Exception {
             ByteBuffer buffer = ByteBuffer.allocate(sut_.remainingBytes());
 
-            sut_.transferTo(buffer);
+            sut_.copyTo(buffer);
 
             assertThat(sut_.remainingBytes(), is(32)); // remaining all
             assertThat(buffer.array(), is(sut_.array()));
         }
 
         @Test(expected = BufferOverflowException.class)
-        public void testTransferTo_ByteBufferPart() throws Exception {
+        public void testCopyTo_ByteBufferPart() throws Exception {
             ByteBuffer buffer = ByteBuffer.allocate(sut_.remainingBytes() - 1);
-            sut_.transferTo(buffer);
+            sut_.copyTo(buffer);
         }
 
         @Test
