@@ -67,13 +67,6 @@ public class UdpIOSelector extends AbstractSelector {
                     transport.loadEvent(buffer);
                 } else {
                     SocketAddress source = channel.receive(localByteBuffer);
-                    if (source == null) {
-                        if (logger_.isDebugEnabled()) {
-                            logger_.debug("transport reaches the end of its stream:" + transport);
-                        }
-                        transport.doCloseSelectableChannel(true);
-                        continue;
-                    }
                     localByteBuffer.flip();
                     CodecBuffer buffer = Buffers.wrap(localByteBuffer);
                     transport.loadEvent(buffer, new DefaultTransportParameter(source));
