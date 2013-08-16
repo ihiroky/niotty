@@ -816,8 +816,7 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer {
     public String toString() {
         syncBeginEnd();
         return ByteBufferCodecBuffer.class.getName()
-                + "(beginning:" + beginning_ + ", end:" + end_ + ", capacity:" + buffer_.capacity()
-                + ", attachment:" + ')';
+                + "(beginning:" + beginning_ + ", end:" + end_ + ", capacity:" + buffer_.capacity() + ')';
     }
 
     /**

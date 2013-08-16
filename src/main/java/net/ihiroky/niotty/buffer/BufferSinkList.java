@@ -110,6 +110,11 @@ public class BufferSinkList implements BufferSink {
         cdr_.dispose();
     }
 
+    @Override
+    public String toString() {
+        return "[" + car_ + ", " + cdr_ + "]";
+    }
+
     BufferSink car() {
         return car_;
     }
