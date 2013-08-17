@@ -182,6 +182,7 @@ public abstract class AbstractPipeline<S> implements Pipeline<S> {
             }
             if (target != null) {
                 PipelineElement<Object, Object> next = target.next();
+
                 PipelineElement<Object, Object> newContext = createContext(newKey, newStage, pool);
                 newContext.setNext(next);
                 prev.setNext(newContext);

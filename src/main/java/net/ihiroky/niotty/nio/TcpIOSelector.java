@@ -1,6 +1,7 @@
 package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.StageContext;
+import net.ihiroky.niotty.TaskTimer;
 import net.ihiroky.niotty.buffer.BufferSink;
 import net.ihiroky.niotty.buffer.Buffers;
 import org.slf4j.Logger;
@@ -27,7 +28,8 @@ public class TcpIOSelector extends AbstractSelector {
 
     private static final int MIN_BUFFER_SIZE = 256;
 
-    TcpIOSelector(int readBufferSize, boolean direct) {
+    TcpIOSelector(TaskTimer taskTimer, int readBufferSize, boolean direct) {
+        super(taskTimer);
         if (readBufferSize < MIN_BUFFER_SIZE) {
             readBufferSize = MIN_BUFFER_SIZE;
             logger_.warn("readBufferSize is set to {}.", readBufferSize);

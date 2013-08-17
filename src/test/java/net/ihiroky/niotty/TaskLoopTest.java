@@ -24,6 +24,7 @@ public class TaskLoopTest {
 
     private TaskLoopMock sut_;
     private static ExecutorService executor_;
+    private static TaskTimer taskTimer_;
     private static final String THREAD_NAME = "TEST";
 
     @BeforeClass
@@ -34,6 +35,7 @@ public class TaskLoopTest {
                 return new Thread(r, THREAD_NAME);
             }
         });
+        taskTimer_ = new DefaultTaskTimer(THREAD_NAME);
     }
 
     @AfterClass
@@ -43,7 +45,7 @@ public class TaskLoopTest {
 
     @Before
     public void setUp() {
-        sut_ = new TaskLoopMock();
+        sut_ = new TaskLoopMock(taskTimer_);
     }
 
     @After
@@ -67,7 +69,7 @@ public class TaskLoopTest {
 
         sut_.offerTask(t);
 
-        while (!sut_.hasNoTask()) {
+        while (sut_.hasTask()) {
             Thread.sleep(10);
         }
         while (!executed[0]) {
@@ -88,7 +90,7 @@ public class TaskLoopTest {
         // But the t disappears on executing, retry check until it passed.
         for (;;) {
             int i = 0;
-            for (; i < 3 & !sut_.hasNoTask(); i++) {
+            for (; i < 3 & sut_.hasTask(); i++) {
                 Thread.sleep(10);
             }
             if (i == 3) {

@@ -1,13 +1,19 @@
 package net.ihiroky.niotty;
 
-import java.util.concurrent.TimeUnit;
-
 /**
 * @author Hiroki Itoh
 */
 class TaskLoopMock extends TaskLoop {
 
     private final Object mutex_ = new Object();
+
+    protected TaskLoopMock() {
+        super(TaskTimer.NULL);
+    }
+
+    protected TaskLoopMock(TaskTimer taskTimer) {
+        super(taskTimer);
+    }
 
     @Override
     protected void onOpen() {
@@ -18,11 +24,9 @@ class TaskLoopMock extends TaskLoop {
     }
 
     @Override
-    protected void process(long timeout, TimeUnit timeUnit) throws Exception {
+    protected void poll(boolean preferToWait) throws Exception {
         synchronized (mutex_) {
-            if (timeout > 0) {
-                mutex_.wait(timeUnit.toMillis(timeout));
-            } else if (timeout < 0) {
+            if (preferToWait) {
                 mutex_.wait();
             }
         }

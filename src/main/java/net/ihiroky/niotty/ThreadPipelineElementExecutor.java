@@ -1,25 +1,21 @@
 package net.ihiroky.niotty;
 
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * @author Hiroki Itoh
  */
 public class ThreadPipelineElementExecutor extends TaskLoop implements PipelineElementExecutor {
 
-    private final Lock lock_;
-    private final Condition condition_;
     private boolean signaled_;
     private final ThreadPipelineElementExecutorPool pool_;
+    private final Object lock_;
 
     public ThreadPipelineElementExecutor(ThreadPipelineElementExecutorPool pool) {
-        lock_ = new ReentrantLock();
-        condition_ = lock_.newCondition();
+        super(TaskTimer.NULL); // No task uses the timer.
         signaled_ = false;
         pool_ = pool;
+        lock_ = new Object();
     }
 
     @Override
@@ -31,33 +27,21 @@ public class ThreadPipelineElementExecutor extends TaskLoop implements PipelineE
     }
 
     @Override
-    protected void process(long timeout, TimeUnit timeUnit) throws InterruptedException {
-        lock_.lock();
-        try {
-            if (timeout > 0) {
-                long timeoutNanos = timeUnit.toNanos(timeout);
+    protected void poll(boolean preferToWait) throws InterruptedException {
+        if (preferToWait) {
+            synchronized (lock_) {
                 while (!signaled_) {
-                    timeoutNanos = condition_.awaitNanos(timeoutNanos);
-                }
-            } else if (timeout < 0) {
-                while (!signaled_) {
-                    condition_.await();
+                    wait();
                 }
             }
-        } finally {
-            signaled_ = false;
-            lock_.unlock();
         }
     }
 
     @Override
     protected void wakeUp() {
-        lock_.lock();
-        try {
+        synchronized (lock_) {
             signaled_ = true;
-            condition_.signal();
-        } finally {
-            lock_.unlock();
+            notify();
         }
     }
 

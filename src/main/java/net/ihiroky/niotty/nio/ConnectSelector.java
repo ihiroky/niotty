@@ -3,6 +3,7 @@ package net.ihiroky.niotty.nio;
 import net.ihiroky.niotty.DefaultTransportFuture;
 import net.ihiroky.niotty.DefaultTransportStateEvent;
 import net.ihiroky.niotty.StageContext;
+import net.ihiroky.niotty.TaskTimer;
 import net.ihiroky.niotty.TransportState;
 import net.ihiroky.niotty.buffer.BufferSink;
 import org.slf4j.Logger;
@@ -24,6 +25,16 @@ import java.util.Set;
 public class ConnectSelector extends AbstractSelector {
 
     private Logger logger_ = LoggerFactory.getLogger(ConnectSelector.class);
+
+    /**
+     * Creates a new instance.
+     *
+     * @param timer the timer to execute the tasks.
+     * @throws NullPointerException if timer is null.
+     */
+    protected ConnectSelector(TaskTimer timer) {
+        super(timer);
+    }
 
     @Override
     protected void processSelectedKeys(Set<SelectionKey> selectedKeys) throws Exception {

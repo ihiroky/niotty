@@ -14,15 +14,22 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  *
  */
-class DefaultTaskTimer implements Runnable, TaskTimer {
+public class DefaultTaskTimer implements Runnable, TaskTimer {
 
     private final PriorityQueue<TimerEntry> queue_;
     private final String name_;
     private final ReentrantLock lock_;
     private final Condition condition_;
     private volatile Thread thread_;
+    private int retainCount_;
 
     private Logger logger_ = LoggerFactory.getLogger(DefaultTaskTimer.class);
+
+    private static final int DEFAULT_INITIAL_CAPACITY = 1024;
+
+    public DefaultTaskTimer(String name) {
+        this(name, DEFAULT_INITIAL_CAPACITY);
+    }
 
     public DefaultTaskTimer(String name, int initialCapacity) {
         queue_ = new PriorityQueue<>(initialCapacity);
@@ -38,11 +45,12 @@ class DefaultTaskTimer implements Runnable, TaskTimer {
             t.start();
             thread_ = t;
         }
+        retainCount_++;
     }
 
     @Override
     public synchronized void stop() {
-        if (thread_ != null) {
+        if (thread_ != null && --retainCount_ == 0) {
             thread_.interrupt();
             thread_ = null;
         }
@@ -102,8 +110,13 @@ class DefaultTaskTimer implements Runnable, TaskTimer {
         }
     }
 
+    @Override
     public boolean hasTask() {
         return !queue_.isEmpty();
+    }
+
+    public boolean isAlive() {
+        return thread_ != null && thread_.isAlive();
     }
 
     private static class TimerEntry implements Comparable<TimerEntry> {

@@ -1,6 +1,7 @@
 package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.TaskLoop;
+import net.ihiroky.niotty.TaskTimer;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.codec.StageContextMock;
 import org.junit.Before;
@@ -24,7 +25,7 @@ public class TcpIOSelectorTest {
 
     @Before
     public void setUp() throws Exception {
-        sut_ = spy(new TcpIOSelector(256, false));
+        sut_ = spy(new TcpIOSelector(TaskTimer.NULL, 256, false));
         flushTaskCaptor_ = ArgumentCaptor.forClass(TcpIOSelector.FlushTask.class);
         doNothing().when(sut_).executeTask(flushTaskCaptor_.capture());
     }

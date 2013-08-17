@@ -2,6 +2,7 @@ package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.DefaultTransportParameter;
 import net.ihiroky.niotty.StageContext;
+import net.ihiroky.niotty.TaskTimer;
 import net.ihiroky.niotty.buffer.BufferSink;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.CodecBuffer;
@@ -31,7 +32,8 @@ public class UdpIOSelector extends AbstractSelector {
 
     private static final int MIN_BUFFER_SIZE = 256;
 
-    UdpIOSelector(int readBufferSize, int writeBufferSize, boolean direct) {
+    UdpIOSelector(TaskTimer taskTimer, int readBufferSize, int writeBufferSize, boolean direct) {
+        super(taskTimer);
         if (readBufferSize < MIN_BUFFER_SIZE) {
             readBufferSize = MIN_BUFFER_SIZE;
             logger_.warn("readBufferSize is set to {}.", readBufferSize);

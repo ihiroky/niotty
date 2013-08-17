@@ -48,6 +48,9 @@ public class DefaultTaskTimerTest {
     @After
     public void tearDown() {
         sut_.stop();
+        if (sut_.isAlive()) {
+            throw new AssertionError();
+        }
         taskLoop_.close();
     }
 
@@ -115,5 +118,19 @@ public class DefaultTaskTimerTest {
         assertThat(order.poll(), is(0));
         verify(task0, timeout(220)).execute(TimeUnit.MILLISECONDS);
         verify(task1, timeout(120)).execute(TimeUnit.MILLISECONDS);
+    }
+
+    @Test
+    public void testIsAlive_ReturnFalseIfStopIsCalledAtTheSameTimesAsStart() throws Exception {
+        DefaultTaskTimer sut = new DefaultTaskTimer("test");
+        sut.start();
+        sut.start();
+        sut.start();
+        sut.stop();
+        assertThat(sut.isAlive(), is(true));
+        sut.stop();
+        assertThat(sut.isAlive(), is(true));
+        sut.stop();
+        assertThat(sut.isAlive(), is(false));
     }
 }

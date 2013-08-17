@@ -1,8 +1,10 @@
 package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.AbstractProcessor;
+import net.ihiroky.niotty.DefaultTaskTimer;
 import net.ihiroky.niotty.NameCountThreadFactory;
 import net.ihiroky.niotty.PipelineComposer;
+import net.ihiroky.niotty.TaskTimer;
 
 import java.util.Objects;
 
@@ -19,6 +21,7 @@ public class NioClientSocketProcessor extends AbstractProcessor<NioClientSocketT
     private int writeBufferSize_;
     private boolean useDirectBuffer_;
     private WriteQueueFactory writeQueueFactory_;
+    private TaskTimer taskTimer_;
 
     private static final int DEFAULT_NUMBER_OF_CONNECT_THREAD = 1;
     private static final int DEFAULT_NUMBER_OF_MESSAGE_IO_THREAD =
@@ -62,7 +65,12 @@ public class NioClientSocketProcessor extends AbstractProcessor<NioClientSocketT
     protected void onStart() {
         ioSelectorPool_.setReadBufferSize(readBufferSize_);
         ioSelectorPool_.setDirect(useDirectBuffer_);
+        if (taskTimer_ == null) {
+            taskTimer_ = new DefaultTaskTimer(name());
+        }
+        ioSelectorPool_.setTaskTimer(taskTimer_);
         ioSelectorPool_.open(new NameCountThreadFactory(name().concat("-IO")), numberOfMessageIOThread_);
+
         if (numberOfConnectThread_ > 0) {
             connectSelectorPool_.open(new NameCountThreadFactory(name().concat("-Connect")), numberOfConnectThread_);
         }
@@ -132,6 +140,11 @@ public class NioClientSocketProcessor extends AbstractProcessor<NioClientSocketT
     public NioClientSocketProcessor setWriteQueueFactory(WriteQueueFactory writeQueueFactory) {
         Objects.requireNonNull(writeQueueFactory, "writeQueueFactory");
         writeQueueFactory_ = writeQueueFactory;
+        return this;
+    }
+
+    public NioClientSocketProcessor setTaskTimer(TaskTimer taskTimer) {
+        taskTimer_ = taskTimer;
         return this;
     }
 
