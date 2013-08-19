@@ -3,11 +3,10 @@ package net.ihiroky.niotty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.PriorityQueue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -16,11 +15,12 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class DefaultTaskTimer implements Runnable, TaskTimer {
 
-    private final PriorityQueue<TimerEntry> queue_;
+    private final ConcurrentLinkedQueue<TimerEntry> queue_;
     private final String name_;
     private final ReentrantLock lock_;
     private final Condition condition_;
     private volatile Thread thread_;
+    private volatile boolean hasNoTimer_;
     private int retainCount_;
 
     private Logger logger_ = LoggerFactory.getLogger(DefaultTaskTimer.class);
@@ -28,14 +28,11 @@ public class DefaultTaskTimer implements Runnable, TaskTimer {
     private static final int DEFAULT_INITIAL_CAPACITY = 1024;
 
     public DefaultTaskTimer(String name) {
-        this(name, DEFAULT_INITIAL_CAPACITY);
-    }
-
-    public DefaultTaskTimer(String name, int initialCapacity) {
-        queue_ = new PriorityQueue<>(initialCapacity);
+        queue_ = new ConcurrentLinkedQueue<>();
         lock_ = new ReentrantLock();
         condition_ = lock_.newCondition();
         name_ = String.valueOf(name);
+        hasNoTimer_ = true;
     }
 
     @Override
@@ -57,49 +54,70 @@ public class DefaultTaskTimer implements Runnable, TaskTimer {
     }
 
     @Override
-    public void offer(TaskLoop taskLoop, TaskLoop.Task task, long delay, TimeUnit timeUnit) {
+    public Entry offer(TaskLoop taskLoop, TaskLoop.Task task, long delay, TimeUnit timeUnit) {
+        TimerEntry e = new TimerEntry(System.nanoTime() + timeUnit.toNanos(delay), taskLoop, task);
+        queue_.offer(e);
+        hasNoTimer_ = false;
+
         lock_.lock();
         try {
-            queue_.offer(new TimerEntry(System.nanoTime() + timeUnit.toNanos(delay), taskLoop, task));
             condition_.signal();
         } finally {
             lock_.unlock();
         }
+
+        return e;
     }
 
     @Override
     public void run() {
         try {
             logger_.info("[run] Start timer thread:{}", Thread.currentThread().getName());
+
+            final PriorityQueue<TimerEntry> timerQueue = new PriorityQueue<>(DEFAULT_INITIAL_CAPACITY);
+            long waitNanos = Long.MAX_VALUE;
             while (thread_ != null) {
-                List<TimerEntry> expiredList = Collections.emptyList();
+                // Check if new timer is exists and register the timer to timer queue
                 lock_.lock();
                 try {
-                    LOOP: for (long waitNanos;;) {
-                        long now = System.nanoTime();
-                        TimerEntry e = queue_.peek();
-                        waitNanos = (e != null) ? e.expire_ - now : Long.MAX_VALUE;
-                        if (waitNanos > 0) {
-                            condition_.awaitNanos(waitNanos);
-                            continue;
-                        }
-                        expiredList = new ArrayList<>();
-                        for (;;) {
-                            expiredList.add(queue_.poll());
-                            e = queue_.peek();
-                            if (e == null || e.expire_ > now) {
-                                break LOOP;
-                            }
-                        }
+                    while (waitNanos > 0 && queue_.isEmpty()) {
+                        waitNanos = condition_.awaitNanos(waitNanos);
                     }
                 } finally {
                     lock_.unlock();
                 }
-
-                logger_.debug("[run] expired entries:{}.", expiredList);
-                for (TimerEntry e : expiredList) {
-                    e.taskLoop_.offerTask(e.task_);
+                while (!queue_.isEmpty()) {
+                    timerQueue.offer(queue_.poll());
                 }
+
+                // Check timeout or cancel.
+                long now = System.nanoTime();
+                TimerEntry e = timerQueue.peek();
+                while (e != null && e.isCancelled()) {
+                    timerQueue.poll();
+                    e = timerQueue.peek();
+                }
+                hasNoTimer_ = timerQueue.isEmpty();
+                waitNanos = (e != null) ? e.expire_ - now : Long.MAX_VALUE;
+                if (waitNanos > 0) {
+                    continue;
+                }
+
+                // Execute expired timers.
+                for (;;) {
+                    e = timerQueue.peek();
+                    if (e == null || e.expire_ > now || !e.readyToDispatch()) {
+                        break;
+                    }
+                    e.taskLoop_.offerTask(e.task_);
+                    e.done();
+                    timerQueue.poll();
+                }
+                while (e != null && e.isCancelled()) {
+                    timerQueue.poll();
+                    e = timerQueue.peek();
+                }
+                hasNoTimer_ = timerQueue.isEmpty();
             }
         } catch (RuntimeException re) {
             logger_.error("[run] Unexpected exception.", re);
@@ -112,22 +130,55 @@ public class DefaultTaskTimer implements Runnable, TaskTimer {
 
     @Override
     public boolean hasTask() {
-        return !queue_.isEmpty();
+        return !hasNoTimer_;
     }
 
     public boolean isAlive() {
         return thread_ != null && thread_.isAlive();
     }
 
-    private static class TimerEntry implements Comparable<TimerEntry> {
-        final long expire_;
-        final TaskLoop taskLoop_;
-        final TaskLoop.Task task_;
+    public static class TimerEntry implements Entry, Comparable<TimerEntry> {
+        private final long expire_;
+        private final TaskLoop taskLoop_;
+        private final TaskLoop.Task task_;
+        private volatile int state_ = WAITING;
+
+        private static final AtomicIntegerFieldUpdater<TimerEntry> STATE_UPDATER =
+                AtomicIntegerFieldUpdater.newUpdater(TimerEntry.class, "state_");
+
+        private static final int WAITING = 0;
+        private static final int READY = 1;
+        private static final int DISPATCHED = 2;
+        private static final int CANCELLED = 3;
 
         TimerEntry(long expire, TaskLoop taskLoop, TaskLoop.Task task) {
             expire_ = expire;
             taskLoop_ = taskLoop;
             task_ = task;
+
+        }
+
+        boolean readyToDispatch() {
+            return STATE_UPDATER.compareAndSet(this, WAITING, READY);
+        }
+
+        void done() {
+            state_ = DISPATCHED;
+        }
+
+        @Override
+        public void cancel() {
+            STATE_UPDATER.compareAndSet(this, WAITING, CANCELLED);
+        }
+
+        @Override
+        public boolean isCancelled() {
+            return state_ == CANCELLED;
+        }
+
+        @Override
+        public boolean isDispatched() {
+            return state_ == DISPATCHED;
         }
 
         @Override
@@ -139,7 +190,8 @@ public class DefaultTaskTimer implements Runnable, TaskTimer {
 
         @Override
         public String toString() {
-            return "(expire:" + expire_ + ", task loop:" + taskLoop_ + ", task:" + task_ + ")";
+            return "(expire:" + expire_ + ", task loop:" + taskLoop_
+                    + ", task:" + task_ + ", cancelled:" + isCancelled() + ")";
         }
     }
 }

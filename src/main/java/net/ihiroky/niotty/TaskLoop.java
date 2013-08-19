@@ -84,13 +84,14 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
      * @param task the task to be registered to the timer
      * @param delay the delay of task execution
      * @param timeUnit unit of the delay
+     * @return a future representing pending completion of the task
      * @throws NullPointerException if task or timeUnit is null
      */
-    public void offerTask(Task task, long delay, TimeUnit timeUnit) {
+    public TaskTimer.Entry offerTask(Task task, long delay, TimeUnit timeUnit) {
         Objects.requireNonNull(task, "task");
         Objects.requireNonNull(timeUnit, "timeUnit");
 
-        taskTimer_.offer(this, task, delay, timeUnit);
+        return taskTimer_.offer(this, task, delay, timeUnit);
     }
 
     /**

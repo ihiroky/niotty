@@ -9,7 +9,13 @@ public interface TaskTimer {
     void start();
     void stop();
     boolean hasTask();
-    void offer(TaskLoop taskLoop, TaskLoop.Task task, long delay, TimeUnit timeUnit);
+    Entry offer(TaskLoop taskLoop, TaskLoop.Task task, long delay, TimeUnit timeUnit);
+
+    interface Entry {
+        void cancel();
+        boolean isCancelled();
+        boolean isDispatched();
+    }
 
     TaskTimer NULL = new TaskTimer() {
         @Override
@@ -26,7 +32,8 @@ public interface TaskTimer {
         }
 
         @Override
-        public void offer(TaskLoop taskLoop, TaskLoop.Task task, long delay, TimeUnit timeUnit) {
+        public Entry offer(TaskLoop taskLoop, TaskLoop.Task task, long delay, TimeUnit timeUnit) {
+            return null;
         }
 
         @Override
