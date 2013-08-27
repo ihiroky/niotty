@@ -1,7 +1,7 @@
 package net.ihiroky.niotty.nio;
 
+import net.ihiroky.niotty.DefaultTaskTimer;
 import net.ihiroky.niotty.TaskLoop;
-import net.ihiroky.niotty.TaskTimer;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.codec.StageContextMock;
 import org.junit.Before;
@@ -26,7 +26,7 @@ public class UdpIOSelectorTest {
 
     @Before
     public void setUp() throws Exception {
-        sut_ = spy(new UdpIOSelector(TaskTimer.NULL, 256, 256, false));
+        sut_ = spy(new UdpIOSelector(DefaultTaskTimer.NULL, 256, 256, false));
         flushTaskCaptor_ = ArgumentCaptor.forClass(UdpIOSelector.FlushTask.class);
         doNothing().when(sut_).executeTask(flushTaskCaptor_.capture());
     }

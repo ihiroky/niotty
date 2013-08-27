@@ -12,7 +12,7 @@ public class ThreadPipelineElementExecutor extends TaskLoop implements PipelineE
     private final Object lock_;
 
     public ThreadPipelineElementExecutor(ThreadPipelineElementExecutorPool pool) {
-        super(TaskTimer.NULL); // No task uses the timer.
+        super(DefaultTaskTimer.NULL); // No task uses the timer.
         signaled_ = false;
         pool_ = pool;
         lock_ = new Object();

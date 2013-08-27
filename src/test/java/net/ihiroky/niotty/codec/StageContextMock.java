@@ -1,5 +1,6 @@
 package net.ihiroky.niotty.codec;
 
+import net.ihiroky.niotty.DefaultTransportParameter;
 import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.StageKey;
 import net.ihiroky.niotty.StageKeys;
@@ -19,7 +20,7 @@ public class StageContextMock<O> implements StageContext<O> {
     Queue<O> proceededMessageEventQueue_;
 
     public StageContextMock() {
-        this(null, null);
+        this(null, DefaultTransportParameter.NO_PARAMETER);
     }
 
     public StageContextMock(Transport transport, TransportParameter transportParameter) {

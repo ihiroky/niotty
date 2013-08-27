@@ -8,7 +8,7 @@ class TaskLoopMock extends TaskLoop {
     private final Object mutex_ = new Object();
 
     protected TaskLoopMock() {
-        super(TaskTimer.NULL);
+        super(DefaultTaskTimer.NULL);
     }
 
     protected TaskLoopMock(TaskTimer taskTimer) {

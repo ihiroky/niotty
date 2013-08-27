@@ -112,7 +112,7 @@ public abstract class AbstractTransport<T extends TaskLoop> implements Transport
      * Resets the pipelines with the specified composer.
      * @param composer the composer to reset pipelines.
      */
-    public final void resetPipelines(PipelineComposer composer) {
+    public void resetPipelines(PipelineComposer composer) {
         Objects.requireNonNull(composer, "composer");
 
         // use the same lock object as listener to save memory footprint.
@@ -140,7 +140,7 @@ public abstract class AbstractTransport<T extends TaskLoop> implements Transport
     /**
      * Closes pipelines.
      */
-    public final void closePipelines() {
+    public void closePipelines() {
         loadPipeline_.close();
         storePipeline_.close();
     }
@@ -149,7 +149,7 @@ public abstract class AbstractTransport<T extends TaskLoop> implements Transport
      * Adds the specified stage at the end of the store pipeline.
      * @param ioStage the stage
      */
-    public final void addIOStage(StoreStage<BufferSink, Void> ioStage) {
+    public void addIOStage(StoreStage<BufferSink, Void> ioStage) {
         if (storePipeline_ == null) {
             throw new IllegalStateException("setUpPipelines() is not called.");
         }
@@ -166,7 +166,7 @@ public abstract class AbstractTransport<T extends TaskLoop> implements Transport
      * Sets the instance of {@link net.ihiroky.niotty.TaskLoop}.
      * @param loop the the instance of {@code TaskLoop}.
      */
-    protected final void setTaskLoop(T loop) {
+    protected void setTaskLoop(T loop) {
         Objects.requireNonNull(loop, "loop");
         this.loop_ = loop;
     }
@@ -175,7 +175,7 @@ public abstract class AbstractTransport<T extends TaskLoop> implements Transport
      * Gets the instance of {@link net.ihiroky.niotty.TaskLoop}.
      * @return <T> the TaskLoop.
      */
-    public final T taskLoop() {
+    public T taskLoop() {
         return loop_;
     }
 
