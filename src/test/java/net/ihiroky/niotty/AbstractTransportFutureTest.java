@@ -19,15 +19,17 @@ public class AbstractTransportFutureTest {
 
     private DefaultTransportFuture sut_;
     private AbstractTransport<?> transport_;
+    private TaskLoop taskLoop_;
 
     @Before
     public void setUp() {
         @SuppressWarnings("unchecked")
         AbstractTransport<TaskLoop> transport = mock(AbstractTransport.class);
         TaskLoop taskLoop = mock(TaskLoop.class);
-        transport.setTaskLoop(taskLoop);
+        when(transport.taskLoop()).thenReturn(taskLoop);
 
         transport_ = transport;
+        taskLoop_ = taskLoop;
         sut_ = new DefaultTransportFuture(transport);
     }
 
@@ -143,7 +145,7 @@ public class AbstractTransportFutureTest {
                 taskResult[0] = task.execute(TimeUnit.MILLISECONDS);
                 return null;
             }
-        }).when(transport_.taskLoop()).offerTask(Mockito.any(TaskLoop.Task.class));
+        }).when(taskLoop_).offerTask(Mockito.any(TaskLoop.Task.class));
         TransportFutureListener listener = mock(TransportFutureListener.class);
 
         sut_.addListener(listener);
