@@ -15,7 +15,7 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class DefaultTaskTimer implements Runnable, TaskTimer {
 
-    private final ConcurrentLinkedQueue<TimerEntry> queue_;
+    private final ConcurrentLinkedQueue<TimerFuture> queue_;
     private final String name_;
     private final ReentrantLock lock_;
     private final Condition condition_;
@@ -42,7 +42,7 @@ public class DefaultTaskTimer implements Runnable, TaskTimer {
         }
 
         @Override
-        public Entry offer(TaskLoop taskLoop, TaskLoop.Task task, long delay, TimeUnit timeUnit) {
+        public Future offer(TaskLoop taskLoop, TaskLoop.Task task, long delay, TimeUnit timeUnit) {
             return null;
         }
 
@@ -79,8 +79,8 @@ public class DefaultTaskTimer implements Runnable, TaskTimer {
     }
 
     @Override
-    public Entry offer(TaskLoop taskLoop, TaskLoop.Task task, long delay, TimeUnit timeUnit) {
-        TimerEntry e = new TimerEntry(System.nanoTime() + timeUnit.toNanos(delay), taskLoop, task);
+    public Future offer(TaskLoop taskLoop, TaskLoop.Task task, long delay, TimeUnit timeUnit) {
+        TimerFuture e = new TimerFuture(System.nanoTime() + timeUnit.toNanos(delay), taskLoop, task);
         queue_.offer(e);
         hasNoTimer_ = false;
 
@@ -99,7 +99,7 @@ public class DefaultTaskTimer implements Runnable, TaskTimer {
         try {
             logger_.info("[run] Start timer thread:{}", Thread.currentThread().getName());
 
-            final PriorityQueue<TimerEntry> timerQueue = new PriorityQueue<>(DEFAULT_INITIAL_CAPACITY);
+            final PriorityQueue<TimerFuture> timerQueue = new PriorityQueue<>(DEFAULT_INITIAL_CAPACITY);
             long waitNanos = Long.MAX_VALUE;
             while (thread_ != null) {
                 // Check if new timer is exists and register the timer to timer queue
@@ -117,7 +117,7 @@ public class DefaultTaskTimer implements Runnable, TaskTimer {
 
                 // Check timeout or cancel.
                 long now = System.nanoTime();
-                TimerEntry e = timerQueue.peek();
+                TimerFuture e = timerQueue.peek();
                 while (e != null && e.isCancelled()) {
                     timerQueue.poll();
                     e = timerQueue.peek();
@@ -162,21 +162,21 @@ public class DefaultTaskTimer implements Runnable, TaskTimer {
         return thread_ != null && thread_.isAlive();
     }
 
-    public static class TimerEntry implements Entry, Comparable<TimerEntry> {
+    public static class TimerFuture implements Future, Comparable<TimerFuture> {
         private final long expire_;
         private final TaskLoop taskLoop_;
         private final TaskLoop.Task task_;
         private volatile int state_ = WAITING;
 
-        private static final AtomicIntegerFieldUpdater<TimerEntry> STATE_UPDATER =
-                AtomicIntegerFieldUpdater.newUpdater(TimerEntry.class, "state_");
+        private static final AtomicIntegerFieldUpdater<TimerFuture> STATE_UPDATER =
+                AtomicIntegerFieldUpdater.newUpdater(TimerFuture.class, "state_");
 
         private static final int WAITING = 0;
         private static final int READY = 1;
         private static final int DISPATCHED = 2;
         private static final int CANCELLED = 3;
 
-        TimerEntry(long expire, TaskLoop taskLoop, TaskLoop.Task task) {
+        TimerFuture(long expire, TaskLoop taskLoop, TaskLoop.Task task) {
             expire_ = expire;
             taskLoop_ = taskLoop;
             task_ = task;
@@ -207,7 +207,7 @@ public class DefaultTaskTimer implements Runnable, TaskTimer {
         }
 
         @Override
-        public int compareTo(TimerEntry o) {
+        public int compareTo(TimerFuture o) {
             return (expire_ > o.expire_)
                     ? 1
                     : ((expire_ < o.expire_) ? -1 : 0);

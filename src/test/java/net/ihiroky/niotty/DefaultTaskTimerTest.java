@@ -67,8 +67,8 @@ public class DefaultTaskTimerTest {
             }
         });
 
-        TaskTimer.Entry e0 = sut_.offer(taskLoop_, task0, 100, TimeUnit.MILLISECONDS);
-        TaskTimer.Entry e1 = sut_.offer(taskLoop_, task1, 100, TimeUnit.MILLISECONDS);
+        TaskTimer.Future e0 = sut_.offer(taskLoop_, task0, 100, TimeUnit.MILLISECONDS);
+        TaskTimer.Future e1 = sut_.offer(taskLoop_, task1, 100, TimeUnit.MILLISECONDS);
 
         while (!done[0] || !done[1]) {
             Thread.sleep(10);
@@ -103,8 +103,8 @@ public class DefaultTaskTimerTest {
         });
         when(task1.toString()).thenReturn("task1");
 
-        TaskTimer.Entry e0 = sut_.offer(taskLoop_, task0, 200, TimeUnit.MILLISECONDS);
-        TaskTimer.Entry e1 = sut_.offer(taskLoop_, task1, 100, TimeUnit.MILLISECONDS);
+        TaskTimer.Future e0 = sut_.offer(taskLoop_, task0, 200, TimeUnit.MILLISECONDS);
+        TaskTimer.Future e1 = sut_.offer(taskLoop_, task1, 100, TimeUnit.MILLISECONDS);
 
         while (order.size() < 2) {
             Thread.sleep(10);
@@ -145,7 +145,7 @@ public class DefaultTaskTimerTest {
             }
         });
 
-        TaskTimer.Entry e = sut_.offer(taskLoop_, task0, 100, TimeUnit.MILLISECONDS);
+        TaskTimer.Future e = sut_.offer(taskLoop_, task0, 100, TimeUnit.MILLISECONDS);
         e.cancel();
         while (sut_.hasTask()) {
             Thread.sleep(10);
@@ -175,8 +175,8 @@ public class DefaultTaskTimerTest {
             }
         });
 
-        TaskTimer.Entry e0 = sut_.offer(taskLoop_, task0, 100, TimeUnit.MILLISECONDS);
-        TaskTimer.Entry e1 = sut_.offer(taskLoop_, task1, 100, TimeUnit.MILLISECONDS);
+        TaskTimer.Future e0 = sut_.offer(taskLoop_, task0, 100, TimeUnit.MILLISECONDS);
+        TaskTimer.Future e1 = sut_.offer(taskLoop_, task1, 100, TimeUnit.MILLISECONDS);
         e1.cancel();
         while (sut_.hasTask()) {
             Thread.sleep(10);

@@ -87,7 +87,7 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
      * @return a future representing pending completion of the task
      * @throws NullPointerException if task or timeUnit is null
      */
-    public TaskTimer.Entry offerTask(Task task, long delay, TimeUnit timeUnit) {
+    public TaskTimer.Future offerTask(Task task, long delay, TimeUnit timeUnit) {
         Objects.requireNonNull(task, "task");
         Objects.requireNonNull(timeUnit, "timeUnit");
 
