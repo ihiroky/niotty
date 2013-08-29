@@ -31,8 +31,9 @@ public class ThreadPipelineElementExecutor extends TaskLoop implements PipelineE
         if (preferToWait) {
             synchronized (lock_) {
                 while (!signaled_) {
-                    wait();
+                   lock_.wait();
                 }
+                signaled_ = false;
             }
         }
     }
@@ -41,7 +42,7 @@ public class ThreadPipelineElementExecutor extends TaskLoop implements PipelineE
     protected void wakeUp() {
         synchronized (lock_) {
             signaled_ = true;
-            notify();
+            lock_.notify();
         }
     }
 
