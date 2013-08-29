@@ -26,7 +26,7 @@ public class DefaultStorePipeline extends AbstractPipeline<StoreStage<?, ?>> imp
         return new StoreStageContext<>(this, key, s, pool);
     }
 
-    public void addIOStage(StoreStage<BufferSink, Void> stage) {
+    public void addIOStage(StoreStage<?, Void> stage) {
         super.add(IO_STAGE_KEY, stage);
     }
 

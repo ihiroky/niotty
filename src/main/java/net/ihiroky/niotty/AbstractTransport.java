@@ -149,7 +149,7 @@ public abstract class AbstractTransport<T extends TaskLoop> implements Transport
      * Adds the specified stage at the end of the store pipeline.
      * @param ioStage the stage
      */
-    public void addIOStage(StoreStage<BufferSink, Void> ioStage) {
+    public void addIOStage(StoreStage<?, Void> ioStage) {
         if (storePipeline_ == null) {
             throw new IllegalStateException("setUpPipelines() is not called.");
         }
