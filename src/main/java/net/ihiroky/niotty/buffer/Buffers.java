@@ -216,19 +216,16 @@ public final class Buffers {
     }
 
     /**
-     * Creates a new {@code CodecBuffer} which consists of the specified {@code first}, {@code second}
-     * and {@code buffers}. The order of {@code CodecBuffer} in the new buffer is the argument order;
-     * the first is {@code first}, the second is {@code second} and the third is {@code buffers[0]} and so on.
+     * Creates a new {@code CodecBuffer} which consists of the specified  {@code buffers}.
+     * The order of {@code CodecBuffer} in the new buffer is the argument order.
      *
      * <p>The new buffer allocates a new {@code CodecBuffer} in the heap if the object needs more space
      * on write operations. The maximum elements that can be held by the object is 1024.</p>
      *
-     * @param first the first {@code CodecBuffer} in the new {@code CodecBuffer}.
-     * @param second the {@code CodecBuffer} after the {@code first}.
-     * @param buffers the {@code CodecBuffer} after the {@code second}.
+     * @param buffers the buffers.
      * @return the new {@code CodecBuffer}.
      */
-    public static CodecBuffer wrap(CodecBuffer first, CodecBuffer second, CodecBuffer... buffers) {
-        return new CodecBufferList(first, second, buffers);
+    public static CodecBuffer wrap(CodecBuffer... buffers) {
+        return new CodecBufferList(buffers);
     }
 }
