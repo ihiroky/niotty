@@ -15,16 +15,10 @@ public class NioClientSocketProcessor extends AbstractProcessor<NioClientSocketT
     private TcpIOSelectorPool ioSelectorPool_;
     private int numberOfConnectThread_;
     private int numberOfMessageIOThread_;
-    private int readBufferSize_;
-    private int writeBufferSize_;
-    private boolean useDirectBuffer_;
     private WriteQueueFactory writeQueueFactory_;
 
     private static final int DEFAULT_NUMBER_OF_CONNECT_THREAD = 1;
-    private static final int DEFAULT_NUMBER_OF_MESSAGE_IO_THREAD =
-            Math.max(Runtime.getRuntime().availableProcessors() / 2, 2);
-    private static final int DEFAULT_BUFFER_SIZE = 8192;
-    private static final boolean DEFAULT_DIRECT_BUFFER = true;
+    private static final int DEFAULT_NUMBER_OF_MESSAGE_IO_THREAD = 1;
 
     static final String DEFAULT_NAME = "NioClientSocket";
 
@@ -35,9 +29,6 @@ public class NioClientSocketProcessor extends AbstractProcessor<NioClientSocketT
 
         numberOfConnectThread_ = DEFAULT_NUMBER_OF_CONNECT_THREAD;
         numberOfMessageIOThread_ = DEFAULT_NUMBER_OF_MESSAGE_IO_THREAD;
-        readBufferSize_ = DEFAULT_BUFFER_SIZE;
-        writeBufferSize_ = DEFAULT_BUFFER_SIZE;
-        useDirectBuffer_ = DEFAULT_DIRECT_BUFFER;
         setName(DEFAULT_NAME);
     }
 
@@ -60,8 +51,6 @@ public class NioClientSocketProcessor extends AbstractProcessor<NioClientSocketT
 
     @Override
     protected void onStart() {
-        ioSelectorPool_.setReadBufferSize(readBufferSize_);
-        ioSelectorPool_.setDirect(useDirectBuffer_);
         ioSelectorPool_.open(new NameCountThreadFactory(name().concat("-IO")), numberOfMessageIOThread_);
 
         if (numberOfConnectThread_ > 0) {
@@ -108,20 +97,17 @@ public class NioClientSocketProcessor extends AbstractProcessor<NioClientSocketT
         if (readBufferSize <= 0) {
             throw new IllegalArgumentException("readBufferSize must be positive.");
         }
-        this.readBufferSize_ = readBufferSize;
-        return this;
-    }
-
-    public NioClientSocketProcessor setWriteBufferSize(int writeBufferSize) {
-        if (writeBufferSize <= 0) {
-            throw new IllegalArgumentException("writeBufferSize must be positive.");
-        }
-        this.writeBufferSize_ = writeBufferSize;
+        ioSelectorPool_.setReadBufferSize(readBufferSize);
         return this;
     }
 
     public NioClientSocketProcessor setUseDirectBuffer(boolean useDirectBuffer) {
-        this.useDirectBuffer_ = useDirectBuffer;
+        ioSelectorPool_.setDirect(useDirectBuffer);
+        return this;
+    }
+
+    public NioClientSocketProcessor setDuplicateReceiveBuffer(boolean duplicateReceiveBuffer) {
+        ioSelectorPool_.setDuplicateBuffer(duplicateReceiveBuffer);
         return this;
     }
 
@@ -157,15 +143,15 @@ public class NioClientSocketProcessor extends AbstractProcessor<NioClientSocketT
     }
 
     public int readBufferSize() {
-        return readBufferSize_;
-    }
-
-    public int writeBufferSize() {
-        return writeBufferSize_;
+        return ioSelectorPool_.readBufferSize();
     }
 
     public boolean isUseDirectBuffer() {
-        return useDirectBuffer_;
+        return ioSelectorPool_.direct();
+    }
+
+    public boolean isDuplicateReceiveBuffer() {
+        return ioSelectorPool_.duplicateBuffer();
     }
 
     public int taskWeightThresholdOfIOSelectorPool() {

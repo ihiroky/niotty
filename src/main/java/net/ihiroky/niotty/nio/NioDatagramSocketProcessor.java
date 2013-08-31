@@ -14,33 +14,21 @@ public class NioDatagramSocketProcessor extends AbstractProcessor<NioDatagramSoc
 
     private UdpIOSelectorPool ioSelectorPool_;
     private int numberOfMessageIOThread_;
-    private int readBufferSize_;
-    private int writeBufferSize_;
-    private boolean useDirectBuffer_;
     private WriteQueueFactory writeQueueFactory_;
 
-    private static final int DEFAULT_NUMBER_OF_MESSAGE_IO_THREAD =
-            Math.max(Runtime.getRuntime().availableProcessors() / 2, 2);
-    private static final int DEFAULT_BUFFER_SIZE = Short.MAX_VALUE;
-    private static final boolean DEFAULT_DIRECT_BUFFER = true;
+    private static final int DEFAULT_NUMBER_OF_MESSAGE_IO_THREAD = 1;
 
     private static final String DEFAULT_NAME = "NioDatagramSocket";
 
     public NioDatagramSocketProcessor() {
         ioSelectorPool_ = new UdpIOSelectorPool();
         numberOfMessageIOThread_ = DEFAULT_NUMBER_OF_MESSAGE_IO_THREAD;
-        readBufferSize_ = DEFAULT_BUFFER_SIZE;
-        writeBufferSize_ = DEFAULT_BUFFER_SIZE;
-        useDirectBuffer_ = DEFAULT_DIRECT_BUFFER;
         writeQueueFactory_ = new SimpleWriteQueueFactory();
         setName(DEFAULT_NAME);
     }
 
     @Override
     protected void onStart() {
-        ioSelectorPool_.setReadBufferSize(readBufferSize_);
-        ioSelectorPool_.setWriteBufferSize(writeBufferSize_);
-        ioSelectorPool_.setDirect(useDirectBuffer_);
         ioSelectorPool_.open(new NameCountThreadFactory(name().concat("-IO")), numberOfMessageIOThread_);
     }
 
@@ -97,37 +85,46 @@ public class NioDatagramSocketProcessor extends AbstractProcessor<NioDatagramSoc
         if (readBufferSize <= 0) {
             throw new IllegalArgumentException("readBufferSize must be positive.");
         }
-        this.readBufferSize_ = readBufferSize;
+        ioSelectorPool_.setReadBufferSize(readBufferSize);
         return this;
     }
 
     public int readBufferSize() {
-        return readBufferSize_;
+        return ioSelectorPool_.readBufferSize();
     }
 
     public NioDatagramSocketProcessor setWriteBufferSize(int writeBufferSize) {
         if (writeBufferSize <= 0) {
             throw new IllegalArgumentException("writeBufferSize must be positive.");
         }
-        this.writeBufferSize_ = writeBufferSize;
+        ioSelectorPool_.setWriteBufferSize(writeBufferSize);
         return this;
     }
 
     public int writeBufferSize() {
-        return writeBufferSize_;
+        return ioSelectorPool_.writeBufferSize();
     }
 
     public NioDatagramSocketProcessor setUseDirectBuffer(boolean useDirectBuffer) {
-        this.useDirectBuffer_ = useDirectBuffer;
+        ioSelectorPool_.setDirect(useDirectBuffer);
         return this;
     }
 
     public boolean isUseDirectBuffer() {
-        return useDirectBuffer_;
+        return ioSelectorPool_.direct();
     }
 
     public NioDatagramSocketProcessor setTaskWeightThresholdOfIOSelectorPool(int threshold) {
         ioSelectorPool_.setTaskWeightThreshold(threshold);
+        return this;
+    }
+
+    public boolean duplicateReceiveBuffer() {
+        return ioSelectorPool_.duplicateBuffer();
+    }
+
+    public NioDatagramSocketProcessor setDuplicateReceiveBuffer(boolean duplicateReceiveBuffer) {
+        ioSelectorPool_.setDuplicateBuffer(duplicateReceiveBuffer);
         return this;
     }
 

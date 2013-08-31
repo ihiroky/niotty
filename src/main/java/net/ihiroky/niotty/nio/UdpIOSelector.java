@@ -28,17 +28,19 @@ public class UdpIOSelector extends AbstractSelector {
 
     private final ByteBuffer readBuffer_;
     private final ByteBuffer writeBuffer_; // TODO Use ByteBufferPool
+    private final boolean duplicateBuffer_;
     private Logger logger_ = LoggerFactory.getLogger(UdpIOSelector.class);
 
     private static final int MIN_BUFFER_SIZE = 256;
 
-    UdpIOSelector(int readBufferSize, int writeBufferSize, boolean direct) {
+    UdpIOSelector(int readBufferSize, int writeBufferSize, boolean direct, boolean duplicateBuffer) {
         if (readBufferSize < MIN_BUFFER_SIZE) {
             readBufferSize = MIN_BUFFER_SIZE;
             logger_.warn("readBufferSize is set to {}.", readBufferSize);
         }
         readBuffer_ = direct ? ByteBuffer.allocateDirect(readBufferSize) : ByteBuffer.allocate(readBufferSize);
         writeBuffer_ = direct ? ByteBuffer.allocateDirect(writeBufferSize) : ByteBuffer.allocate(writeBufferSize);
+        duplicateBuffer_ = duplicateBuffer;
     }
 
     @Override
@@ -64,12 +66,14 @@ public class UdpIOSelector extends AbstractSelector {
                         continue;
                     }
                     localByteBuffer.flip();
-                    CodecBuffer buffer = Buffers.wrap(localByteBuffer, false);
+                    CodecBuffer buffer = duplicateBuffer_
+                            ? duplicate(localByteBuffer) : Buffers.wrap(localByteBuffer, false);
                     transport.loadEvent(buffer);
                 } else {
                     SocketAddress source = channel.receive(localByteBuffer);
                     localByteBuffer.flip();
-                    CodecBuffer buffer = Buffers.wrap(localByteBuffer);
+                    CodecBuffer buffer = duplicateBuffer_
+                            ? duplicate(localByteBuffer) : Buffers.wrap(localByteBuffer, false);
                     transport.loadEvent(buffer, new DefaultTransportParameter(source));
                 }
             } catch (ClosedByInterruptException ie) {
@@ -84,6 +88,13 @@ public class UdpIOSelector extends AbstractSelector {
                 localByteBuffer.clear();
             }
         }
+    }
+
+    private CodecBuffer duplicate(ByteBuffer bb) {
+        int length = bb.limit();
+        byte[] data = new byte[length];
+        bb.get(data, 0, length);
+        return Buffers.wrap(data, 0, length);
     }
 
     @Override

@@ -4,6 +4,7 @@ import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.Task;
 import net.ihiroky.niotty.buffer.BufferSink;
 import net.ihiroky.niotty.buffer.Buffers;
+import net.ihiroky.niotty.buffer.CodecBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,16 +25,18 @@ import java.util.concurrent.TimeUnit;
 public class TcpIOSelector extends AbstractSelector {
 
     private final ByteBuffer readBuffer_;
+    private final boolean duplicateBuffer_;
     private Logger logger_ = LoggerFactory.getLogger(TcpIOSelector.class);
 
     private static final int MIN_BUFFER_SIZE = 256;
 
-    TcpIOSelector(int readBufferSize, boolean direct) {
+    TcpIOSelector(int readBufferSize, boolean direct, boolean duplicateBuffer) {
         if (readBufferSize < MIN_BUFFER_SIZE) {
             readBufferSize = MIN_BUFFER_SIZE;
             logger_.warn("readBufferSize is set to {}.", readBufferSize);
         }
         readBuffer_ = direct ? ByteBuffer.allocateDirect(readBufferSize) : ByteBuffer.allocate(readBufferSize);
+        duplicateBuffer_ = duplicateBuffer;
     }
 
     @Override
@@ -60,7 +63,8 @@ public class TcpIOSelector extends AbstractSelector {
                 }
 
                 localByteBuffer.flip();
-                transport.loadEvent(Buffers.wrap(localByteBuffer, false));
+                CodecBuffer cb = duplicateBuffer_ ? duplicate(localByteBuffer) : Buffers.wrap(localByteBuffer, false);
+                transport.loadEvent(cb);
             } catch (ClosedByInterruptException ie) {
                 if (logger_.isDebugEnabled()) {
                     logger_.debug("failed to read from transport by interruption:" + transport, ie);
@@ -73,6 +77,13 @@ public class TcpIOSelector extends AbstractSelector {
                 localByteBuffer.clear();
             }
         }
+    }
+
+    private CodecBuffer duplicate(ByteBuffer bb) {
+        int length = bb.limit();
+        byte[] data = new byte[length];
+        bb.get(data, 0, length);
+        return Buffers.wrap(data, 0, length);
     }
 
     @Override
