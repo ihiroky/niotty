@@ -52,7 +52,7 @@ public abstract class AbstractTransportFuture implements TransportFuture {
             listener.onComplete(this);
         } else {
             @SuppressWarnings("unchecked")
-            TaskLoop.Task task = new TaskLoop.Task() {
+            Task task = new Task() {
                 @Override
                 public long execute(TimeUnit timeUnit) throws Exception {
                     listener.onComplete(AbstractTransportFuture.this);
@@ -93,7 +93,7 @@ public abstract class AbstractTransportFuture implements TransportFuture {
         if (taskLoop.isInLoopThread()) {
             listener_.onComplete(this);
         } else {
-            taskLoop.offerTask(new TaskLoop.Task() {
+            taskLoop.offerTask(new Task() {
                 @Override
                 public long execute(TimeUnit timeUnit) throws Exception {
                     listener_.onComplete(AbstractTransportFuture.this);

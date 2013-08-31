@@ -4,7 +4,6 @@ import net.ihiroky.niotty.DefaultTransportStateEvent;
 import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.StoreStage;
 import net.ihiroky.niotty.TaskLoop;
-import net.ihiroky.niotty.TaskTimer;
 import net.ihiroky.niotty.TransportState;
 import net.ihiroky.niotty.TransportStateEvent;
 import net.ihiroky.niotty.buffer.BufferSink;
@@ -16,6 +15,7 @@ import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created on 13/01/10, 17:56
@@ -30,12 +30,9 @@ public abstract class AbstractSelector extends TaskLoop implements StoreStage<Bu
 
     /**
      * Creates a new instance.
-     *
-     * @param taskTimer the timer to execute the tasks.
-     * @throws NullPointerException if timer is null.
      */
-    protected AbstractSelector(TaskTimer taskTimer) {
-        super(taskTimer);
+    protected AbstractSelector() {
+        super();
     }
 
     @Override
@@ -56,8 +53,12 @@ public abstract class AbstractSelector extends TaskLoop implements StoreStage<Bu
     }
 
     @Override
-    protected void poll(boolean preferToWait) throws Exception {
-        int selected = preferToWait ? selector_.select() : selector_.selectNow();
+    protected void poll(long timeout, TimeUnit timeUnit) throws Exception {
+        long timeoutMillis = timeUnit.toMillis(timeout);
+        int selected = (timeoutMillis == 0) ? selector_.selectNow()
+                : (timeoutMillis > 0) ? selector_.select(timeoutMillis)
+                : selector_.select();
+
         if (selected > 0) {
             processSelectedKeys(selector_.selectedKeys());
         }

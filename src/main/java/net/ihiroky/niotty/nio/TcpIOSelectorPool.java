@@ -1,7 +1,5 @@
 package net.ihiroky.niotty.nio;
 
-import net.ihiroky.niotty.TaskTimer;
-
 /**
  * @author Hiroki Itoh
  */
@@ -9,7 +7,6 @@ public class TcpIOSelectorPool extends AbstractSelectorPool<TcpIOSelector> {
 
     private int readBufferSize_;
     private boolean direct_;
-    private TaskTimer taskTimer_;
 
     private static final int DEFAULT_BUFFER_SIZE = 8192;
 
@@ -29,12 +26,8 @@ public class TcpIOSelectorPool extends AbstractSelectorPool<TcpIOSelector> {
         direct_ = direct;
     }
 
-    public void setTaskTimer(TaskTimer taskTimer) {
-        taskTimer_ = taskTimer;
-    }
-
     @Override
     protected TcpIOSelector newTaskLoop() {
-        return new TcpIOSelector(taskTimer_, readBufferSize_, direct_);
+        return new TcpIOSelector(readBufferSize_, direct_);
     }
 }

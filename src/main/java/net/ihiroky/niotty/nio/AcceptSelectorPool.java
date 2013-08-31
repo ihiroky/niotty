@@ -1,7 +1,5 @@
 package net.ihiroky.niotty.nio;
 
-import net.ihiroky.niotty.DefaultTaskTimer;
-
 /**
  * Created on 13/01/15, 17:10
  *
@@ -14,6 +12,6 @@ public class AcceptSelectorPool extends AbstractSelectorPool<AcceptSelector> {
 
     @Override
     protected AcceptSelector newTaskLoop() {
-        return new AcceptSelector(DefaultTaskTimer.NULL);
+        return new AcceptSelector();
     }
 }

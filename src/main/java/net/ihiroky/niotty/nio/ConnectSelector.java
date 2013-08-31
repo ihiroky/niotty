@@ -3,7 +3,6 @@ package net.ihiroky.niotty.nio;
 import net.ihiroky.niotty.DefaultTransportFuture;
 import net.ihiroky.niotty.DefaultTransportStateEvent;
 import net.ihiroky.niotty.StageContext;
-import net.ihiroky.niotty.TaskTimer;
 import net.ihiroky.niotty.TransportState;
 import net.ihiroky.niotty.buffer.BufferSink;
 import org.slf4j.Logger;
@@ -28,12 +27,8 @@ public class ConnectSelector extends AbstractSelector {
 
     /**
      * Creates a new instance.
-     *
-     * @param timer the timer to execute the tasks.
-     * @throws NullPointerException if timer is null.
      */
-    protected ConnectSelector(TaskTimer timer) {
-        super(timer);
+    protected ConnectSelector() {
     }
 
     @Override

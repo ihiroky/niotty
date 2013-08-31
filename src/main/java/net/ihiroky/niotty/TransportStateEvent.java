@@ -7,7 +7,7 @@ import java.util.Objects;
  *
  * @author Hiroki Itoh
  */
-public abstract class TransportStateEvent implements TaskLoop.Task {
+public abstract class TransportStateEvent implements Task {
 
     private TransportState state_;
     private Object value_;

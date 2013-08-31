@@ -1,7 +1,5 @@
 package net.ihiroky.niotty.nio;
 
-import net.ihiroky.niotty.TaskTimer;
-
 /**
  * @author Hiroki Itoh
  */
@@ -10,7 +8,6 @@ public class UdpIOSelectorPool extends AbstractSelectorPool<UdpIOSelector> {
     private int readBufferSize_;
     private int writeBufferSize_;
     private boolean direct_;
-    private TaskTimer taskTimer_;
 
     private static final int DEFAULT_BUFFER_SIZE = Short.MAX_VALUE << 1;
 
@@ -38,12 +35,8 @@ public class UdpIOSelectorPool extends AbstractSelectorPool<UdpIOSelector> {
         direct_ = direct;
     }
 
-    public void setTaskTimer(TaskTimer timer) {
-        taskTimer_ = timer;
-    }
-
     @Override
     protected UdpIOSelector newTaskLoop() {
-        return new UdpIOSelector(taskTimer_, readBufferSize_, writeBufferSize_, direct_);
+        return new UdpIOSelector(readBufferSize_, writeBufferSize_, direct_);
     }
 }

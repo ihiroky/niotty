@@ -10,6 +10,7 @@ import java.util.Deque;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -19,15 +20,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Provides an loop to process tasks which is queued in a task queue.
  * <p>
- * The task, which implements {@link net.ihiroky.niotty.TaskLoop.Task}, is queued by
- * {@link #offerTask(net.ihiroky.niotty.TaskLoop.Task)}. It is processed by a dedicated
+ * The task, which implements {@link Task}, is queued by
+ * {@link #offerTask(Task)}. It is processed by a dedicated
  * thread in queued (FIFO) order. A queue blocking strategy is determined by
- * {@link #poll(boolean)} and {@link #wakeUp()} of this sub class, this class provides
+ * {@link #poll(long, TimeUnit)} and {@link #wakeUp()} of this sub class, this class provides
  * the queue only.
  * </p>
  * <p>
  * This class has a timer to process a task with some delay.
- * {@link #offerTask(net.ihiroky.niotty.TaskLoop.Task, long, java.util.concurrent.TimeUnit)}
+ * {@link #offerTask(Task, long, java.util.concurrent.TimeUnit)}
  * is used to register a task to the timer. If a task returns a positive value, the task is
  * registered to the timer implicitly to be processed after the returned value. If returns
  * zero, the task is inserted to the task queue to processed again immediately.
@@ -41,32 +42,30 @@ import java.util.concurrent.atomic.AtomicInteger;
 public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
 
     private final Queue<Task> taskQueue_;
-    private final TaskTimer taskTimer_;
+    private final Queue<TaskFuture> delayQueue_;
     private volatile Thread thread_;
     private final Set<TaskSelection> selectionSet_;
     private final AtomicInteger weight_ = new AtomicInteger();
 
     private Logger logger_ = LoggerFactory.getLogger(TaskLoop.class);
 
-    /** The value passed to {@link #poll(boolean)} to indicate that the thread should wait without timeout. */
+    /** The value passed to {@link #poll(long, TimeUnit)} to indicate that the thread should wait without timeout. */
     public static final long DONE = -1L;
 
-    /** The value passed to {@link #poll(boolean)} to indicate that the thread should not wait. */
+    /** The value passed to {@link #poll(long, TimeUnit)} to indicate that the thread should not wait. */
     public static final long RETRY_IMMEDIATELY = 0L;
 
-    private static final TimeUnit TIME_UNIT = TimeUnit.MILLISECONDS;
+    private static final TimeUnit TIME_UNIT = TimeUnit.NANOSECONDS;
     private static final int INITIAL_TASK_BUFFER_SIZE = 1024;
+    private static final int INITIAL_DELAY_QUEUE_SIZE = 1024;
 
     /**
      * Creates a new instance.
-     * @param taskTimer the timer to execute the tasks.
-     * @throws NullPointerException if timer is null.
      */
-    protected TaskLoop(TaskTimer taskTimer) {
-        Objects.requireNonNull(taskTimer, "taskTimer");
+    protected TaskLoop() {
         taskQueue_ = new ConcurrentLinkedQueue<>();
+        delayQueue_ = new PriorityQueue<>(INITIAL_DELAY_QUEUE_SIZE);
         selectionSet_ = new HashSet<>();
-        taskTimer_ = taskTimer;
     }
 
     /**
@@ -87,11 +86,21 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
      * @return a future representing pending completion of the task
      * @throws NullPointerException if task or timeUnit is null
      */
-    public TaskTimer.Future offerTask(Task task, long delay, TimeUnit timeUnit) {
+    public TaskFuture offerTask(final Task task, long delay, TimeUnit timeUnit) {
         Objects.requireNonNull(task, "task");
         Objects.requireNonNull(timeUnit, "timeUnit");
 
-        return taskTimer_.offer(this, task, delay, timeUnit);
+        long expire = System.nanoTime() + timeUnit.toNanos(delay);
+        final TaskFuture future = new TaskFuture(expire, task);
+        taskQueue_.offer(new Task() {
+            @Override
+            public long execute(TimeUnit timeUnit) throws Exception {
+                delayQueue_.offer(future);
+                return DONE;
+            }
+        });
+        wakeUp();
+        return future;
     }
 
     /**
@@ -105,7 +114,8 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
             try {
                 long waitTimeMillis = task.execute(TIME_UNIT);
                 if (waitTimeMillis > 0) {
-                    taskTimer_.offer(this, task, waitTimeMillis, TIME_UNIT);
+                    long expire = System.currentTimeMillis() + waitTimeMillis;
+                    delayQueue_.offer(new TaskFuture(expire, task));
                 } else if (waitTimeMillis == RETRY_IMMEDIATELY) {
                     taskQueue_.offer(task);
                 }
@@ -116,14 +126,6 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
             taskQueue_.offer(task);
             wakeUp();
         }
-    }
-
-    /**
-     * Returns true if the task queue holds tasks.
-     * @return true if the task queue holds tasks
-     */
-    public boolean hasTask() {
-        return !taskQueue_.isEmpty() || taskTimer_.hasTask();
     }
 
     void waitUntilStarted() throws InterruptedException {
@@ -140,18 +142,20 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
     public void run() {
         Deque<Task> taskBuffer = new ArrayDeque<>(INITIAL_TASK_BUFFER_SIZE);
         Queue<Task> taskQueue = taskQueue_;
+        Queue<TaskFuture> delayQueue = delayQueue_;
         try {
             synchronized (this) {
                 thread_ = Thread.currentThread();
-                taskTimer_.start();
                 onOpen();
                 notifyAll(); // Counter part: waitUntilStarted()
             }
 
+            long waitNanos = DONE;
             while (thread_ != null) {
                 try {
-                    poll(taskQueue.isEmpty());
-                    processTasks(taskQueue, taskBuffer);
+                    poll(waitNanos, TIME_UNIT);
+                    processTasks(taskQueue, taskBuffer, delayQueue);
+                    waitNanos = processDelayedTask(delayQueue);
                 } catch (InterruptedException ie) {
                     logger_.debug("[run] Interrupted.", ie);
                     break;
@@ -163,7 +167,6 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
             }
         } finally {
             onClose();
-            taskTimer_.stop();
             thread_ = null;
             taskQueue.clear();
             synchronized (selectionSet_) {
@@ -172,7 +175,7 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
         }
     }
 
-    private void processTasks(Queue<Task> queue, Deque<Task> buffer) throws Exception {
+    private void processTasks(Queue<Task> queue, Deque<Task> buffer, Queue<TaskFuture> delayQueue) throws Exception {
         Task task;
         for (;;) {
             task = queue.poll();
@@ -193,9 +196,33 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
             if (retryDelay == RETRY_IMMEDIATELY) {
                 queue.offer(task);
             } else { // if (retryDelay > 0) {
-                taskTimer_.offer(this, task, retryDelay, TIME_UNIT);
+                long expire = System.nanoTime() + retryDelay;
+                delayQueue.offer(new TaskFuture(expire, task));
             }
         }
+    }
+
+    private long processDelayedTask(Queue<TaskFuture> queue) {
+        long now = System.nanoTime();
+        TaskFuture e;
+        for (;;) {
+            e = queue.peek();
+            if (e == null || e.expire_ > now) {
+                break;
+            }
+            if (!e.readyToDispatch()) {
+                queue.poll();
+                continue;
+            }
+            offerTask(e.task_);
+            e.dispatched();
+            queue.poll();
+        }
+        while (e != null && e.isCancelled()) {
+            queue.poll();
+            e = queue.peek();
+        }
+        return (e != null) ? e.expire_ - now : DONE;
     }
 
     /**
@@ -323,36 +350,23 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
     protected abstract void onClose();
 
     /**
-     * This method is called before the task execution to process requests if any.
-     * The implementation is required to wait properly to avoid busy loop
-     * and to process requests managed by the implementation class
-     * as necessary.
+     * Executes any procedure.
+     * This method returns when the procedure was executed, the method {@link #wakeUp()} is invoked,
+     * the current thread is interrupted, or the given timeout period expires, whichever comes first.
      *
-     * @param  preferToWait true if the implementation should wait until {@link #wakeUp()} is called
+     * @param timeout a time to block for up to timeout, more or less,
+     *                while waiting for a channel to become ready; if zero, block indefinitely;
+     *                if negative, returns immediately
+     * @param timeUnit the unit of the timeout
      * @throws Exception if some error occurs
      */
-    protected abstract void poll(boolean preferToWait) throws Exception;
+    protected abstract void poll(long timeout, TimeUnit timeUnit) throws Exception;
 
     /**
      * This method is called when a new task is inserted to the task queue.
-     * The implementation is required not to wait in the {@link #poll(boolean)}
-     * after this method is called.
+     * The implementation is required to wake up the thread executing
+     * {@link #poll(long, java.util.concurrent.TimeUnit)} on waiting timeout.
      */
     protected abstract void wakeUp();
 
-    /**
-     * The task executed by the {@link net.ihiroky.niotty.TaskLoop}.
-     */
-    public interface Task {
-        /**
-         * Executes the task procedure.
-         * @param timeUnit unit of time returned by this method
-         * @return {@link net.ihiroky.niotty.TaskLoop DONE} if task is normally finished,
-         *   {@link net.ihiroky.niotty.TaskLoop RETRY_IMMEDIATELY} if task is required to execute again immediately,
-         *   {@code timeUnit.convert(delay, unitOfDelay)} if task is required to execute again with the specified
-         *   delay.
-         * @throws Exception if some error occurs
-         */
-        long execute(TimeUnit timeUnit) throws Exception;
-    }
 }

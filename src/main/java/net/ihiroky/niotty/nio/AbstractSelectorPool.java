@@ -1,5 +1,6 @@
 package net.ihiroky.niotty.nio;
 
+import net.ihiroky.niotty.Task;
 import net.ihiroky.niotty.TaskLoop;
 import net.ihiroky.niotty.TaskLoopGroup;
 
@@ -20,7 +21,7 @@ public abstract class AbstractSelectorPool<S extends AbstractSelector> extends T
         }
         transport.addIOStage(target);
         transport.setTaskLoopOnce(target);
-        target.offerTask(new TaskLoop.Task() {
+        target.offerTask(new Task() {
             @Override
             public long execute(TimeUnit timeUnit) {
                 target.register(channel, ops, transport);

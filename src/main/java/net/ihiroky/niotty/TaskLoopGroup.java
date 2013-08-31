@@ -124,7 +124,7 @@ public abstract class TaskLoopGroup<L extends TaskLoop> {
      * Offers a task for each task loop.
      * @param task the task to be executed in the task loops
      */
-    public void offerTask(TaskLoop.Task task) {
+    public void offerTask(Task task) {
         synchronized (taskLoops_) {
             for (L loop : taskLoops_) {
                 loop.offerTask(task);

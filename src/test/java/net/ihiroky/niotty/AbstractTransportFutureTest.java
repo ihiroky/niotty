@@ -141,11 +141,11 @@ public class AbstractTransportFutureTest {
         doAnswer(new Answer<Void>() {
             @Override
             public Void answer(InvocationOnMock invocation) throws Throwable {
-                TaskLoop.Task task = (TaskLoop.Task) invocation.getArguments()[0];
+                Task task = (Task) invocation.getArguments()[0];
                 taskResult[0] = task.execute(TimeUnit.MILLISECONDS);
                 return null;
             }
-        }).when(taskLoop_).offerTask(Mockito.any(TaskLoop.Task.class));
+        }).when(taskLoop_).offerTask(Mockito.any(Task.class));
         TransportFutureListener listener = mock(TransportFutureListener.class);
 
         sut_.addListener(listener);

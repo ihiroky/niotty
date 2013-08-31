@@ -26,7 +26,7 @@
  *
  * <h3>TaskLoop and TaskLoopGroup</h3>
  * {@link net.ihiroky.niotty.TaskLoop} consists of a queue to receive
- * {@link net.ihiroky.niotty.TaskLoop.Task} and a thread to execute the {@code Task}
+ * {@link net.ihiroky.niotty.Task} and a thread to execute the {@code Task}
  * and its own processing implemented by its sub type.
  * {@link net.ihiroky.niotty.TaskLoopGroup} manages the {@code TaskLoop} instances
  * and registers objects which are processed by the {@code TaskLoop} with it.

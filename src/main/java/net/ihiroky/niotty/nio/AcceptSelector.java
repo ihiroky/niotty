@@ -1,7 +1,6 @@
 package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.StageContext;
-import net.ihiroky.niotty.TaskTimer;
 import net.ihiroky.niotty.buffer.BufferSink;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,12 +22,8 @@ public class AcceptSelector extends AbstractSelector {
 
     /**
      * Creates a new instance.
-     *
-     * @param timer the timer to execute the tasks.
-     * @throws NullPointerException if timer is null.
      */
-    protected AcceptSelector(TaskTimer timer) {
-        super(timer);
+    protected AcceptSelector() {
     }
 
     @Override
