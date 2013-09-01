@@ -145,7 +145,7 @@ public class AbstractTransportFutureTest {
                 taskResult[0] = task.execute(TimeUnit.MILLISECONDS);
                 return null;
             }
-        }).when(taskLoop_).offerTask(Mockito.any(Task.class));
+        }).when(taskLoop_).offer(Mockito.any(Task.class));
         TransportFutureListener listener = mock(TransportFutureListener.class);
 
         sut_.addListener(listener);

@@ -21,14 +21,14 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Provides an loop to process tasks which is queued in a task queue.
  * <p>
  * The task, which implements {@link Task}, is queued by
- * {@link #offerTask(Task)}. It is processed by a dedicated
+ * {@link #offer(Task)}. It is processed by a dedicated
  * thread in queued (FIFO) order. A queue blocking strategy is determined by
  * {@link #poll(long, TimeUnit)} and {@link #wakeUp()} of this sub class, this class provides
  * the queue only.
  * </p>
  * <p>
  * This class has a timer to process a task with some delay.
- * {@link #offerTask(Task, long, java.util.concurrent.TimeUnit)}
+ * {@link #schedule(Task, long, java.util.concurrent.TimeUnit)}
  * is used to register a task to the timer. If a task returns a positive value, the task is
  * registered to the timer implicitly to be processed after the returned value. If returns
  * zero, the task is inserted to the task queue to processed again immediately.
@@ -73,7 +73,7 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
      * @param task the task to be inserted to the task queue
      * @throws NullPointerException the task is null
      */
-    public void offerTask(Task task) {
+    public void offer(Task task) {
         taskQueue_.offer(task);
         wakeUp();
     }
@@ -86,12 +86,18 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
      * @return a future representing pending completion of the task
      * @throws NullPointerException if task or timeUnit is null
      */
-    public TaskFuture offerTask(final Task task, long delay, TimeUnit timeUnit) {
+    public TaskFuture schedule(final Task task, long delay, TimeUnit timeUnit) {
         Objects.requireNonNull(task, "task");
         Objects.requireNonNull(timeUnit, "timeUnit");
 
         long expire = System.nanoTime() + timeUnit.toNanos(delay);
         final TaskFuture future = new TaskFuture(expire, task);
+
+        if (isInLoopThread()) {
+            delayQueue_.offer(future);
+            return future;
+        }
+
         taskQueue_.offer(new Task() {
             @Override
             public long execute(TimeUnit timeUnit) throws Exception {
@@ -109,22 +115,26 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
      * @param task the task
      * @throws NullPointerException if the task is null
      */
-    public void executeTask(Task task) {
+    public void execute(Task task) {
         if (isInLoopThread()) {
-            try {
-                long waitTimeMillis = task.execute(TIME_UNIT);
-                if (waitTimeMillis > 0) {
-                    long expire = System.currentTimeMillis() + waitTimeMillis;
-                    delayQueue_.offer(new TaskFuture(expire, task));
-                } else if (waitTimeMillis == RETRY_IMMEDIATELY) {
-                    taskQueue_.offer(task);
-                }
-            } catch (Exception e) {
-                logger_.warn("[runTask] Unexpected exception.", e);
-            }
+            execute(task, taskQueue_, delayQueue_);
         } else {
             taskQueue_.offer(task);
             wakeUp();
+        }
+    }
+
+    private void execute(Task task, Queue<Task> taskQueue, Queue<TaskFuture> delayQueue) {
+        try {
+            long waitTimeNanos = task.execute(TIME_UNIT);
+            if (waitTimeNanos > 0) {
+                long expire =  System.nanoTime() + waitTimeNanos;
+                delayQueue.offer(new TaskFuture(expire, task));
+            } else if (waitTimeNanos == RETRY_IMMEDIATELY) {
+                taskQueue.offer(task);
+            }
+        } catch (Exception e) {
+            logger_.warn("[execute] Unexpected exception.", e);
         }
     }
 
@@ -155,7 +165,7 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
                 try {
                     poll(waitNanos, TIME_UNIT);
                     processTasks(taskQueue, taskBuffer, delayQueue);
-                    waitNanos = processDelayedTask(delayQueue);
+                    waitNanos = processDelayedTask(taskQueue, delayQueue);
                 } catch (InterruptedException ie) {
                     logger_.debug("[run] Interrupted.", ie);
                     break;
@@ -202,25 +212,26 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
         }
     }
 
-    private long processDelayedTask(Queue<TaskFuture> queue) {
+    private long processDelayedTask(Queue<Task> taskQueue, Queue<TaskFuture> delayQueue) throws Exception {
         long now = System.nanoTime();
         TaskFuture e;
         for (;;) {
-            e = queue.peek();
+            e = delayQueue.peek();
             if (e == null || e.expire_ > now) {
                 break;
             }
             if (!e.readyToDispatch()) {
-                queue.poll();
+                delayQueue.poll();
                 continue;
             }
-            offerTask(e.task_);
+
+            execute(e.task_, taskQueue, delayQueue);
             e.dispatched();
-            queue.poll();
+            delayQueue.poll();
         }
         while (e != null && e.isCancelled()) {
-            queue.poll();
-            e = queue.peek();
+            delayQueue.poll();
+            e = delayQueue.peek();
         }
         return (e != null) ? e.expire_ - now : DONE;
     }

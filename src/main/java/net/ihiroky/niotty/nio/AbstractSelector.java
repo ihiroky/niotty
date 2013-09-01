@@ -121,6 +121,6 @@ public abstract class AbstractSelector extends TaskLoop implements StoreStage<Bu
 
     @Override
     public void store(StageContext<Void> context, final TransportStateEvent event) {
-        executeTask(event);
+        execute(event);
     }
 }

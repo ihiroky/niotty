@@ -101,7 +101,7 @@ public class UdpIOSelector extends AbstractSelector {
     public void store(StageContext<Void> context, BufferSink input) {
         final NioDatagramSocketTransport transport = (NioDatagramSocketTransport) context.transport();
         transport.readyToWrite(new AttachedMessage<>(input, context.transportParameter()));
-        executeTask(new FlushTask(transport, this));
+        execute(new FlushTask(transport, this));
     }
 
     static class FlushTask implements Task {

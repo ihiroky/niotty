@@ -70,7 +70,7 @@ public class ThreadPipelineElementExecutor extends TaskLoop implements PipelineE
 
     @Override
     public <I> void execute(final PipelineElement<I, ?> context, final I input) {
-        executeTask(new Task() {
+        execute(new Task() {
             @Override
             public long execute(TimeUnit timeUnit) throws Exception {
                 context.fire(input);
@@ -81,7 +81,7 @@ public class ThreadPipelineElementExecutor extends TaskLoop implements PipelineE
 
     @Override
     public <I> void execute(final PipelineElement<I, ?> context, final I input, final TransportParameter parameter) {
-        executeTask(new Task() {
+        execute(new Task() {
             @Override
             public long execute(TimeUnit timeUnit) throws Exception {
                 context.fire(input, parameter);
@@ -92,7 +92,7 @@ public class ThreadPipelineElementExecutor extends TaskLoop implements PipelineE
 
     @Override
     public void execute(final PipelineElement<?, ?> context, final TransportStateEvent event) {
-        executeTask(new Task() {
+        execute(new Task() {
             @Override
             public long execute(TimeUnit timeUnit) throws Exception {
                 context.fire(event);
@@ -100,11 +100,6 @@ public class ThreadPipelineElementExecutor extends TaskLoop implements PipelineE
                 return DONE;
             }
         });
-    }
-
-    @Override
-    public TaskFuture schedule(Task task, long timeout, TimeUnit timeUnit) {
-        return offerTask(task, timeout, timeUnit);
     }
 
     @Override

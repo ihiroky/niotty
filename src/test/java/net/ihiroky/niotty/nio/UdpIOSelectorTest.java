@@ -42,7 +42,7 @@ public class UdpIOSelectorTest {
     public void setUp() throws Exception {
         sut_ = spy(new UdpIOSelector(256, 256, false, false));
         flushTaskCaptor_ = ArgumentCaptor.forClass(UdpIOSelector.FlushTask.class);
-        doNothing().when(sut_).executeTask(flushTaskCaptor_.capture());
+        doNothing().when(sut_).execute(flushTaskCaptor_.capture());
     }
 
     @Test

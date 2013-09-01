@@ -71,7 +71,7 @@ public class TaskLoopTest {
             }
         }).when(t).execute(TimeUnit.NANOSECONDS);
 
-        sut_.offerTask(t);
+        sut_.offer(t);
 
         while (!executed[0]) {
             Thread.sleep(10);
@@ -93,7 +93,7 @@ public class TaskLoopTest {
             }
         }).when(t).execute(TimeUnit.NANOSECONDS);
 
-        sut_.offerTask(t);
+        sut_.offer(t);
 
         // t is retried forever, so check until 10
         while (counter.get() < 10) {
@@ -115,7 +115,7 @@ public class TaskLoopTest {
             }
         }).when(t).execute(TimeUnit.NANOSECONDS);
 
-        sut_.offerTask(t);
+        sut_.offer(t);
 
         while (!isInLoopThread[0]) {
             Thread.sleep(10);
@@ -256,8 +256,8 @@ public class TaskLoopTest {
             }
         });
 
-        TaskFuture e0 = sut_.offerTask(task0, 100, TimeUnit.MILLISECONDS);
-        TaskFuture e1 = sut_.offerTask(task1, 100, TimeUnit.MILLISECONDS);
+        TaskFuture e0 = sut_.schedule(task0, 100, TimeUnit.MILLISECONDS);
+        TaskFuture e1 = sut_.schedule(task1, 100, TimeUnit.MILLISECONDS);
 
         while (!done[0] || !done[1]) {
             Thread.sleep(10);
@@ -293,8 +293,8 @@ public class TaskLoopTest {
         });
         when(task1.toString()).thenReturn("task1");
 
-        TaskFuture e0 = sut_.offerTask(task0, 200, TimeUnit.MILLISECONDS);
-        TaskFuture e1 = sut_.offerTask(task1, 100, TimeUnit.MILLISECONDS);
+        TaskFuture e0 = sut_.schedule(task0, 200, TimeUnit.MILLISECONDS);
+        TaskFuture e1 = sut_.schedule(task1, 100, TimeUnit.MILLISECONDS);
 
         while (order.size() < 2) {
             Thread.sleep(10);
@@ -320,7 +320,7 @@ public class TaskLoopTest {
             }
         });
 
-        TaskFuture e = sut_.offerTask(task0, 100, TimeUnit.MILLISECONDS);
+        TaskFuture e = sut_.schedule(task0, 100, TimeUnit.MILLISECONDS);
         e.cancel();
         while (!e.isDone()) {
             Thread.sleep(10);
@@ -336,7 +336,7 @@ public class TaskLoopTest {
         when(task0.execute(TimeUnit.NANOSECONDS)).thenAnswer(new Answer<Long>() {
             @Override
             public Long answer(InvocationOnMock invocation) throws Throwable {
-                System.out.println("task0");
+                // System.out.println("task0");
                 return TaskLoop.DONE;
             }
         });
@@ -344,13 +344,13 @@ public class TaskLoopTest {
         when(task1.execute(TimeUnit.NANOSECONDS)).thenAnswer(new Answer<Long>() {
             @Override
             public Long answer(InvocationOnMock invocation) throws Throwable {
-                System.out.println("task1");
+                // System.out.println("task1");
                 return TaskLoop.DONE;
             }
         });
 
-        TaskFuture e0 = sut_.offerTask(task0, 100, TimeUnit.MILLISECONDS);
-        TaskFuture e1 = sut_.offerTask(task1, 100, TimeUnit.MILLISECONDS);
+        TaskFuture e0 = sut_.schedule(task0, 100, TimeUnit.MILLISECONDS);
+        TaskFuture e1 = sut_.schedule(task1, 100, TimeUnit.MILLISECONDS);
         e1.cancel();
         while (!e0.isDone() || !e1.isDone()) {
             // System.out.println(e0 + ", " + e1);

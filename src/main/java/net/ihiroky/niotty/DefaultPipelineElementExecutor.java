@@ -19,7 +19,7 @@ public class DefaultPipelineElementExecutor implements PipelineElementExecutor {
 
     @Override
     public <I> void execute(final PipelineElement<I, ?> context, final I input) {
-        taskLoop_.executeTask(new Task() {
+        taskLoop_.execute(new Task() {
             @Override
             public long execute(TimeUnit timeUnit) throws Exception {
                 context.fire(input);
@@ -30,7 +30,7 @@ public class DefaultPipelineElementExecutor implements PipelineElementExecutor {
 
     @Override
     public <I> void execute(final PipelineElement<I, ?> context, final I input, final TransportParameter parameter) {
-        taskLoop_.executeTask(new Task() {
+        taskLoop_.execute(new Task() {
             @Override
             public long execute(TimeUnit timeUnit) throws Exception {
                 context.fire(input, parameter);
@@ -41,7 +41,7 @@ public class DefaultPipelineElementExecutor implements PipelineElementExecutor {
 
     @Override
     public void execute(final PipelineElement<?, ?> context, final TransportStateEvent event) {
-        taskLoop_.executeTask(new Task() {
+        taskLoop_.execute(new Task() {
             @Override
             public long execute(TimeUnit timeUnit) throws Exception {
                 context.fire(event);
@@ -53,7 +53,7 @@ public class DefaultPipelineElementExecutor implements PipelineElementExecutor {
 
     @Override
     public TaskFuture schedule(Task task, long timeout, TimeUnit timeUnit) {
-        return taskLoop_.offerTask(task, timeout, timeUnit);
+        return taskLoop_.schedule(task, timeout, timeUnit);
     }
 
     @Override

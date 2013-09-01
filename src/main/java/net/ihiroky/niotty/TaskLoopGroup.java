@@ -127,7 +127,7 @@ public abstract class TaskLoopGroup<L extends TaskLoop> {
     public void offerTask(Task task) {
         synchronized (taskLoops_) {
             for (L loop : taskLoops_) {
-                loop.offerTask(task);
+                loop.offer(task);
             }
         }
     }

@@ -39,7 +39,7 @@ public class TcpIOSelectorTest {
     public void setUp() throws Exception {
         sut_ = spy(new TcpIOSelector(256, false, false));
         flushTaskCaptor_ = ArgumentCaptor.forClass(TcpIOSelector.FlushTask.class);
-        doNothing().when(sut_).executeTask(flushTaskCaptor_.capture());
+        doNothing().when(sut_).execute(flushTaskCaptor_.capture());
     }
 
     @Test

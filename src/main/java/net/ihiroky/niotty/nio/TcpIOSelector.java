@@ -90,7 +90,7 @@ public class TcpIOSelector extends AbstractSelector {
     public void store(StageContext<Void> context, BufferSink input) {
         NioClientSocketTransport transport = (NioClientSocketTransport) context.transport();
         transport.readyToWrite(new AttachedMessage<>(input, context.transportParameter()));
-        executeTask(new FlushTask(transport, logger_));
+        execute(new FlushTask(transport, logger_));
     }
 
     static class FlushTask implements Task {

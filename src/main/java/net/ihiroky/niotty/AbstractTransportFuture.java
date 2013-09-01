@@ -59,7 +59,7 @@ public abstract class AbstractTransportFuture implements TransportFuture {
                     return TaskLoop.DONE;
                 }
             };
-            taskLoop.offerTask(task);
+            taskLoop.offer(task);
         }
 
         return this;
@@ -93,7 +93,7 @@ public abstract class AbstractTransportFuture implements TransportFuture {
         if (taskLoop.isInLoopThread()) {
             listener_.onComplete(this);
         } else {
-            taskLoop.offerTask(new Task() {
+            taskLoop.offer(new Task() {
                 @Override
                 public long execute(TimeUnit timeUnit) throws Exception {
                     listener_.onComplete(AbstractTransportFuture.this);
