@@ -79,4 +79,9 @@ public final class ThreadPipelineElementExecutorPool
             }
         }
     }
+
+    @Override
+    public TaskLoopGroup<ThreadPipelineElementExecutor> taskLoopGroup() {
+        return this;
+    }
 }

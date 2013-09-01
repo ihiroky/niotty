@@ -8,7 +8,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 public class TaskFuture implements Comparable<TaskFuture> {
     final long expire_;
     final Task task_;
-    private volatile int state_ = WAITING;
+    private volatile int state_;
 
     private static final AtomicIntegerFieldUpdater<TaskFuture> STATE_UPDATER =
             AtomicIntegerFieldUpdater.newUpdater(TaskFuture.class, "state_");
@@ -21,7 +21,7 @@ public class TaskFuture implements Comparable<TaskFuture> {
     TaskFuture(long expire, Task task) {
         expire_ = expire;
         task_ = task;
-
+        state_ = WAITING;
     }
 
     boolean readyToDispatch() {

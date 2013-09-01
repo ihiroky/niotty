@@ -1,5 +1,7 @@
 package net.ihiroky.niotty;
 
+import java.util.concurrent.TimeUnit;
+
 /**
  * <p>A objects that executes {@link LoadStage} or {@link StoreStage} contained by a {@link PipelineElement}.</p>
  *
@@ -37,6 +39,16 @@ public interface PipelineElementExecutor {
      * @param event a transport state that has a transport operation or result.
      */
     void execute(PipelineElement<?, ?> context, TransportStateEvent event);
+
+    /**
+     * <p>Executes a task when the specified timeout is expired.</p>
+     *
+     * @param task the task to be scheduled
+     * @param timeout the timeout
+     * @param timeUnit the unit of the timeout
+     * @return a future of the task
+     */
+    TaskFuture schedule(Task task, long timeout, TimeUnit timeUnit);
 
     /**
      * <p>Returns the pool which manages this object.</p>

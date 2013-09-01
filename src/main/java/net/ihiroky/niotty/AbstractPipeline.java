@@ -8,35 +8,39 @@ import java.lang.reflect.Type;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 /**
  * A skeletal implemention of {@link Pipeline}.
  *
  * @author Hiroki Itoh
  */
-public abstract class AbstractPipeline<S> implements Pipeline<S> {
+public abstract class AbstractPipeline<S, L extends TaskLoop> implements Pipeline<S> {
 
     private final String name_;
-    private final Transport transport_;
+    private final AbstractTransport<L> transport_;
     private final PipelineElement<Object, Object> head_;
-    private static Logger logger_ = LoggerFactory.getLogger(AbstractPipeline.class);
+    private final PipelineElementExecutorPool pipelineElementExecutorPool_;
+    private Logger logger_ = LoggerFactory.getLogger(AbstractPipeline.class);
 
     private static final PipelineElement<Object, Object> TERMINAL = new NullPipelineElement();
     private static final int INPUT_TYPE = 0;
     private static final int OUTPUT_TYPE = 1;
 
-    protected AbstractPipeline(String name, Transport transport) {
+    protected AbstractPipeline(
+            String name, AbstractTransport<L> transport, TaskLoopGroup<? extends TaskLoop> taskLoopGroup) {
         PipelineElement<Object, Object> head = new NullPipelineElement();
         head.setNext(TERMINAL);
 
         name_ = name;
         transport_ = transport;
         head_ = head;
+        pipelineElementExecutorPool_ = new DefaultPipelineElementExecutorPool<>(this, taskLoopGroup);
     }
 
     @Override
     public Pipeline<S> add(StageKey key, S stage) {
-        return add(key, stage, null);
+        return add(key, stage, pipelineElementExecutorPool_);
     }
 
     @Override
@@ -70,7 +74,7 @@ public abstract class AbstractPipeline<S> implements Pipeline<S> {
 
     @Override
     public Pipeline<S> addBefore(StageKey baseKey, StageKey key, S stage) {
-        return addBefore(baseKey, key, stage, null);
+        return addBefore(baseKey, key, stage, pipelineElementExecutorPool_);
     }
 
     @Override
@@ -105,7 +109,7 @@ public abstract class AbstractPipeline<S> implements Pipeline<S> {
 
     @Override
     public Pipeline<S> addAfter(StageKey baseKey, StageKey key, S stage) {
-        return addAfter(baseKey, key, stage, null);
+        return addAfter(baseKey, key, stage, pipelineElementExecutorPool_);
     }
 
     @Override
@@ -157,7 +161,7 @@ public abstract class AbstractPipeline<S> implements Pipeline<S> {
 
     @Override
     public Pipeline<S> replace(StageKey oldKey, StageKey newKey, S newStage) {
-        return replace(oldKey, newKey, newStage, null);
+        return replace(oldKey, newKey, newStage, pipelineElementExecutorPool_);
     }
 
     @Override
@@ -314,8 +318,12 @@ public abstract class AbstractPipeline<S> implements Pipeline<S> {
     }
 
     @Override
-    public Transport transport() {
+    public AbstractTransport<L> transport() {
         return transport_;
+    }
+
+    protected TaskLoopGroup<? extends TaskLoop> taskLoopGroup() {
+        return pipelineElementExecutorPool_.taskLoopGroup();
     }
 
     protected PipelineElement<Object, Object> search(StageKey key) {
@@ -367,6 +375,11 @@ public abstract class AbstractPipeline<S> implements Pipeline<S> {
         @Override
         public void close() {
         }
+
+        @Override
+        public TaskLoopGroup<TaskLoop> taskLoopGroup() {
+            return null;
+        }
     }
 
     private static class NullPipelineElementExecutor implements PipelineElementExecutor {
@@ -383,6 +396,11 @@ public abstract class AbstractPipeline<S> implements Pipeline<S> {
 
         @Override
         public void execute(PipelineElement<?, ?> context, TransportStateEvent event) {
+        }
+
+        @Override
+        public TaskFuture schedule(Task task, long timeout, TimeUnit timeUnit) {
+            return null;
         }
 
         @Override

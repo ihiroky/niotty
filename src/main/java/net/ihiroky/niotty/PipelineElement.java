@@ -1,6 +1,7 @@
 package net.ihiroky.niotty;
 
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created on 13/01/09, 17:24
@@ -14,12 +15,12 @@ public abstract class PipelineElement<I, O> implements StageContext<O>, TaskSele
     private volatile PipelineElement<O, Object> next_;
     private final PipelineElementExecutor executor_;
 
-    private static final PipelineElementExecutor DEFAULT_EXECUTOR = new DefaultPipelineElementExecutor();
-
-    protected PipelineElement(Pipeline<?> pipeline, StageKey key, PipelineElementExecutorPool pool) {
+    protected <L extends TaskLoop> PipelineElement(
+            Pipeline<?> pipeline, StageKey key, PipelineElementExecutorPool pool) {
+        Objects.requireNonNull(pool, "pool");
         this.pipeline_ = pipeline;
         this.key_ = key;
-        this.executor_ = (pool != null) ? pool.assign(this) : DEFAULT_EXECUTOR;
+        this.executor_ = pool.assign(this);
     }
 
     @Override
@@ -56,6 +57,11 @@ public abstract class PipelineElement<I, O> implements StageContext<O>, TaskSele
     @Override
     public void proceed(O output) {
         next_.executor_.execute(next_, output);
+    }
+
+    @Override
+    public TaskFuture schedule(Task task, long timeout, TimeUnit timeUnit) {
+        return executor_.schedule(task, timeout, timeUnit);
     }
 
     protected void proceed(O output, TransportParameter parameter) {
@@ -103,6 +109,11 @@ public abstract class PipelineElement<I, O> implements StageContext<O>, TaskSele
         @Override
         public void proceed(O output) {
             context_.proceed(output, parameter_);
+        }
+
+        @Override
+        public TaskFuture schedule(Task task, long timeout, TimeUnit timeUnit) {
+            return context_.schedule(task, timeout, timeUnit);
         }
     }
 

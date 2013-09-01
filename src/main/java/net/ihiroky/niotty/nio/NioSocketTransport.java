@@ -6,6 +6,7 @@ import net.ihiroky.niotty.DefaultTransportStateEvent;
 import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.SuccessfulTransportFuture;
 import net.ihiroky.niotty.TaskLoop;
+import net.ihiroky.niotty.TaskLoopGroup;
 import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.TransportParameter;
 import net.ihiroky.niotty.TransportState;
@@ -29,15 +30,9 @@ public abstract class NioSocketTransport<S extends AbstractSelector> extends Abs
     /** Default weight to choose a TaskLoop. */
     static final int DEFAULT_WEIGHT = 1;
 
-    NioSocketTransport(String name, PipelineComposer pipelineComposer, int weight) {
-        super(name, pipelineComposer, weight);
-    }
-
-    protected void setTaskLoopOnce(S loop) {
-        if (taskLoop() != null) {
-            throw new IllegalStateException("The task loop is already set.");
-        }
-        super.setTaskLoop(loop);
+    NioSocketTransport(
+            String name, PipelineComposer pipelineComposer, TaskLoopGroup<S> taskLoopGroup, int weight) {
+        super(name, pipelineComposer, taskLoopGroup, weight);
     }
 
     @Override

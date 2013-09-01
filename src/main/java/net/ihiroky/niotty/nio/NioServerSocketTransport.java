@@ -40,7 +40,7 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
     private Logger logger_ = LoggerFactory.getLogger(NioServerSocketTransport.class);
 
     NioServerSocketTransport(NioServerSocketProcessor processor) {
-        super(processor.name(), PipelineComposer.empty(), DEFAULT_WEIGHT);
+        super(processor.name(), PipelineComposer.empty(), processor.acceptSelectorPool(), DEFAULT_WEIGHT);
 
         ServerSocketChannel serverChannel = null;
         try {
@@ -165,9 +165,10 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
         InetSocketAddress remoteAddress = (InetSocketAddress) ((SocketChannel) channel).getRemoteAddress();
 
         SocketChannel socketChannel = (SocketChannel) channel;
+        TcpIOSelectorPool ioSelectorPool = processor_.ioSelectorPool();
         NioClientSocketTransport child = new NioClientSocketTransport(
                 processor_.pipelineComposer(), DEFAULT_WEIGHT, processor_.name(),
-                processor_.writeQueueFactory(), socketChannel);
+                ioSelectorPool, processor_.writeQueueFactory(), socketChannel);
         for (Map.Entry<SocketOption<Object>, Object> option : acceptedSocketOptionSet_) {
             socketChannel.setOption(option.getKey(), option.getValue());
         }
@@ -176,7 +177,7 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
         }
 
         child.loadEvent(new DefaultTransportStateEvent(TransportState.CONNECTED, remoteAddress));
-        processor_.ioSelectorPool().register(channel, SelectionKey.OP_READ, child);
+        ioSelectorPool.register(channel, SelectionKey.OP_READ, child);
         childAggregate_.add(child);
     }
 

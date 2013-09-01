@@ -167,11 +167,11 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
             }
         } finally {
             onClose();
-            thread_ = null;
             taskQueue.clear();
             synchronized (selectionSet_) {
                 selectionSet_.clear();
             }
+            thread_ = null;
         }
     }
 

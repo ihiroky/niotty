@@ -31,7 +31,7 @@ public class TaskLoopTest {
 
     @BeforeClass
     public static void beforeClass() {
-        executor_ = Executors.newSingleThreadExecutor(new ThreadFactory() {
+        executor_ = Executors.newCachedThreadPool(new ThreadFactory() {
             @Override
             public Thread newThread(Runnable r) {
                 return new Thread(r, THREAD_NAME);
@@ -50,8 +50,11 @@ public class TaskLoopTest {
     }
 
     @After
-    public void tearDown() {
+    public void tearDown() throws Exception {
         sut_.close();
+        while (sut_.isAlive()) {
+            Thread.sleep(10);
+        }
     }
 
     @Test(timeout = 1000)
@@ -86,7 +89,6 @@ public class TaskLoopTest {
             @Override
             public Long answer(InvocationOnMock invocation) throws Throwable {
                 counter.getAndIncrement();
-                System.out.println(counter);
                 return 10L;
             }
         }).when(t).execute(TimeUnit.NANOSECONDS);
@@ -334,6 +336,7 @@ public class TaskLoopTest {
         when(task0.execute(TimeUnit.NANOSECONDS)).thenAnswer(new Answer<Long>() {
             @Override
             public Long answer(InvocationOnMock invocation) throws Throwable {
+                System.out.println("task0");
                 return TaskLoop.DONE;
             }
         });
@@ -341,6 +344,7 @@ public class TaskLoopTest {
         when(task1.execute(TimeUnit.NANOSECONDS)).thenAnswer(new Answer<Long>() {
             @Override
             public Long answer(InvocationOnMock invocation) throws Throwable {
+                System.out.println("task1");
                 return TaskLoop.DONE;
             }
         });
@@ -349,6 +353,7 @@ public class TaskLoopTest {
         TaskFuture e1 = sut_.offerTask(task1, 100, TimeUnit.MILLISECONDS);
         e1.cancel();
         while (!e0.isDone() || !e1.isDone()) {
+            // System.out.println(e0 + ", " + e1);
             Thread.sleep(10);
         }
         assertThat(e0.isDispatched(), is(true));

@@ -44,7 +44,7 @@ public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> 
     NioClientSocketTransport(
             PipelineComposer composer, int weight, String name,
             ConnectSelectorPool connectorPool, TcpIOSelectorPool ioPool, WriteQueueFactory writeQueueFactory) {
-        super(name, composer, weight);
+        super(name, composer, ioPool, weight);
 
         Objects.requireNonNull(connectorPool, "connectorPool");
         Objects.requireNonNull(ioPool, "ioPool");
@@ -63,8 +63,8 @@ public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> 
     }
 
     NioClientSocketTransport(PipelineComposer composer, int weight, String name,
-                             WriteQueueFactory writeQueueFactory, SocketChannel child) {
-        super(name, composer, weight);
+                             TcpIOSelectorPool ioPool, WriteQueueFactory writeQueueFactory, SocketChannel child) {
+        super(name, composer, ioPool, weight);
 
         Objects.requireNonNull(writeQueueFactory, "writeQueueFactory");
         Objects.requireNonNull(child, "child");
@@ -158,7 +158,8 @@ public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> 
                 }
                 DefaultTransportFuture future = new DefaultTransportFuture(this);
                 pools.connectorPool_.register(
-                        clientChannel_, SelectionKey.OP_CONNECT, new ConnectionWaitTransport(this, future));
+                        clientChannel_, SelectionKey.OP_CONNECT,
+                        new ConnectionWaitTransport(pools.connectorPool_, this, future));
                 return future;
             } catch (IOException ioe) {
                 return new FailedTransportFuture(this, ioe);

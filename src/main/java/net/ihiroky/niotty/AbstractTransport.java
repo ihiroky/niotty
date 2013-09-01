@@ -1,7 +1,5 @@
 package net.ihiroky.niotty;
 
-import net.ihiroky.niotty.buffer.BufferSink;
-
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -16,17 +14,18 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public abstract class AbstractTransport<T extends TaskLoop> implements Transport, TaskSelection {
 
-    private volatile DefaultLoadPipeline loadPipeline_;
-    private volatile DefaultStorePipeline storePipeline_;
+    private volatile DefaultLoadPipeline<T> loadPipeline_;
+    private volatile DefaultStorePipeline<T> storePipeline_;
     private final AtomicReference<Object> attachmentReference_;
-    private DefaultTransportFuture closeFuture_;
-    private T loop_;
+    private final DefaultTransportFuture closeFuture_;
+    private final T loop_;
     private final int weight_;
 
     /**
      * Creates a new instance.
      */
-    protected AbstractTransport(String name, PipelineComposer pipelineComposer, int weight) {
+    protected AbstractTransport(
+            String name, PipelineComposer pipelineComposer, TaskLoopGroup<T> taskLoopGroup, int weight) {
         Objects.requireNonNull(name, "name");
         Objects.requireNonNull(pipelineComposer, "pipelineComposer");
         if (weight <= 0) {
@@ -36,7 +35,8 @@ public abstract class AbstractTransport<T extends TaskLoop> implements Transport
         attachmentReference_ = new AtomicReference<>();
         closeFuture_ = new DefaultTransportFuture(this);
         weight_ = weight;
-        setUpPipelines(name, pipelineComposer);
+        loop_ = taskLoopGroup.assign(this);
+        setUpPipelines(name, pipelineComposer, taskLoopGroup);
     }
 
     /**
@@ -45,10 +45,9 @@ public abstract class AbstractTransport<T extends TaskLoop> implements Transport
      * @param baseName a name used in {@link net.ihiroky.niotty.AbstractPipeline}.
      * @param pipelineComposer the composer to set up the load / store pipeline.
      */
-    private void setUpPipelines(String baseName, PipelineComposer pipelineComposer) {
-
-        DefaultLoadPipeline loadPipeline = new DefaultLoadPipeline(baseName, this);
-        DefaultStorePipeline storePipeline = new DefaultStorePipeline(baseName, this);
+    private void setUpPipelines(String baseName, PipelineComposer pipelineComposer, TaskLoopGroup<T> taskLoopGroup) {
+        DefaultLoadPipeline<T> loadPipeline = new DefaultLoadPipeline<>(baseName, this, taskLoopGroup);
+        DefaultStorePipeline<T> storePipeline = new DefaultStorePipeline<>(baseName, this, taskLoopGroup);
         pipelineComposer.compose(loadPipeline, storePipeline);
 
         loadPipeline.verifyStageType();
@@ -117,13 +116,13 @@ public abstract class AbstractTransport<T extends TaskLoop> implements Transport
 
         // use the same lock object as listener to save memory footprint.
         synchronized (this) {
-            DefaultLoadPipeline oldLoadPipeline = loadPipeline_;
-            DefaultStorePipeline oldStorePipeline = storePipeline_;
-            DefaultLoadPipeline loadPipelineCopy = oldLoadPipeline.createCopy();
-            DefaultStorePipeline storePipelineCopy = oldStorePipeline.createCopy();
+            DefaultLoadPipeline<T> oldLoadPipeline = loadPipeline_;
+            DefaultStorePipeline<T> oldStorePipeline = storePipeline_;
+            DefaultLoadPipeline<T> loadPipelineCopy = oldLoadPipeline.createCopy();
+            DefaultStorePipeline<T> storePipelineCopy = oldStorePipeline.createCopy();
             composer.compose(loadPipelineCopy, storePipelineCopy);
 
-            StoreStage<BufferSink, Void> ioStage = oldStorePipeline.searchIOStage();
+            StoreStage<?, Void> ioStage = oldStorePipeline.searchIOStage();
             if (ioStage != null) {
                 storePipelineCopy.addIOStage(ioStage);
             }
@@ -160,15 +159,6 @@ public abstract class AbstractTransport<T extends TaskLoop> implements Transport
     @Override
     public int weight() {
         return weight_;
-    }
-
-    /**
-     * Sets the instance of {@link net.ihiroky.niotty.TaskLoop}.
-     * @param loop the the instance of {@code TaskLoop}.
-     */
-    protected void setTaskLoop(T loop) {
-        Objects.requireNonNull(loop, "loop");
-        this.loop_ = loop;
     }
 
     /**

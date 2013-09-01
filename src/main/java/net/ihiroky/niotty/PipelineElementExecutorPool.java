@@ -2,6 +2,8 @@ package net.ihiroky.niotty;
 
 /**
  * <p>An object that assigns {@link PipelineElementExecutor} from a pool.</p>
+ * <p>The algorithm to allocate {@code PipelineElementExecutor} is based on
+ * {@link net.ihiroky.niotty.TaskLoopGroup}.</p>
  *
  * <p>It is finished using, {@link #close()} must be called to release used resources.</p>
  *
@@ -24,4 +26,10 @@ public interface PipelineElementExecutorPool extends AutoCloseable {
      * <p>Closes this pool and release any used resources.</p>
      */
     void close();
+
+    /**
+     * Returns the {@link net.ihiroky.niotty.TaskLoopGroup}.
+     * @return the TaskLoopGroup
+     */
+    TaskLoopGroup<? extends TaskLoop> taskLoopGroup();
 }

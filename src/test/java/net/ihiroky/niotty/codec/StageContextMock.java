@@ -4,11 +4,14 @@ import net.ihiroky.niotty.DefaultTransportParameter;
 import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.StageKey;
 import net.ihiroky.niotty.StageKeys;
+import net.ihiroky.niotty.Task;
+import net.ihiroky.niotty.TaskFuture;
 import net.ihiroky.niotty.Transport;
 import net.ihiroky.niotty.TransportParameter;
 
 import java.util.ArrayDeque;
 import java.util.Queue;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Hiroki Itoh
@@ -47,6 +50,11 @@ public class StageContextMock<O> implements StageContext<O> {
     @Override
     public void proceed(O messageEvent) {
         proceededMessageEventQueue_.add(messageEvent);
+    }
+
+    @Override
+    public TaskFuture schedule(Task task, long timeout, TimeUnit timeUnit) {
+        throw new UnsupportedOperationException();
     }
 
     public O pollEvent() {

@@ -9,13 +9,15 @@ import java.util.Iterator;
  *
  * @author Hiroki Itoh
  */
-public class DefaultStorePipeline extends AbstractPipeline<StoreStage<?, ?>> implements StorePipeline {
+public class DefaultStorePipeline<L extends TaskLoop>
+        extends AbstractPipeline<StoreStage<?, ?>, L> implements StorePipeline {
 
     private static final String SUFFIX_STORE = "[store]";
     private static final StageKey IO_STAGE_KEY = StageKeys.of("IO_STAGE");
 
-    public DefaultStorePipeline(String name, Transport transport) {
-        super(String.valueOf(name).concat(SUFFIX_STORE), transport);
+    public DefaultStorePipeline(
+            String name, AbstractTransport<L> transport, TaskLoopGroup<? extends TaskLoop> taskLoopGroup) {
+        super(String.valueOf(name).concat(SUFFIX_STORE), transport, taskLoopGroup);
     }
 
     @Override
@@ -35,8 +37,8 @@ public class DefaultStorePipeline extends AbstractPipeline<StoreStage<?, ?>> imp
         return (StoreStage<BufferSink, Void>) super.search(IO_STAGE_KEY);
     }
 
-    public DefaultStorePipeline createCopy() {
-        DefaultStorePipeline copy = new DefaultStorePipeline(name(), transport());
+    public DefaultStorePipeline<L> createCopy() {
+        DefaultStorePipeline<L> copy = new DefaultStorePipeline<>(name(), transport(), taskLoopGroup());
         for (Iterator<PipelineElement<Object, Object>> i = iterator(); i.hasNext();) {
             @SuppressWarnings("unchecked")
             StoreStageContext<Object, Object> context = (StoreStageContext<Object, Object>) i.next();

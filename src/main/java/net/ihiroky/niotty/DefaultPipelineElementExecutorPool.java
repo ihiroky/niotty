@@ -1,23 +1,32 @@
 package net.ihiroky.niotty;
 
+import java.util.Objects;
+
 /**
  * @author Hiroki Itoh
  */
-public final class DefaultPipelineElementExecutorPool implements PipelineElementExecutorPool {
+public final class DefaultPipelineElementExecutorPool<L extends TaskLoop> implements PipelineElementExecutorPool {
 
-    private static final DefaultPipelineElementExecutorPool INSTANCE = new DefaultPipelineElementExecutorPool();
-    private static final DefaultPipelineElementExecutor EXECUTOR = new DefaultPipelineElementExecutor();
+    private final AbstractPipeline<?, L> pipeline_;
+    private final TaskLoopGroup<? extends TaskLoop> taskLoopGroup_;
 
-    private DefaultPipelineElementExecutorPool() {
+    public DefaultPipelineElementExecutorPool(
+            AbstractPipeline<?, L> pipeline, TaskLoopGroup<? extends TaskLoop> taskLoopGroup) {
+        Objects.requireNonNull(pipeline, "pipeline");
+        Objects.requireNonNull(taskLoopGroup, "taskLoopGroup");
+        pipeline_ = pipeline;
+        taskLoopGroup_ = taskLoopGroup;
     }
 
-    public static DefaultPipelineElementExecutorPool instance() {
-        return INSTANCE;
+    public TaskLoopGroup<? extends TaskLoop> taskLoopGroup() {
+        return taskLoopGroup_;
     }
 
     @Override
     public PipelineElementExecutor assign(PipelineElement<?, ?> context) {
-        return EXECUTOR;
+        AbstractTransport<L> transport = pipeline_.transport();
+        TaskLoop taskLoop = taskLoopGroup_.assign(transport);
+        return new DefaultPipelineElementExecutor(taskLoop, this);
     }
 
     @Override
