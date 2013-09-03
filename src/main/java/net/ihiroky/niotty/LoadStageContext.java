@@ -3,14 +3,15 @@ package net.ihiroky.niotty;
 import java.util.Objects;
 
 /**
- * @author Hiroki Itoh
+ * @param <I> the type of the input object for the stage.
+ * @param <O> the type of the output object for the stage.
  */
-public class LoadStageContext<I, O> extends PipelineElement<I, O> {
+class LoadStageContext<I, O> extends PipelineElement<I, O> {
 
     private LoadStage<I, O> stage_;
 
     @SuppressWarnings("unchecked")
-    public LoadStageContext(Pipeline<?> pipeline,
+    LoadStageContext(AbstractPipeline<?, ?> pipeline,
                             StageKey key, LoadStage<Object, Object> stage, PipelineElementExecutorPool pool) {
         super(pipeline, key, pool);
         Objects.requireNonNull(stage, "stage");

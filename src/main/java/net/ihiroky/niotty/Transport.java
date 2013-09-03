@@ -11,7 +11,7 @@ import java.net.SocketAddress;
  *
  * @author Hiroki Itoh
  */
-public interface Transport {
+public interface Transport extends TaskSelection {
 
     /**
      * Binds the transport's socket to a local address.
@@ -83,4 +83,16 @@ public interface Transport {
      * @return the attachment
      */
     Object attachment();
+
+    /**
+     * Returns the load pipeline.
+     * @return the load pipeline
+     */
+    LoadPipeline loadPipeline();
+
+    /**
+     * Returns the store pipeline.
+     * @return the store pipeline
+     */
+    StorePipeline storePipeline();
 }

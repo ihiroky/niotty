@@ -16,7 +16,7 @@ public abstract class AbstractSelectorPool<S extends AbstractSelector> extends T
 
     public void register(final SelectableChannel channel, final int ops, final NioSocketTransport<S> transport) {
         final S target = transport.taskLoop();
-        transport.addIOStage(target);
+        transport.setIOStage(target);
         target.offer(new Task() {
             @Override
             public long execute(TimeUnit timeUnit) {

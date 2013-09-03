@@ -49,7 +49,9 @@ public class AbstractPipelineTest {
         context = i.next();
         assertThat(context.key(), is(key1));
         assertThat(context.stage(), is(stage1));
-        assertThat(i.hasNext(), is(false));
+        assertThat(i.hasNext(), is(true));
+        context = i.next();
+        assertThat(context.key(), is(Pipeline.IO_STAGE));
     }
 
     @Test
@@ -64,6 +66,14 @@ public class AbstractPipelineTest {
         sut_.add(key0, stage0);
         sut_.add(key1, stage1);
         sut_.add(key1, stage1);
+    }
+
+    @Test
+    public void testAdd_IOStageIsRejected() throws Exception {
+        exceptionRule_.expect(IllegalArgumentException.class);
+        exceptionRule_.expectMessage("StringStageKey:IO_STAGE must not be added.");
+
+        sut_.add(StageKeys.of("IO_STAGE"), new Object());
     }
 
     @Test
@@ -89,7 +99,9 @@ public class AbstractPipelineTest {
         context = i.next();
         assertThat(context.key(), is(key0));
         assertThat(context.stage(), is(stage0));
-        assertThat(i.hasNext(), is(false));
+        assertThat(i.hasNext(), is(true));
+        context = i.next();
+        assertThat(context.key(), is(Pipeline.IO_STAGE));
     }
 
     @Test
@@ -127,6 +139,17 @@ public class AbstractPipelineTest {
     }
 
     @Test
+    public void testAddBefore_IOStageIsRejected() throws Exception {
+        StageKey key = StageKeys.of(0);
+        sut_.add(key, new Object());
+
+        exceptionRule_.expect(IllegalArgumentException.class);
+        exceptionRule_.expectMessage("StringStageKey:IO_STAGE must not be added.");
+
+        sut_.addBefore(key, StageKeys.of("IO_STAGE"), new Object());
+    }
+
+    @Test
     public void testAddAfter() throws Exception {
         StageKey key0 = StageKeys.of(0);
         Object stage0 = new Object();
@@ -149,7 +172,9 @@ public class AbstractPipelineTest {
         context = i.next();
         assertThat(context.key(), is(key1));
         assertThat(context.stage(), is(stage1));
-        assertThat(i.hasNext(), is(false));
+        assertThat(i.hasNext(), is(true));
+        context = i.next();
+        assertThat(context.key(), is(Pipeline.IO_STAGE));
     }
 
     @Test
@@ -187,6 +212,28 @@ public class AbstractPipelineTest {
     }
 
     @Test
+    public void testAddAfter_IOStageIsRejected() throws Exception {
+        StageKey key = StageKeys.of(0);
+        sut_.add(key, new Object());
+
+        exceptionRule_.expect(IllegalArgumentException.class);
+        exceptionRule_.expectMessage("StringStageKey:IO_STAGE must not be added.");
+
+        sut_.addAfter(key, StageKeys.of("IO_STAGE"), new Object());
+    }
+
+    @Test
+    public void testAddAfter_BaseKeyMustNotBeIOStage() throws Exception {
+        StageKey key = StageKeys.of(0);
+        sut_.add(key, new Object());
+
+        exceptionRule_.expect(IllegalArgumentException.class);
+        exceptionRule_.expectMessage("StringStageKey:IO_STAGE must be the tail of this pipeline.");
+
+        sut_.addAfter(StageKeys.of("IO_STAGE"), key, new Object());
+    }
+
+    @Test
     public void testRemove_First() throws Exception {
         StageKey key0 = StageKeys.of(0);
         Object stage0 = new Object();
@@ -207,7 +254,9 @@ public class AbstractPipelineTest {
         context = i.next();
         assertThat(context.key(), is(key2));
         assertThat(context.stage(), is(stage2));
-        assertThat(i.hasNext(), is(false));
+        assertThat(i.hasNext(), is(true));
+        context = i.next();
+        assertThat(context.key(), is(Pipeline.IO_STAGE));
     }
 
     @Test
@@ -231,7 +280,9 @@ public class AbstractPipelineTest {
         context = i.next();
         assertThat(context.key(), is(key2));
         assertThat(context.stage(), is(stage2));
-        assertThat(i.hasNext(), is(false));
+        assertThat(i.hasNext(), is(true));
+        context = i.next();
+        assertThat(context.key(), is(Pipeline.IO_STAGE));
     }
 
     @Test
@@ -255,7 +306,9 @@ public class AbstractPipelineTest {
         context = i.next();
         assertThat(context.key(), is(key1));
         assertThat(context.stage(), is(stage1));
-        assertThat(i.hasNext(), is(false));
+        assertThat(i.hasNext(), is(true));
+        context = i.next();
+        assertThat(context.key(), is(Pipeline.IO_STAGE));
     }
 
     @Test
@@ -271,6 +324,14 @@ public class AbstractPipelineTest {
         sut_.add(key0, stage0);
         sut_.add(key1, stage1);
         sut_.remove(key2);
+    }
+
+    @Test
+    public void testRemove_IOStageIsRejected() throws Exception {
+        exceptionRule_.expect(IllegalArgumentException.class);
+        exceptionRule_.expectMessage("StringStageKey:IO_STAGE must not be removed.");
+
+        sut_.remove(StageKeys.of("IO_STAGE"));
     }
 
     @Test
@@ -299,7 +360,9 @@ public class AbstractPipelineTest {
         context = i.next();
         assertThat(context.key(), is(key2));
         assertThat(context.stage(), is(stage2));
-        assertThat(i.hasNext(), is(false));
+        assertThat(i.hasNext(), is(true));
+        context = i.next();
+        assertThat(context.key(), is(Pipeline.IO_STAGE));
     }
 
     @Test
@@ -328,7 +391,9 @@ public class AbstractPipelineTest {
         context = i.next();
         assertThat(context.key(), is(key2));
         assertThat(context.stage(), is(stage2));
-        assertThat(i.hasNext(), is(false));
+        assertThat(i.hasNext(), is(true));
+        context = i.next();
+        assertThat(context.key(), is(Pipeline.IO_STAGE));
     }
 
     @Test
@@ -357,7 +422,9 @@ public class AbstractPipelineTest {
         context = i.next();
         assertThat(context.key(), is(key3));
         assertThat(context.stage(), is(stage3));
-        assertThat(i.hasNext(), is(false));
+        assertThat(i.hasNext(), is(true));
+        context = i.next();
+        assertThat(context.key(), is(Pipeline.IO_STAGE));
     }
 
     @Test
@@ -397,6 +464,28 @@ public class AbstractPipelineTest {
         sut_.replace(key3, key2, stage2);
     }
 
+    @Test
+    public void testReplace_NewIOStageIsRejected() throws Exception {
+        StageKey key = StageKeys.of(0);
+        sut_.add(key, new Object());
+
+        exceptionRule_.expect(IllegalArgumentException.class);
+        exceptionRule_.expectMessage("StringStageKey:IO_STAGE must not be added.");
+
+        sut_.replace(key, StageKeys.of("IO_STAGE"), new Object());
+    }
+
+    @Test
+    public void testReplace_OldIOStageIsRejected() throws Exception {
+        StageKey key = StageKeys.of(0);
+        sut_.add(key, new Object());
+
+        exceptionRule_.expect(IllegalArgumentException.class);
+        exceptionRule_.expectMessage("StringStageKey:IO_STAGE must not be removed.");
+
+        sut_.replace(StageKeys.of("IO_STAGE"), key, new Object());
+    }
+
     private static class PipelineImpl extends AbstractPipeline<Object, TaskLoop> {
 
         @SuppressWarnings("unchecked")
@@ -421,6 +510,37 @@ public class AbstractPipelineTest {
                 @Override
                 protected void fire(TransportStateEvent event) {
                 }
+                @Override
+                public TransportParameter transportParameter() {
+                    return DefaultTransportParameter.NO_PARAMETER;
+                }
+            };
+        }
+
+        @Override
+        protected Tail<Object> createTail(PipelineElementExecutorPool defaultPool) {
+            return new Tail<Object>(this, IO_STAGE, AbstractPipeline.NULL_POOL) {
+                @Override
+                void setStage(Object stage) {
+                }
+
+                @Override
+                protected Object stage() {
+                    return null;
+                }
+
+                @Override
+                protected void fire(Object input) {
+                }
+
+                @Override
+                protected void fire(Object input, TransportParameter parameter) {
+                }
+
+                @Override
+                protected void fire(TransportStateEvent event) {
+                }
+
                 @Override
                 public TransportParameter transportParameter() {
                     return DefaultTransportParameter.NO_PARAMETER;

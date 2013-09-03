@@ -1,7 +1,7 @@
 package net.ihiroky.niotty;
 
 /**
- * <p>An object that assigns {@link PipelineElementExecutor} from a pool.</p>
+ * <p>An object that assigns {@link TaskLoop} from a pool.</p>
  * <p>The algorithm to allocate {@code PipelineElementExecutor} is based on
  * {@link net.ihiroky.niotty.TaskLoopGroup}.</p>
  *
@@ -12,7 +12,7 @@ package net.ihiroky.niotty;
 public interface PipelineElementExecutorPool extends AutoCloseable {
 
     /**
-     * <p>Assigns {@link PipelineElementExecutor} for the given {@code context}.</p>
+     * <p>Assigns {@link TaskLoop} for the given {@code context}.</p>
      *
      * <p>A {@link LoadStage} or {@link StoreStage} contained in the context
      * is executed by {@code PipelineElementExecutor}.</p>
@@ -20,16 +20,10 @@ public interface PipelineElementExecutorPool extends AutoCloseable {
      * @param context the context.
      * @return a {@code PipelineElementExecutor}.
      */
-    PipelineElementExecutor assign(PipelineElement<?, ?> context);
+    TaskLoop assign(TaskSelection context);
 
     /**
      * <p>Closes this pool and release any used resources.</p>
      */
     void close();
-
-    /**
-     * Returns the {@link net.ihiroky.niotty.TaskLoopGroup}.
-     * @return the TaskLoopGroup
-     */
-    TaskLoopGroup<? extends TaskLoop> taskLoopGroup();
 }

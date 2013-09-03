@@ -1,16 +1,15 @@
 package net.ihiroky.niotty;
 
-import java.util.Iterator;
-
 /**
- * Created on 13/01/10, 17:21
+ * A pipeline for the {@link LoadStage}.
  *
- * @author Hiroki Itoh
+ * @param <L> the type of the TaskLoop which executes the stages by default
  */
 public class DefaultLoadPipeline<L extends TaskLoop>
         extends AbstractPipeline<LoadStage<?, ?>, L> implements LoadPipeline {
 
     private static final String SUFFIX_LOAD = "[load]";
+    private static final StageKey TAIL_STAGE = StageKeys.of("LOAD_TAIL_STAGE");
 
     public DefaultLoadPipeline(
             String name, AbstractTransport<L> transport, TaskLoopGroup<? extends TaskLoop> taskLoopGroup) {
@@ -25,13 +24,40 @@ public class DefaultLoadPipeline<L extends TaskLoop>
         return new LoadStageContext<>(this, key, s, pool);
     }
 
-    public DefaultLoadPipeline<L> createCopy() {
-        DefaultLoadPipeline<L> copy = new DefaultLoadPipeline<>(name(), transport(), taskLoopGroup());
-        for (Iterator<PipelineElement<Object, Object>> i = iterator(); i.hasNext();) {
-            @SuppressWarnings("unchecked")
-            LoadStageContext<Object, Object> context = (LoadStageContext<Object, Object>) i.next();
-            copy.add(context.key(), context.stage(), context.executor().pool());
+    @Override
+    protected Tail<LoadStage<?, ?>> createTail(PipelineElementExecutorPool defaultPool) {
+        return new LoadTail(this, TAIL_STAGE, AbstractPipeline.NULL_POOL);
+    }
+
+    private static class LoadTail extends Tail<LoadStage<?, ?>> {
+        protected LoadTail(AbstractPipeline<?, ?> pipeline, StageKey key, PipelineElementExecutorPool pool) {
+            super(pipeline, key, pool);
         }
-        return copy;
+
+        @Override
+        void setStage(LoadStage<?, ?> stage) {
+        }
+
+        @Override
+        protected Object stage() {
+            return null;
+        }
+
+        @Override
+        protected void fire(Object input) {
+        }
+
+        @Override
+        protected void fire(Object input, TransportParameter parameter) {
+        }
+
+        @Override
+        protected void fire(TransportStateEvent event) {
+        }
+
+        @Override
+        public TransportParameter transportParameter() {
+            return DefaultTransportParameter.NO_PARAMETER;
+        }
     }
 }

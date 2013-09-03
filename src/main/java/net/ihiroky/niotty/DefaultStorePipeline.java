@@ -1,19 +1,14 @@
 package net.ihiroky.niotty;
 
-import net.ihiroky.niotty.buffer.BufferSink;
-
-import java.util.Iterator;
-
 /**
- * Created on 13/01/10, 17:21
+ * A pipeline for the {@link StoreStage}.
  *
- * @author Hiroki Itoh
+ * @param <L> the type of the TaskLoop which executes the stages by default
  */
 public class DefaultStorePipeline<L extends TaskLoop>
         extends AbstractPipeline<StoreStage<?, ?>, L> implements StorePipeline {
 
     private static final String SUFFIX_STORE = "[store]";
-    private static final StageKey IO_STAGE_KEY = StageKeys.of("IO_STAGE");
 
     public DefaultStorePipeline(
             String name, AbstractTransport<L> transport, TaskLoopGroup<? extends TaskLoop> taskLoopGroup) {
@@ -28,25 +23,49 @@ public class DefaultStorePipeline<L extends TaskLoop>
         return new StoreStageContext<>(this, key, s, pool);
     }
 
-    public void addIOStage(StoreStage<?, Void> stage) {
-        super.add(IO_STAGE_KEY, stage);
+    @Override
+    protected Tail<StoreStage<?, ?>> createTail(PipelineElementExecutorPool defaultPool) {
+        return new StoreTail(this, IO_STAGE, defaultPool);
     }
 
-    @SuppressWarnings("unchecked")
-    public StoreStage<BufferSink, Void> searchIOStage() {
-        return (StoreStage<BufferSink, Void>) super.search(IO_STAGE_KEY);
-    }
+    private static class StoreTail extends Tail<StoreStage<?, ?>> {
 
-    public DefaultStorePipeline<L> createCopy() {
-        DefaultStorePipeline<L> copy = new DefaultStorePipeline<>(name(), transport(), taskLoopGroup());
-        for (Iterator<PipelineElement<Object, Object>> i = iterator(); i.hasNext();) {
-            @SuppressWarnings("unchecked")
-            StoreStageContext<Object, Object> context = (StoreStageContext<Object, Object>) i.next();
-            StageKey key = context.key();
-            if (key != IO_STAGE_KEY) {
-                copy.add(key, context.stage(), context.executor().pool());
-            }
+        private StoreStage<Object, Object> stage_;
+
+        protected StoreTail(AbstractPipeline<?, ?> pipeline, StageKey key, PipelineElementExecutorPool pool) {
+            super(pipeline, key, pool);
         }
-        return copy;
+
+        @Override
+        @SuppressWarnings("unchecked")
+        void setStage(StoreStage<?, ?> stage) {
+            stage_ = (StoreStage<Object, Object>) stage;
+        }
+
+        @Override
+        protected Object stage() {
+            return stage_;
+        }
+
+        @Override
+        protected void fire(Object input) {
+            stage_.store(this, input);
+        }
+
+        @Override
+        protected void fire(Object input, TransportParameter parameter) {
+            WrappedStageContext<Object> context = new WrappedStageContext<>(this, parameter);
+            stage_.store(context, input);
+        }
+
+        @Override
+        protected void fire(TransportStateEvent event) {
+            stage_.store(this, event);
+        }
+
+        @Override
+        public TransportParameter transportParameter() {
+            return DefaultTransportParameter.NO_PARAMETER;
+        }
     }
 }

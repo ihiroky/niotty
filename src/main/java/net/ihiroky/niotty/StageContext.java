@@ -3,7 +3,7 @@ package net.ihiroky.niotty;
 import java.util.concurrent.TimeUnit;
 
 /**
- * @author Hiroki Itoh
+ *
  */
 public interface StageContext<O> {
     StageKey key();

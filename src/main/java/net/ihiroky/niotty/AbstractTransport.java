@@ -14,8 +14,8 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public abstract class AbstractTransport<T extends TaskLoop> implements Transport, TaskSelection {
 
-    private volatile DefaultLoadPipeline<T> loadPipeline_;
-    private volatile DefaultStorePipeline<T> storePipeline_;
+    private final DefaultLoadPipeline<T> loadPipeline_;
+    private final DefaultStorePipeline<T> storePipeline_;
     private final AtomicReference<Object> attachmentReference_;
     private final DefaultTransportFuture closeFuture_;
     private final T loop_;
@@ -36,18 +36,9 @@ public abstract class AbstractTransport<T extends TaskLoop> implements Transport
         closeFuture_ = new DefaultTransportFuture(this);
         weight_ = weight;
         loop_ = taskLoopGroup.assign(this);
-        setUpPipelines(name, pipelineComposer, taskLoopGroup);
-    }
 
-    /**
-     * <p>Initializes the load / store pipeline with a specified pipeline composer.</p>
-     *
-     * @param baseName a name used in {@link net.ihiroky.niotty.AbstractPipeline}.
-     * @param pipelineComposer the composer to set up the load / store pipeline.
-     */
-    private void setUpPipelines(String baseName, PipelineComposer pipelineComposer, TaskLoopGroup<T> taskLoopGroup) {
-        DefaultLoadPipeline<T> loadPipeline = new DefaultLoadPipeline<>(baseName, this, taskLoopGroup);
-        DefaultStorePipeline<T> storePipeline = new DefaultStorePipeline<>(baseName, this, taskLoopGroup);
+        DefaultLoadPipeline<T> loadPipeline = new DefaultLoadPipeline<>(name, this, taskLoopGroup);
+        DefaultStorePipeline<T> storePipeline = new DefaultStorePipeline<>(name, this, taskLoopGroup);
         pipelineComposer.compose(loadPipeline, storePipeline);
 
         loadPipeline.verifyStageType();
@@ -107,33 +98,14 @@ public abstract class AbstractTransport<T extends TaskLoop> implements Transport
         storePipeline_.execute(stateEvent);
     }
 
-    /**
-     * Resets the pipelines with the specified composer.
-     * @param composer the composer to reset pipelines.
-     */
-    public void resetPipelines(PipelineComposer composer) {
-        Objects.requireNonNull(composer, "composer");
+    @Override
+    public LoadPipeline loadPipeline() {
+        return loadPipeline_;
+    }
 
-        // use the same lock object as listener to save memory footprint.
-        synchronized (this) {
-            DefaultLoadPipeline<T> oldLoadPipeline = loadPipeline_;
-            DefaultStorePipeline<T> oldStorePipeline = storePipeline_;
-            DefaultLoadPipeline<T> loadPipelineCopy = oldLoadPipeline.createCopy();
-            DefaultStorePipeline<T> storePipelineCopy = oldStorePipeline.createCopy();
-            composer.compose(loadPipelineCopy, storePipelineCopy);
-
-            StoreStage<?, Void> ioStage = oldStorePipeline.searchIOStage();
-            if (ioStage != null) {
-                storePipelineCopy.addIOStage(ioStage);
-            }
-            loadPipelineCopy.verifyStageType();
-            storePipelineCopy.verifyStageType();
-
-            loadPipeline_ = loadPipelineCopy;
-            storePipeline_ = storePipelineCopy;
-            oldLoadPipeline.close();
-            oldStorePipeline.close();
-        }
+    @Override
+    public StorePipeline storePipeline() {
+        return storePipeline_;
     }
 
     /**
@@ -145,15 +117,12 @@ public abstract class AbstractTransport<T extends TaskLoop> implements Transport
     }
 
     /**
-     * Adds the specified stage at the end of the store pipeline.
+     * Sets the specified stage at the end of the store pipeline.
      * @param ioStage the stage
      */
-    public void addIOStage(StoreStage<?, Void> ioStage) {
-        if (storePipeline_ == null) {
-            throw new IllegalStateException("setUpPipelines() is not called.");
-        }
+    public void setIOStage(StoreStage<?, ?> ioStage) {
         Objects.requireNonNull(ioStage, "ioStage");
-        storePipeline_.addIOStage(ioStage);
+        storePipeline_.setTailStage(ioStage);
     }
 
     @Override

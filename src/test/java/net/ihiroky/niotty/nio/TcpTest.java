@@ -82,7 +82,7 @@ public class TcpTest {
         waitUntilClosed(clientSut_);
     }
 
-    @Test(timeout = 3000)
+    @Test//(timeout = 3000)
     public void testBlockingConnect() throws Exception {
         NioClientSocketProcessor p = new NioClientSocketProcessor();
         p.setNumberOfConnectThread(0);

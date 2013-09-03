@@ -4,23 +4,21 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Created on 13/01/09, 17:24
- *
- * @author Hiroki Itoh
+ * @param <I> the type of the input object for the stage.
+ * @param <O> the type of the output object for the stage.
  */
 public abstract class PipelineElement<I, O> implements StageContext<O>, TaskSelection {
 
-    private final Pipeline<?> pipeline_;
+    private final AbstractPipeline<?, ?> pipeline_;
     private final StageKey key_;
     private volatile PipelineElement<O, Object> next_;
-    private final PipelineElementExecutor executor_;
+    private final TaskLoop taskLoop_;
 
-    protected <L extends TaskLoop> PipelineElement(
-            Pipeline<?> pipeline, StageKey key, PipelineElementExecutorPool pool) {
+    protected PipelineElement(AbstractPipeline<?, ?> pipeline, StageKey key, PipelineElementExecutorPool pool) {
         Objects.requireNonNull(pool, "pool");
-        this.pipeline_ = pipeline;
-        this.key_ = key;
-        this.executor_ = pool.assign(this);
+        pipeline_ = pipeline;
+        key_ = key;
+        taskLoop_ = pool.assign(this);
     }
 
     @Override
@@ -28,12 +26,12 @@ public abstract class PipelineElement<I, O> implements StageContext<O>, TaskSele
         return key_;
     }
 
-    protected Pipeline<?> pipeline() {
-        return pipeline_;
+    protected TaskLoop taskLoop() {
+        return taskLoop_;
     }
 
-    protected PipelineElementExecutor executor() {
-        return executor_;
+    protected Pipeline<?> pipeline() {
+        return pipeline_;
     }
 
     protected PipelineElement<O, Object> next() {
@@ -51,25 +49,44 @@ public abstract class PipelineElement<I, O> implements StageContext<O>, TaskSele
     }
 
     protected void close() {
-        executor_.close(this);
+        taskLoop_.reject(this);
     }
 
     @Override
-    public void proceed(O output) {
-        next_.executor_.execute(next_, output);
+    public void proceed(final O output) {
+        next_.taskLoop_.execute(new Task() {
+            @Override
+            public long execute(TimeUnit timeUnit) throws Exception {
+                next_.fire(output);
+                return TaskLoop.DONE;
+            }
+        });
     }
 
     @Override
     public TaskFuture schedule(Task task, long timeout, TimeUnit timeUnit) {
-        return executor_.schedule(task, timeout, timeUnit);
+        return taskLoop_.schedule(task, timeout, timeUnit);
     }
 
-    protected void proceed(O output, TransportParameter parameter) {
-        next_.executor_.execute(next_, output, parameter);
+    protected void proceed(final O output, final TransportParameter parameter) {
+        next_.taskLoop_.execute(new Task() {
+            @Override
+            public long execute(TimeUnit timeUnit) throws Exception {
+                next_.fire(output, parameter);
+                return TaskLoop.DONE;
+            }
+        });
     }
 
-    protected void proceed(TransportStateEvent event) {
-        next_.executor_.execute(next_, event);
+    protected void proceed(final TransportStateEvent event) {
+        next_.taskLoop_.execute(new Task() {
+            @Override
+            public long execute(TimeUnit timeUnit) throws Exception {
+                next_.fire(event);
+                next_.proceed(event);
+                return TaskLoop.DONE;
+            }
+        });
     }
 
     protected StageContext<O> wrappedStageContext(PipelineElement<?, O> context, TransportParameter parameter) {
@@ -81,7 +98,7 @@ public abstract class PipelineElement<I, O> implements StageContext<O>, TaskSele
         return 1; // TODO correspond to transport ?
     }
 
-    private static class WrappedStageContext<O> implements StageContext<O> {
+    static class WrappedStageContext<O> implements StageContext<O> {
 
         private final PipelineElement<?, O> context_;
         private final TransportParameter parameter_;

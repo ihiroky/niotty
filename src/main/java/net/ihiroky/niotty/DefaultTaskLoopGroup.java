@@ -1,22 +1,21 @@
 package net.ihiroky.niotty;
 
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+
 /**
  * <p>An implementation of {@link PipelineElementExecutorPool} that manages
- * {@link ThreadPipelineElementExecutor}.</p>
+ * {@link DefaultTaskLoop}.</p>
  *
- * <p>This class use threads to execute the {@code ThreadPipelineElementExecutor}. </p>
- *
- * @author Hiroki Itoh
+ * <p>This class use threads to execute the {@code DefaultTaskLoop}. </p>
  */
-public final class ThreadPipelineElementExecutorPool
-        extends TaskLoopGroup<ThreadPipelineElementExecutor> implements PipelineElementExecutorPool {
+public final class DefaultTaskLoopGroup
+        extends TaskLoopGroup<DefaultTaskLoop> implements PipelineElementExecutorPool {
 
     private final int numberOfThread_;
     private final String threadNamePrefix_;
     private State state_;
     private final Object stateLock_;
-
-    private static final String DEFAULT_THREAD_NAME_PREFIX = "ExecutorFor";
 
     private enum State {
         INITIALIZED,
@@ -28,11 +27,11 @@ public final class ThreadPipelineElementExecutorPool
      * Constructs a instance.
      *
      * An invocation of this constructor behaves in exactly the same way as the invocation
-     * {@code ThreadPipelineElementExecutorPool(numberOfThread, null)}.
+     * {@code DefaultTaskLoopGroup(numberOfThread, null)}.
      *
      * @param numberOfThread the number of the threads to be managed by the instance.
      */
-    public ThreadPipelineElementExecutorPool(int numberOfThread) {
+    public DefaultTaskLoopGroup(int numberOfThread) {
         this(numberOfThread, null);
     }
 
@@ -41,31 +40,42 @@ public final class ThreadPipelineElementExecutorPool
      * @param numberOfThread the number of the threads to be managed by the instance.
      * @param threadNamePrefix a prefix of the thread name, "ExecutorFor" is used if null.
      */
-    public ThreadPipelineElementExecutorPool(int numberOfThread, String threadNamePrefix) {
+    public DefaultTaskLoopGroup(int numberOfThread, String threadNamePrefix) {
         if (numberOfThread <= 0) {
             throw new IllegalArgumentException("numberOfThread must be positive.");
         }
         numberOfThread_ = numberOfThread;
-        threadNamePrefix_ = (threadNamePrefix != null) ? threadNamePrefix : DEFAULT_THREAD_NAME_PREFIX;
+        threadNamePrefix_ = threadNamePrefix;
         state_ = State.INITIALIZED;
         stateLock_ = new Object();
     }
 
     @Override
-    protected ThreadPipelineElementExecutor newTaskLoop() {
-        return new ThreadPipelineElementExecutor(this);
-    }
-
-    @Override
-    public PipelineElementExecutor assign(PipelineElement<?, ?> context) {
+    public void open(ThreadFactory threadFactory, int numberOfThread) {
         synchronized (stateLock_) {
             if (state_ == State.INITIALIZED) {
-                String prefix = threadNamePrefix_.concat(context.key().toString());
-                super.open(new NameCountThreadFactory(prefix), numberOfThread_);
+                super.open(threadFactory, numberOfThread);
                 state_ = State.OPEN;
             }
         }
-        ThreadPipelineElementExecutor executor = super.assign(context);
+    }
+
+    @Override
+    protected DefaultTaskLoop newTaskLoop() {
+        return new DefaultTaskLoop();
+    }
+
+    @Override
+    public DefaultTaskLoop assign(TaskSelection context) {
+        synchronized (stateLock_) {
+            if (state_ == State.INITIALIZED) {
+                ThreadFactory threadFactory = (threadNamePrefix_ != null)
+                        ? new NameCountThreadFactory(threadNamePrefix_) : Executors.defaultThreadFactory();
+                open(threadFactory, numberOfThread_);
+                state_ = State.OPEN;
+            }
+        }
+        DefaultTaskLoop executor = super.assign(context);
         executor.accept(context);
         return executor;
     }
@@ -78,10 +88,5 @@ public final class ThreadPipelineElementExecutorPool
                 state_ = State.CLOSED;
             }
         }
-    }
-
-    @Override
-    public TaskLoopGroup<ThreadPipelineElementExecutor> taskLoopGroup() {
-        return this;
     }
 }

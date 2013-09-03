@@ -6,19 +6,17 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * @author Hiroki Itoh
+ * A implementation of {@link TaskLoop}. Wait operation depends on {@code java.util.ReentrantLock}.
  */
-public class ThreadPipelineElementExecutor extends TaskLoop implements PipelineElementExecutor {
+public class DefaultTaskLoop extends TaskLoop {
 
     private boolean signaled_;
-    private final ThreadPipelineElementExecutorPool pool_;
     private final Lock lock_;
     private final Condition condition_;
 
-    public ThreadPipelineElementExecutor(ThreadPipelineElementExecutorPool pool) {
+    public DefaultTaskLoop() {
         super();
         signaled_ = false;
-        pool_ = pool;
         lock_ = new ReentrantLock();
         condition_ = lock_.newCondition();
     }
@@ -66,49 +64,5 @@ public class ThreadPipelineElementExecutor extends TaskLoop implements PipelineE
         } finally {
             lock_.unlock();
         }
-    }
-
-    @Override
-    public <I> void execute(final PipelineElement<I, ?> context, final I input) {
-        execute(new Task() {
-            @Override
-            public long execute(TimeUnit timeUnit) throws Exception {
-                context.fire(input);
-                return DONE;
-            }
-        });
-    }
-
-    @Override
-    public <I> void execute(final PipelineElement<I, ?> context, final I input, final TransportParameter parameter) {
-        execute(new Task() {
-            @Override
-            public long execute(TimeUnit timeUnit) throws Exception {
-                context.fire(input, parameter);
-                return DONE;
-            }
-        });
-    }
-
-    @Override
-    public void execute(final PipelineElement<?, ?> context, final TransportStateEvent event) {
-        execute(new Task() {
-            @Override
-            public long execute(TimeUnit timeUnit) throws Exception {
-                context.fire(event);
-                context.proceed(event);
-                return DONE;
-            }
-        });
-    }
-
-    @Override
-    public PipelineElementExecutorPool pool() {
-        return pool_;
-    }
-
-    @Override
-    public void close(PipelineElement<?, ?> context) {
-        reject(context);
     }
 }
