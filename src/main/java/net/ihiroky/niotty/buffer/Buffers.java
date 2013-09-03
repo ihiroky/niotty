@@ -82,20 +82,38 @@ public final class Buffers {
      * Creates a new {@code CodecBuffer} which is backed by a specified byte array.
      *
      * If some data is written into the {@code CodecBuffer}, then the backed byte array is also modified.
+     * The new {@code CodecBuffer}'s beginning is {@code 0} and end is {@code buffer.length}.
+     *
+     * An invocation of this method behaves in exactly the same way as the invocation
+     * {@code wrap(buffer, 0, buffer.length)}.
+     *
+     * @param buffer the backed byte array
+     * @throws NullPointerException if {@code buffer} is null.
+     * @throws IllegalArgumentException if {@code beginning} or {@code length} is invalid.
+     * @return the new {@code DecodeBuffer}
+     */
+    public static CodecBuffer wrap(byte[] buffer) {
+        return new ArrayCodecBuffer(buffer, 0, buffer.length);
+    }
+
+    /**
+     * Creates a new {@code CodecBuffer} which is backed by a specified byte array.
+     *
+     * If some data is written into the {@code CodecBuffer}, then the backed byte array is also modified.
      * The new {@code CodecBuffer}'s beginning is {@code offset} and end is {@code offset + length}.
      *
      * An invocation of this method behaves in exactly the same way as the invocation
      * {@code wrap(buffer, beginning, length, DefaultTransportParameter.NO_PARAMETER)}.
      *
      * @param buffer the backed byte array
-     * @param beginning the offset of content in {@code buffer}
+     * @param offset the offset of content in {@code buffer}
      * @param length the length of content in {@code buffer} from {@code offset}
      * @throws NullPointerException if {@code buffer} is null.
      * @throws IllegalArgumentException if {@code beginning} or {@code length} is invalid.
      * @return the new {@code DecodeBuffer}
      */
-    public static CodecBuffer wrap(byte[] buffer, int beginning, int length) {
-        return new ArrayCodecBuffer(buffer, beginning, length);
+    public static CodecBuffer wrap(byte[] buffer, int offset, int length) {
+        return new ArrayCodecBuffer(buffer, offset, length);
     }
 
     /**
