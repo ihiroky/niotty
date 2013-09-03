@@ -117,24 +117,20 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
      */
     public void execute(Task task) {
         if (isInLoopThread()) {
-            execute(task, taskQueue_, delayQueue_);
+            try {
+                long waitTimeNanos = task.execute(TIME_UNIT);
+                if (waitTimeNanos > 0) {
+                    TaskFuture future = new TaskFuture(System.nanoTime() + waitTimeNanos, task);
+                    delayQueue_.offer(future);
+                } else if (waitTimeNanos == RETRY_IMMEDIATELY) {
+                    taskQueue_.offer(task);
+                }
+            } catch (Exception e) {
+                logger_.warn("[execute] Unexpected exception.", e);
+            }
         } else {
             taskQueue_.offer(task);
             wakeUp();
-        }
-    }
-
-    private void execute(Task task, Queue<Task> taskQueue, Queue<TaskFuture> delayQueue) {
-        try {
-            long waitTimeNanos = task.execute(TIME_UNIT);
-            if (waitTimeNanos > 0) {
-                long expire =  System.nanoTime() + waitTimeNanos;
-                delayQueue.offer(new TaskFuture(expire, task));
-            } else if (waitTimeNanos == RETRY_IMMEDIATELY) {
-                taskQueue.offer(task);
-            }
-        } catch (Exception e) {
-            logger_.warn("[execute] Unexpected exception.", e);
         }
     }
 
@@ -214,26 +210,37 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
 
     private long processDelayedTask(Queue<Task> taskQueue, Queue<TaskFuture> delayQueue) throws Exception {
         long now = System.nanoTime();
-        TaskFuture e;
+        TaskFuture f;
         for (;;) {
-            e = delayQueue.peek();
-            if (e == null || e.expire_ > now) {
+            f = delayQueue.peek();
+            if (f == null || f.expire() > now) {
                 break;
             }
-            if (!e.readyToDispatch()) {
+            if (!f.readyToDispatch()) {
                 delayQueue.poll();
                 continue;
             }
 
-            execute(e.task_, taskQueue, delayQueue);
-            e.dispatched();
-            delayQueue.poll();
+            try {
+                delayQueue.poll();
+                long waitTimeNanos = f.task_.execute(TIME_UNIT);
+                if (waitTimeNanos > 0) {
+                    f.setExpire(now + waitTimeNanos);
+                    delayQueue.offer(f);
+                    continue;
+                } else if (waitTimeNanos == RETRY_IMMEDIATELY) {
+                    taskQueue.offer(f.task_);
+                }
+                f.dispatched();
+            } catch (Exception ex) {
+                logger_.warn("[execute] Unexpected exception.", ex);
+            }
         }
-        while (e != null && e.isCancelled()) {
+        while (f != null && f.isCancelled()) {
             delayQueue.poll();
-            e = delayQueue.peek();
+            f = delayQueue.peek();
         }
-        return (e != null) ? e.expire_ - now : DONE;
+        return (f != null) ? f.expire() - now : DONE;
     }
 
     /**

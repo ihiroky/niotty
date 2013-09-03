@@ -78,7 +78,7 @@ public class TaskLoopTest {
         }
     }
 
-    @Test(timeout = 1000)
+    @Test//(timeout = 1000)
     public void testProcessTask_ExecuteAgainLater() throws Exception {
         executor_.execute(sut_);
         final AtomicInteger counter = new AtomicInteger();
