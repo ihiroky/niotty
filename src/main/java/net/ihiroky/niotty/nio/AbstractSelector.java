@@ -55,8 +55,8 @@ public abstract class AbstractSelector extends TaskLoop implements StoreStage<Bu
     @Override
     protected void poll(long timeout, TimeUnit timeUnit) throws Exception {
         long timeoutMillis = timeUnit.toMillis(timeout);
-        int selected = (timeoutMillis == 0) ? selector_.selectNow()
-                : (timeoutMillis > 0) ? selector_.select(timeoutMillis)
+        int selected = (timeout == 0) ? selector_.selectNow()
+                : (timeout > 0) ? selector_.select(timeoutMillis)
                 : selector_.select();
 
         if (selected > 0) {
