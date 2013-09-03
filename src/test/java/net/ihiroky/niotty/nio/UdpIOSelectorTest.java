@@ -1,6 +1,6 @@
 package net.ihiroky.niotty.nio;
 
-import net.ihiroky.niotty.TaskLoop;
+import net.ihiroky.niotty.Task;
 import net.ihiroky.niotty.TransportParameter;
 import net.ihiroky.niotty.buffer.ArrayCodecBuffer;
 import net.ihiroky.niotty.buffer.Buffers;
@@ -55,7 +55,7 @@ public class UdpIOSelectorTest {
         UdpIOSelector.FlushTask task = flushTaskCaptor_.getValue();
         task.execute(TimeUnit.MILLISECONDS);
 
-        assertThat(task.flushStatus_.waitTimeMillis_, is(TaskLoop.DONE));
+        assertThat(task.flushStatus_.waitTimeMillis_, is(Task.DONE));
         verify(transport).readyToWrite(Mockito.any(AttachedMessage.class));
     }
 

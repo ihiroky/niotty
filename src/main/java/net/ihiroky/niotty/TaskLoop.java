@@ -49,12 +49,6 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
 
     private Logger logger_ = LoggerFactory.getLogger(TaskLoop.class);
 
-    /** The value passed to {@link #poll(long, TimeUnit)} to indicate that the thread should wait without timeout. */
-    public static final long DONE = -1L;
-
-    /** The value passed to {@link #poll(long, TimeUnit)} to indicate that the thread should not wait. */
-    public static final long RETRY_IMMEDIATELY = 0L;
-
     private static final TimeUnit TIME_UNIT = TimeUnit.NANOSECONDS;
     private static final int INITIAL_TASK_BUFFER_SIZE = 1024;
     private static final int INITIAL_DELAY_QUEUE_SIZE = 1024;
@@ -122,7 +116,7 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
                 if (waitTimeNanos > 0) {
                     TaskFuture future = new TaskFuture(System.nanoTime() + waitTimeNanos, task);
                     delayQueue_.offer(future);
-                } else if (waitTimeNanos == RETRY_IMMEDIATELY) {
+                } else if (waitTimeNanos == Task.RETRY_IMMEDIATELY) {
                     taskQueue_.offer(task);
                 }
             } catch (Exception e) {
@@ -156,7 +150,7 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
                 notifyAll(); // Counter part: waitUntilStarted()
             }
 
-            long waitNanos = DONE;
+            long waitNanos = Task.DONE;
             while (thread_ != null) {
                 try {
                     poll(waitNanos, TIME_UNIT);
@@ -196,10 +190,10 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
                 break;
             }
             long retryDelay = task.execute(TIME_UNIT);
-            if (retryDelay <= DONE) {
+            if (retryDelay <= Task.DONE) {
                 continue;
             }
-            if (retryDelay == RETRY_IMMEDIATELY) {
+            if (retryDelay == Task.RETRY_IMMEDIATELY) {
                 queue.offer(task);
             } else { // if (retryDelay > 0) {
                 long expire = System.nanoTime() + retryDelay;
@@ -228,7 +222,7 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
                     f.setExpire(now + waitTimeNanos);
                     delayQueue.offer(f);
                     continue;
-                } else if (waitTimeNanos == RETRY_IMMEDIATELY) {
+                } else if (waitTimeNanos == Task.RETRY_IMMEDIATELY) {
                     taskQueue.offer(f.task_);
                 }
                 f.dispatched();
@@ -240,7 +234,7 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
             delayQueue.poll();
             f = delayQueue.peek();
         }
-        return (f != null) ? f.expire() - now : DONE;
+        return (f != null) ? f.expire() - now : Task.DONE;
     }
 
     /**

@@ -1,6 +1,6 @@
 package net.ihiroky.niotty.nio;
 
-import net.ihiroky.niotty.TaskLoop;
+import net.ihiroky.niotty.Task;
 import net.ihiroky.niotty.buffer.BufferSink;
 
 import java.io.IOException;
@@ -77,7 +77,7 @@ public interface WriteQueue {
         /**
          * The result of all data in the {@code WriteQueue} is flushed.
          */
-        FLUSHED(TaskLoop.DONE),
+        FLUSHED(Task.DONE),
 
         /**
          * The result of all data in the {@code WriteQueue} is not flushed.
@@ -87,7 +87,7 @@ public interface WriteQueue {
         /**
          * The result of data in the {@code WriteQueue} is remaining but not flushed because of some limitation.
          */
-        SKIP(TaskLoop.RETRY_IMMEDIATELY);
+        SKIP(Task.RETRY_IMMEDIATELY);
 
         /** a wait time for I/O round operation. */
         final long waitTimeMillis_;

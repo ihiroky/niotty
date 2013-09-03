@@ -5,7 +5,6 @@ import net.ihiroky.niotty.DefaultTransportFuture;
 import net.ihiroky.niotty.DefaultTransportStateEvent;
 import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.SuccessfulTransportFuture;
-import net.ihiroky.niotty.TaskLoop;
 import net.ihiroky.niotty.TaskLoopGroup;
 import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.TransportParameter;
@@ -57,7 +56,7 @@ public abstract class NioSocketTransport<S extends AbstractSelector> extends Abs
             public long execute(TimeUnit timeUnit) {
                 NioSocketTransport.this.doCloseSelectableChannel(false);
                 future.done();
-                return TaskLoop.DONE;
+                return DONE;
             }
         });
         return future;

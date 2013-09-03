@@ -67,7 +67,7 @@ public class TaskLoopTest {
             @Override
             public Long answer(InvocationOnMock invocation) throws Throwable {
                 executed[0] = true;
-                return TaskLoop.RETRY_IMMEDIATELY;
+                return Task.RETRY_IMMEDIATELY;
             }
         }).when(t).execute(TimeUnit.NANOSECONDS);
 
@@ -111,7 +111,7 @@ public class TaskLoopTest {
             @Override
             public Long answer(InvocationOnMock invocation) throws Throwable {
                 isInLoopThread[0] = sut_.isInLoopThread();
-                return TaskLoop.RETRY_IMMEDIATELY;
+                return Task.RETRY_IMMEDIATELY;
             }
         }).when(t).execute(TimeUnit.NANOSECONDS);
 
@@ -244,7 +244,7 @@ public class TaskLoopTest {
             @Override
             public Long answer(InvocationOnMock invocation) throws Throwable {
                 done[0] = true;
-                return TaskLoop.DONE;
+                return Task.DONE;
             }
         });
         Task task1 = mock(Task.class);
@@ -252,7 +252,7 @@ public class TaskLoopTest {
             @Override
             public Long answer(InvocationOnMock invocation) throws Throwable {
                 done[1] = true;
-                return TaskLoop.DONE;
+                return Task.DONE;
             }
         });
 
@@ -279,7 +279,7 @@ public class TaskLoopTest {
             @Override
             public Long answer(InvocationOnMock invocation) throws Throwable {
                 order.offer(0);
-                return TaskLoop.DONE;
+                return Task.DONE;
             }
         });
         when(task0.toString()).thenReturn("task0");
@@ -288,7 +288,7 @@ public class TaskLoopTest {
             @Override
             public Long answer(InvocationOnMock invocation) throws Throwable {
                 order.offer(1);
-                return TaskLoop.DONE;
+                return Task.DONE;
             }
         });
         when(task1.toString()).thenReturn("task1");
@@ -316,7 +316,7 @@ public class TaskLoopTest {
         when(task0.execute(TimeUnit.NANOSECONDS)).thenAnswer(new Answer<Long>() {
             @Override
             public Long answer(InvocationOnMock invocation) throws Throwable {
-                return TaskLoop.DONE;
+                return Task.DONE;
             }
         });
 
@@ -337,7 +337,7 @@ public class TaskLoopTest {
             @Override
             public Long answer(InvocationOnMock invocation) throws Throwable {
                 // System.out.println("task0");
-                return TaskLoop.DONE;
+                return Task.DONE;
             }
         });
         Task task1 = mock(Task.class);
@@ -345,7 +345,7 @@ public class TaskLoopTest {
             @Override
             public Long answer(InvocationOnMock invocation) throws Throwable {
                 // System.out.println("task1");
-                return TaskLoop.DONE;
+                return Task.DONE;
             }
         });
 

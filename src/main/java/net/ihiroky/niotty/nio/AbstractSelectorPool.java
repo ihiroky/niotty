@@ -1,7 +1,6 @@
 package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.Task;
-import net.ihiroky.niotty.TaskLoop;
 import net.ihiroky.niotty.TaskLoopGroup;
 
 import java.nio.channels.SelectableChannel;
@@ -21,7 +20,7 @@ public abstract class AbstractSelectorPool<S extends AbstractSelector> extends T
             @Override
             public long execute(TimeUnit timeUnit) {
                 target.register(channel, ops, transport);
-                return TaskLoop.DONE;
+                return DONE;
             }
         });
     }

@@ -1,6 +1,6 @@
 package net.ihiroky.niotty.nio;
 
-import net.ihiroky.niotty.TaskLoop;
+import net.ihiroky.niotty.Task;
 import net.ihiroky.niotty.buffer.ArrayCodecBuffer;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.ByteBufferCodecBuffer;
@@ -52,7 +52,7 @@ public class TcpIOSelectorTest {
         TcpIOSelector.FlushTask task = flushTaskCaptor_.getValue();
         task.execute(TimeUnit.MILLISECONDS);
 
-        assertThat(task.flushStatus_.waitTimeMillis_, is(TaskLoop.DONE));
+        assertThat(task.flushStatus_.waitTimeMillis_, is(Task.DONE));
         verify(transport).readyToWrite(Mockito.any(AttachedMessage.class));
     }
 
@@ -138,7 +138,7 @@ public class TcpIOSelectorTest {
                 return 10;
             }
         });
-        NioSocketTransport transport = mock(NioSocketTransport.class);
+        NioSocketTransport<?> transport = mock(NioSocketTransport.class);
         SelectionKey key = spy(new SelectionKeyMock());
         when(key.channel()).thenReturn(channel);
         key.attach(transport);
@@ -164,7 +164,7 @@ public class TcpIOSelectorTest {
                 return 10;
             }
         });
-        NioSocketTransport transport = mock(NioSocketTransport.class);
+        NioSocketTransport<?> transport = mock(NioSocketTransport.class);
         SelectionKey key = spy(new SelectionKeyMock());
         when(key.channel()).thenReturn(channel);
         key.attach(transport);

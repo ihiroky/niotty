@@ -345,7 +345,7 @@ public abstract class AbstractPipeline<S, L extends TaskLoop> implements Pipelin
             @Override
             public long execute(TimeUnit timeUnit) throws Exception {
                 next.fire(input);
-                return TaskLoop.DONE;
+                return DONE;
             }
         });
     }
@@ -356,7 +356,7 @@ public abstract class AbstractPipeline<S, L extends TaskLoop> implements Pipelin
             @Override
             public long execute(TimeUnit timeUnit) throws Exception {
                 next.fire(input, parameter);
-                return TaskLoop.DONE;
+                return DONE;
             }
         });
     }
@@ -368,7 +368,7 @@ public abstract class AbstractPipeline<S, L extends TaskLoop> implements Pipelin
             public long execute(TimeUnit timeUnit) throws Exception {
                 next.fire(event);
                 next.proceed(event);
-                return TaskLoop.DONE;
+                return DONE;
             }
         });
 
@@ -425,7 +425,7 @@ public abstract class AbstractPipeline<S, L extends TaskLoop> implements Pipelin
         static final TaskFuture NULL_FUTURE = new TaskFuture(-1L, new Task() {
             @Override
             public long execute(TimeUnit timeUnit) throws Exception {
-                return TaskLoop.DONE;
+                return DONE;
             }
         });
         static final TaskLoop NULL_TASK_LOOP = new TaskLoop() {

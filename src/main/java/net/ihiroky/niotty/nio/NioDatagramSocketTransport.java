@@ -5,7 +5,6 @@ import net.ihiroky.niotty.DefaultTransportParameter;
 import net.ihiroky.niotty.FailedTransportFuture;
 import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.SuccessfulTransportFuture;
-import net.ihiroky.niotty.TaskLoop;
 import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.TransportState;
 import net.ihiroky.niotty.TransportStateEvent;
@@ -158,7 +157,7 @@ public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector
                 } catch (IOException ioe) {
                     future.setThrowable(ioe);
                 }
-                return TaskLoop.DONE;
+                return DONE;
             }
         });
         return future;
@@ -191,7 +190,7 @@ public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector
                 } catch (IOException ioe) {
                     future.setThrowable(ioe);
                 }
-                return TaskLoop.DONE;
+                return DONE;
             }
         });
         return future;

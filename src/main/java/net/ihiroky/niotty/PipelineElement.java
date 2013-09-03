@@ -58,7 +58,7 @@ public abstract class PipelineElement<I, O> implements StageContext<O>, TaskSele
             @Override
             public long execute(TimeUnit timeUnit) throws Exception {
                 next_.fire(output);
-                return TaskLoop.DONE;
+                return DONE;
             }
         });
     }
@@ -73,7 +73,7 @@ public abstract class PipelineElement<I, O> implements StageContext<O>, TaskSele
             @Override
             public long execute(TimeUnit timeUnit) throws Exception {
                 next_.fire(output, parameter);
-                return TaskLoop.DONE;
+                return DONE;
             }
         });
     }
@@ -84,7 +84,7 @@ public abstract class PipelineElement<I, O> implements StageContext<O>, TaskSele
             public long execute(TimeUnit timeUnit) throws Exception {
                 next_.fire(event);
                 next_.proceed(event);
-                return TaskLoop.DONE;
+                return DONE;
             }
         });
     }

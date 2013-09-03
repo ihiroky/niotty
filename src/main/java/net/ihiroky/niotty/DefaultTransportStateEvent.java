@@ -13,6 +13,6 @@ public class DefaultTransportStateEvent extends TransportStateEvent {
 
     @Override
     public long execute(TimeUnit timeUnit) throws Exception {
-        return TaskLoop.DONE;
+        return DONE;
     }
 }
