@@ -253,9 +253,14 @@ public abstract class AbstractPipeline<S, L extends TaskLoop> implements Pipelin
         Class<?> prevOutputClass = null;
         Class<?> prevStageClass = null;
         for (PipelineElementIterator i = new PipelineElementIterator(head_); i.hasNext();) {
-            Object stage = i.next().stage();
+            PipelineElement e = i.next();
+            Object stage = e.stage();
             if (stage == null) {
-                logger_.debug("[verifyStageType] The stage of {} is null.");
+                if (e instanceof Tail) {
+                    logger_.debug("[verifyStageType] The tail stage: {}", stage);
+                } else {
+                    logger_.debug("[verifyStageType] The stage of {} is null.", e);
+                }
                 continue;
             }
             Class<?> stageClass = stage.getClass();
