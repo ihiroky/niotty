@@ -89,6 +89,7 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
 
         if (isInLoopThread()) {
             delayQueue_.offer(future);
+            wakeUp();
             return future;
         }
 
@@ -150,12 +151,12 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
                 notifyAll(); // Counter part: waitUntilStarted()
             }
 
-            long waitNanos = Task.DONE;
+            long delayNanos = Task.DONE;
             while (thread_ != null) {
                 try {
-                    poll(waitNanos, TIME_UNIT);
+                    poll(taskQueue.isEmpty() ? delayNanos : Task.RETRY_IMMEDIATELY, TIME_UNIT);
                     processTasks(taskQueue, taskBuffer, delayQueue);
-                    waitNanos = processDelayedTask(taskQueue, delayQueue);
+                    delayNanos = processDelayedTask(taskQueue, delayQueue);
                 } catch (InterruptedException ie) {
                     logger_.debug("[run] Interrupted.", ie);
                     break;
@@ -175,10 +176,11 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
         }
     }
 
-    private void processTasks(Queue<Task> queue, Deque<Task> buffer, Queue<TaskFuture> delayQueue) throws Exception {
+    private void processTasks(
+            Queue<Task> taskQueue, Deque<Task> buffer, Queue<TaskFuture> delayQueue) throws Exception {
         Task task;
         for (;;) {
-            task = queue.poll();
+            task = taskQueue.poll();
             if (task == null) {
                 break;
             }
@@ -194,7 +196,7 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
                 continue;
             }
             if (retryDelay == Task.RETRY_IMMEDIATELY) {
-                queue.offer(task);
+                taskQueue.offer(task);
             } else { // if (retryDelay > 0) {
                 long expire = System.nanoTime() + retryDelay;
                 delayQueue.offer(new TaskFuture(expire, task));
