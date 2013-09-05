@@ -1,9 +1,6 @@
 package net.ihiroky.niotty;
 
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * A implementation of {@link TaskLoop}. Wait operation depends on {@code java.util.ReentrantLock}.
@@ -11,14 +8,11 @@ import java.util.concurrent.locks.ReentrantLock;
 public class DefaultTaskLoop extends TaskLoop {
 
     private boolean signaled_;
-    private final Lock lock_;
-    private final Condition condition_;
+    private final Object lock_;
 
     public DefaultTaskLoop() {
-        super();
         signaled_ = false;
-        lock_ = new ReentrantLock();
-        condition_ = lock_.newCondition();
+        lock_ = new Object();
     }
 
     @Override
@@ -31,38 +25,23 @@ public class DefaultTaskLoop extends TaskLoop {
 
     @Override
     protected void poll(long timeout, TimeUnit timeUnit) throws InterruptedException {
-        long timeoutNanos = timeUnit.toNanos(timeout);
-        if (timeoutNanos > 0) {
-            lock_.lock();
-            try {
-                while (!signaled_ && timeoutNanos <= 0) {
-                    timeoutNanos = condition_.awaitNanos(timeoutNanos);
-                }
-                signaled_ = false;
-            } finally {
-                lock_.unlock();
+        long start = System.nanoTime();
+        synchronized (lock_) {
+            while (!signaled_ && timeout > 0) {
+                timeUnit.timedWait(lock_, timeout);
+                long now = System.nanoTime();
+                timeout -= timeUnit.convert(now - start, TimeUnit.NANOSECONDS);
+                start = now;
             }
-        } else if (timeoutNanos < 0) {
-            lock_.lock();
-            try {
-                while (!signaled_) {
-                    condition_.await();
-                }
-                signaled_ = false;
-            } finally {
-                lock_.unlock();
-            }
+            signaled_ = false;
         }
     }
 
     @Override
     protected void wakeUp() {
-        lock_.lock();
-        try {
+        synchronized (lock_) {
             signaled_ = true;
-            condition_.signal();
-        } finally {
-            lock_.unlock();
+            lock_.notify();
         }
     }
 }

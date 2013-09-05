@@ -29,26 +29,14 @@ class TaskLoopMock extends TaskLoop {
     @Override
     protected void poll(long timeout, TimeUnit timeUnit) throws Exception {
         long timeoutNanos = timeUnit.toNanos(timeout);
-        if (timeoutNanos > 0) {
-            lock_.lock();
-            try {
-                while (!signaled_ && timeoutNanos <= 0) {
-                    timeoutNanos = condition_.awaitNanos(timeoutNanos);
-                }
-                signaled_ = false;
-            } finally {
-                lock_.unlock();
+        lock_.lock();
+        try {
+            while (!signaled_ && timeoutNanos > 0) {
+                timeoutNanos = condition_.awaitNanos(timeoutNanos);
             }
-        } else if (timeoutNanos < 0) {
-            lock_.lock();
-            try {
-                while (!signaled_) {
-                    condition_.await();
-                }
-                signaled_ = false;
-            } finally {
-                lock_.unlock();
-            }
+            signaled_ = false;
+        } finally {
+            lock_.unlock();
         }
     }
 

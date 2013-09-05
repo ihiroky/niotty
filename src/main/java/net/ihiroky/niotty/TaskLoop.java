@@ -114,11 +114,20 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
         if (isInLoopThread()) {
             try {
                 long waitTimeNanos = task.execute(TIME_UNIT);
+                if (waitTimeNanos == Long.MAX_VALUE) {
+                    return;
+                }
                 if (waitTimeNanos > 0) {
-                    TaskFuture future = new TaskFuture(System.nanoTime() + waitTimeNanos, task);
-                    delayQueue_.offer(future);
-                } else if (waitTimeNanos == Task.RETRY_IMMEDIATELY) {
+                    long expire = System.nanoTime() + waitTimeNanos;
+                    if (expire < 0) {
+                        logger_.warn("[execute] The expire for {} is overflowed. Skip to schedule.", task);
+                        return;
+                    }
+                    delayQueue_.offer(new TaskFuture(expire, task));
+                    wakeUp();
+                } else {
                     taskQueue_.offer(task);
+                    wakeUp();
                 }
             } catch (Exception e) {
                 logger_.warn("[execute] Unexpected exception.", e);
@@ -151,7 +160,7 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
                 notifyAll(); // Counter part: waitUntilStarted()
             }
 
-            long delayNanos = Task.DONE;
+            long delayNanos = Long.MAX_VALUE;
             while (thread_ != null) {
                 try {
                     poll(taskQueue.isEmpty() ? delayNanos : Task.RETRY_IMMEDIATELY, TIME_UNIT);
@@ -192,14 +201,18 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
                 break;
             }
             long retryDelay = task.execute(TIME_UNIT);
-            if (retryDelay <= Task.DONE) {
+            if (retryDelay == Long.MAX_VALUE) {
                 continue;
             }
-            if (retryDelay == Task.RETRY_IMMEDIATELY) {
-                taskQueue.offer(task);
-            } else { // if (retryDelay > 0) {
+            if (retryDelay > 0) {
                 long expire = System.nanoTime() + retryDelay;
+                if (expire < 0) {
+                    logger_.warn("[processTask] The expire for {} is overflowed. Skip to schedule.", task);
+                    continue;
+                }
                 delayQueue.offer(new TaskFuture(expire, task));
+            } else {
+                taskQueue.offer(task);
             }
         }
     }
@@ -220,11 +233,19 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
             try {
                 delayQueue.poll();
                 long waitTimeNanos = f.task_.execute(TIME_UNIT);
-                if (waitTimeNanos > 0) {
-                    f.setExpire(now + waitTimeNanos);
-                    delayQueue.offer(f);
+                if (waitTimeNanos == Long.MAX_VALUE) {
+                    f.dispatched();
                     continue;
-                } else if (waitTimeNanos == Task.RETRY_IMMEDIATELY) {
+                }
+                if (waitTimeNanos > 0) {
+                    long expire = now + waitTimeNanos;
+                    if (expire > 0) {
+                        f.setExpire(expire);
+                        delayQueue.offer(f);
+                        continue;
+                    }
+                    logger_.warn("[processDelayedTask] The expire for {} is overflowed. Skip to schedule.", f.task_);
+                } else {
                     taskQueue.offer(f.task_);
                 }
                 f.dispatched();
@@ -236,7 +257,7 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
             delayQueue.poll();
             f = delayQueue.peek();
         }
-        return (f != null) ? f.expire() - now : Task.DONE;
+        return (f != null) ? f.expire() - now : Long.MAX_VALUE;
     }
 
     /**

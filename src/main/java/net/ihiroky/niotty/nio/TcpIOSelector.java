@@ -111,7 +111,8 @@ public class TcpIOSelector extends AbstractSelector {
                     || flushStatus_ == WriteQueue.FlushStatus.FLUSHING) {
                 try {
                     flushStatus_ = transport_.flush();
-                    return timeUnit.convert(flushStatus_.waitTimeMillis_, TimeUnit.MILLISECONDS);
+                    return (flushStatus_ == WriteQueue.FlushStatus.FLUSHED)
+                            ? DONE : timeUnit.convert(flushStatus_.waitTimeMillis_, TimeUnit.MILLISECONDS);
                 } catch (IOException ioe) {
                     logger_.error("failed to flush buffer to " + transport_, ioe);
                     transport_.closeSelectableChannel();

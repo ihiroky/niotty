@@ -122,7 +122,8 @@ public class UdpIOSelector extends AbstractSelector {
                     || flushStatus_ == WriteQueue.FlushStatus.FLUSHING) {
                 try {
                     flushStatus_ = transport_.flush(selector_.writeBuffer_);
-                    return timeUnit.convert(flushStatus_.waitTimeMillis_, TimeUnit.MILLISECONDS);
+                    return (flushStatus_ == WriteQueue.FlushStatus.FLUSHED)
+                            ? DONE : timeUnit.convert(flushStatus_.waitTimeMillis_, TimeUnit.MILLISECONDS);
                 } catch (IOException ioe) {
                     selector_.logger_.error("failed to flush buffer to " + transport_, ioe);
                     transport_.closeSelectableChannel();
