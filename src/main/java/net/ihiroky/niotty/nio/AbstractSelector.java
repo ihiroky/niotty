@@ -16,6 +16,7 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Created on 13/01/10, 17:56
@@ -25,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 public abstract class AbstractSelector extends TaskLoop implements StoreStage<BufferSink, Void> {
 
     private Selector selector_;
+    private AtomicBoolean wakenUp_;
 
     private Logger logger_ = LoggerFactory.getLogger(AbstractSelector.class);
 
@@ -32,7 +34,7 @@ public abstract class AbstractSelector extends TaskLoop implements StoreStage<Bu
      * Creates a new instance.
      */
     protected AbstractSelector() {
-        super();
+        wakenUp_ = new AtomicBoolean();
     }
 
     @Override
@@ -57,7 +59,7 @@ public abstract class AbstractSelector extends TaskLoop implements StoreStage<Bu
         int selected = (timeout == 0)
                 ? selector_.selectNow()
                 : selector_.select(Math.max(timeUnit.toMillis(timeout), 1));
-
+        wakenUp_.set(false);
         if (selected > 0) {
             processSelectedKeys(selector_.selectedKeys());
         }
@@ -65,7 +67,9 @@ public abstract class AbstractSelector extends TaskLoop implements StoreStage<Bu
 
     @Override
     protected void wakeUp() {
-        selector_.wakeup();
+        if (wakenUp_.compareAndSet(false, true)) {
+            selector_.wakeup();
+        }
     }
 
     protected abstract void processSelectedKeys(Set<SelectionKey> selectedKeys) throws Exception;
