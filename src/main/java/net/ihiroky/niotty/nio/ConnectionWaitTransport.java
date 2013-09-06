@@ -3,8 +3,11 @@ package net.ihiroky.niotty.nio;
 import net.ihiroky.niotty.DefaultTransportFuture;
 import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.TransportFuture;
+import net.ihiroky.niotty.buffer.BufferSink;
 
+import java.io.IOException;
 import java.net.SocketAddress;
+import java.nio.ByteBuffer;
 
 /**
  * @author Hiroki Itoh
@@ -55,6 +58,16 @@ public class ConnectionWaitTransport extends NioSocketTransport<ConnectSelector>
 
     @Override
     public boolean isOpen() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    void flush(ByteBuffer writeBuffer) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    void readyToWrite(AttachedMessage<BufferSink> message) {
         throw new UnsupportedOperationException();
     }
 }

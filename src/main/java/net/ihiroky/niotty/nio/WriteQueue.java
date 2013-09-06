@@ -87,7 +87,7 @@ public interface WriteQueue {
         /**
          * The result of data in the {@code WriteQueue} is remaining but not flushed because of some limitation.
          */
-        SKIP(Task.RETRY_IMMEDIATELY);
+        SKIPPED(Task.RETRY_IMMEDIATELY);
 
         /** a wait time for I/O round operation. */
         final long waitTimeMillis_;

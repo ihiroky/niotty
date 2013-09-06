@@ -11,6 +11,7 @@ import net.ihiroky.niotty.TransportAggregateSupport;
 import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.TransportParameter;
 import net.ihiroky.niotty.TransportState;
+import net.ihiroky.niotty.buffer.BufferSink;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,6 +19,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.SocketOption;
+import java.nio.ByteBuffer;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
@@ -183,5 +185,15 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
 
     public Set<Transport> childSet() {
         return childAggregate_.childSet();
+    }
+
+    @Override
+    void flush(ByteBuffer writeBuffer) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    void readyToWrite(AttachedMessage<BufferSink> message) {
+        throw new UnsupportedOperationException();
     }
 }

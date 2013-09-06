@@ -167,7 +167,7 @@ public class DeficitRoundRobinWriteQueue implements WriteQueue {
                 queueIndex_ = i;
                 lastFlushedBytes_ = flushedBytes;
                 return status;
-            } else if (status == FlushStatus.SKIP) {
+            } else if (status == FlushStatus.SKIPPED) {
                 existsSkipped = true;
             }
         }
@@ -175,13 +175,13 @@ public class DeficitRoundRobinWriteQueue implements WriteQueue {
 
         // finish if baseQueue_ is already checked.
         if (queueIndex_ == QUEUE_INDEX_BASE) {
-            return existsSkipped ? FlushStatus.SKIP : FlushStatus.FLUSHED;
+            return existsSkipped ? FlushStatus.SKIPPED : FlushStatus.FLUSHED;
         }
 
         // one more round if this method starts in queueList.
         queueIndex_ = QUEUE_INDEX_BASE;
         return baseQueue_.isEmpty()
-                ? (existsSkipped ? FlushStatus.SKIP : FlushStatus.FLUSHED)
+                ? (existsSkipped ? FlushStatus.SKIPPED : FlushStatus.FLUSHED)
                 : flushTo(delegate, flushedBytes);
     }
 

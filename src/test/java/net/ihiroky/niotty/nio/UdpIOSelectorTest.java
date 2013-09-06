@@ -1,13 +1,14 @@
 package net.ihiroky.niotty.nio;
 
+import net.ihiroky.niotty.DefaultTransportParameter;
+import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.Task;
 import net.ihiroky.niotty.TransportParameter;
 import net.ihiroky.niotty.buffer.ArrayCodecBuffer;
+import net.ihiroky.niotty.buffer.BufferSink;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.ByteBufferCodecBuffer;
 import net.ihiroky.niotty.buffer.CodecBuffer;
-import net.ihiroky.niotty.codec.StageContextMock;
-import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
@@ -35,98 +36,58 @@ import static org.mockito.Mockito.*;
  */
 public class UdpIOSelectorTest {
 
-    private UdpIOSelector sut_;
-    private ArgumentCaptor<UdpIOSelector.FlushTask> flushTaskCaptor_;
+    @Test
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public void testStore_FlushIfNotOpWrite() throws Exception {
+        NioDatagramSocketTransport transport = mock(NioDatagramSocketTransport.class);
+        when(transport.containsInterestOp(anyInt())).thenReturn(false);
+        UdpIOSelector sut = spy(new UdpIOSelector(256, 256, false, false));
+        doAnswer(new Answer<Object>() {
+            @Override
+            public Object answer(InvocationOnMock invocation) throws Throwable {
+                Task task = (Task) invocation.getArguments()[0];
+                task.execute(TimeUnit.NANOSECONDS);
+                return null;
+            }
+        }).when(sut).execute(Mockito.any(Task.class));
+        StageContext<Void> context = mock(StageContext.class);
+        when(context.transport()).thenReturn(transport);
+        when(context.transportParameter()).thenReturn(new DefaultTransportParameter(0));
+        BufferSink data = Buffers.newCodecBuffer(0);
 
-    @Before
-    public void setUp() throws Exception {
-        sut_ = spy(new UdpIOSelector(256, 256, false, false));
-        flushTaskCaptor_ = ArgumentCaptor.forClass(UdpIOSelector.FlushTask.class);
-        doNothing().when(sut_).execute(flushTaskCaptor_.capture());
+        sut.store(context, data);
+
+        ArgumentCaptor<AttachedMessage> captor = ArgumentCaptor.forClass(AttachedMessage.class);
+        verify(transport).readyToWrite(captor.capture());
+        assertThat(captor.getValue().message(), is((Object) data));
+        verify(transport).flush(Mockito.any(ByteBuffer.class));
     }
 
     @Test
-    @SuppressWarnings("unchecked")
-    public void testStore_Flushed() throws Exception {
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public void testStore_NotFlushIfOpWrite() throws Exception {
         NioDatagramSocketTransport transport = mock(NioDatagramSocketTransport.class);
-        doReturn(WriteQueue.FlushStatus.FLUSHED).when(transport).flush(Mockito.any(ByteBuffer.class));
+        when(transport.containsInterestOp(anyInt())).thenReturn(true);
+        UdpIOSelector sut = spy(new UdpIOSelector(256, 256, false, false));
+        doAnswer(new Answer<Object>() {
+            @Override
+            public Object answer(InvocationOnMock invocation) throws Throwable {
+                Task task = (Task) invocation.getArguments()[0];
+                task.execute(TimeUnit.NANOSECONDS);
+                return null;
+            }
+        }).when(sut).execute(Mockito.any(Task.class));
+        StageContext<Void> context = mock(StageContext.class);
+        when(context.transport()).thenReturn(transport);
+        when(context.transportParameter()).thenReturn(new DefaultTransportParameter(0));
+        BufferSink data = Buffers.newCodecBuffer(0);
 
-        sut_.store(new StageContextMock<Void>(transport, null), Buffers.newCodecBuffer(0));
-        UdpIOSelector.FlushTask task = flushTaskCaptor_.getValue();
-        task.execute(TimeUnit.MILLISECONDS);
+        sut.store(context, data);
 
-        assertThat(task.flushStatus_.waitTimeMillis_, is(Task.DONE));
-        verify(transport).readyToWrite(Mockito.any(AttachedMessage.class));
-    }
-
-    @Test
-    @SuppressWarnings("unchecked")
-    public void testStore_FollowingFlushReturnsFlushedOnceFlushingForTheSameTransport() throws Exception {
-        NioDatagramSocketTransport transport = mock(NioDatagramSocketTransport.class);
-        doReturn(WriteQueue.FlushStatus.FLUSHING).when(transport).flush(Mockito.any(ByteBuffer.class));
-
-        doReturn(null).when(transport).flushStatus();
-        sut_.store(new StageContextMock<Void>(transport, null), Buffers.newCodecBuffer(0));
-        UdpIOSelector.FlushTask task0 = flushTaskCaptor_.getValue();
-        long firstWait = task0.execute(TimeUnit.MILLISECONDS);
-
-        doReturn(WriteQueue.FlushStatus.FLUSHING).when(transport).flushStatus();
-        sut_.store(new StageContextMock<Void>(transport, null), Buffers.newCodecBuffer(0));
-        UdpIOSelector.FlushTask task1 = flushTaskCaptor_.getValue();
-        long secondWait = task1.execute(TimeUnit.MILLISECONDS);
-
-        sut_.store(new StageContextMock<Void>(transport, null), Buffers.newCodecBuffer(0));
-        UdpIOSelector.FlushTask task2 = flushTaskCaptor_.getValue();
-        long thirdWait = task2.execute(TimeUnit.MILLISECONDS);
-
-        assertThat(firstWait, is(WriteQueue.FlushStatus.FLUSHING.waitTimeMillis_));
-        assertThat(secondWait, is(WriteQueue.FlushStatus.FLUSHED.waitTimeMillis_));
-        assertThat(thirdWait, is(WriteQueue.FlushStatus.FLUSHED.waitTimeMillis_));
-        verify(transport, times(3)).readyToWrite(Mockito.any(AttachedMessage.class));
-    }
-
-    @Test
-    @SuppressWarnings("unchecked")
-    public void testStore_FollowingFlushReturnsFlushingOnceFlushingForTheSameFlushTask() throws Exception {
-        NioDatagramSocketTransport transport = mock(NioDatagramSocketTransport.class);
-        doReturn(WriteQueue.FlushStatus.FLUSHING).when(transport).flush(Mockito.any(ByteBuffer.class));
-
-        doReturn(null).when(transport).flushStatus();
-        sut_.store(new StageContextMock<Void>(transport, null), Buffers.newCodecBuffer(0));
-        UdpIOSelector.FlushTask task0 = flushTaskCaptor_.getValue();
-        long firstWait = task0.execute(TimeUnit.MILLISECONDS);
-
-        doReturn(WriteQueue.FlushStatus.FLUSHING).when(transport).flushStatus();
-        long secondWait = task0.execute(TimeUnit.MILLISECONDS);
-        long thirdWait = task0.execute(TimeUnit.MILLISECONDS);
-
-        assertThat(firstWait, is(WriteQueue.FlushStatus.FLUSHING.waitTimeMillis_));
-        assertThat(secondWait, is(WriteQueue.FlushStatus.FLUSHING.waitTimeMillis_));
-        assertThat(thirdWait, is(WriteQueue.FlushStatus.FLUSHING.waitTimeMillis_));
-    }
-
-    @Test
-    @SuppressWarnings("unchecked")
-    public void testStore_FollowingFlushReturnsFlushedIfFlushStatusChangesForTheSameFlushTask() throws Exception {
-        NioDatagramSocketTransport transport = mock(NioDatagramSocketTransport.class);
-
-        doReturn(WriteQueue.FlushStatus.FLUSHING).when(transport).flush(Mockito.any(ByteBuffer.class));
-        doReturn(null).when(transport).flushStatus();
-        sut_.store(new StageContextMock<Void>(transport, null), Buffers.newCodecBuffer(0));
-
-        UdpIOSelector.FlushTask task0 = flushTaskCaptor_.getValue();
-        long firstWait = task0.execute(TimeUnit.MILLISECONDS);
-
-        doReturn(WriteQueue.FlushStatus.FLUSHING).when(transport).flushStatus();
-        long secondWait = task0.execute(TimeUnit.MILLISECONDS);
-
-        doReturn(WriteQueue.FlushStatus.FLUSHED).when(transport).flush(Mockito.any(ByteBuffer.class));
-        long thirdWait = task0.execute(TimeUnit.MILLISECONDS);
-
-        assertThat(firstWait, is(WriteQueue.FlushStatus.FLUSHING.waitTimeMillis_));
-        assertThat(secondWait, is(WriteQueue.FlushStatus.FLUSHING.waitTimeMillis_));
-        assertThat(thirdWait, is(WriteQueue.FlushStatus.FLUSHED.waitTimeMillis_));
-        verify(transport).readyToWrite(Mockito.any(AttachedMessage.class));
+        ArgumentCaptor<AttachedMessage> captor = ArgumentCaptor.forClass(AttachedMessage.class);
+        verify(transport).readyToWrite(captor.capture());
+        assertThat(captor.getValue().message(), is((Object) data));
+        verify(transport, never()).flush(Mockito.any(ByteBuffer.class));
     }
 
     @Test

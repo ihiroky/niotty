@@ -6,6 +6,7 @@ import net.ihiroky.niotty.DefaultTransportStateEvent;
 import net.ihiroky.niotty.FailedTransportFuture;
 import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.SuccessfulTransportFuture;
+import net.ihiroky.niotty.Task;
 import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.TransportState;
 import net.ihiroky.niotty.TransportStateEvent;
@@ -15,6 +16,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.SocketOption;
+import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.Objects;
@@ -28,7 +30,6 @@ public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> 
     private final SocketChannel clientChannel_;
     private final Pools pools_;
     private final WriteQueue writeQueue_;
-    private WriteQueue.FlushStatus flushStatus_;
 
     private static class Pools {
         final ConnectSelectorPool connectorPool_;
@@ -242,21 +243,38 @@ public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> 
         return pools_.ioPool_;
     }
 
+    @Override
     void readyToWrite(AttachedMessage<BufferSink> message) {
         writeQueue_.offer(message);
-    }
-
-    WriteQueue.FlushStatus flush() throws IOException {
-        flushStatus_ = writeQueue_.flushTo(clientChannel_);
-        return flushStatus_;
-    }
-
-    WriteQueue.FlushStatus flushStatus() {
-        return flushStatus_;
     }
 
     @Override
     void onCloseSelectableChannel() {
         writeQueue_.clear();
+    }
+
+    @Override
+    void flush(ByteBuffer writeBuffer) throws IOException {
+        WriteQueue.FlushStatus status = writeQueue_.flushTo(clientChannel_);
+        switch (status) {
+            case FLUSHED:
+                clearInterestOp(SelectionKey.OP_WRITE);
+                return;
+            case FLUSHING:
+                taskLoop().schedule(new Task() {
+                    @Override
+                    public long execute(TimeUnit timeUnit) throws Exception {
+                        setInterestOp(SelectionKey.OP_WRITE);
+                        return DONE;
+                    }
+                }, status.waitTimeMillis_, TimeUnit.MILLISECONDS);
+                return;
+            case SKIPPED:
+                setInterestOp(SelectionKey.OP_WRITE);
+                return;
+            default:
+                throw new AssertionError("Unexpected flush status: " + status);
+        }
+
     }
 }

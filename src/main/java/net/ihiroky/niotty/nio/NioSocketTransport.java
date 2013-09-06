@@ -10,8 +10,10 @@ import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.TransportParameter;
 import net.ihiroky.niotty.TransportState;
 import net.ihiroky.niotty.TransportStateEvent;
+import net.ihiroky.niotty.buffer.BufferSink;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.util.Objects;
@@ -112,4 +114,26 @@ public abstract class NioSocketTransport<S extends AbstractSelector> extends Abs
     final SelectionKey key() {
         return key_;
     }
+
+    void setInterestOp(int op) {
+        int interestOps = key_.interestOps();
+        if ((interestOps & op) == 0) {
+            key_.interestOps(interestOps | op);
+        }
+    }
+
+    void clearInterestOp(int op) {
+        int interestOps = key_.interestOps();
+        if ((interestOps & op) != 0) {
+            key_.interestOps(interestOps & ~op);
+        }
+    }
+
+    boolean containsInterestOp(int op) {
+        return (key_.interestOps() & op) != 0;
+    }
+
+    abstract void readyToWrite(AttachedMessage<BufferSink> message);
+
+    abstract void flush(ByteBuffer writeBuffer) throws IOException;
 }

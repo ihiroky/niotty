@@ -154,7 +154,7 @@ public class DeficitRoundRobinWriteQueueTest {
                 new DefaultTransportParameter(1)));
         WriteQueue.FlushStatus status = sut.flushTo(channel);
 
-        assertThat(status, is(WriteQueue.FlushStatus.SKIP));
+        assertThat(status, is(WriteQueue.FlushStatus.SKIPPED));
         assertThat(sut.lastFlushedBytes(), is(4 + 8));
         assertThat(sut.queueIndex(), is(-1));
         assertThat(sut.deficitCounter(0), is(4)); // queue -1 input * 1f

@@ -49,7 +49,7 @@ public class SimpleWriteQueue implements WriteQueue {
             limitBytes -= beforeTransfer;
             if (limitBytes < 0) {
                 lastFlushedBytes_ = flushedBytes;
-                return FlushStatus.SKIP;
+                return FlushStatus.SKIPPED;
             }
             if (buffer.transferTo(channel)) {
                 flushedBytes += beforeTransfer;
@@ -57,7 +57,7 @@ public class SimpleWriteQueue implements WriteQueue {
                 queue_.poll();
                 if (flushedBytes >= limitBytes) {
                     lastFlushedBytes_ = flushedBytes;
-                    return queue_.isEmpty() ? FlushStatus.FLUSHED : FlushStatus.SKIP;
+                    return queue_.isEmpty() ? FlushStatus.FLUSHED : FlushStatus.SKIPPED;
                 }
             } else {
                 lastFlushedBytes_ = flushedBytes + (beforeTransfer - buffer.remainingBytes());
@@ -97,11 +97,11 @@ public class SimpleWriteQueue implements WriteQueue {
                 queue_.poll();
                 if (flushedBytes >= limitBytes) {
                     lastFlushedBytes_ = flushedBytes;
-                    return queue_.isEmpty() ? FlushStatus.FLUSHED : FlushStatus.SKIP;
+                    return queue_.isEmpty() ? FlushStatus.FLUSHED : FlushStatus.SKIPPED;
                 }
             } else {
                 lastFlushedBytes_ = flushedBytes;
-                return FlushStatus.SKIP;
+                return FlushStatus.SKIPPED;
             }
         }
     }

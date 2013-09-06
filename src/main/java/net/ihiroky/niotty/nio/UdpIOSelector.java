@@ -55,6 +55,12 @@ public class UdpIOSelector extends AbstractSelector {
             DatagramChannel channel = (DatagramChannel) key.channel();
             NioSocketTransport<?> transport = (NioSocketTransport<?>) key.attachment();
             try {
+                if (key.isWritable()) {
+                    transport.flush(writeBuffer_);
+                    continue;
+                }
+
+                // key.isReadable();
                 if (channel.isConnected()) {
                     read = channel.read(localByteBuffer);
                     if (read == -1) {
@@ -101,35 +107,14 @@ public class UdpIOSelector extends AbstractSelector {
     public void store(StageContext<Void> context, BufferSink input) {
         final NioDatagramSocketTransport transport = (NioDatagramSocketTransport) context.transport();
         transport.readyToWrite(new AttachedMessage<>(input, context.transportParameter()));
-        execute(new FlushTask(transport, this));
-    }
-
-    static class FlushTask implements Task {
-
-        final UdpIOSelector selector_;
-        final NioDatagramSocketTransport transport_;
-        WriteQueue.FlushStatus flushStatus_;
-
-        FlushTask(NioDatagramSocketTransport transport, UdpIOSelector selector) {
-            selector_ = selector;
-            transport_ = transport;
-        }
-
-        public long execute(TimeUnit timeUnit) throws Exception {
-            // Prevent tasks from writing data to stuck queue
-            // Only the task which flushing can flush. The others do nothing.
-            if (transport_.flushStatus() != WriteQueue.FlushStatus.FLUSHING
-                    || flushStatus_ == WriteQueue.FlushStatus.FLUSHING) {
-                try {
-                    flushStatus_ = transport_.flush(selector_.writeBuffer_);
-                    return (flushStatus_ == WriteQueue.FlushStatus.FLUSHED)
-                            ? DONE : timeUnit.convert(flushStatus_.waitTimeMillis_, TimeUnit.MILLISECONDS);
-                } catch (IOException ioe) {
-                    selector_.logger_.error("failed to flush buffer to " + transport_, ioe);
-                    transport_.closeSelectableChannel();
+        execute(new Task() {
+            @Override
+            public long execute(TimeUnit timeUnit) throws Exception {
+                if (!transport.containsInterestOp(SelectionKey.OP_WRITE)) { // check in I/O thread
+                    transport.flush(writeBuffer_);
                 }
+                return DONE;
             }
-            return DONE;
-        }
+        });
     }
 }
