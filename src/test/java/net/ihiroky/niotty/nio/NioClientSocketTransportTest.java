@@ -6,12 +6,11 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import java.nio.channels.GatheringByteChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.CoreMatchers.*;
@@ -60,22 +59,33 @@ public class NioClientSocketTransportTest {
     public void testFlush_Flushing() throws Exception {
         when(writeQueue_.flushTo(Mockito.any(GatheringByteChannel.class)))
                 .thenReturn(WriteQueue.FlushStatus.FLUSHING);
-        when(sut_.key().interestOps()).thenReturn(0);
-        when(sut_.taskLoop().schedule(Mockito.any(Task.class), anyLong(), Mockito.any(TimeUnit.class)))
-                .thenAnswer(new Answer<Object>() {
-                    @Override
-                    public Object answer(InvocationOnMock invocation) throws Throwable {
-                        Task task = (Task) invocation.getArguments()[0];
-                        task.execute(TimeUnit.NANOSECONDS);
-                        return null;
-                    }
-                });
+        when(sut_.key().interestOps()).thenReturn(SelectionKey.OP_WRITE);
 
         sut_.flush(null);
+        when(sut_.key().interestOps()).thenReturn(0); // sut_.key() is mock, so set result explicitly.
+
+        ArgumentCaptor<Task> taskCaptor = ArgumentCaptor.forClass(Task.class);
+        verify(sut_.taskLoop()).schedule(taskCaptor.capture(), anyLong(), Mockito.any(TimeUnit.class));
+        Task task = taskCaptor.getValue();
+        task.execute(TimeUnit.NANOSECONDS);
 
         ArgumentCaptor<Integer> opsCaptor = ArgumentCaptor.forClass(Integer.class);
-        verify(sut_.key()).interestOps(opsCaptor.capture());
-        assertThat(opsCaptor.getValue(), is(SelectionKey.OP_WRITE));
+        verify(sut_.key(), times(2)).interestOps(opsCaptor.capture());
+        List<Integer> opsList = opsCaptor.getAllValues();
+        assertThat(opsList.get(0), is(0));
+        assertThat(opsList.get(1), is(SelectionKey.OP_WRITE));
+    }
+
+    @Test
+    public void testFlush_SkipFlushingIfPreviousFlushIsFlushing() throws Exception {
+        when(writeQueue_.flushTo(Mockito.any(GatheringByteChannel.class)))
+                .thenReturn(WriteQueue.FlushStatus.FLUSHING);
+        when(sut_.key().interestOps()).thenReturn(SelectionKey.OP_WRITE);
+
+        sut_.flush(null);
+        sut_.flush(null);
+
+        verify(writeQueue_).flushTo(Mockito.any(GatheringByteChannel.class));
     }
 
     @Test

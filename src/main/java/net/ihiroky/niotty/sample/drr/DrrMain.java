@@ -61,7 +61,7 @@ public class DrrMain {
         NioClientSocketTransport clientTransport = clientProcessor.createTransport();
         try {
             InetSocketAddress endpoint = new InetSocketAddress(serverPort);
-            serverTransport.bind(endpoint);
+            serverTransport.bind(endpoint).throwExceptionIfFailed();
             TransportFuture connectFuture = clientTransport.connect(endpoint);
             connectFuture.waitForCompletion();
 

@@ -101,9 +101,9 @@ public abstract class AbstractSelector extends TaskLoop implements StoreStage<Bu
             SelectionKey key = channel.register(selector_, ops, transport);
             transport.setSelectionKey(key);
             transport.loadEvent(new DefaultTransportStateEvent(TransportState.INTEREST_OPS, ops));
-            logger_.debug("channel {} is registered to {}.", channel, Thread.currentThread());
+            logger_.debug("[register] channel {} is registered to {}.", channel, Thread.currentThread());
         } catch (IOException ioe) {
-            logger_.warn("failed to register channel:" + channel, ioe);
+            logger_.warn("[register] failed to register channel:" + channel, ioe);
         }
     }
 
@@ -111,7 +111,7 @@ public abstract class AbstractSelector extends TaskLoop implements StoreStage<Bu
         key.cancel();
         transport.loadEvent(new DefaultTransportStateEvent(TransportState.INTEREST_OPS, 0));
         reject(transport);
-        logger_.debug("channel {} is unregistered from {}.", key.channel(), Thread.currentThread());
+        logger_.debug("[unregister] channel {} is unregistered from {}.", key.channel(), Thread.currentThread());
     }
 
     Set<SelectionKey> keys() {

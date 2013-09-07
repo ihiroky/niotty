@@ -55,32 +55,31 @@ public class UdpIOSelector extends AbstractSelector {
             DatagramChannel channel = (DatagramChannel) key.channel();
             NioSocketTransport<?> transport = (NioSocketTransport<?>) key.attachment();
             try {
+                if (key.isReadable()) {
+                    if (channel.isConnected()) {
+                        read = channel.read(localByteBuffer);
+                        if (read == -1) {
+                            if (logger_.isDebugEnabled()) {
+                                logger_.debug("transport reaches the end of its stream:" + transport);
+                            }
+                            // TODO Discuss to call loadEvent(TransportEvent) and change ops to achieve have close
+                            transport.doCloseSelectableChannel(true);
+                            continue;
+                        }
+                        localByteBuffer.flip();
+                        CodecBuffer buffer = duplicateBuffer_
+                                ? duplicate(localByteBuffer) : Buffers.wrap(localByteBuffer, false);
+                        transport.loadEvent(buffer);
+                    } else {
+                        SocketAddress source = channel.receive(localByteBuffer);
+                        localByteBuffer.flip();
+                        CodecBuffer buffer = duplicateBuffer_
+                                ? duplicate(localByteBuffer) : Buffers.wrap(localByteBuffer, false);
+                        transport.loadEvent(buffer, new DefaultTransportParameter(source));
+                    }
+                }
                 if (key.isWritable()) {
                     transport.flush(writeBuffer_);
-                    continue;
-                }
-
-                // key.isReadable();
-                if (channel.isConnected()) {
-                    read = channel.read(localByteBuffer);
-                    if (read == -1) {
-                        if (logger_.isDebugEnabled()) {
-                            logger_.debug("transport reaches the end of its stream:" + transport);
-                        }
-                        // TODO Discuss to call loadEvent(TransportEvent) and change ops to achieve have close
-                        transport.doCloseSelectableChannel(true);
-                        continue;
-                    }
-                    localByteBuffer.flip();
-                    CodecBuffer buffer = duplicateBuffer_
-                            ? duplicate(localByteBuffer) : Buffers.wrap(localByteBuffer, false);
-                    transport.loadEvent(buffer);
-                } else {
-                    SocketAddress source = channel.receive(localByteBuffer);
-                    localByteBuffer.flip();
-                    CodecBuffer buffer = duplicateBuffer_
-                            ? duplicate(localByteBuffer) : Buffers.wrap(localByteBuffer, false);
-                    transport.loadEvent(buffer, new DefaultTransportParameter(source));
                 }
             } catch (ClosedByInterruptException ie) {
                 if (logger_.isDebugEnabled()) {
@@ -110,9 +109,7 @@ public class UdpIOSelector extends AbstractSelector {
         execute(new Task() {
             @Override
             public long execute(TimeUnit timeUnit) throws Exception {
-                if (!transport.containsInterestOp(SelectionKey.OP_WRITE)) { // check in I/O thread
-                    transport.flush(writeBuffer_);
-                }
+                transport.flush(writeBuffer_);
                 return DONE;
             }
         });

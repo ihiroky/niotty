@@ -35,9 +35,8 @@ public class TcpIOSelectorTest {
 
     @Test
     @SuppressWarnings({"unchecked", "rawtypes"})
-    public void testStore_FlushIfNotOpWrite() throws Exception {
+    public void testStore_Flush() throws Exception {
         NioClientSocketTransport transport = mock(NioClientSocketTransport.class);
-        when(transport.containsInterestOp(anyInt())).thenReturn(false);
         TcpIOSelector sut = spy(new TcpIOSelector(256, false, false));
         doAnswer(new Answer<Object>() {
             @Override
@@ -61,33 +60,6 @@ public class TcpIOSelectorTest {
     }
 
     @Test
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    public void testStore_NotFlushIfOpWrite() throws Exception {
-        NioClientSocketTransport transport = mock(NioClientSocketTransport.class);
-        when(transport.containsInterestOp(anyInt())).thenReturn(true);
-        TcpIOSelector sut = spy(new TcpIOSelector(256, false, false));
-        doAnswer(new Answer<Object>() {
-            @Override
-            public Object answer(InvocationOnMock invocation) throws Throwable {
-                Task task = (Task) invocation.getArguments()[0];
-                task.execute(TimeUnit.NANOSECONDS);
-                return null;
-            }
-        }).when(sut).execute(Mockito.any(Task.class));
-        StageContext<Void> context = mock(StageContext.class);
-        when(context.transport()).thenReturn(transport);
-        when(context.transportParameter()).thenReturn(new DefaultTransportParameter(0));
-        BufferSink data = Buffers.newCodecBuffer(0);
-
-        sut.store(context, data);
-
-        ArgumentCaptor<AttachedMessage> captor = ArgumentCaptor.forClass(AttachedMessage.class);
-        verify(transport).readyToWrite(captor.capture());
-        assertThat(captor.getValue().message(), is((Object) data));
-        verify(transport, never()).flush(null);
-    }
-
-    @Test
     public void testProcessSelectedKeys_BufferIsNotDuplicatedWhenConnected() throws Exception {
         TcpIOSelector sut = new TcpIOSelector(256, false, false);
         SocketChannel channel = mock(SocketChannel.class);
@@ -102,6 +74,7 @@ public class TcpIOSelectorTest {
         NioSocketTransport<?> transport = mock(NioSocketTransport.class);
         SelectionKey key = spy(new SelectionKeyMock());
         when(key.channel()).thenReturn(channel);
+        when(key.readyOps()).thenReturn(SelectionKey.OP_READ);
         key.attach(transport);
 
         sut.processSelectedKeys(new HashSet<>(Arrays.asList(key)));
@@ -128,6 +101,7 @@ public class TcpIOSelectorTest {
         NioSocketTransport<?> transport = mock(NioSocketTransport.class);
         SelectionKey key = spy(new SelectionKeyMock());
         when(key.channel()).thenReturn(channel);
+        when(key.readyOps()).thenReturn(SelectionKey.OP_READ);
         key.attach(transport);
 
         sut.processSelectedKeys(new HashSet<>(Arrays.asList(key)));
@@ -139,7 +113,7 @@ public class TcpIOSelectorTest {
         assertThat(cb.remainingBytes(), is(10));
     }
 
-    private static class SelectionKeyMock extends AbstractSelectionKey {
+    static class SelectionKeyMock extends AbstractSelectionKey {
         @Override
         public SelectableChannel channel() {
             return null;

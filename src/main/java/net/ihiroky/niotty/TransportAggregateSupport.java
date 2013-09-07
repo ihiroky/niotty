@@ -5,7 +5,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- * @author Hiroki Itoh
+ *
  */
 public class TransportAggregateSupport implements TransportAggregate, TransportFutureListener {
 
@@ -63,5 +63,10 @@ public class TransportAggregateSupport implements TransportAggregate, TransportF
     @Override
     public void onComplete(TransportFuture future) {
         transportMap_.remove(future.transport());
+    }
+
+    @Override
+    public String toString() {
+        return transportMap_.toString();
     }
 }

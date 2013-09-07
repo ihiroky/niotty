@@ -6,7 +6,6 @@ import net.ihiroky.niotty.DefaultTransportStateEvent;
 import net.ihiroky.niotty.FailedTransportFuture;
 import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.SuccessfulTransportFuture;
-import net.ihiroky.niotty.Task;
 import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.TransportState;
 import net.ihiroky.niotty.TransportStateEvent;
@@ -30,6 +29,7 @@ public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> 
     private final SocketChannel clientChannel_;
     private final Pools pools_;
     private final WriteQueue writeQueue_;
+    private WriteQueue.FlushStatus flushStatus_;
 
     private static class Pools {
         final ConnectSelectorPool connectorPool_;
@@ -255,26 +255,12 @@ public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> 
 
     @Override
     void flush(ByteBuffer writeBuffer) throws IOException {
-        WriteQueue.FlushStatus status = writeQueue_.flushTo(clientChannel_);
-        switch (status) {
-            case FLUSHED:
-                clearInterestOp(SelectionKey.OP_WRITE);
-                return;
-            case FLUSHING:
-                taskLoop().schedule(new Task() {
-                    @Override
-                    public long execute(TimeUnit timeUnit) throws Exception {
-                        setInterestOp(SelectionKey.OP_WRITE);
-                        return DONE;
-                    }
-                }, status.waitTimeMillis_, TimeUnit.MILLISECONDS);
-                return;
-            case SKIPPED:
-                setInterestOp(SelectionKey.OP_WRITE);
-                return;
-            default:
-                throw new AssertionError("Unexpected flush status: " + status);
+        if (flushStatus_ == WriteQueue.FlushStatus.FLUSHING) {
+            return;
         }
 
+        WriteQueue.FlushStatus status = writeQueue_.flushTo(clientChannel_);
+        flushStatus_ = status;
+        handleFlushStatus(status);
     }
 }

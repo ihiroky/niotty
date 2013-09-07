@@ -5,6 +5,7 @@ import net.ihiroky.niotty.DefaultTransportFuture;
 import net.ihiroky.niotty.DefaultTransportStateEvent;
 import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.SuccessfulTransportFuture;
+import net.ihiroky.niotty.Task;
 import net.ihiroky.niotty.TaskLoopGroup;
 import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.TransportParameter;
@@ -115,22 +116,41 @@ public abstract class NioSocketTransport<S extends AbstractSelector> extends Abs
         return key_;
     }
 
-    void setInterestOp(int op) {
+    private void setInterestOp(int op) {
         int interestOps = key_.interestOps();
         if ((interestOps & op) == 0) {
             key_.interestOps(interestOps | op);
         }
     }
 
-    void clearInterestOp(int op) {
+    private void clearInterestOp(int op) {
         int interestOps = key_.interestOps();
         if ((interestOps & op) != 0) {
             key_.interestOps(interestOps & ~op);
         }
     }
 
-    boolean containsInterestOp(int op) {
-        return (key_.interestOps() & op) != 0;
+    protected void handleFlushStatus(WriteQueue.FlushStatus status) {
+        switch (status) {
+            case FLUSHED:
+                clearInterestOp(SelectionKey.OP_WRITE);
+                return;
+            case FLUSHING:
+                clearInterestOp(SelectionKey.OP_WRITE);
+                taskLoop().schedule(new Task() {
+                    @Override
+                    public long execute(TimeUnit timeUnit) throws Exception {
+                        setInterestOp(SelectionKey.OP_WRITE);
+                        return DONE;
+                    }
+                }, status.waitTimeMillis_, TimeUnit.MILLISECONDS);
+                return;
+            case SKIPPED:
+                setInterestOp(SelectionKey.OP_WRITE);
+                return;
+            default:
+                throw new AssertionError("Unexpected flush status: " + status);
+        }
     }
 
     abstract void readyToWrite(AttachedMessage<BufferSink> message);

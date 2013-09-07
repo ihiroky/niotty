@@ -51,26 +51,26 @@ public class TcpIOSelector extends AbstractSelector {
             ReadableByteChannel channel = (ReadableByteChannel) key.channel();
             NioSocketTransport<?> transport = (NioSocketTransport<?>) key.attachment();
             try {
+                if (key.isReadable()) {
+                    read = channel.read(localByteBuffer);
+                    if (read == -1) {
+                        if (logger_.isDebugEnabled()) {
+                            logger_.debug("transport reaches the end of its stream:" + transport);
+                        }
+                        // TODO Discuss to call loadEvent(TransportEvent) and change ops to achieve have close
+                        transport.doCloseSelectableChannel(true);
+                        localByteBuffer.clear();
+                        continue;
+                    }
+
+                    localByteBuffer.flip();
+                    CodecBuffer cb = duplicateBuffer_
+                            ? duplicate(localByteBuffer) : Buffers.wrap(localByteBuffer, false);
+                    transport.loadEvent(cb);
+                }
                 if (key.isWritable()) {
                     transport.flush(null);
-                    continue;
                 }
-
-                // key.isReadable();
-                read = channel.read(localByteBuffer);
-                if (read == -1) {
-                    if (logger_.isDebugEnabled()) {
-                        logger_.debug("transport reaches the end of its stream:" + transport);
-                    }
-                    // TODO Discuss to call loadEvent(TransportEvent) and change ops to achieve have close
-                    transport.doCloseSelectableChannel(true);
-                    localByteBuffer.clear();
-                    continue;
-                }
-
-                localByteBuffer.flip();
-                CodecBuffer cb = duplicateBuffer_ ? duplicate(localByteBuffer) : Buffers.wrap(localByteBuffer, false);
-                transport.loadEvent(cb);
             } catch (ClosedByInterruptException ie) {
                 if (logger_.isDebugEnabled()) {
                     logger_.debug("failed to read from transport by interruption:" + transport, ie);
@@ -99,9 +99,7 @@ public class TcpIOSelector extends AbstractSelector {
         execute(new Task() {
             @Override
             public long execute(TimeUnit timeUnit) throws Exception {
-                if (!transport.containsInterestOp(SelectionKey.OP_WRITE)) { // check in I/O thread
-                    transport.flush(null);
-                }
+                transport.flush(null);
                 return DONE;
             }
         });

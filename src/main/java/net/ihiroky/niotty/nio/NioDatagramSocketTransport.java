@@ -5,7 +5,6 @@ import net.ihiroky.niotty.DefaultTransportParameter;
 import net.ihiroky.niotty.FailedTransportFuture;
 import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.SuccessfulTransportFuture;
-import net.ihiroky.niotty.Task;
 import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.TransportState;
 import net.ihiroky.niotty.TransportStateEvent;
@@ -34,6 +33,7 @@ public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector
 
     private DatagramChannel channel_;
     private WriteQueue writeQueue_;
+    private WriteQueue.FlushStatus flushStatus_;
     private final Map<GroupKey, MembershipKey> membershipKeyMap_;
 
     NioDatagramSocketTransport(PipelineComposer composer, ProtocolFamily protocolFamily,
@@ -241,26 +241,12 @@ public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector
 
     @Override
     void flush(ByteBuffer writeBuffer) throws IOException {
-        WriteQueue.FlushStatus status = writeQueue_.flushTo(channel_, writeBuffer);
-        switch (status) {
-            case FLUSHED:
-                clearInterestOp(SelectionKey.OP_WRITE);
-                return;
-            case FLUSHING:
-                taskLoop().schedule(new Task() {
-                    @Override
-                    public long execute(TimeUnit timeUnit) throws Exception {
-                        setInterestOp(SelectionKey.OP_WRITE);
-                        return DONE;
-                    }
-                }, status.waitTimeMillis_, TimeUnit.MILLISECONDS);
-                return;
-            case SKIPPED:
-                setInterestOp(SelectionKey.OP_WRITE);
-                return;
-            default:
-                throw new AssertionError("Unexpected flush status: " + status);
+        if (flushStatus_ == WriteQueue.FlushStatus.FLUSHING) {
+            return;
         }
+        WriteQueue.FlushStatus status = writeQueue_.flushTo(channel_, writeBuffer);
+        flushStatus_ = status;
+        handleFlushStatus(status);
     }
 
     /**
