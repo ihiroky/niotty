@@ -632,15 +632,16 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer {
 
         byte[] buffer = buffer_;
         int e = end - b.length;
-        for (int i = fromIndexInContent; i <= e; i++) {
+        BUFFER_LOOP: for (int i = fromIndexInContent; i <= e; i++) {
             if (buffer[i] != b[0]) {
                 continue;
             }
             for (int bi = 1; bi < b.length; bi++) {
-                if (buffer[i + bi] == b[bi]) {
-                    return i - beginning_;
+                if (buffer[i + bi] != b[bi]) {
+                    continue BUFFER_LOOP;
                 }
             }
+            return i - beginning_;
         }
         return -1;
     }
