@@ -30,7 +30,19 @@ public class DefaultStorePipeline<L extends TaskLoop>
 
     private static class StoreTail extends Tail<StoreStage<?, ?>> {
 
-        private StoreStage<Object, Object> stage_;
+        private StoreStage<Object, Object> stage_ = NULL;
+
+        private static final StoreStage<Object, Object> NULL = new StoreStage<Object, Object>() {
+            @Override
+            public void store(StageContext<Object> context, Object input) {
+                throw new IllegalStateException("No I/O stage is initialized. It may not be connected?");
+            }
+
+            @Override
+            public void store(StageContext<Object> context, TransportStateEvent event) {
+                throw new IllegalStateException("No I/O stage is initialized. It may not be connected?");
+            }
+        };
 
         protected StoreTail(AbstractPipeline<?, ?> pipeline, StageKey key, PipelineElementExecutorPool pool) {
             super(pipeline, key, pool);
