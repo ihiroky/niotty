@@ -13,7 +13,7 @@ import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
 /**
- * @author Hiroki Itoh
+ *
  */
 public class AbstractPipelineTest {
 
@@ -51,7 +51,7 @@ public class AbstractPipelineTest {
         assertThat(context.stage(), is(stage1));
         assertThat(i.hasNext(), is(true));
         context = i.next();
-        assertThat(context.key(), is(Pipeline.IO_STAGE));
+        assertThat(context.key(), is(Pipeline.IO_STAGE_KEY));
     }
 
     @Test
@@ -71,9 +71,9 @@ public class AbstractPipelineTest {
     @Test
     public void testAdd_IOStageIsRejected() throws Exception {
         exceptionRule_.expect(IllegalArgumentException.class);
-        exceptionRule_.expectMessage("StringStageKey:IO_STAGE must not be added.");
+        exceptionRule_.expectMessage("StringStageKey:IO_STAGE_KEY must not be added.");
 
-        sut_.add(StageKeys.of("IO_STAGE"), new Object());
+        sut_.add(StageKeys.of("IO_STAGE_KEY"), new Object());
     }
 
     @Test
@@ -101,7 +101,7 @@ public class AbstractPipelineTest {
         assertThat(context.stage(), is(stage0));
         assertThat(i.hasNext(), is(true));
         context = i.next();
-        assertThat(context.key(), is(Pipeline.IO_STAGE));
+        assertThat(context.key(), is(Pipeline.IO_STAGE_KEY));
     }
 
     @Test
@@ -144,9 +144,9 @@ public class AbstractPipelineTest {
         sut_.add(key, new Object());
 
         exceptionRule_.expect(IllegalArgumentException.class);
-        exceptionRule_.expectMessage("StringStageKey:IO_STAGE must not be added.");
+        exceptionRule_.expectMessage("StringStageKey:IO_STAGE_KEY must not be added.");
 
-        sut_.addBefore(key, StageKeys.of("IO_STAGE"), new Object());
+        sut_.addBefore(key, StageKeys.of("IO_STAGE_KEY"), new Object());
     }
 
     @Test
@@ -174,7 +174,7 @@ public class AbstractPipelineTest {
         assertThat(context.stage(), is(stage1));
         assertThat(i.hasNext(), is(true));
         context = i.next();
-        assertThat(context.key(), is(Pipeline.IO_STAGE));
+        assertThat(context.key(), is(Pipeline.IO_STAGE_KEY));
     }
 
     @Test
@@ -217,9 +217,9 @@ public class AbstractPipelineTest {
         sut_.add(key, new Object());
 
         exceptionRule_.expect(IllegalArgumentException.class);
-        exceptionRule_.expectMessage("StringStageKey:IO_STAGE must not be added.");
+        exceptionRule_.expectMessage("StringStageKey:IO_STAGE_KEY must not be added.");
 
-        sut_.addAfter(key, StageKeys.of("IO_STAGE"), new Object());
+        sut_.addAfter(key, StageKeys.of("IO_STAGE_KEY"), new Object());
     }
 
     @Test
@@ -228,9 +228,9 @@ public class AbstractPipelineTest {
         sut_.add(key, new Object());
 
         exceptionRule_.expect(IllegalArgumentException.class);
-        exceptionRule_.expectMessage("StringStageKey:IO_STAGE must be the tail of this pipeline.");
+        exceptionRule_.expectMessage("StringStageKey:IO_STAGE_KEY must be the tail of this pipeline.");
 
-        sut_.addAfter(StageKeys.of("IO_STAGE"), key, new Object());
+        sut_.addAfter(StageKeys.of("IO_STAGE_KEY"), key, new Object());
     }
 
     @Test
@@ -256,7 +256,7 @@ public class AbstractPipelineTest {
         assertThat(context.stage(), is(stage2));
         assertThat(i.hasNext(), is(true));
         context = i.next();
-        assertThat(context.key(), is(Pipeline.IO_STAGE));
+        assertThat(context.key(), is(Pipeline.IO_STAGE_KEY));
     }
 
     @Test
@@ -282,7 +282,7 @@ public class AbstractPipelineTest {
         assertThat(context.stage(), is(stage2));
         assertThat(i.hasNext(), is(true));
         context = i.next();
-        assertThat(context.key(), is(Pipeline.IO_STAGE));
+        assertThat(context.key(), is(Pipeline.IO_STAGE_KEY));
     }
 
     @Test
@@ -308,7 +308,7 @@ public class AbstractPipelineTest {
         assertThat(context.stage(), is(stage1));
         assertThat(i.hasNext(), is(true));
         context = i.next();
-        assertThat(context.key(), is(Pipeline.IO_STAGE));
+        assertThat(context.key(), is(Pipeline.IO_STAGE_KEY));
     }
 
     @Test
@@ -329,9 +329,9 @@ public class AbstractPipelineTest {
     @Test
     public void testRemove_IOStageIsRejected() throws Exception {
         exceptionRule_.expect(IllegalArgumentException.class);
-        exceptionRule_.expectMessage("StringStageKey:IO_STAGE must not be removed.");
+        exceptionRule_.expectMessage("StringStageKey:IO_STAGE_KEY must not be removed.");
 
-        sut_.remove(StageKeys.of("IO_STAGE"));
+        sut_.remove(StageKeys.of("IO_STAGE_KEY"));
     }
 
     @Test
@@ -362,7 +362,7 @@ public class AbstractPipelineTest {
         assertThat(context.stage(), is(stage2));
         assertThat(i.hasNext(), is(true));
         context = i.next();
-        assertThat(context.key(), is(Pipeline.IO_STAGE));
+        assertThat(context.key(), is(Pipeline.IO_STAGE_KEY));
     }
 
     @Test
@@ -393,7 +393,7 @@ public class AbstractPipelineTest {
         assertThat(context.stage(), is(stage2));
         assertThat(i.hasNext(), is(true));
         context = i.next();
-        assertThat(context.key(), is(Pipeline.IO_STAGE));
+        assertThat(context.key(), is(Pipeline.IO_STAGE_KEY));
     }
 
     @Test
@@ -424,7 +424,7 @@ public class AbstractPipelineTest {
         assertThat(context.stage(), is(stage3));
         assertThat(i.hasNext(), is(true));
         context = i.next();
-        assertThat(context.key(), is(Pipeline.IO_STAGE));
+        assertThat(context.key(), is(Pipeline.IO_STAGE_KEY));
     }
 
     @Test
@@ -470,9 +470,9 @@ public class AbstractPipelineTest {
         sut_.add(key, new Object());
 
         exceptionRule_.expect(IllegalArgumentException.class);
-        exceptionRule_.expectMessage("StringStageKey:IO_STAGE must not be added.");
+        exceptionRule_.expectMessage("StringStageKey:IO_STAGE_KEY must not be added.");
 
-        sut_.replace(key, StageKeys.of("IO_STAGE"), new Object());
+        sut_.replace(key, StageKeys.of("IO_STAGE_KEY"), new Object());
     }
 
     @Test
@@ -481,9 +481,28 @@ public class AbstractPipelineTest {
         sut_.add(key, new Object());
 
         exceptionRule_.expect(IllegalArgumentException.class);
-        exceptionRule_.expectMessage("StringStageKey:IO_STAGE must not be removed.");
+        exceptionRule_.expectMessage("StringStageKey:IO_STAGE_KEY must not be removed.");
 
-        sut_.replace(StageKeys.of("IO_STAGE"), key, new Object());
+        sut_.replace(StageKeys.of("IO_STAGE_KEY"), key, new Object());
+    }
+
+    @Test
+    public void testSearchContext() throws Exception {
+        StageKey key0 = StageKeys.of(0);
+        Object stage0 = new Object();
+        StageKey key1 = StageKeys.of(1);
+        Object stage1 = new Object();
+
+        sut_.add(key0, stage0);
+        sut_.add(key1, stage1);
+
+        StageContext<Object> context0 = sut_.searchContext(key0);
+        StageContext<Object> context1 = sut_.searchContext(key1);
+        StageContext<Object> context2 = sut_.searchContext(Pipeline.IO_STAGE_KEY);
+        assertThat(context0.key(), is(key0));
+        assertThat(context1.key(), is(key1));
+        assertThat(context2.key(), is(Pipeline.IO_STAGE_KEY));
+
     }
 
     private static class PipelineImpl extends AbstractPipeline<Object, TaskLoop> {
@@ -519,7 +538,7 @@ public class AbstractPipelineTest {
 
         @Override
         protected Tail<Object> createTail(PipelineElementExecutorPool defaultPool) {
-            return new Tail<Object>(this, IO_STAGE, AbstractPipeline.NULL_POOL) {
+            return new Tail<Object>(this, IO_STAGE_KEY, AbstractPipeline.NULL_POOL) {
                 @Override
                 void setStage(Object stage) {
                 }
