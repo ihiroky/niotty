@@ -53,8 +53,7 @@ public class DelimiterDecoder implements LoadStage<CodecBuffer, CodecBuffer> {
             }
 
             int frameLength = removeDelimiter_ ? end : end + delimiter_.length;
-            CodecBuffer output = Buffers.newCodecBuffer(frameLength);
-            output.drainFrom(b, frameLength);
+            CodecBuffer output = (b == input) ? b.slice(frameLength) : Buffers.newCodecBuffer(b, frameLength);
             if (removeDelimiter_) {
                 b.skipBytes(delimiter_.length);
             }

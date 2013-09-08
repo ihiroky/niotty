@@ -246,4 +246,18 @@ public final class Buffers {
     public static CodecBuffer wrap(CodecBuffer... buffers) {
         return new CodecBufferList(buffers);
     }
+
+    /**
+     * Creates a new {@code CodecBuffer} which content is drained from the specified buffer
+     * with specified length. The beginning of the drained buffer increases by the length.
+     *
+     * @param buffer the buffer to be drained to the new buffer
+     * @param length the length to be drained from the buffer
+     * @return the new buffer
+     */
+    public static CodecBuffer newCodecBuffer(CodecBuffer buffer, int length) {
+        CodecBuffer b = Buffers.wrap(new byte[length], 0, 0);
+        b.drainFrom(buffer, length);
+        return b;
+    }
 }

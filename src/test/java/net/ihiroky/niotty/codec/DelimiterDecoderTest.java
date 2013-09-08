@@ -8,6 +8,7 @@ import org.junit.Test;
 
 import java.nio.charset.StandardCharsets;
 
+import static net.ihiroky.niotty.codec.ReferenceCountMatcher.*;
 import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.MatcherAssert.*;
 
@@ -34,7 +35,7 @@ public class DelimiterDecoderTest {
         assertContent(context.pollEvent(), is(data));
         assertThat(context.hasNoEvent(), is(true));
         assertThat(sut.buffer(), is(nullValue()));
-        assertThat(((ArrayCodecBuffer) input).referenceCount(), is(0));
+        assertThat(input, hasReferenceCount(1)); // alive yet
     }
 
     @Test
@@ -50,7 +51,7 @@ public class DelimiterDecoderTest {
         assertContent(context.pollEvent(), is("input1\r\n".getBytes(StandardCharsets.UTF_8)));
         assertThat(context.hasNoEvent(), is(true));
         assertThat(sut.buffer(), is(nullValue()));
-        assertThat(((ArrayCodecBuffer) input).referenceCount(), is(0));
+        assertThat(input, hasReferenceCount(2)); // for input0 and input1
     }
 
     @Test
@@ -80,7 +81,7 @@ public class DelimiterDecoderTest {
         assertThat(context.hasNoEvent(), is(true));
         assertThat(sut.buffer().beginning(), is(0));
         assertContent(sut.buffer(), is("input1".getBytes(StandardCharsets.UTF_8)));
-        assertThat(((ArrayCodecBuffer) input).referenceCount(), is(0));
+        assertThat(((ArrayCodecBuffer) input).referenceCount(), is(1)); // for input0
     }
 
     @Test
@@ -120,7 +121,7 @@ public class DelimiterDecoderTest {
         assertThat(context.hasNoEvent(), is(true));
         assertThat(sut.buffer().beginning(), is(0));
         assertContent(sut.buffer(), is("input2\r".getBytes(StandardCharsets.UTF_8)));
-        assertThat(((ArrayCodecBuffer) input0).referenceCount(), is(0));
+        assertThat(((ArrayCodecBuffer) input0).referenceCount(), is(1)); // for input0
         assertThat(((ArrayCodecBuffer) input1).referenceCount(), is(0));
     }
 
@@ -141,7 +142,7 @@ public class DelimiterDecoderTest {
         assertContent(context.pollEvent(), is("input2\r\n".getBytes(StandardCharsets.UTF_8)));
         assertThat(context.hasNoEvent(), is(true));
         assertThat(sut.buffer(), is(nullValue()));
-        assertThat(((ArrayCodecBuffer) input0).referenceCount(), is(0));
+        assertThat(((ArrayCodecBuffer) input0).referenceCount(), is(1)); // for input0
         assertThat(((ArrayCodecBuffer) input1).referenceCount(), is(0));
     }
 
@@ -162,7 +163,7 @@ public class DelimiterDecoderTest {
         assertContent(context.pollEvent(), is("input2".getBytes(StandardCharsets.UTF_8)));
         assertThat(context.hasNoEvent(), is(true));
         assertThat(sut.buffer(), is(nullValue()));
-        assertThat(((ArrayCodecBuffer) input0).referenceCount(), is(0));
+        assertThat(((ArrayCodecBuffer) input0).referenceCount(), is(1)); // for input0
         assertThat(((ArrayCodecBuffer) input1).referenceCount(), is(0));
     }
 }
