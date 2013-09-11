@@ -18,7 +18,7 @@ public class ConnectionWaitTransport extends NioSocketTransport<ConnectSelector>
     private final DefaultTransportFuture future_;
 
     ConnectionWaitTransport(ConnectSelectorPool pool, NioClientSocketTransport transport, DefaultTransportFuture future) {
-        super("ConnectionPending", PipelineComposer.empty(), pool, DEFAULT_WEIGHT);
+        super("ConnectionPending", PipelineComposer.empty(), pool);
         transport_ = transport;
         future_ = future;
     }

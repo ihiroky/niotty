@@ -157,82 +157,58 @@ public class TaskLoopTest {
     }
 
     @Test
-    public void testCompareTo_ReturnsPositiveIfSutIsTheWeigher() throws Exception {
+    public void testCompareTo_ReturnsPositiveIfSutHasMoreSelection() throws Exception {
         TaskLoop t = new TaskLoopMock();
-        TaskSelection weight1 = mock(TaskSelection.class);
-        when(weight1.weight()).thenReturn(1);
-        TaskSelection weight2 = mock(TaskSelection.class);
-        when(weight2.weight()).thenReturn(2);
+        TaskSelection s0 = mock(TaskSelection.class);
+        TaskSelection s1 = mock(TaskSelection.class);
+        TaskSelection s2 = mock(TaskSelection.class);
 
-        t.accept(weight1);
-        sut_.accept(weight2);
+        t.accept(s0);
+        sut_.accept(s1);
+        sut_.accept(s2);
+
 
         assertThat(sut_.compareTo(t) > 0, is(true));
     }
 
     @Test
-    public void testCompareTo_ReturnsNegativeIfSutIsTheLighter() throws Exception {
+    public void testCompareTo_ReturnsNegativeIfSutHasLessSelection() throws Exception {
         TaskLoop t = new TaskLoopMock();
-        TaskSelection weight1 = mock(TaskSelection.class);
-        when(weight1.weight()).thenReturn(1);
-        TaskSelection weight2 = mock(TaskSelection.class);
-        when(weight2.weight()).thenReturn(2);
+        TaskSelection s0 = mock(TaskSelection.class);
+        TaskSelection s1 = mock(TaskSelection.class);
+        TaskSelection s2 = mock(TaskSelection.class);
 
-        t.accept(weight2);
-        sut_.accept(weight1);
+        t.accept(s0);
+        t.accept(s1);
+        sut_.accept(s2);
 
         assertThat(sut_.compareTo(t) < 0, is(true));
     }
 
     @Test
-    public void testCompareTo_Return0IfTheSameWeight() throws Exception {
+    public void testCompareTo_Return0IfSelectionCountIsTheSame() throws Exception {
         TaskLoop t = new TaskLoopMock();
-        TaskSelection weight1 = mock(TaskSelection.class);
-        when(weight1.weight()).thenReturn(1);
-        TaskSelection weight2 = mock(TaskSelection.class);
-        when(weight2.weight()).thenReturn(1);
+        TaskSelection s0 = mock(TaskSelection.class);
+        TaskSelection s1 = mock(TaskSelection.class);
 
-        t.accept(weight2);
-        sut_.accept(weight1);
+        t.accept(s0);
+        sut_.accept(s1);
 
         assertThat(sut_.compareTo(t), is(0));
     }
 
     @Test
     public void testAcceptReject_Ordinary() throws Exception {
-        TaskSelection weight1 = mock(TaskSelection.class);
-        when(weight1.weight()).thenReturn(1);
-        TaskSelection weight2 = mock(TaskSelection.class);
-        when(weight2.weight()).thenReturn(2);
+        TaskSelection s0 = mock(TaskSelection.class);
+        TaskSelection s1 = mock(TaskSelection.class);
 
-        assertThat(sut_.weight(), is(0));
-        assertThat(sut_.accept(weight1), is(1));
-        assertThat(sut_.accept(weight2), is(3));
-        assertThat(sut_.weight(), is(3));
-        assertThat(sut_.reject(weight1), is(2));
-        assertThat(sut_.reject(weight2), is(0));
-        assertThat(sut_.selectionView().size(), is(0));
-    }
-
-    @Test
-    public void testAddWeight_Overflow() throws Exception {
-        TaskSelection weight1 = mock(TaskSelection.class);
-        when(weight1.weight()).thenReturn(Integer.MAX_VALUE);
-        TaskSelection weight2 = mock(TaskSelection.class);
-        when(weight2.weight()).thenReturn(2);
-
-        sut_.accept(weight1);
-        sut_.accept(weight2);
-
-        assertThat(sut_.weight(), is(Integer.MAX_VALUE));
-    }
-
-    @Test
-    public void testAddWeight_Underflow() throws Exception {
-        TaskSelection weight1 = mock(TaskSelection.class);
-        when(weight1.weight()).thenReturn(-1);
-
-        assertThat(sut_.weight(), is(0));
+        assertThat(sut_.selectionCount(), is(0));
+        assertThat(sut_.accept(s0), is(1));
+        assertThat(sut_.accept(s1), is(2));
+        assertThat(sut_.selectionCount(), is(2));
+        assertThat(sut_.reject(s0), is(1));
+        assertThat(sut_.reject(s1), is(0));
+        assertThat(sut_.selectionCount(), is(0));
     }
 
     @Test(timeout = 1000)

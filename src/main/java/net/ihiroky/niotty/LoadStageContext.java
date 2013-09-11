@@ -12,7 +12,7 @@ class LoadStageContext<I, O> extends PipelineElement<I, O> {
 
     @SuppressWarnings("unchecked")
     LoadStageContext(AbstractPipeline<?, ?> pipeline,
-                            StageKey key, LoadStage<Object, Object> stage, PipelineElementExecutorPool pool) {
+                            StageKey key, LoadStage<Object, Object> stage, TaskLoopGroup<? extends TaskLoop> pool) {
         super(pipeline, key, pool);
         Objects.requireNonNull(stage, "stage");
         this.stage_ = (LoadStage<I, O>) stage;

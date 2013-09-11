@@ -4,13 +4,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
 /**
- * <p>An implementation of {@link PipelineElementExecutorPool} that manages
- * {@link DefaultTaskLoop}.</p>
+ * <p>An implementation of {@link TaskLoopGroup} that manages {@link DefaultTaskLoop}.</p>
  *
  * <p>This class use threads to execute the {@code DefaultTaskLoop}. </p>
  */
 public final class DefaultTaskLoopGroup
-        extends TaskLoopGroup<DefaultTaskLoop> implements PipelineElementExecutorPool {
+        extends TaskLoopGroup<DefaultTaskLoop> {
 
     private final int numberOfThread_;
     private final String threadNamePrefix_;
@@ -75,9 +74,7 @@ public final class DefaultTaskLoopGroup
                 state_ = State.OPEN;
             }
         }
-        DefaultTaskLoop executor = super.assign(context);
-        executor.accept(context);
-        return executor;
+        return super.assign(context);
     }
 
     @Override

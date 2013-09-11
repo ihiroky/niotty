@@ -26,7 +26,6 @@ public abstract class TaskLoopGroup<L extends TaskLoop> {
     private final Collection<L> taskLoops_;
     private ThreadPoolExecutor executor_;
     private Logger logger_ = LoggerFactory.getLogger(TaskLoopGroup.class);
-    private int taskWeightThreshold_;
 
     /**
      * Constructs a new instance.
@@ -44,37 +43,13 @@ public abstract class TaskLoopGroup<L extends TaskLoop> {
         if (workers <= 0) {
             throw new IllegalArgumentException("The workers must be positive.");
         }
-        open(threadFactory, workers, workers);
-    }
-
-    /**
-     * Creates the thread pool internally if not created.
-     *
-     * @param threadFactory a thread factory
-     * @param minWorkers a minimum number of threads held in the thread pool
-     * @param maxWorkers a maximum number of threads held in the thread pool
-     * @throws IllegalArgumentException if the threadFactory is null,
-     *                                  the minWorkers and the maxWorkers is not positive
-     *                                  or the minWorkers is greater than the maxWorkers
-     */
-    public void open(ThreadFactory threadFactory, int minWorkers, int maxWorkers) {
-        Objects.requireNonNull(threadFactory, "threadFactory");
-        if (minWorkers <= 0) {
-            throw new IllegalArgumentException("minWorkers must be positive.");
-        }
-        if (maxWorkers <= 0) {
-            throw new IllegalArgumentException("minWorkers must be positive.");
-        }
-        if (minWorkers > maxWorkers) {
-            throw new IllegalArgumentException("maxWorkers must be equal or greater than minWorkers.");
-        }
 
         synchronized (taskLoops_) {
             if (executor_ == null) {
                 ThreadPoolExecutor executor = new ThreadPoolExecutor(
-                        minWorkers, maxWorkers, 1L, TimeUnit.MINUTES, new SynchronousQueue<Runnable>(), threadFactory);
-                Collection<L> taskLoops = new ArrayList<>(minWorkers);
-                for (int i = 0; i < minWorkers; i++) {
+                        workers, workers, 1L, TimeUnit.MINUTES, new SynchronousQueue<Runnable>(), threadFactory);
+                Collection<L> taskLoops = new ArrayList<>(workers);
+                for (int i = 0; i < workers; i++) {
                     L taskLoop = newTaskLoop();
                     logger_.debug("[open] New task loop: {}.", taskLoop);
                     executor.execute(taskLoop);
@@ -133,25 +108,6 @@ public abstract class TaskLoopGroup<L extends TaskLoop> {
     }
 
     /**
-     * Returns the weight threshold to choose a task loop.
-     * @return the weight threshold to choose a task loop
-     */
-    public int getTaskWeightThreshold() {
-        return taskWeightThreshold_;
-    }
-
-    /**
-     * Sets the weight threshold to choose a task loop.
-     * @param taskWeightThreshold the threshold
-     */
-    public void setTaskWeightThreshold(int taskWeightThreshold) {
-        if (taskWeightThreshold < 0) {
-            throw new IllegalArgumentException("The taskWeightThreshold must not be negative");
-        }
-        taskWeightThreshold_ = taskWeightThreshold;
-    }
-
-    /**
      * Assigns a loop which weight is under the threshold even if a specified selection is added,
      * or a minimum among the task loops.
      * @param selection the selection added to a selected task loop
@@ -159,55 +115,29 @@ public abstract class TaskLoopGroup<L extends TaskLoop> {
      */
     protected L assign(TaskSelection selection) {
         Objects.requireNonNull(selection, "selection");
-        if (selection.weight() <= 0) {
-            throw new IllegalArgumentException("The selection.weight() must be positive.");
-        }
 
-        int minWeight = Integer.MAX_VALUE;
-        L minWeighted = null;
-        int minWeightedUnderThreshold = Integer.MAX_VALUE;
-        L weightedUnderThreshold = null;
+        int minCount = Integer.MAX_VALUE;
+        L minCountLoop = null;
         synchronized (taskLoops_) {
             sweepDeadLoop();
             for (L loop : taskLoops_) {
-                if (loop.contains(selection)) {
+                if (loop.countUpIfContains(selection)) {
                     logger_.debug("[assign] [{}] is already assigned to [{}]", selection, loop);
                     return loop;
                 }
-
-                int taskLoopWeight = loop.weight();
-                if (taskLoopWeight < minWeight) {
-                    minWeight = taskLoopWeight;
-                    minWeighted = loop;
+                int count = loop.selectionCount();
+                if (count < minCount) {
+                    minCount = count;
+                    minCountLoop = loop;
                 }
-
-                // Search already weighted task loops which is light enough to add the selection
-                // and has minimum weight in the loops.
-                if (taskLoopWeight > 0
-                        && taskWeightThreshold_ - taskLoopWeight >= selection.weight()
-                        && taskLoopWeight < minWeightedUnderThreshold) {
-                    minWeightedUnderThreshold = taskLoopWeight;
-                    weightedUnderThreshold = loop;
-                }
-            }
-            if (weightedUnderThreshold != null) {
-                weightedUnderThreshold.accept(selection);
-                return weightedUnderThreshold;
-            }
-            if (minWeight > 0 // There is non idle task loop.
-                    && taskWeightThreshold_ > 0
-                    && taskLoops_.size() < executor_.getMaximumPoolSize()) {
-                weightedUnderThreshold = addTaskLoop();
-                weightedUnderThreshold.accept(selection);
-                return weightedUnderThreshold;
-            }
-            if (minWeighted != null) {
-                minWeighted.accept(selection);
-                return minWeighted;
             }
         }
-
-        throw new IllegalStateException("This TaskLoopGroup may be closed.");
+        if (minCountLoop == null) {
+            throw new IllegalStateException("This TaskLoopGroup may be closed.");
+        }
+        minCountLoop.accept(selection);
+        logger_.debug("[assign] {} is assigned to {}", selection, minCountLoop);
+        return minCountLoop;
     }
 
     private L addTaskLoop() {

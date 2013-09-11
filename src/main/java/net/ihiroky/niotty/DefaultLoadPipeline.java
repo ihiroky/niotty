@@ -12,25 +12,25 @@ public class DefaultLoadPipeline<L extends TaskLoop>
     private static final StageKey TAIL_STAGE = StageKeys.of("LOAD_TAIL_STAGE");
 
     public DefaultLoadPipeline(
-            String name, AbstractTransport<L> transport, TaskLoopGroup<? extends TaskLoop> taskLoopGroup) {
+            String name, AbstractTransport<L> transport, TaskLoopGroup<L> taskLoopGroup) {
         super(String.valueOf(name).concat(SUFFIX_LOAD), transport, taskLoopGroup);
     }
 
     @Override
     protected PipelineElement<Object, Object> createContext(
-            StageKey key, LoadStage<?, ?> stage, PipelineElementExecutorPool pool) {
+            StageKey key, LoadStage<?, ?> stage, TaskLoopGroup<? extends TaskLoop> pool) {
         @SuppressWarnings("unchecked")
         LoadStage<Object, Object> s = (LoadStage<Object, Object>) stage;
         return new LoadStageContext<>(this, key, s, pool);
     }
 
     @Override
-    protected Tail<LoadStage<?, ?>> createTail(PipelineElementExecutorPool defaultPool) {
+    protected Tail<LoadStage<?, ?>> createTail(TaskLoopGroup<L> defaultPool) {
         return new LoadTail(this, TAIL_STAGE, AbstractPipeline.NULL_POOL);
     }
 
     private static class LoadTail extends Tail<LoadStage<?, ?>> {
-        protected LoadTail(AbstractPipeline<?, ?> pipeline, StageKey key, PipelineElementExecutorPool pool) {
+        protected LoadTail(AbstractPipeline<?, ?> pipeline, StageKey key, TaskLoopGroup<? extends TaskLoop> pool) {
             super(pipeline, key, pool);
         }
 

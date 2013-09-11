@@ -22,20 +22,24 @@ public abstract class AbstractPipeline<S, L extends TaskLoop> implements Pipelin
     private final AbstractTransport<L> transport_;
     private final PipelineElement<Object, Object> head_;
     private final Tail<S> tail_;
-    private final PipelineElementExecutorPool defaultPipelineElementExecutorPool_;
+    private final TaskLoopGroup<L> taskLoopGroup_;
     private Logger logger_ = LoggerFactory.getLogger(AbstractPipeline.class);
 
     static final NullPipelineElementExecutorPool NULL_POOL = new NullPipelineElementExecutorPool();
     static final PipelineElement<Object, Object> TERMINAL = new NullPipelineElement();
+
     private static final int INPUT_TYPE = 0;
     private static final int OUTPUT_TYPE = 1;
 
     protected AbstractPipeline(
-            String name, AbstractTransport<L> transport, TaskLoopGroup<? extends TaskLoop> taskLoopGroup) {
+            String name, AbstractTransport<L> transport, TaskLoopGroup<L> taskLoopGroup) {
+        Objects.requireNonNull(name, "name");
+        Objects.requireNonNull(transport, "transport");
+        Objects.requireNonNull(taskLoopGroup, "taskLoopGroup");
+
         transport_ = transport;
 
-        DefaultPipelineElementExecutorPool<L> pool = new DefaultPipelineElementExecutorPool<>(this, taskLoopGroup);
-        Tail<S> tail = createTail(pool);
+        Tail<S> tail = createTail(taskLoopGroup);
         tail.setNext(TERMINAL);
         PipelineElement<Object, Object> head = new NullPipelineElement();
         head.setNext(tail);
@@ -43,16 +47,16 @@ public abstract class AbstractPipeline<S, L extends TaskLoop> implements Pipelin
         name_ = name;
         head_ = head;
         tail_ = tail;
-        defaultPipelineElementExecutorPool_ = pool;
+        taskLoopGroup_ = taskLoopGroup;
     }
 
     @Override
     public Pipeline<S> add(StageKey key, S stage) {
-        return add(key, stage, defaultPipelineElementExecutorPool_);
+        return add(key, stage, taskLoopGroup_);
     }
 
     @Override
-    public Pipeline<S> add(StageKey key, S stage, PipelineElementExecutorPool pool) {
+    public Pipeline<S> add(StageKey key, S stage, TaskLoopGroup<? extends TaskLoop> pool) {
         Objects.requireNonNull(key, "key");
         Objects.requireNonNull(stage, "stage");
         if (key.equals(IO_STAGE_KEY)) {
@@ -85,11 +89,11 @@ public abstract class AbstractPipeline<S, L extends TaskLoop> implements Pipelin
 
     @Override
     public Pipeline<S> addBefore(StageKey baseKey, StageKey key, S stage) {
-        return addBefore(baseKey, key, stage, defaultPipelineElementExecutorPool_);
+        return addBefore(baseKey, key, stage, taskLoopGroup_);
     }
 
     @Override
-    public Pipeline<S> addBefore(StageKey baseKey, StageKey key, S stage, PipelineElementExecutorPool pool) {
+    public Pipeline<S> addBefore(StageKey baseKey, StageKey key, S stage, TaskLoopGroup<? extends TaskLoop> pool) {
         Objects.requireNonNull(baseKey, "baseKey");
         Objects.requireNonNull(key, "key");
         Objects.requireNonNull(stage, "stage");
@@ -123,11 +127,11 @@ public abstract class AbstractPipeline<S, L extends TaskLoop> implements Pipelin
 
     @Override
     public Pipeline<S> addAfter(StageKey baseKey, StageKey key, S stage) {
-        return addAfter(baseKey, key, stage, defaultPipelineElementExecutorPool_);
+        return addAfter(baseKey, key, stage, taskLoopGroup_);
     }
 
     @Override
-    public Pipeline<S> addAfter(StageKey baseKey, StageKey key, S stage, PipelineElementExecutorPool pool) {
+    public Pipeline<S> addAfter(StageKey baseKey, StageKey key, S stage, TaskLoopGroup<? extends TaskLoop> pool) {
         Objects.requireNonNull(baseKey, "baseKey");
         Objects.requireNonNull(key, "key");
         Objects.requireNonNull(stage, "stage");
@@ -184,11 +188,11 @@ public abstract class AbstractPipeline<S, L extends TaskLoop> implements Pipelin
 
     @Override
     public Pipeline<S> replace(StageKey oldKey, StageKey newKey, S newStage) {
-        return replace(oldKey, newKey, newStage, defaultPipelineElementExecutorPool_);
+        return replace(oldKey, newKey, newStage, taskLoopGroup_);
     }
 
     @Override
-    public Pipeline<S> replace(StageKey oldKey, StageKey newKey, S newStage, PipelineElementExecutorPool pool) {
+    public Pipeline<S> replace(StageKey oldKey, StageKey newKey, S newStage, TaskLoopGroup<? extends TaskLoop> pool) {
         Objects.requireNonNull(oldKey, "oldKey");
         Objects.requireNonNull(newKey, "newKey");
         Objects.requireNonNull(newStage, "newStage");
@@ -244,9 +248,9 @@ public abstract class AbstractPipeline<S, L extends TaskLoop> implements Pipelin
     }
 
     protected abstract PipelineElement<Object, Object> createContext(
-            StageKey key, S stage, PipelineElementExecutorPool pool);
+            StageKey key, S stage, TaskLoopGroup<? extends TaskLoop> pool);
 
-    protected abstract Tail<S> createTail(PipelineElementExecutorPool defaultPool);
+    protected abstract Tail<S> createTail(TaskLoopGroup<L> defaultPool);
 
     void setTailStage(S stage) {
         Objects.requireNonNull(stage, "stage");
@@ -416,7 +420,7 @@ public abstract class AbstractPipeline<S, L extends TaskLoop> implements Pipelin
 
     private static class NullPipelineElement extends PipelineElement<Object, Object> {
         protected NullPipelineElement() {
-            super(null, null, NULL_POOL);
+            super(NullPipelineElementExecutorPool.NULL_TASK_LOOP);
         }
         @Override
         protected Object stage() {
@@ -435,9 +439,21 @@ public abstract class AbstractPipeline<S, L extends TaskLoop> implements Pipelin
         public TransportParameter transportParameter() {
             return DefaultTransportParameter.NO_PARAMETER;
         }
+        @Override
+        public void close() {
+        }
+        @Override
+        public void proceed(final Object output) {
+        }
+        @Override
+        protected void proceed(final Object output, final TransportParameter parameter) {
+        }
+        @Override
+        protected void proceed(final TransportStateEvent event) {
+        }
     }
 
-    private static class NullPipelineElementExecutorPool implements PipelineElementExecutorPool {
+    private static class NullPipelineElementExecutorPool extends TaskLoopGroup<TaskLoop> {
 
         static final TaskFuture NULL_FUTURE = new TaskFuture(-1L, new Task() {
             @Override
@@ -472,6 +488,11 @@ public abstract class AbstractPipeline<S, L extends TaskLoop> implements Pipelin
 
         @Override
         public TaskLoop assign(TaskSelection context) {
+            return NULL_TASK_LOOP;
+        }
+
+        @Override
+        protected TaskLoop newTaskLoop() {
             return NULL_TASK_LOOP;
         }
 
@@ -526,7 +547,7 @@ public abstract class AbstractPipeline<S, L extends TaskLoop> implements Pipelin
 
     static abstract class Tail<S> extends PipelineElement<Object, Object> {
 
-        protected Tail(AbstractPipeline<?, ?> pipeline, StageKey key, PipelineElementExecutorPool pool) {
+        protected Tail(AbstractPipeline<?, ?> pipeline, StageKey key, TaskLoopGroup<? extends TaskLoop> pool) {
             super(pipeline, key, pool);
         }
 

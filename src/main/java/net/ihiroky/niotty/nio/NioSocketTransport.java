@@ -29,12 +29,9 @@ public abstract class NioSocketTransport<S extends AbstractSelector> extends Abs
 
     private SelectionKey key_;
 
-    /** Default weight to choose a TaskLoop. */
-    static final int DEFAULT_WEIGHT = 1;
-
     NioSocketTransport(
-            String name, PipelineComposer pipelineComposer, TaskLoopGroup<S> taskLoopGroup, int weight) {
-        super(name, pipelineComposer, taskLoopGroup, weight);
+            String name, PipelineComposer pipelineComposer, TaskLoopGroup<S> taskLoopGroup) {
+        super(name, pipelineComposer, taskLoopGroup);
     }
 
     @Override

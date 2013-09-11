@@ -114,11 +114,6 @@ public class NioDatagramSocketProcessor extends AbstractProcessor<NioDatagramSoc
         return ioSelectorPool_.direct();
     }
 
-    public NioDatagramSocketProcessor setTaskWeightThresholdOfIOSelectorPool(int threshold) {
-        ioSelectorPool_.setTaskWeightThreshold(threshold);
-        return this;
-    }
-
     public boolean duplicateReceiveBuffer() {
         return ioSelectorPool_.duplicateBuffer();
     }
@@ -126,10 +121,6 @@ public class NioDatagramSocketProcessor extends AbstractProcessor<NioDatagramSoc
     public NioDatagramSocketProcessor setDuplicateReceiveBuffer(boolean duplicateReceiveBuffer) {
         ioSelectorPool_.setDuplicateBuffer(duplicateReceiveBuffer);
         return this;
-    }
-
-    public int getTaskWeightThresholdOfIOSelectorPool() {
-        return ioSelectorPool_.getTaskWeightThreshold();
     }
 
     public NioDatagramSocketProcessor setWriteQueueFactory(WriteQueueFactory writeQueueFactory) {

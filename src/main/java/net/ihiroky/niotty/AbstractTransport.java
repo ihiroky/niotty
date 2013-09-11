@@ -19,22 +19,17 @@ public abstract class AbstractTransport<T extends TaskLoop> implements Transport
     private final AtomicReference<Object> attachmentReference_;
     private final DefaultTransportFuture closeFuture_;
     private final T loop_;
-    private final int weight_;
 
     /**
      * Creates a new instance.
      */
     protected AbstractTransport(
-            String name, PipelineComposer pipelineComposer, TaskLoopGroup<T> taskLoopGroup, int weight) {
+            String name, PipelineComposer pipelineComposer, TaskLoopGroup<T> taskLoopGroup) {
         Objects.requireNonNull(name, "name");
         Objects.requireNonNull(pipelineComposer, "pipelineComposer");
-        if (weight <= 0) {
-            throw new IllegalArgumentException("The weight must be positive.");
-        }
 
         attachmentReference_ = new AtomicReference<>();
         closeFuture_ = new DefaultTransportFuture(this);
-        weight_ = weight;
         loop_ = taskLoopGroup.assign(this);
 
         DefaultLoadPipeline<T> loadPipeline = new DefaultLoadPipeline<>(name, this, taskLoopGroup);
@@ -123,11 +118,6 @@ public abstract class AbstractTransport<T extends TaskLoop> implements Transport
     public void setIOStage(StoreStage<?, ?> ioStage) {
         Objects.requireNonNull(ioStage, "ioStage");
         storePipeline_.setTailStage(ioStage);
-    }
-
-    @Override
-    public int weight() {
-        return weight_;
     }
 
     /**

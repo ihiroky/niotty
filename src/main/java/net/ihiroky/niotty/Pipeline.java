@@ -45,7 +45,7 @@ public interface Pipeline<S> {
      * @throws IllegalArgumentException the key is {@link #IO_STAGE_KEY} or already exist in this pipeline
      * @throws NullPointerException if the key or stage is null
      */
-    Pipeline<S> add(StageKey key, S stage, PipelineElementExecutorPool pool);
+    Pipeline<S> add(StageKey key, S stage, TaskLoopGroup<? extends TaskLoop> pool);
 
     /**
      * Adds the specified key and stage before the stage specified with the base stage key.
@@ -72,7 +72,7 @@ public interface Pipeline<S> {
      * @throws NullPointerException if the baseKey, key or stage is null
      * @throws java.util.NoSuchElementException if the base stage key is not found in this pipeline
      */
-    Pipeline<S> addBefore(StageKey baseKey, StageKey key, S stage, PipelineElementExecutorPool pool);
+    Pipeline<S> addBefore(StageKey baseKey, StageKey key, S stage, TaskLoopGroup<? extends TaskLoop> pool);
 
     /**
      * Adds the specified key and stage after the stage specified with the base stage key.
@@ -99,7 +99,7 @@ public interface Pipeline<S> {
      * @throws NullPointerException if the baseKey, key or stage is null
      * @throws java.util.NoSuchElementException if the base stage key is not found in this pipeline
      */
-    Pipeline<S> addAfter(StageKey baseKey, StageKey key, S stage, PipelineElementExecutorPool pool);
+    Pipeline<S> addAfter(StageKey baseKey, StageKey key, S stage, TaskLoopGroup<? extends TaskLoop> pool);
 
     /**
      * Removes a stage specified with the stage key.
@@ -139,7 +139,7 @@ public interface Pipeline<S> {
      * @throws java.util.NoSuchElementException if the stage associated with the old key key is not found
      *         in this pipeline
      */
-    Pipeline<S> replace(StageKey oldKey, StageKey newKey, S newStage, PipelineElementExecutorPool pool);
+    Pipeline<S> replace(StageKey oldKey, StageKey newKey, S newStage, TaskLoopGroup<? extends TaskLoop> pool);
 
     /**
      * Returns the name of this pipeline.

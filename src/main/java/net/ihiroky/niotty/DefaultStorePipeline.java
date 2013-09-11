@@ -11,20 +11,20 @@ public class DefaultStorePipeline<L extends TaskLoop>
     private static final String SUFFIX_STORE = "[store]";
 
     public DefaultStorePipeline(
-            String name, AbstractTransport<L> transport, TaskLoopGroup<? extends TaskLoop> taskLoopGroup) {
+            String name, AbstractTransport<L> transport, TaskLoopGroup<L> taskLoopGroup) {
         super(String.valueOf(name).concat(SUFFIX_STORE), transport, taskLoopGroup);
     }
 
     @Override
     protected PipelineElement<Object, Object> createContext(
-            StageKey key, StoreStage<?, ?> stage, PipelineElementExecutorPool pool) {
+            StageKey key, StoreStage<?, ?> stage, TaskLoopGroup<? extends TaskLoop> pool) {
         @SuppressWarnings("unchecked")
         StoreStage<Object, Object> s = (StoreStage<Object, Object>) stage;
         return new StoreStageContext<>(this, key, s, pool);
     }
 
     @Override
-    protected Tail<StoreStage<?, ?>> createTail(PipelineElementExecutorPool defaultPool) {
+    protected Tail<StoreStage<?, ?>> createTail(TaskLoopGroup<L> defaultPool) {
         return new StoreTail(this, IO_STAGE_KEY, defaultPool);
     }
 
@@ -44,7 +44,7 @@ public class DefaultStorePipeline<L extends TaskLoop>
             }
         };
 
-        protected StoreTail(AbstractPipeline<?, ?> pipeline, StageKey key, PipelineElementExecutorPool pool) {
+        protected StoreTail(AbstractPipeline<?, ?> pipeline, StageKey key, TaskLoopGroup<? extends TaskLoop> pool) {
             super(pipeline, key, pool);
         }
 

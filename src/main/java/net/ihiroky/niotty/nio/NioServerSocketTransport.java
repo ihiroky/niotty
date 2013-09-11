@@ -42,7 +42,7 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
     private Logger logger_ = LoggerFactory.getLogger(NioServerSocketTransport.class);
 
     NioServerSocketTransport(NioServerSocketProcessor processor) {
-        super(processor.name(), PipelineComposer.empty(), processor.acceptSelectorPool(), DEFAULT_WEIGHT);
+        super(processor.name(), PipelineComposer.empty(), processor.acceptSelectorPool());
 
         ServerSocketChannel serverChannel = null;
         try {
@@ -169,7 +169,7 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
         SocketChannel socketChannel = (SocketChannel) channel;
         TcpIOSelectorPool ioSelectorPool = processor_.ioSelectorPool();
         NioClientSocketTransport child = new NioClientSocketTransport(
-                processor_.pipelineComposer(), DEFAULT_WEIGHT, processor_.name(),
+                processor_.pipelineComposer(), processor_.name(),
                 ioSelectorPool, processor_.writeQueueFactory(), socketChannel);
         for (Map.Entry<SocketOption<Object>, Object> option : acceptedSocketOptionSet_) {
             socketChannel.setOption(option.getKey(), option.getValue());

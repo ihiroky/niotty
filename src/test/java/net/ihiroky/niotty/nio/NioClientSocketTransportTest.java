@@ -36,7 +36,7 @@ public class NioClientSocketTransportTest {
         TcpIOSelector taskLoop = mock(TcpIOSelector.class);
 
         sut_ = spy(new NioClientSocketTransport(
-                PipelineComposer.empty(), 1, "TEST", ioPool, writeQueueFactory, channel));
+                PipelineComposer.empty(), "TEST", ioPool, writeQueueFactory, channel));
         when(sut_.taskLoop()).thenReturn(taskLoop);
         sut_.setSelectionKey(selectionKey);
     }

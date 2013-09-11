@@ -8,14 +8,13 @@ import java.util.List;
  *
  * <p>{@link #compose(LoadPipeline, StorePipeline)} composes load and store pipelines by adding
  * {@link net.ihiroky.niotty.LoadStage} and {@link net.ihiroky.niotty.StoreStage} respectively.
- * This method is also used to modify the pipelines at {@link AbstractTransport#resetPipelines(PipelineComposer)}.</p>
  *
  * <h3>Set up and close for support objects.</h3>
  * <p>This class has life cycle methods {@link #setUp()} and {@link #close()},
  * and a subsidiary method {@link #addCloseable(AutoCloseable)} . If it is necessary
- * to set up support objects like {@link PipelineElementExecutorPool} and
- * {@link net.ihiroky.niotty.buffer.ChunkPool}, which is used over the composing
- * plural sets of load and store pipelines, {@link #setUp()} is overridden
+ * to set up support objects like {@link DefaultTaskLoopGroup} to execute {@link LoadStage}
+ * and {@link StoreStage}, and {@link net.ihiroky.niotty.buffer.ChunkPool}, which are used
+ * over the composing plural sets of load and store pipelines, {@link #setUp()} is overridden
  * and the objects is initialized in it. If tear down, {@link #close()} is overridden.
  * If the objects implements {@code java.lang.AutoCloseable},
  * {@link #addCloseable(AutoCloseable)} can be used to tear down the objects.

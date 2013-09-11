@@ -34,18 +34,7 @@ public class NioClientSocketProcessor extends AbstractProcessor<NioClientSocketT
 
     @Override
     public NioClientSocketTransport createTransport() {
-        return new NioClientSocketTransport(pipelineComposer(), NioClientSocketTransport.DEFAULT_WEIGHT, name(),
-                connectSelectorPool_, ioSelectorPool_, writeQueueFactory_);
-    }
-
-    /**
-     * Constructs the transport.
-     *
-     * @param weight a weight to choose I/O thread.
-     * @return the transport.
-     */
-    public NioClientSocketTransport createTransport(int weight) {
-        return new NioClientSocketTransport(pipelineComposer(), weight, name(),
+        return new NioClientSocketTransport(pipelineComposer(), name(),
                 connectSelectorPool_, ioSelectorPool_, writeQueueFactory_);
     }
 
@@ -111,11 +100,6 @@ public class NioClientSocketProcessor extends AbstractProcessor<NioClientSocketT
         return this;
     }
 
-    public NioClientSocketProcessor setTaskWeightThresholdOfIOSelectorPool(int threshold) {
-        ioSelectorPool_.setTaskWeightThreshold(threshold);
-        return this;
-    }
-
     public NioClientSocketProcessor setWriteQueueFactory(WriteQueueFactory writeQueueFactory) {
         Objects.requireNonNull(writeQueueFactory, "writeQueueFactory");
         writeQueueFactory_ = writeQueueFactory;
@@ -152,9 +136,5 @@ public class NioClientSocketProcessor extends AbstractProcessor<NioClientSocketT
 
     public boolean isDuplicateReceiveBuffer() {
         return ioSelectorPool_.duplicateBuffer();
-    }
-
-    public int taskWeightThresholdOfIOSelectorPool() {
-        return ioSelectorPool_.getTaskWeightThreshold();
     }
 }

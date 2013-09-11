@@ -4,18 +4,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Deque;
-import java.util.HashSet;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.PriorityQueue;
 import java.util.Queue;
-import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Provides an loop to process tasks which is queued in a task queue.
@@ -35,8 +31,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  * </p>
  * <p>
  * This class holds a set of {@link net.ihiroky.niotty.TaskSelection}. The selection shows
- * a object which is associated with this task loop. The sum of the weight of the selections
- * can be used to control the balancing of the association.
+ * a object which is associated with this task loop. The number of selections can be used
+ * to control the balancing of the association.
  * </p>
  */
 public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
@@ -44,8 +40,7 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
     private final Queue<Task> taskQueue_;
     private final Queue<TaskFuture> delayQueue_;
     private volatile Thread thread_;
-    private final Set<TaskSelection> selectionSet_;
-    private final AtomicInteger weight_ = new AtomicInteger();
+    private final Map<TaskSelection, Integer> selectionCountMap_;
 
     private Logger logger_ = LoggerFactory.getLogger(TaskLoop.class);
 
@@ -59,7 +54,7 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
     protected TaskLoop() {
         taskQueue_ = new ConcurrentLinkedQueue<>();
         delayQueue_ = new PriorityQueue<>(INITIAL_DELAY_QUEUE_SIZE);
-        selectionSet_ = new HashSet<>();
+        selectionCountMap_ = new HashMap<>();
     }
 
     /**
@@ -178,8 +173,8 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
         } finally {
             onClose();
             taskQueue.clear();
-            synchronized (selectionSet_) {
-                selectionSet_.clear();
+            synchronized (selectionCountMap_) {
+                selectionCountMap_.clear();
             }
             thread_ = null;
         }
@@ -292,7 +287,21 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
 
     @Override
     public int compareTo(TaskLoop that) {
-        return this.weight_.get() - that.weight_.get();
+        return selectionCount() - that.selectionCount();
+    }
+
+    int selectionCount() {
+        synchronized (selectionCountMap_) {
+            return selectionCountMap_.size();
+        }
+    }
+
+    int duplicationCountFor(TaskSelection selection) {
+        Integer count;
+        synchronized (selectionCountMap_) {
+            count = selectionCountMap_.get(selection);
+        }
+        return (count != null) ? count : 0;
     }
 
     /**
@@ -300,78 +309,58 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
      * @param selection the object to test
      * @return true if a object specified by the selection is associated with this object
      */
-    public boolean contains(TaskSelection selection) {
-        synchronized (selectionSet_) {
-            return selectionSet_.contains(selection);
+    boolean countUpIfContains(TaskSelection selection) {
+        Integer count;
+        synchronized (selectionCountMap_) {
+            count = selectionCountMap_.get(selection);
+            if (count != null) {
+                selectionCountMap_.put(selection, count + 1);
+            }
         }
+        return count != null;
     }
 
     /**
      * Associates a object specified by the selection with this object.
      * @param selection the object to be associated
-     * @return sum of the selection's weight associated with this object
+     * @return the number of the selections associated with this object
      * @throws NullPointerException if selection is null
      */
     public int accept(TaskSelection selection) {
         Objects.requireNonNull(selection, "selection");
-        int weight = -1;
-        synchronized (selectionSet_) {
-            if (!selectionSet_.contains(selection)) {
-                weight = addWeight(selection.weight());
-                selectionSet_.add(selection);
+        int size;
+        synchronized (selectionCountMap_) {
+            Integer count = selectionCountMap_.get(selection);
+            if (count == null) {
+                count = 0;
             }
+            selectionCountMap_.put(selection, count + 1);
+            size = selectionCountMap_.size();
         }
-        return weight;
+        return size;
     }
 
     /**
      * Dissociate a object specified by the selection from this object.
      * @param selection the object to be dissociate
-     * @return sum of the selection's weight associated with this object, exclude the selection
+     * @return the number of the selections weight associated with this object, exclude the selection
      */
     public int reject(TaskSelection selection) {
         Objects.requireNonNull(selection, "selection");
-        int weight = -1;
-        synchronized (selectionSet_) {
-            if (selectionSet_.contains(selection)) {
-                weight = addWeight(-selection.weight());
-                selectionSet_.remove(selection);
+        int size;
+        synchronized (selectionCountMap_) {
+            Integer count = selectionCountMap_.get(selection);
+            if (count != null) {
+                count = count - 1;
+                if (count != 0) {
+                    selectionCountMap_.put(selection, count);
+                } else {
+                    selectionCountMap_.remove(selection);
+                }
             }
+            size = selectionCountMap_.size();
         }
-        return weight;
-    }
-
-    /**
-     * Returns a view of the selections associated with this object.
-     * @return a view of the selections associated with this object
-     */
-    public Collection<TaskSelection> selectionView() {
-        List<TaskSelection> copy;
-        synchronized (selectionSet_) {
-            copy = new ArrayList<>(selectionSet_);
-        }
-        return copy;
-    }
-
-    private int addWeight(int weight) {
-        for (;;) {
-            int value = weight_.get();
-            int added = value + weight;
-            if (added < 0) {
-                added = (weight > 0) ? Integer.MAX_VALUE : 0;
-            }
-            if (weight_.compareAndSet(value, added)) {
-                return added;
-            }
-        }
-    }
-
-    /**
-     * Returns sum of the weight of selections which is associated with this object.
-     * @return sum of the weight of selections
-     */
-    protected int weight() {
-        return weight_.get();
+        return size;
     }
 
     /**

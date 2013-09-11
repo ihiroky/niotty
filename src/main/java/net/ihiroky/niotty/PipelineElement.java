@@ -7,18 +7,26 @@ import java.util.concurrent.TimeUnit;
  * @param <I> the type of the input object for the stage.
  * @param <O> the type of the output object for the stage.
  */
-public abstract class PipelineElement<I, O> implements StageContext<O>, TaskSelection {
+public abstract class PipelineElement<I, O> implements StageContext<O> {
 
     private final AbstractPipeline<?, ?> pipeline_;
     private final StageKey key_;
     private volatile PipelineElement<O, Object> next_;
     private final TaskLoop taskLoop_;
 
-    protected PipelineElement(AbstractPipeline<?, ?> pipeline, StageKey key, PipelineElementExecutorPool pool) {
+    protected PipelineElement(AbstractPipeline<?, ?> pipeline, StageKey key, TaskLoopGroup<? extends TaskLoop> pool) {
+        Objects.requireNonNull(pipeline, "pipeline");
+        Objects.requireNonNull(key, "key");
         Objects.requireNonNull(pool, "pool");
         pipeline_ = pipeline;
         key_ = key;
-        taskLoop_ = pool.assign(this);
+        taskLoop_ = (pipeline != null) ? pool.assign(pipeline.transport()) : null;
+    }
+
+    PipelineElement(TaskLoop taskLoop) {
+        pipeline_ = null;
+        key_ = null;
+        taskLoop_ = taskLoop;
     }
 
     @Override
@@ -49,7 +57,7 @@ public abstract class PipelineElement<I, O> implements StageContext<O>, TaskSele
     }
 
     protected void close() {
-        taskLoop_.reject(this);
+        taskLoop_.reject(pipeline_.transport());
     }
 
     @Override
@@ -91,11 +99,6 @@ public abstract class PipelineElement<I, O> implements StageContext<O>, TaskSele
 
     protected StageContext<O> wrappedStageContext(PipelineElement<?, O> context, TransportParameter parameter) {
         return new WrappedStageContext<>(context, parameter);
-    }
-
-    @Override
-    public int weight() {
-        return 1; // TODO correspond to transport ?
     }
 
     static class WrappedStageContext<O> implements StageContext<O> {

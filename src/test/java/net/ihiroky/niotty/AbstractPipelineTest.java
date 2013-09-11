@@ -514,7 +514,7 @@ public class AbstractPipelineTest {
 
         @Override
         protected PipelineElement<Object, Object> createContext(
-                StageKey key, final Object stage, PipelineElementExecutorPool pool) {
+                StageKey key, final Object stage, TaskLoopGroup<? extends TaskLoop> pool) {
             return new PipelineElement<Object, Object>(this, key, pool) {
                 @Override
                 protected Object stage() {
@@ -537,7 +537,7 @@ public class AbstractPipelineTest {
         }
 
         @Override
-        protected Tail<Object> createTail(PipelineElementExecutorPool defaultPool) {
+        protected Tail<Object> createTail(TaskLoopGroup<TaskLoop> defaultPool) {
             return new Tail<Object>(this, IO_STAGE_KEY, AbstractPipeline.NULL_POOL) {
                 @Override
                 void setStage(Object stage) {

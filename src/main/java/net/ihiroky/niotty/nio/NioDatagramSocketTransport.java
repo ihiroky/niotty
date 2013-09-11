@@ -38,7 +38,7 @@ public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector
 
     NioDatagramSocketTransport(PipelineComposer composer, ProtocolFamily protocolFamily,
                                String name, UdpIOSelectorPool selectorPool, WriteQueueFactory writeQueueFactory) {
-        super(name, composer, selectorPool, DEFAULT_WEIGHT);
+        super(name, composer, selectorPool);
 
         Objects.requireNonNull(selectorPool, "selectorPool");
         Objects.requireNonNull(writeQueueFactory, "writeQueueFactory");

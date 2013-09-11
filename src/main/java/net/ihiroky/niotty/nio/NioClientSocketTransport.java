@@ -42,9 +42,9 @@ public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> 
     }
 
     NioClientSocketTransport(
-            PipelineComposer composer, int weight, String name,
+            PipelineComposer composer, String name,
             ConnectSelectorPool connectorPool, TcpIOSelectorPool ioPool, WriteQueueFactory writeQueueFactory) {
-        super(name, composer, ioPool, weight);
+        super(name, composer, ioPool);
 
         Objects.requireNonNull(connectorPool, "connectorPool");
         Objects.requireNonNull(ioPool, "ioPool");
@@ -62,9 +62,9 @@ public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> 
         }
     }
 
-    NioClientSocketTransport(PipelineComposer composer, int weight, String name,
+    NioClientSocketTransport(PipelineComposer composer, String name,
                              TcpIOSelectorPool ioPool, WriteQueueFactory writeQueueFactory, SocketChannel child) {
-        super(name, composer, ioPool, weight);
+        super(name, composer, ioPool);
 
         Objects.requireNonNull(writeQueueFactory, "writeQueueFactory");
         Objects.requireNonNull(child, "child");

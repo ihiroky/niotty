@@ -12,7 +12,7 @@ class StoreStageContext<I, O> extends PipelineElement<I, O> {
 
     @SuppressWarnings("unchecked")
     StoreStageContext(AbstractPipeline<?, ?> pipeline,
-                             StageKey key, StoreStage<Object, Object> stage, PipelineElementExecutorPool pool) {
+                             StageKey key, StoreStage<Object, Object> stage, TaskLoopGroup<? extends TaskLoop> pool) {
         super(pipeline, key, pool);
         Objects.requireNonNull(stage, "stage");
         this.stage_ = (StoreStage<I, O>) stage;
