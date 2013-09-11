@@ -22,18 +22,22 @@ public abstract class AbstractTransport<T extends TaskLoop> implements Transport
 
     /**
      * Creates a new instance.
+     *
+     * @param name a name of this transport
+     * @param pipelineComposer a composer to initialize a pipeline for this transport
+     * @param taskLoopGroup the pool which offers the TaskLoop to execute the stage
      */
     protected AbstractTransport(
             String name, PipelineComposer pipelineComposer, TaskLoopGroup<T> taskLoopGroup) {
         Objects.requireNonNull(name, "name");
         Objects.requireNonNull(pipelineComposer, "pipelineComposer");
 
-        attachmentReference_ = new AtomicReference<>();
+        attachmentReference_ = new AtomicReference<Object>();
         closeFuture_ = new DefaultTransportFuture(this);
         loop_ = taskLoopGroup.assign(this);
 
-        DefaultLoadPipeline<T> loadPipeline = new DefaultLoadPipeline<>(name, this, taskLoopGroup);
-        DefaultStorePipeline<T> storePipeline = new DefaultStorePipeline<>(name, this, taskLoopGroup);
+        DefaultLoadPipeline<T> loadPipeline = new DefaultLoadPipeline<T>(name, this, taskLoopGroup);
+        DefaultStorePipeline<T> storePipeline = new DefaultStorePipeline<T>(name, this, taskLoopGroup);
         pipelineComposer.compose(loadPipeline, storePipeline);
 
         loadPipeline.verifyStageType();

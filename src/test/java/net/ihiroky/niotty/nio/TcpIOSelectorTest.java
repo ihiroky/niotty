@@ -77,7 +77,7 @@ public class TcpIOSelectorTest {
         when(key.readyOps()).thenReturn(SelectionKey.OP_READ);
         key.attach(transport);
 
-        sut.processSelectedKeys(new HashSet<>(Arrays.asList(key)));
+        sut.processSelectedKeys(new HashSet<SelectionKey>(Arrays.asList(key)));
 
         ArgumentCaptor<CodecBuffer> captor = ArgumentCaptor.forClass(CodecBuffer.class);
         verify(transport).loadEvent(captor.capture());
@@ -104,7 +104,7 @@ public class TcpIOSelectorTest {
         when(key.readyOps()).thenReturn(SelectionKey.OP_READ);
         key.attach(transport);
 
-        sut.processSelectedKeys(new HashSet<>(Arrays.asList(key)));
+        sut.processSelectedKeys(new HashSet<SelectionKey>(Arrays.asList(key)));
 
         ArgumentCaptor<CodecBuffer> captor = ArgumentCaptor.forClass(CodecBuffer.class);
         verify(transport).loadEvent(captor.capture());

@@ -114,7 +114,7 @@ public abstract class AbstractTransportFuture implements TransportFuture {
      */
     private static class ListenerList implements TransportFutureListener {
 
-        CopyOnWriteArrayList<TransportFutureListener> list_ = new CopyOnWriteArrayList<>();
+        CopyOnWriteArrayList<TransportFutureListener> list_ = new CopyOnWriteArrayList<TransportFutureListener>();
 
         @Override
         public void onComplete(TransportFuture future) {

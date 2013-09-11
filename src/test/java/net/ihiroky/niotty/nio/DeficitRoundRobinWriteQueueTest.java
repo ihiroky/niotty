@@ -249,9 +249,9 @@ public class DeficitRoundRobinWriteQueueTest {
         doNothing().when(bufferSink2).dispose();
 
         DeficitRoundRobinWriteQueue sut = new DeficitRoundRobinWriteQueue(64, 1f, 0.5f);
-        sut.offer(new AttachedMessage<>(bufferSink0, DefaultTransportParameter.NO_PARAMETER));
-        sut.offer(new AttachedMessage<>(bufferSink1, new DefaultTransportParameter(0)));
-        sut.offer(new AttachedMessage<>(bufferSink2, new DefaultTransportParameter(1)));
+        sut.offer(new AttachedMessage<BufferSink>(bufferSink0, DefaultTransportParameter.NO_PARAMETER));
+        sut.offer(new AttachedMessage<BufferSink>(bufferSink1, new DefaultTransportParameter(0)));
+        sut.offer(new AttachedMessage<BufferSink>(bufferSink2, new DefaultTransportParameter(1)));
         sut.clear();
 
         verify(bufferSink0, times(1)).dispose();

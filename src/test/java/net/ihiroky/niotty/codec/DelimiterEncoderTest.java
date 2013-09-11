@@ -20,7 +20,7 @@ public class DelimiterEncoderTest {
     @Test
     public void testStore() throws Exception {
         DelimiterEncoder sut = new DelimiterEncoder(new byte[]{'\r', '\n'});
-        StageContext<BufferSink> context = new StageContextMock<>();
+        StageContext<BufferSink> context = new StageContextMock<BufferSink>();
 
         byte[] data = "input".getBytes(StandardCharsets.UTF_8);
         BufferSink b = Buffers.wrap(data, 0, data.length);

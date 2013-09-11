@@ -33,14 +33,14 @@ public class CodecBufferList extends AbstractCodecBuffer {
     private static final int MAX_BUFFER_COUNT = 1024;
 
     private CodecBufferList() {
-        buffers_ = new ArrayList<>(INITIAL_BUFFERS_CAPACITY);
+        buffers_ = new ArrayList<CodecBuffer>(INITIAL_BUFFERS_CAPACITY);
         endBufferIndex_ = -1;
     }
 
     CodecBufferList(CodecBuffer buffer0) {
         Objects.requireNonNull(buffer0, "buffer0");
 
-        List<CodecBuffer> list = new ArrayList<>(INITIAL_BUFFERS_CAPACITY);
+        List<CodecBuffer> list = new ArrayList<CodecBuffer>(INITIAL_BUFFERS_CAPACITY);
         list.add(new SlicedCodecBuffer(buffer0));
         buffers_ = list;
         endBufferIndex_ = 0;
@@ -50,7 +50,7 @@ public class CodecBufferList extends AbstractCodecBuffer {
         Objects.requireNonNull(buffer0, "buffer0");
         Objects.requireNonNull(buffer1, "buffer1");
 
-        List<CodecBuffer> list = new ArrayList<>(INITIAL_BUFFERS_CAPACITY);
+        List<CodecBuffer> list = new ArrayList<CodecBuffer>(INITIAL_BUFFERS_CAPACITY);
         list.add(new SlicedCodecBuffer(buffer0));
         list.add(new SlicedCodecBuffer(buffer1));
         buffers_ = list;
@@ -63,7 +63,7 @@ public class CodecBufferList extends AbstractCodecBuffer {
             throw new IllegalArgumentException("length of buffers must be less than " + MAX_BUFFER_COUNT + ".");
         }
 
-        List<CodecBuffer> list = new ArrayList<>(Math.max(INITIAL_BUFFERS_CAPACITY, buffers.length));
+        List<CodecBuffer> list = new ArrayList<CodecBuffer>(Math.max(INITIAL_BUFFERS_CAPACITY, buffers.length));
         int end = -1;
         for (CodecBuffer b : buffers) {
             list.add(new SlicedCodecBuffer(b));
@@ -759,7 +759,7 @@ public class CodecBufferList extends AbstractCodecBuffer {
         }
 
         if (beginningBufferIndex_ > 0) {
-            List<CodecBuffer> t = new ArrayList<>(endBufferIndex_ - beginningBufferIndex_ + 1);
+            List<CodecBuffer> t = new ArrayList<CodecBuffer>(endBufferIndex_ - beginningBufferIndex_ + 1);
             for (int i = beginningBufferIndex_; i <= endBufferIndex_; i++) {
                 t.add(buffers_.get(i));
             }

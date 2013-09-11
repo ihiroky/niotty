@@ -21,7 +21,7 @@ public class FrameLengthPrependEncoderTest {
     @SuppressWarnings("unchecked")
     public void setUp() throws Exception {
         sut_ = new FrameLengthPrependEncoder();
-        context_ = new StageContextMock<>();
+        context_ = new StageContextMock<BufferSink>();
     }
 
     @Test

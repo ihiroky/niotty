@@ -52,7 +52,7 @@ public class FileBufferSinkTest {
         }
         channel_.write(ByteBuffer.wrap(data));
         channel_.position(0);
-        closeableList = new ArrayList<>();
+        closeableList = new ArrayList<ByteBufferChunkPool>();
         originalData_ = data;
     }
 

@@ -23,7 +23,7 @@ public class FrameLengthRemoveDecoderTest {
     @Before
     public void setUp() {
         sut_ = new FrameLengthRemoveDecoder();
-        context_ = new StageContextMock<>();
+        context_ = new StageContextMock<CodecBuffer>();
         CodecBuffer encodeBuffer = Buffers.newCodecBuffer(32);
         encodeBuffer.writeShort((short) 12);
         encodeBuffer.writeInt(1);
@@ -35,7 +35,7 @@ public class FrameLengthRemoveDecoderTest {
 
     private void setUpAgainAsIntLength() {
         sut_ = new FrameLengthRemoveDecoder();
-        context_ = new StageContextMock<>();
+        context_ = new StageContextMock<CodecBuffer>();
         CodecBuffer encodeBuffer = Buffers.newCodecBuffer(32);
         encodeBuffer.writeInt(12 | 0x80000000); // INT_FLAG
         encodeBuffer.writeInt(1);
@@ -130,7 +130,7 @@ public class FrameLengthRemoveDecoderTest {
         sut_.load(context_, b);
         assertThat(context_.eventCount(), is(0));
         assertThat(sut_.getPooling(), is(nullValue()));
-        assertThat(sut_.getPoolingFrameBytes(), is(0x8000_0000));
+        assertThat(sut_.getPoolingFrameBytes(), is(0x80000000));
         assertThat(b.remainingBytes(), is(0));
         assertThat(b, hasReferenceCount(0));
 
@@ -139,7 +139,7 @@ public class FrameLengthRemoveDecoderTest {
         sut_.load(context_, b);
         assertThat(context_.eventCount(), is(0));
         assertThat(sut_.getPooling().remainingBytes(), is(1));
-        assertThat(sut_.getPoolingFrameBytes(), is(0x8000_0000));
+        assertThat(sut_.getPoolingFrameBytes(), is(0x80000000));
         assertThat(b.remainingBytes(), is(0));
         assertThat(b, hasReferenceCount(0));
 

@@ -20,7 +20,7 @@ public class DefaultStorePipeline<L extends TaskLoop>
             StageKey key, StoreStage<?, ?> stage, TaskLoopGroup<? extends TaskLoop> pool) {
         @SuppressWarnings("unchecked")
         StoreStage<Object, Object> s = (StoreStage<Object, Object>) stage;
-        return new StoreStageContext<>(this, key, s, pool);
+        return new StoreStageContext<Object, Object>(this, key, s, pool);
     }
 
     @Override
@@ -66,7 +66,7 @@ public class DefaultStorePipeline<L extends TaskLoop>
 
         @Override
         protected void fire(Object input, TransportParameter parameter) {
-            WrappedStageContext<Object> context = new WrappedStageContext<>(this, parameter);
+            WrappedStageContext<Object> context = new WrappedStageContext<Object>(this, parameter);
             stage_.store(context, input);
         }
 

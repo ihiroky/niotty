@@ -21,7 +21,7 @@ public class DefaultLoadPipeline<L extends TaskLoop>
             StageKey key, LoadStage<?, ?> stage, TaskLoopGroup<? extends TaskLoop> pool) {
         @SuppressWarnings("unchecked")
         LoadStage<Object, Object> s = (LoadStage<Object, Object>) stage;
-        return new LoadStageContext<>(this, key, s, pool);
+        return new LoadStageContext<Object, Object>(this, key, s, pool);
     }
 
     @Override

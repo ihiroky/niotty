@@ -36,7 +36,8 @@ public class ByteBufferChunkPoolTest {
 
     @Test
     public void testAllocate() throws Exception {
-        try (ByteBufferChunkPool sut = new ByteBufferChunkPool(10, true)) {
+        ByteBufferChunkPool sut = new ByteBufferChunkPool(10, true);
+        try {
             ByteBufferChunk chunk0 = sut.allocate(6);
             int allocated0 = sut.wholeView().position();
             ByteBufferChunk chunk1 = sut.allocate(5); // over maxPoolingBytes
@@ -53,14 +54,19 @@ public class ByteBufferChunkPoolTest {
             assertThat(allocated0, is(6));
             assertThat(allocated1, is(6));
             assertThat(allocated2, is(10));
+        } finally {
+            sut.close();
         }
     }
 
     @Test
     public void testAllocate_Heap() throws Exception {
-        try (ByteBufferChunkPool sut = new ByteBufferChunkPool(10, false)) {
+        ByteBufferChunkPool sut = new ByteBufferChunkPool(10, false);
+        try {
             ByteBufferChunk chunk0 = sut.allocate(6);
             assertThat(chunk0.buffer_.isDirect(), is(false));
+        } finally {
+            sut.close();
         }
     }
 

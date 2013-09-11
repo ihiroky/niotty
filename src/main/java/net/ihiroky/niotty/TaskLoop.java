@@ -52,9 +52,9 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
      * Creates a new instance.
      */
     protected TaskLoop() {
-        taskQueue_ = new ConcurrentLinkedQueue<>();
-        delayQueue_ = new PriorityQueue<>(INITIAL_DELAY_QUEUE_SIZE);
-        selectionCountMap_ = new HashMap<>();
+        taskQueue_ = new ConcurrentLinkedQueue<Task>();
+        delayQueue_ = new PriorityQueue<TaskFuture>(INITIAL_DELAY_QUEUE_SIZE);
+        selectionCountMap_ = new HashMap<TaskSelection, Integer>();
     }
 
     /**
@@ -145,7 +145,7 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
      * Executes the loop especially on a thread provided by {@link net.ihiroky.niotty.TaskLoopGroup}.
      */
     public void run() {
-        Deque<Task> taskBuffer = new ArrayDeque<>(INITIAL_TASK_BUFFER_SIZE);
+        Deque<Task> taskBuffer = new ArrayDeque<Task>(INITIAL_TASK_BUFFER_SIZE);
         Queue<Task> taskQueue = taskQueue_;
         Queue<TaskFuture> delayQueue = delayQueue_;
         try {

@@ -21,7 +21,7 @@ public class SimpleWriteQueue implements WriteQueue {
     private int lastFlushedBytes_;
 
     SimpleWriteQueue() {
-        queue_ = new ConcurrentLinkedQueue<>();
+        queue_ = new ConcurrentLinkedQueue<AttachedMessage<BufferSink>>();
     }
 
     @Override

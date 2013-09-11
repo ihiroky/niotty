@@ -33,7 +33,7 @@ final class StringCache {
     }
 
     private static Set<Charset> charsetContainingAscii() {
-        Set<Charset> set = new HashSet<>();
+        Set<Charset> set = new HashSet<Charset>();
         set.add(StandardCharsets.US_ASCII);
         set.add(StandardCharsets.ISO_8859_1);
         set.add(StandardCharsets.UTF_8);

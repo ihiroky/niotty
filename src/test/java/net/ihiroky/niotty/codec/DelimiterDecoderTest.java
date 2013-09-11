@@ -26,7 +26,7 @@ public class DelimiterDecoderTest {
     @Test
     public void testLoad_One() throws Exception {
         DelimiterDecoder sut = new DelimiterDecoder(new byte[]{'\r', '\n'}, false);
-        StageContextMock<CodecBuffer> context = new StageContextMock<>();
+        StageContextMock<CodecBuffer> context = new StageContextMock<CodecBuffer>();
 
         byte[] data = "input\r\n".getBytes(StandardCharsets.UTF_8);
         CodecBuffer input = Buffers.wrap(data, 0, data.length);
@@ -41,7 +41,7 @@ public class DelimiterDecoderTest {
     @Test
     public void testLoad_Two() throws Exception {
         DelimiterDecoder sut = new DelimiterDecoder(new byte[]{'\r', '\n'}, false);
-        StageContextMock<CodecBuffer> context = new StageContextMock<>();
+        StageContextMock<CodecBuffer> context = new StageContextMock<CodecBuffer>();
 
         byte[] data = "input0\r\ninput1\r\n".getBytes(StandardCharsets.UTF_8);
         CodecBuffer input = Buffers.wrap(data, 0, data.length);
@@ -57,7 +57,7 @@ public class DelimiterDecoderTest {
     @Test
     public void testLoad_IncompletePacket0() throws Exception {
         DelimiterDecoder sut = new DelimiterDecoder(new byte[]{'\r', '\n'}, false);
-        StageContextMock<CodecBuffer> context = new StageContextMock<>();
+        StageContextMock<CodecBuffer> context = new StageContextMock<CodecBuffer>();
 
         byte[] data = "input0\r".getBytes(StandardCharsets.UTF_8);
         CodecBuffer input = Buffers.wrap(data, 0, data.length);
@@ -71,7 +71,7 @@ public class DelimiterDecoderTest {
     @Test
     public void testLoad_IncompletePacket1() throws Exception {
         DelimiterDecoder sut = new DelimiterDecoder(new byte[]{'\r', '\n'}, false);
-        StageContextMock<CodecBuffer> context = new StageContextMock<>();
+        StageContextMock<CodecBuffer> context = new StageContextMock<CodecBuffer>();
 
         byte[] data = "input0\r\ninput1".getBytes(StandardCharsets.UTF_8);
         CodecBuffer input = Buffers.wrap(data, 0, data.length);
@@ -87,7 +87,7 @@ public class DelimiterDecoderTest {
     @Test
     public void testLoad_IncompletePacketSeparate() throws Exception {
         DelimiterDecoder sut = new DelimiterDecoder(new byte[]{'\r', '\n'}, false);
-        StageContextMock<CodecBuffer> context = new StageContextMock<>();
+        StageContextMock<CodecBuffer> context = new StageContextMock<CodecBuffer>();
 
         byte[] data0 = "input0\r".getBytes(StandardCharsets.UTF_8);
         byte[] data1 = "\ninput1".getBytes(StandardCharsets.UTF_8);
@@ -107,7 +107,7 @@ public class DelimiterDecoderTest {
     @Test
     public void testLoad_IncompletePacketSeparateTwice() throws Exception {
         DelimiterDecoder sut = new DelimiterDecoder(new byte[]{'\r', '\n'}, false);
-        StageContextMock<CodecBuffer> context = new StageContextMock<>();
+        StageContextMock<CodecBuffer> context = new StageContextMock<CodecBuffer>();
 
         byte[] data0 = "input0\r\ninput1\r".getBytes(StandardCharsets.UTF_8);
         byte[] data1 = "\ninput2\r".getBytes(StandardCharsets.UTF_8);
@@ -128,7 +128,7 @@ public class DelimiterDecoderTest {
     @Test
     public void testLoad_IncompletePacketSeparateAndComplete() throws Exception {
         DelimiterDecoder sut = new DelimiterDecoder(new byte[]{'\r', '\n'}, false);
-        StageContextMock<CodecBuffer> context = new StageContextMock<>();
+        StageContextMock<CodecBuffer> context = new StageContextMock<CodecBuffer>();
 
         byte[] data0 = "input0\r\ninput1\r".getBytes(StandardCharsets.UTF_8);
         byte[] data1 = "\ninput2\r\n".getBytes(StandardCharsets.UTF_8);
@@ -149,7 +149,7 @@ public class DelimiterDecoderTest {
     @Test
     public void testLoad_RemoveDelimiter() throws Exception {
         DelimiterDecoder sut = new DelimiterDecoder(new byte[]{'\r', '\n'}, true);
-        StageContextMock<CodecBuffer> context = new StageContextMock<>();
+        StageContextMock<CodecBuffer> context = new StageContextMock<CodecBuffer>();
 
         byte[] data0 = "input0\r\ninput1\r".getBytes(StandardCharsets.UTF_8);
         byte[] data1 = "\ninput2\r\n".getBytes(StandardCharsets.UTF_8);

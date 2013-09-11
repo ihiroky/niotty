@@ -63,7 +63,7 @@ public class DeficitRoundRobinWriteQueue implements WriteQueue {
             throw new IllegalArgumentException("The initialBaseQuantum must be positive.");
         }
         int length = weights.length;
-        List<SimpleWriteQueue> ql = new ArrayList<>(length);
+        List<SimpleWriteQueue> ql = new ArrayList<SimpleWriteQueue>(length);
         for (int i = 0; i < length; i++) {
             ql.add(new SimpleWriteQueue());
         }

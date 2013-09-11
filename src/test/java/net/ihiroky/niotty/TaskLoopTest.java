@@ -249,7 +249,7 @@ public class TaskLoopTest {
     @Test(timeout = 1000)
     public void testRun_DelayQueuePriority() throws Exception {
         executor_.execute(sut_);
-        final Queue<Integer> order = new ArrayBlockingQueue<>(10);
+        final Queue<Integer> order = new ArrayBlockingQueue<Integer>(10);
         Task task0 = mock(Task.class);
         when(task0.execute(TimeUnit.NANOSECONDS)).thenAnswer(new Answer<Long>() {
             @Override

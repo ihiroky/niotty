@@ -35,7 +35,7 @@ public class GzipTest {
 
     @Before
     public void setUp() {
-        context_ = new StageContextMock<>();
+        context_ = new StageContextMock<CodecBuffer>();
     }
 
     @Test
@@ -191,8 +191,11 @@ public class GzipTest {
         }
 
         byte[] input = new byte[data.length];
-        try (InputStream in = commandInputStream(Arrays.asList("/bin/gzip", "-cd", file.getPath()))) {
+        InputStream in = commandInputStream(Arrays.asList("/bin/gzip", "-cd", file.getPath()));
+        try {
             in.read(input, 0, input.length);
+        } finally {
+            in.close();
         }
         assertThat(input, is(data));
     }
@@ -207,8 +210,11 @@ public class GzipTest {
 
         byte[] input = new byte[data.length];
         int inputLength;
-        try (InputStream in = commandInputStream(Arrays.asList("/bin/gzip", "-c", file.getPath()))) {
+        InputStream in = commandInputStream(Arrays.asList("/bin/gzip", "-c", file.getPath()));
+        try {
             inputLength = in.read(input, 0, input.length);
+        } finally {
+            in.close();
         }
 
         GzipDecoder decoder = new GzipDecoder();

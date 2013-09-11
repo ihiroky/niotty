@@ -53,7 +53,7 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
             processor_ = processor;
             childAggregate_ = new TransportAggregateSupport();
             backlog_ = 0;
-            acceptedSocketOptionSet_ = new CopyOnWriteArraySet<>();
+            acceptedSocketOptionSet_ = new CopyOnWriteArraySet<Map.Entry<SocketOption<Object>, Object>>();
         } catch (IOException ioe) {
             if (serverChannel != null) {
                 try {
@@ -91,7 +91,7 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
     }
 
     public NioServerSocketTransport setAcceptedSocketOption(SocketOption<Object> name, Object value) {
-        acceptedSocketOptionSet_.add(new AbstractMap.SimpleImmutableEntry<>(name, value));
+        acceptedSocketOptionSet_.add(new AbstractMap.SimpleImmutableEntry<SocketOption<Object>, Object>(name, value));
         return this;
     }
 

@@ -31,7 +31,7 @@ public abstract class TaskLoopGroup<L extends TaskLoop> {
      * Constructs a new instance.
      */
     protected TaskLoopGroup() {
-        taskLoops_ = new HashSet<>();
+        taskLoops_ = new HashSet<L>();
     }
 
     /**
@@ -48,7 +48,7 @@ public abstract class TaskLoopGroup<L extends TaskLoop> {
             if (executor_ == null) {
                 ThreadPoolExecutor executor = new ThreadPoolExecutor(
                         workers, workers, 1L, TimeUnit.MINUTES, new SynchronousQueue<Runnable>(), threadFactory);
-                Collection<L> taskLoops = new ArrayList<>(workers);
+                Collection<L> taskLoops = new ArrayList<L>(workers);
                 for (int i = 0; i < workers; i++) {
                     L taskLoop = newTaskLoop();
                     logger_.debug("[open] New task loop: {}.", taskLoop);
@@ -181,7 +181,7 @@ public abstract class TaskLoopGroup<L extends TaskLoop> {
     protected List<L> taskLoopsView() {
         List<L> view;
         synchronized (taskLoops_) {
-            view = new ArrayList<>(taskLoops_);
+            view = new ArrayList<L>(taskLoops_);
         }
         return view;
     }

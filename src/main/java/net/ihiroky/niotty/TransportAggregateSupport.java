@@ -18,7 +18,7 @@ public class TransportAggregateSupport implements TransportAggregate, TransportF
     }
 
     public TransportAggregateSupport(boolean removeOnClose) {
-        this.transportMap_ = new ConcurrentHashMap<>();
+        this.transportMap_ = new ConcurrentHashMap<Transport, Boolean>();
         this.removeOnClose_ = removeOnClose;
     }
 

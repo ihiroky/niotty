@@ -24,7 +24,7 @@ public class ZlibTest {
 
     @Before
     public void setUp() {
-        context_ = new StageContextMock<>();
+        context_ = new StageContextMock<CodecBuffer>();
     }
 
     @Test

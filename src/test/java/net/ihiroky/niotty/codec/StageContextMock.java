@@ -29,7 +29,7 @@ public class StageContextMock<O> implements StageContext<O> {
     public StageContextMock(Transport transport, TransportParameter transportParameter) {
         transport_ = transport;
         transportParameter_ = transportParameter;
-        proceededMessageEventQueue_ = new ArrayDeque<>();
+        proceededMessageEventQueue_ = new ArrayDeque<O>();
     }
 
     @Override

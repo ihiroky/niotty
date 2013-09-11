@@ -98,7 +98,7 @@ public abstract class PipelineElement<I, O> implements StageContext<O> {
     }
 
     protected StageContext<O> wrappedStageContext(PipelineElement<?, O> context, TransportParameter parameter) {
-        return new WrappedStageContext<>(context, parameter);
+        return new WrappedStageContext<O>(context, parameter);
     }
 
     static class WrappedStageContext<O> implements StageContext<O> {

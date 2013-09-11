@@ -167,7 +167,7 @@ public class AbstractCodecBufferTest {
         byte[] data = new byte[]{0x25, (byte) 0x83};
         AbstractCodecBuffer sut = newInstance(data, 0, data.length);
         Number actual = sut.readVariableByteNumber();
-        assertThat(actual.intValue(), is(0b11100101));
+        assertThat(actual.intValue(), is(0xE5)); // 0b11100101
     }
 
     @Test
@@ -175,7 +175,7 @@ public class AbstractCodecBufferTest {
         byte[] data = new byte[]{0x65, (byte) 0x83};
         AbstractCodecBuffer sut = newInstance(data, 0, data.length);
         Number actual = sut.readVariableByteNumber();
-        assertThat(actual.intValue(), is(-0b11100101));
+        assertThat(actual.intValue(), is(-0xE5)); // 0b11100101
     }
 
     @Test

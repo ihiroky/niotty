@@ -105,7 +105,7 @@ public class UdpIOSelector extends AbstractSelector {
     @Override
     public void store(StageContext<Void> context, BufferSink input) {
         final NioDatagramSocketTransport transport = (NioDatagramSocketTransport) context.transport();
-        transport.readyToWrite(new AttachedMessage<>(input, context.transportParameter()));
+        transport.readyToWrite(new AttachedMessage<BufferSink>(input, context.transportParameter()));
         execute(new Task() {
             @Override
             public long execute(TimeUnit timeUnit) throws Exception {

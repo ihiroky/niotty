@@ -69,7 +69,7 @@ public abstract class PipelineComposer {
      *                        If there is no need to use {@link #addCloseable(AutoCloseable)}, 0 is recommended.
      */
     protected PipelineComposer(int initialCapacity) {
-        closeableList_ = new ArrayList<>(initialCapacity);
+        closeableList_ = new ArrayList<AutoCloseable>(initialCapacity);
     }
 
     /**
@@ -117,9 +117,6 @@ public abstract class PipelineComposer {
      * <p>composes load and store pipelines by adding, removing and replacing
      * {@link net.ihiroky.niotty.LoadStage} and {@link net.ihiroky.niotty.StoreStage}
      * respectively.</p>
-     *
-     * <p>This method is also used to modify the pipelines at
-     * {@link AbstractTransport#resetPipelines(PipelineComposer)}</p>
      *
      * @param loadPipeline the pipeline for load (inbound) messages and transport events.
      * @param storePipeline the pipeline for store (outbound) message and transport events.
