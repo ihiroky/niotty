@@ -31,6 +31,13 @@ public abstract class AbstractPipeline<S, L extends TaskLoop> implements Pipelin
     private static final int INPUT_TYPE = 0;
     private static final int OUTPUT_TYPE = 1;
 
+    /**
+     * Creates a new instance.
+     *
+     * @param name name of this pipeline
+     * @param transport transport which associate with this pipeline
+     * @param taskLoopGroup an pool which provides TaskLoop to execute stages.
+     */
     protected AbstractPipeline(
             String name, AbstractTransport<L> transport, TaskLoopGroup<L> taskLoopGroup) {
         Objects.requireNonNull(name, "name");
@@ -402,16 +409,6 @@ public abstract class AbstractPipeline<S, L extends TaskLoop> implements Pipelin
 
     AbstractTransport<L> transport() {
         return transport_;
-    }
-
-    protected PipelineElement<Object, Object> search(StageKey key) {
-        for (PipelineElementIterator i = new PipelineElementIterator(head_); i.hasNext();) {
-            PipelineElement<Object, Object> context = i.next();
-            if (context.key() == key) {
-                return context;
-            }
-        }
-        return null;
     }
 
     protected Iterator<PipelineElement<Object, Object>> iterator() {
