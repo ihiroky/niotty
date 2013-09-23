@@ -40,9 +40,6 @@ public abstract class AbstractTransport<T extends TaskLoop> implements Transport
         DefaultStorePipeline<T> storePipeline = new DefaultStorePipeline<T>(name, this, taskLoopGroup);
         pipelineComposer.compose(loadPipeline, storePipeline);
 
-        loadPipeline.verifyStageType();
-        storePipeline.verifyStageType();
-
         loadPipeline_ = loadPipeline;
         storePipeline_ = storePipeline;
     }

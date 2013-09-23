@@ -153,4 +153,12 @@ public interface Pipeline<S> {
      * @return the context
      */
     StageContext<Object> searchContext(StageKey key);
+
+    /**
+     * Writes logs of the stage type verification.
+     * Writes logs if the type definition of stage input is not assignable from the output one of the previous stage.
+     * It may not be invalid if the verification is failed. The type chain in the pipeline may not be safe originally.
+     *
+     */
+    void logTypeVerification();
 }

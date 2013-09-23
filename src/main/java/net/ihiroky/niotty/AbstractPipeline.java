@@ -271,12 +271,7 @@ public abstract class AbstractPipeline<S, L extends TaskLoop> implements Pipelin
         }
     }
 
-    public void verifyStageType() {
-        // TODO review if a dedicated flag instead of log level should be used.
-        if (!logger_.isWarnEnabled()) {
-            return;
-        }
-
+    public void logTypeVerification() {
         int counter = 0;
         Class<?> prevOutputClass = null;
         Class<?> prevStageClass = null;
