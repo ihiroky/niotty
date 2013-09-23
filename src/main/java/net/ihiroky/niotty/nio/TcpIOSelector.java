@@ -20,7 +20,6 @@ import java.util.concurrent.TimeUnit;
 /**
  * Created on 13/01/15, 15:35
  *
- * @author Hiroki Itoh
  */
 public class TcpIOSelector extends AbstractSelector {
 
@@ -67,8 +66,9 @@ public class TcpIOSelector extends AbstractSelector {
                     CodecBuffer cb = duplicateBuffer_
                             ? duplicate(localByteBuffer) : Buffers.wrap(localByteBuffer, false);
                     transport.loadEvent(cb);
-                }
-                if (key.isWritable()) {
+                    localByteBuffer.clear();
+                    // TODO There is any need to check if content is remaining?
+                } else if (key.isWritable()) {
                     transport.flush(null);
                 }
             } catch (ClosedByInterruptException ie) {

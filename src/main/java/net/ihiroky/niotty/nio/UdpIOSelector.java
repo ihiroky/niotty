@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Created on 13/01/15, 15:35
  *
- * @author Hiroki Itoh
+ * TODO There is any need to check if content is remaining after the read operation ?
  */
 public class UdpIOSelector extends AbstractSelector {
 
@@ -64,21 +64,23 @@ public class UdpIOSelector extends AbstractSelector {
                             }
                             // TODO Discuss to call loadEvent(TransportEvent) and change ops to achieve have close
                             transport.doCloseSelectableChannel(true);
+                            localByteBuffer.clear();
                             continue;
                         }
                         localByteBuffer.flip();
                         CodecBuffer buffer = duplicateBuffer_
                                 ? duplicate(localByteBuffer) : Buffers.wrap(localByteBuffer, false);
                         transport.loadEvent(buffer);
+                        localByteBuffer.clear();
                     } else {
                         SocketAddress source = channel.receive(localByteBuffer);
                         localByteBuffer.flip();
                         CodecBuffer buffer = duplicateBuffer_
                                 ? duplicate(localByteBuffer) : Buffers.wrap(localByteBuffer, false);
                         transport.loadEvent(buffer, new DefaultTransportParameter(source));
+                        localByteBuffer.clear();
                     }
-                }
-                if (key.isWritable()) {
+                } else if (key.isWritable()) {
                     transport.flush(writeBuffer_);
                 }
             } catch (ClosedByInterruptException ie) {
