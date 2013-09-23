@@ -1,6 +1,6 @@
 package net.ihiroky.niotty.nio;
 
-import java.util.Objects;
+import net.ihiroky.niotty.util.Objects;
 
 /**
  * Implementation of {@link net.ihiroky.niotty.nio.WriteQueueFactory}

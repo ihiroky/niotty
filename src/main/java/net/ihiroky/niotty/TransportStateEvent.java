@@ -1,6 +1,6 @@
 package net.ihiroky.niotty;
 
-import java.util.Objects;
+import net.ihiroky.niotty.util.Objects;
 
 /**
  * Created on 13/01/11, 13:47

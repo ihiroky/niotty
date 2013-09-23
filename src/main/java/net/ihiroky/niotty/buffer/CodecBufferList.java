@@ -1,5 +1,7 @@
 package net.ihiroky.niotty.buffer;
 
+import net.ihiroky.niotty.util.Objects;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
@@ -10,7 +12,6 @@ import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CoderResult;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * A {@link net.ihiroky.niotty.buffer.CodecBuffer} which consists of {@link net.ihiroky.niotty.buffer.CodecBuffer}s.
@@ -20,8 +21,6 @@ import java.util.Objects;
  * does not happen. But the beginning and end of the added instance can change according to read and write operation
  * ot this instance. This object allocates a new heap {@code CodecBuffer} and add it to the list
  * if the object need expand its space. The maximum elements that can be held by the object is 1024.
- *
- * @author Hiroki Itoh
  */
 public class CodecBufferList extends AbstractCodecBuffer {
 

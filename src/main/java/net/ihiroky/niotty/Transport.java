@@ -1,6 +1,7 @@
 package net.ihiroky.niotty;
 
 import java.net.SocketAddress;
+import java.util.Set;
 
 /**
  * <p>A nexus for network I/O operations.</p>
@@ -48,7 +49,7 @@ public interface Transport extends TaskSelection {
     void write(Object message, TransportParameter parameter);
 
     /**
-     * Returns the future which represents an asynchronous close operation..
+     * Returns the future which represents an asynchronous close operation.
      * @return the future
      */
     TransportFuture closeFuture();
@@ -70,6 +71,12 @@ public interface Transport extends TaskSelection {
      * @return true if, and only if, this channel is open
      */
     boolean isOpen();
+
+    <T> Transport setOption(TransportOption<T> option, T value);
+
+    <T> T option(TransportOption<T> option);
+
+    Set<TransportOption<?>> supportedOptions();
 
     /**
      * Attaches the specified attachment to this transport.

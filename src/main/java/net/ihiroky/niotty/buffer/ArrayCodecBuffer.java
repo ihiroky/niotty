@@ -1,5 +1,7 @@
 package net.ihiroky.niotty.buffer;
 
+import net.ihiroky.niotty.util.Objects;
+
 import java.io.IOException;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
@@ -9,7 +11,6 @@ import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CoderResult;
-import java.util.Objects;
 
 /**
  * Implementation of {@link net.ihiroky.niotty.buffer.CodecBuffer} using {@code byte[]}.
@@ -542,10 +543,10 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer {
     @Override
     public CodecBuffer end(int end) {
         if (end < beginning_) {
-            throw new IndexOutOfBoundsException("end is less than beginning.");
+            throw new IndexOutOfBoundsException("The end " + end + " is less than beginning " + beginning_ + ".");
         }
         if (end > buffer_.length) {
-            throw new IndexOutOfBoundsException("end is greater than capacity.");
+            throw new IndexOutOfBoundsException("The end " + end+ " is greater than capacity " + buffer_.length + ".");
         }
         end_ = end;
         return this;

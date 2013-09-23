@@ -1,6 +1,6 @@
 package net.ihiroky.niotty;
 
-import java.util.Objects;
+import net.ihiroky.niotty.util.Objects;
 
 /**
  * @param <I> the type of the input object for the stage.

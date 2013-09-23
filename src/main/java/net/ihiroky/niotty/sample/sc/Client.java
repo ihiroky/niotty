@@ -50,13 +50,6 @@ public class Client {
                 transport.write(new Date().toString());
             }
         }, 1, 1, TimeUnit.SECONDS);
-        transport.closeFuture().addListener(new TransportFutureListener() {
-            @Override
-            public void onComplete(TransportFuture future) {
-                System.out.println("Cancel the scheduler.");
-                scheduledFuture.cancel(true);
-            }
-        });
 
         try {
             System.in.read();
@@ -64,7 +57,13 @@ public class Client {
             e.printStackTrace();
         } finally {
             executor.shutdownNow();
-            transport.close();
+            transport.close().addListener(new TransportFutureListener() {
+                @Override
+                public void onComplete(TransportFuture future) {
+                    System.out.println("Cancel the scheduler.");
+                    scheduledFuture.cancel(true);
+                }
+            });
             processor.stop();
         }
 

@@ -49,7 +49,7 @@ public class DefaultTransportFuture extends AbstractTransportFuture {
             } else if (t instanceof Error) {
                 throw (Error) t;
             }
-            throw new AssertionError("Unexpected throwable", t);
+            throw new Error("Unexpected throwable", t);
         }
     }
 
@@ -64,7 +64,7 @@ public class DefaultTransportFuture extends AbstractTransportFuture {
             } else if (t instanceof Error) {
                 throw (Error) t;
             }
-            throw new AssertionError("Unexpected throwable", t);
+            throw new Error("Unexpected throwable", t);
         }
     }
 

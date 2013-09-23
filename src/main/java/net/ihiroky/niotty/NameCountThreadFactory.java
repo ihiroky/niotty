@@ -1,6 +1,7 @@
 package net.ihiroky.niotty;
 
-import java.util.Objects;
+import net.ihiroky.niotty.util.Objects;
+
 import java.util.concurrent.ThreadFactory;
 
 /**

@@ -1,5 +1,6 @@
 package net.ihiroky.niotty.buffer;
 
+import net.ihiroky.niotty.util.Charsets;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.runners.Enclosed;
@@ -12,7 +13,7 @@ import java.io.IOException;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.channels.GatheringByteChannel;
-import java.nio.charset.StandardCharsets;
+import java.nio.charset.Charset;
 import java.util.Arrays;
 
 import static org.hamcrest.CoreMatchers.*;
@@ -24,6 +25,8 @@ import static org.mockito.Mockito.*;
  */
 @RunWith(Enclosed.class)
 public class CodecBufferListTest {
+
+    private static final Charset CHARSET = Charsets.UTF_8;
 
     public static class EmptyCase extends CodecBufferTestAbstract.AbstractEmptyTests {
         @Override
@@ -156,7 +159,7 @@ public class CodecBufferListTest {
                     Buffers.wrap(data, 4, 4),
                     Buffers.wrap(data, 8, 2));
 
-            String actual = sut.readString(StandardCharsets.UTF_8.newDecoder(), data.length);
+            String actual = sut.readString(CHARSET.newDecoder(), data.length);
 
             assertThat(actual, is(s));
             assertThat(sut.remainingBytes(), is(0));
@@ -543,7 +546,7 @@ public class CodecBufferListTest {
                     Buffers.newCodecBuffer(0));
             String s = "0123456789";
 
-            sut.writeString(s, StandardCharsets.UTF_8.newEncoder());
+            sut.writeString(s, CHARSET.newEncoder());
 
             assertThat(sut.remainingBytes(), is(10));
             assertThat(sut.beginningBufferIndex(), is(0));

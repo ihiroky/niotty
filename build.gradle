@@ -6,7 +6,7 @@ defaultTasks 'clean', 'test'
 version = '0.2'
 project.ext['rootPackage'] = 'net.ihiroky.niotty'
 project.ext['encoding'] = 'UTF-8'
-def jdkVersion = 1.7
+def jdkVersion = 1.6
 
 jar.baseName = 'niotty'
 sourceCompatibility = jdkVersion
@@ -22,8 +22,9 @@ repositories {
 
 dependencies {
     compile 'org.slf4j:slf4j-api:1.7.5'
-    runtime 'ch.qos.logback:logback-classic:1.0.11'
     compile 'org.apache.httpcomponents:httpcore-nio:4.2.4'
+    compile 'com.jcraft:jzlib:1.1.2'
+    runtime 'ch.qos.logback:logback-classic:1.0.11'
     testCompile 'junit:junit:4.11'
     testCompile 'org.mockito:mockito-core:1.9.5'
 }

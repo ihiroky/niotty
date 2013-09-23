@@ -1,12 +1,13 @@
 package net.ihiroky.niotty.buffer;
 
+import net.ihiroky.niotty.util.Charsets;
 import org.junit.Test;
 
 import java.nio.CharBuffer;
+import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CoderResult;
 import java.nio.charset.MalformedInputException;
-import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnmappableCharacterException;
 
 import static org.hamcrest.CoreMatchers.*;
@@ -16,16 +17,11 @@ import static org.junit.Assert.*;
  * @author Hiroki Itoh
  */
 public class BuffersTest {
-    @Test
-    public void testOutputCharBufferSize() throws Exception {
-        CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder();
-        assertThat(Buffers.outputCharBufferSize(decoder, 10), is(11));
-        assertThat(Buffers.outputCharBufferSize(decoder, 0), is(2));
-    }
 
-    @Test
+    private static final Charset CHARSET = Charsets.UTF_8;
+
     public void testExpand() throws Exception {
-        CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder();
+        CharsetDecoder decoder = CHARSET.newDecoder();
         CharBuffer b = CharBuffer.wrap("0123");
         b.position(4);
         CharBuffer expanded = Buffers.expand(b, decoder, 10);

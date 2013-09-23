@@ -5,25 +5,33 @@ import net.ihiroky.niotty.DefaultTransportParameter;
 import net.ihiroky.niotty.FailedTransportFuture;
 import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.SuccessfulTransportFuture;
+import net.ihiroky.niotty.TransportException;
 import net.ihiroky.niotty.TransportFuture;
+import net.ihiroky.niotty.TransportOption;
+import net.ihiroky.niotty.TransportOptions;
 import net.ihiroky.niotty.TransportState;
 import net.ihiroky.niotty.TransportStateEvent;
 import net.ihiroky.niotty.buffer.BufferSink;
+import net.ihiroky.niotty.util.JavaVersion;
+import net.ihiroky.niotty.util.Objects;
+import net.ihiroky.niotty.util.Platform;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
-import java.net.ProtocolFamily;
 import java.net.SocketAddress;
-import java.net.SocketOption;
+import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.MembershipKey;
 import java.nio.channels.SelectionKey;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
-import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -36,16 +44,24 @@ public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector
     private WriteQueue.FlushStatus flushStatus_;
     private final Map<GroupKey, MembershipKey> membershipKeyMap_;
 
-    NioDatagramSocketTransport(PipelineComposer composer, ProtocolFamily protocolFamily,
-                               String name, UdpIOSelectorPool selectorPool, WriteQueueFactory writeQueueFactory) {
+    private static final Set<TransportOption<?>> SUPPORTED_OPTIONS = Collections.unmodifiableSet(
+            new HashSet<TransportOption<?>>(Arrays.<TransportOption<?>>asList(
+                    TransportOptions.SO_RCVBUF, TransportOptions.SO_SNDBUF, TransportOptions.SO_BROADCAST,
+                    TransportOptions.SO_REUSEADDR,
+                    TransportOptions.IP_MULTICAST_IF, TransportOptions.IP_MULTICAST_LOOP,
+                    TransportOptions.IP_MULTICAST_TTL, TransportOptions.IP_TOS)));
+
+    public NioDatagramSocketTransport(InternetProtocolFamily family, PipelineComposer composer,
+            String name, UdpIOSelectorPool selectorPool, WriteQueueFactory writeQueueFactory) {
         super(name, composer, selectorPool);
 
-        Objects.requireNonNull(selectorPool, "selectorPool");
         Objects.requireNonNull(writeQueueFactory, "writeQueueFactory");
 
         DatagramChannel channel = null;
         try {
-            channel = (protocolFamily != null) ? DatagramChannel.open(protocolFamily) : DatagramChannel.open();
+            channel = (family != null)
+                    ? DatagramChannel.open(InternetProtocolFamily.resolve(family))
+                    : DatagramChannel.open();
             channel.configureBlocking(false);
         } catch (IOException ioe) {
             if (channel != null) {
@@ -67,28 +83,129 @@ public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector
         selectorPool.register(channel, SelectionKey.OP_READ, this);
     }
 
+    public NioDatagramSocketTransport(PipelineComposer composer,
+            String name, UdpIOSelectorPool selectorPool, WriteQueueFactory writeQueueFactory, DatagramChannel channel) {
+        super(name, composer, selectorPool);
+
+        Objects.requireNonNull(writeQueueFactory, "writeQueueFactory");
+
+        channel_ = channel;
+        writeQueue_ = writeQueueFactory.newWriteQueue();
+        membershipKeyMap_ = Collections.synchronizedMap(new HashMap<GroupKey, MembershipKey>());
+
+        selectorPool.register(channel, SelectionKey.OP_READ, this);
+    }
+
     /**
-     * Set a socket optoin.
-     * @param name the name of the option
+     * Sets a socket option.
+     * @param option the option
      * @param value the value of the option
      * @param <T> the type of the option
      * @return this object
-     * @throws IOException if an I/O error occurs
+     * @throws net.ihiroky.niotty.TransportException if an I/O error occurs
+     * @throws java.lang.UnsupportedOperationException if the option is not supported
      */
-    public <T> NioDatagramSocketTransport setOption(SocketOption<T> name, T value) throws IOException {
-        channel_.setOption(name, value);
+    @Override
+    public <T> NioDatagramSocketTransport setOption(TransportOption<T> option, T value) {
+        try {
+            JavaVersion javaVersion = Platform.javaVersion();
+            if (javaVersion.ge(JavaVersion.JAVA7)) {
+                if (option == TransportOptions.SO_RCVBUF) {
+                    channel_.setOption(StandardSocketOptions.SO_RCVBUF, (Integer) value);
+                } else if (option == TransportOptions.SO_SNDBUF) {
+                    channel_.setOption(StandardSocketOptions.SO_SNDBUF, (Integer) value);
+                } else if (option == TransportOptions.SO_BROADCAST) {
+                    channel_.setOption(StandardSocketOptions.SO_BROADCAST, (Boolean) value);
+                } else if (option == TransportOptions.SO_REUSEADDR) {
+                    channel_.setOption(StandardSocketOptions.SO_REUSEADDR, (Boolean) value);
+                } else if (option == TransportOptions.IP_MULTICAST_IF) {
+                    channel_.setOption(StandardSocketOptions.IP_MULTICAST_IF, (NetworkInterface) value);
+                } else if (option == TransportOptions.IP_MULTICAST_LOOP) {
+                    channel_.setOption(StandardSocketOptions.IP_MULTICAST_LOOP, (Boolean) value);
+                } else if (option == TransportOptions.IP_MULTICAST_TTL) {
+                    channel_.setOption(StandardSocketOptions.IP_MULTICAST_TTL, (Integer) value);
+                } else if (option == TransportOptions.IP_TOS) {
+                    channel_.setOption(StandardSocketOptions.IP_TOS, (Integer) value);
+                } else {
+                    throw new UnsupportedOperationException(option.toString());
+                }
+            } else {
+                if (option == TransportOptions.SO_RCVBUF) {
+                    channel_.socket().setReceiveBufferSize((Integer) value);
+                } else if (option == TransportOptions.SO_SNDBUF) {
+                    channel_.socket().setSendBufferSize((Integer) value);
+                } else if (option == TransportOptions.SO_BROADCAST) {
+                    channel_.socket().setBroadcast((Boolean) value);
+                } else if (option == TransportOptions.SO_REUSEADDR) {
+                    channel_.socket().setReuseAddress((Boolean) value);
+                } else if (SUPPORTED_OPTIONS.contains(option)) {
+                    javaVersion.throwIfUnsupported(JavaVersion.JAVA7);
+                } else {
+                    throw new UnsupportedOperationException(option.toString());
+                }
+            }
+        } catch (IOException ioe) {
+            throw new TransportException("Failed to get option " + option, ioe);
+        }
         return this;
     }
 
     /**
-     * Returns a socket option value for a specified name.
-     * @param name the name
+     * Returns a socket option value for a specified option.
+     * @param option the option
      * @param <T> the type of the value
      * @return the value
-     * @throws IOException if I/O error occurs
+     * @throws net.ihiroky.niotty.TransportException if I/O error occurs
+     * @throws java.lang.UnsupportedOperationException if the option is not supported
      */
-    public <T> T option(SocketOption<T> name) throws IOException {
-        return channel_.getOption(name);
+    @Override
+    public <T> T option(TransportOption<T> option) {
+        try {
+            JavaVersion javaVersion = Platform.javaVersion();
+            if (javaVersion.ge(JavaVersion.JAVA7)) {
+                if (option == TransportOptions.SO_RCVBUF) {
+                    return option.cast(channel_.getOption(StandardSocketOptions.SO_RCVBUF));
+                } else if (option == TransportOptions.SO_SNDBUF) {
+                    return option.cast(channel_.getOption(StandardSocketOptions.SO_SNDBUF));
+                } else if (option == TransportOptions.SO_BROADCAST) {
+                    return option.cast(channel_.getOption(StandardSocketOptions.SO_BROADCAST));
+                } else if (option == TransportOptions.SO_REUSEADDR) {
+                    return option.cast(channel_.getOption(StandardSocketOptions.SO_REUSEADDR));
+                } else if (option == TransportOptions.IP_MULTICAST_IF) {
+                    return option.cast(channel_.getOption(StandardSocketOptions.IP_MULTICAST_IF));
+                } else if (option == TransportOptions.IP_MULTICAST_LOOP) {
+                    return option.cast(channel_.getOption(StandardSocketOptions.IP_MULTICAST_LOOP));
+                } else if (option == TransportOptions.IP_MULTICAST_TTL) {
+                    return option.cast(channel_.getOption(StandardSocketOptions.IP_MULTICAST_TTL));
+                } else if (option == TransportOptions.IP_TOS) {
+                    return option.cast(channel_.getOption(StandardSocketOptions.IP_TOS));
+                } else {
+                    throw new UnsupportedOperationException(option.toString());
+                }
+            } else {
+                if (option == TransportOptions.SO_RCVBUF) {
+                    return option.cast(channel_.socket().getReceiveBufferSize());
+                } else if (option == TransportOptions.SO_SNDBUF) {
+                    return option.cast(channel_.socket().getSendBufferSize());
+                } else if (option == TransportOptions.SO_BROADCAST) {
+                    return option.cast(channel_.socket().getBroadcast());
+                } else if (option == TransportOptions.SO_REUSEADDR) {
+                    return option.cast(channel_.socket().getReuseAddress());
+                } else if (SUPPORTED_OPTIONS.contains(option)) {
+                    javaVersion.throwIfUnsupported(JavaVersion.JAVA7);
+                    throw new AssertionError(); // must not reach here
+                } else {
+                    throw new UnsupportedOperationException(option.toString());
+                }
+            }
+        } catch (IOException ioe) {
+            throw new TransportException("Failed to get option " + option, ioe);
+        }
+    }
+
+    @Override
+    public Set<TransportOption<?>> supportedOptions() {
+        return SUPPORTED_OPTIONS;
     }
 
     @Override
@@ -99,7 +216,11 @@ public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector
     @Override
     public TransportFuture bind(SocketAddress local) {
         try {
-            channel_.bind(local);
+            if (Platform.javaVersion().ge(JavaVersion.JAVA7)) {
+                channel_.bind(local);
+            } else {
+                channel_.socket().bind(local);
+            }
             return new SuccessfulTransportFuture(this);
         } catch (IOException ioe) {
             return new FailedTransportFuture(this, ioe);
@@ -107,18 +228,22 @@ public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector
     }
 
     @Override
-    public SocketAddress localAddress() {
+    public InetSocketAddress localAddress() {
         try {
-            return channel_.getLocalAddress();
+            return Platform.javaVersion().ge(JavaVersion.JAVA7)
+                    ? (InetSocketAddress) channel_.getLocalAddress()
+                    : (InetSocketAddress) channel_.socket().getLocalSocketAddress();
         } catch (IOException ioe) {
             throw new RuntimeException(ioe);
         }
     }
 
     @Override
-    public SocketAddress remoteAddress() {
+    public InetSocketAddress remoteAddress() {
         try {
-            return channel_.getRemoteAddress();
+            return Platform.javaVersion().ge(JavaVersion.JAVA7)
+                    ? (InetSocketAddress) channel_.getRemoteAddress()
+                    : (InetSocketAddress) channel_.socket().getRemoteSocketAddress();
         } catch (IOException ioe) {
             throw new RuntimeException(ioe);
         }
@@ -256,18 +381,22 @@ public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector
      * @param networkInterface The network interface on which to join the group.
      * @return A future object to show a result.
      */
-    public TransportFuture joinGroup(InetAddress group, NetworkInterface networkInterface) {
-        final GroupKey key = new GroupKey(group, networkInterface);
-        if (membershipKeyMap_.containsKey(key)) {
-            return new SuccessfulTransportFuture(this);
-        }
+    public TransportFuture join(InetAddress group, NetworkInterface networkInterface) {
+        Platform.javaVersion().throwIfUnsupported(JavaVersion.JAVA7);
 
-        try {
-            MembershipKey membershipKey = channel_.join(key.group_, key.networkInterface_);
-            membershipKeyMap_.put(key, membershipKey);
-            return new SuccessfulTransportFuture(this);
-        } catch (Exception e) {
-            return new FailedTransportFuture(this, e);
+        final GroupKey key = new GroupKey(group, networkInterface);
+        synchronized (membershipKeyMap_) {
+            if (membershipKeyMap_.containsKey(key)) {
+                return new SuccessfulTransportFuture(this);
+            }
+
+            try {
+                MembershipKey membershipKey = channel_.join(key.group_, key.networkInterface_);
+                membershipKeyMap_.put(key, membershipKey);
+                return new SuccessfulTransportFuture(this);
+            } catch (Exception e) {
+                return new FailedTransportFuture(this, e);
+            }
         }
     }
 
@@ -280,18 +409,22 @@ public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector
      * @param source The source address from which datagrams is sent.
      * @return A future object to show a result of this method.
      */
-    public TransportFuture joinGroup(InetAddress group, NetworkInterface networkInterface, final InetAddress source) {
-        final GroupKey key = new GroupKey(group, networkInterface);
-        if (membershipKeyMap_.containsKey(key)) {
-            return new SuccessfulTransportFuture(this);
-        }
+    public TransportFuture join(InetAddress group, NetworkInterface networkInterface, final InetAddress source) {
+        Platform.javaVersion().throwIfUnsupported(JavaVersion.JAVA7);
 
-        try {
-            MembershipKey membershipKey = channel_.join(key.group_, key.networkInterface_, source);
-            membershipKeyMap_.put(key, membershipKey);
-            return new SuccessfulTransportFuture(this);
-        } catch (Exception e) {
-            return new FailedTransportFuture(this, e);
+        final GroupKey key = new GroupKey(group, networkInterface);
+        synchronized (membershipKeyMap_) {
+            if (membershipKeyMap_.containsKey(key)) {
+                return new SuccessfulTransportFuture(this);
+            }
+
+            try {
+                MembershipKey membershipKey = channel_.join(key.group_, key.networkInterface_, source);
+                membershipKeyMap_.put(key, membershipKey);
+                return new SuccessfulTransportFuture(this);
+            } catch (Exception e) {
+                return new FailedTransportFuture(this, e);
+            }
         }
     }
 
@@ -304,14 +437,15 @@ public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector
      * @param networkInterface The network interface
      * @return A future object to show a result of this method.
      */
-    public TransportFuture leaveGroup(InetAddress group, NetworkInterface networkInterface) {
+    public TransportFuture leave(InetAddress group, NetworkInterface networkInterface) {
+        Platform.javaVersion().throwIfUnsupported(JavaVersion.JAVA7);
+
         final GroupKey key = new GroupKey(group, networkInterface);
-        if (!membershipKeyMap_.containsKey(key)) {
+        MembershipKey membershipKey = membershipKeyMap_.remove(key);
+        if (membershipKey == null) {
             return new SuccessfulTransportFuture(this);
         }
 
-        final DefaultTransportFuture future = new DefaultTransportFuture(this);
-        MembershipKey membershipKey = membershipKeyMap_.remove(key);
         membershipKey.drop();
         return new SuccessfulTransportFuture(this);
     }
@@ -325,6 +459,8 @@ public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector
      * @return A future object to show a result of this method.
      */
     public TransportFuture block(InetAddress group, NetworkInterface networkInterface, final InetAddress source) {
+        Platform.javaVersion().throwIfUnsupported(JavaVersion.JAVA7);
+
         GroupKey key = new GroupKey(group, networkInterface);
         final MembershipKey membershipKey = membershipKeyMap_.get(key);
         if (membershipKey == null) {
@@ -348,6 +484,8 @@ public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector
      * @return A future object to show a result of this method.
      */
     public TransportFuture unblock(InetAddress group, NetworkInterface networkInterface, final InetAddress source) {
+        Platform.javaVersion().throwIfUnsupported(JavaVersion.JAVA7);
+
         GroupKey key = new GroupKey(group, networkInterface);
         final MembershipKey membershipKey = membershipKeyMap_.get(key);
         if (membershipKey == null) {
@@ -371,15 +509,9 @@ public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector
             networkInterface_ = networkInterface;
         }
 
-        private static final int BASE = 17;
-        private static final int FACTOR = 31;
-
         @Override
         public int hashCode() {
-            int h = BASE;
-            h = h * FACTOR + ((group_ != null) ? group_.hashCode() : 0);
-            h = h * FACTOR + ((networkInterface_ != null) ? networkInterface_.hashCode() : 0);
-            return h;
+            return Objects.hash(group_, networkInterface_);
         }
 
         @Override

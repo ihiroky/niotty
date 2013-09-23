@@ -1,5 +1,7 @@
 package net.ihiroky.niotty;
 
+import net.ihiroky.niotty.util.Objects;
+
 /**
  * A default implementation of {@link net.ihiroky.niotty.TransportParameter}.
  *
@@ -12,9 +14,6 @@ public class DefaultTransportParameter implements TransportParameter {
 
     /** Default priority (no wait). */
     private static final int DEFAULT_PRIORITY = -1;
-
-    private static final int HASH_BASE = 17;
-    private static final int HASH_FACTOR = 31;
 
     public static final DefaultTransportParameter NO_PARAMETER = new DefaultTransportParameter(DEFAULT_PRIORITY);
 
@@ -56,10 +55,7 @@ public class DefaultTransportParameter implements TransportParameter {
 
     @Override
     public int hashCode() {
-        int h = HASH_BASE;
-        h = h * HASH_FACTOR + priority_;
-        h = h * HASH_FACTOR + ((argument_ != null) ? argument_.hashCode() : 0);
-        return h;
+        return Objects.hash(priority_, argument_);
     }
 
     @Override

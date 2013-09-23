@@ -6,23 +6,22 @@ import net.ihiroky.niotty.TransportStateEvent;
 import net.ihiroky.niotty.buffer.BufferSink;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.CodecBuffer;
+import net.ihiroky.niotty.util.Charsets;
+import net.ihiroky.niotty.util.Objects;
 
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.Objects;
 
 /**
  * Created on 13/01/18, 12:59
  *
- * @author Hiroki Itoh
  */
 public class StringEncoder implements StoreStage<String, BufferSink> {
 
     private final Charset charset_;
 
     public StringEncoder() {
-        charset_ = StandardCharsets.UTF_8;
+        charset_ = Charsets.UTF_8;
     }
 
     public StringEncoder(Charset charset) {

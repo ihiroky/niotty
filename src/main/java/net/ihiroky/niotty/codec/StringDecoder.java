@@ -4,22 +4,21 @@ import net.ihiroky.niotty.LoadStage;
 import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.TransportStateEvent;
 import net.ihiroky.niotty.buffer.CodecBuffer;
+import net.ihiroky.niotty.util.Charsets;
+import net.ihiroky.niotty.util.Objects;
 
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.util.Objects;
 
 /**
  * Created on 13/01/18, 14:12
  *
- * @author Hiroki Itoh
  */
 public class StringDecoder implements LoadStage<CodecBuffer, String> {
 
     private final Charset charset_;
 
     public StringDecoder() {
-        charset_ = StandardCharsets.UTF_8;
+        charset_ = Charsets.UTF_8;
     }
 
     public StringDecoder(Charset charset) {

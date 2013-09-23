@@ -1,14 +1,15 @@
 package net.ihiroky.niotty.buffer;
 
+import net.ihiroky.niotty.util.Closable;
+
 /**
  * A manager to manage chunk instances.
  * This interface is used to get the chunk instance instead of creating its instance directly.
  * If the chunk is not used any more, then call {@link #release(Chunk)} with it.
  *
  * @param <E> a data type to be held by the chunk
- * @author Hiroki Itoh
  */
-public abstract class ChunkManager<E> implements AutoCloseable {
+public abstract class ChunkManager<E> implements Closable {
 
     /**
      * Provides the chunk managed by this instance.

@@ -12,18 +12,17 @@ import net.ihiroky.niotty.TransportParameter;
 import net.ihiroky.niotty.TransportState;
 import net.ihiroky.niotty.TransportStateEvent;
 import net.ihiroky.niotty.buffer.BufferSink;
+import net.ihiroky.niotty.util.Objects;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
-import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Created on 13/01/11, 13:40
- * TODO fire TransportStateEvent on closed
- * @author Hiroki Itoh
+ * A skeletal implementation of {@link net.ihiroky.niotty.Transport} for NIO.
+ * @param <S> a type of selector
  */
 public abstract class NioSocketTransport<S extends AbstractSelector> extends AbstractTransport<S> {
 
@@ -50,16 +49,14 @@ public abstract class NioSocketTransport<S extends AbstractSelector> extends Abs
             closePipelines();
             return new SuccessfulTransportFuture(this);
         }
-        final DefaultTransportFuture future = new DefaultTransportFuture(this);
         executeStore(new TransportStateEvent(TransportState.CLOSED) {
             @Override
             public long execute(TimeUnit timeUnit) {
                 NioSocketTransport.this.doCloseSelectableChannel(false);
-                future.done();
                 return DONE;
             }
         });
-        return future;
+        return closeFuture();
     }
 
     /**
@@ -73,14 +70,15 @@ public abstract class NioSocketTransport<S extends AbstractSelector> extends Abs
      * @return succeeded future
      */
     final TransportFuture doCloseSelectableChannel(boolean executeStoreClosed) {
+        DefaultTransportFuture closeFuture = closeFuture();
         if (key_ != null && key_.isValid()) {
             SelectableChannel channel = key_.channel();
             taskLoop().unregister(key_, this); // decrement register count
             try {
                 channel.close();
-                closeFuture().done();
+                closeFuture.done();
             } catch (IOException e) {
-                closeFuture().setThrowable(e);
+                closeFuture.setThrowable(e);
             }
             TransportStateEvent event = new DefaultTransportStateEvent(TransportState.CLOSED, null);
             if (executeStoreClosed) {
@@ -91,7 +89,7 @@ public abstract class NioSocketTransport<S extends AbstractSelector> extends Abs
         }
         onCloseSelectableChannel();
         closePipelines();
-        return new SuccessfulTransportFuture(this);
+        return closeFuture;
     }
 
     void onCloseSelectableChannel() {

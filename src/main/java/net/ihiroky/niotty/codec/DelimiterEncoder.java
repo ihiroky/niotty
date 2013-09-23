@@ -6,9 +6,9 @@ import net.ihiroky.niotty.TransportStateEvent;
 import net.ihiroky.niotty.buffer.BufferSink;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.CodecBuffer;
+import net.ihiroky.niotty.util.Objects;
 
 import java.util.Arrays;
-import java.util.Objects;
 
 /**
  * @author Hiroki Itoh

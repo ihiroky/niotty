@@ -1,9 +1,10 @@
 package net.ihiroky.niotty.buffer;
 
+import net.ihiroky.niotty.util.Objects;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.GatheringByteChannel;
-import java.util.Objects;
 
 /**
  * Holds a pair of {@link net.ihiroky.niotty.buffer.BufferSink}.

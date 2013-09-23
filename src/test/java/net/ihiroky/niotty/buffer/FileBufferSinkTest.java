@@ -2,6 +2,7 @@ package net.ihiroky.niotty.buffer;
 
 import net.ihiroky.niotty.DefaultTransportParameter;
 import net.ihiroky.niotty.TransportParameter;
+import net.ihiroky.niotty.util.Closable;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -14,11 +15,11 @@ import org.mockito.stubbing.Answer;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.GatheringByteChannel;
-import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -45,7 +46,7 @@ public class FileBufferSinkTest {
     @Before
     public void setUp() throws Exception {
         File file = temporaryFolderRule_.newFile();
-        channel_ = FileChannel.open(file.toPath(), StandardOpenOption.READ, StandardOpenOption.WRITE);
+        channel_ = new RandomAccessFile(file, "rw").getChannel();
         byte[] data = new byte[32];
         for (int i = 0; i < data.length; i++) {
             data[i] = (byte) i;
@@ -58,7 +59,7 @@ public class FileBufferSinkTest {
 
     @After
     public void tearDown() throws Exception {
-        for (AutoCloseable closeable : closeableList) {
+        for (Closable closeable : closeableList) {
             closeable.close();
         }
         channel_.close();

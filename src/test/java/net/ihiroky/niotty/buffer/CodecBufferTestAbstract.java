@@ -1,5 +1,6 @@
 package net.ihiroky.niotty.buffer;
 
+import net.ihiroky.niotty.util.Charsets;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -12,7 +13,7 @@ import java.io.IOException;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.channels.GatheringByteChannel;
-import java.nio.charset.StandardCharsets;
+import java.nio.charset.Charset;
 import java.util.Arrays;
 
 import static org.hamcrest.CoreMatchers.*;
@@ -24,6 +25,8 @@ import static org.mockito.Mockito.*;
  * @author Hiroki Itoh
  */
 public class CodecBufferTestAbstract {
+
+    private static final Charset CHARSET = Charsets.UTF_8;
 
     public static abstract class AbstractEmptyTests {
 
@@ -347,11 +350,11 @@ public class CodecBufferTestAbstract {
         @Test
         public void testReadString() throws Exception {
             String string = "0０1１2２3３";
-            byte[] data = string.getBytes(StandardCharsets.UTF_8);
+            byte[] data = string.getBytes(CHARSET);
             sut_.clear();
             sut_.writeBytes(data, 0, data.length);
 
-            String result = sut_.readString(StandardCharsets.UTF_8.newDecoder(), sut_.remainingBytes());
+            String result = sut_.readString(CHARSET.newDecoder(), sut_.remainingBytes());
 
             assertThat(result, is(string));
         }

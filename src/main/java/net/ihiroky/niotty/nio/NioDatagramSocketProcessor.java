@@ -3,9 +3,7 @@ package net.ihiroky.niotty.nio;
 import net.ihiroky.niotty.AbstractProcessor;
 import net.ihiroky.niotty.NameCountThreadFactory;
 import net.ihiroky.niotty.PipelineComposer;
-
-import java.net.ProtocolFamily;
-import java.util.Objects;
+import net.ihiroky.niotty.util.Objects;
 
 /**
  * An implementation of {@link net.ihiroky.niotty.Processor} for NIO {@code DatagramChannel}.
@@ -40,21 +38,21 @@ public class NioDatagramSocketProcessor extends AbstractProcessor<NioDatagramSoc
     @Override
     public NioDatagramSocketTransport createTransport() {
         return new NioDatagramSocketTransport(
-                pipelineComposer(), null, name(), ioSelectorPool_, writeQueueFactory_);
+                null, pipelineComposer(), name(), ioSelectorPool_, writeQueueFactory_);
     }
 
     /**
      * Constructs the transport.
-     * The {@code protocolFamily} parameter is used to specify the {@code ProtocolFamily}.
+     * The {@code protocolFamily} parameter is used to specify the {@code InternetProtocolFamily}.
      * If the datagram channel is to be used for IP multicasing then this should correspond to
      * the address type of the multicast groups that this channel will join.
      *
-     * @param protocolFamily the protocolFamily
+     * @param family the protocolFamily
      * @return the transport.
      */
-    public NioDatagramSocketTransport createTransport(ProtocolFamily protocolFamily) {
+    public NioDatagramSocketTransport createTransport(InternetProtocolFamily family) {
         return new NioDatagramSocketTransport(
-                pipelineComposer(), protocolFamily, name(), ioSelectorPool_, writeQueueFactory_);
+                family, pipelineComposer(), name(), ioSelectorPool_, writeQueueFactory_);
     }
 
     @Override

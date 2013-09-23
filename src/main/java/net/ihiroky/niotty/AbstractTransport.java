@@ -1,6 +1,7 @@
 package net.ihiroky.niotty;
 
-import java.util.Objects;
+import net.ihiroky.niotty.util.Objects;
+
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -10,7 +11,6 @@ import java.util.concurrent.atomic.AtomicReference;
  * {@link net.ihiroky.niotty.TaskLoop} is also held by this class, which handles asynchronous I/O operations</p>
  *
  * @param <T> The type of {@link net.ihiroky.niotty.TaskLoop}
- * @author Hiroki Itoh
  */
 public abstract class AbstractTransport<T extends TaskLoop> implements Transport, TaskSelection {
 

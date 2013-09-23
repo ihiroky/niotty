@@ -1,6 +1,8 @@
 package net.ihiroky.niotty.buffer;
 
+import java.io.File;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.channels.FileChannel;
@@ -190,6 +192,20 @@ public final class Buffers {
      */
     public static BufferSink newBufferSink(Path path, long beginning, long length) throws IOException {
         FileChannel channel = FileChannel.open(path, StandardOpenOption.READ);
+        return new FileBufferSink(channel, beginning, length);
+    }
+
+    /**
+     * Creates a new {@code BufferSink} which presents a file specified with a {@code file} and its range.
+     *
+     * @param file the file to points the file
+     * @param beginning beginning byte of the range, from the head of the file
+     * @param length byte length of the range
+     * @return a new {@code BufferSink} which presents the file
+     * @throws IOException if failed to open the file
+     */
+    public static BufferSink newBufferSink(File file, long beginning, long length) throws IOException {
+        FileChannel channel = new RandomAccessFile(file, "r").getChannel();
         return new FileBufferSink(channel, beginning, length);
     }
 

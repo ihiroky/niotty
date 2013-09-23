@@ -1,6 +1,6 @@
 package net.ihiroky.niotty;
 
-import java.util.Objects;
+import net.ihiroky.niotty.util.Objects;
 
 /**
  * <p>A skeletal implementation of {@link Processor}.</p>

@@ -3,10 +3,10 @@ package net.ihiroky.niotty.codec;
 import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.buffer.BufferSink;
 import net.ihiroky.niotty.buffer.Buffers;
+import net.ihiroky.niotty.util.Charsets;
 import org.junit.Test;
 
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import static org.hamcrest.CoreMatchers.*;
@@ -22,7 +22,7 @@ public class DelimiterEncoderTest {
         DelimiterEncoder sut = new DelimiterEncoder(new byte[]{'\r', '\n'});
         StageContext<BufferSink> context = new StageContextMock<BufferSink>();
 
-        byte[] data = "input".getBytes(StandardCharsets.UTF_8);
+        byte[] data = "input".getBytes(Charsets.UTF_8);
         BufferSink b = Buffers.wrap(data, 0, data.length);
         sut.store(context, b);
 

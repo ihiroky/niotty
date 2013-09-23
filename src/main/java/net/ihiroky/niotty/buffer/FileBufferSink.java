@@ -1,11 +1,12 @@
 package net.ihiroky.niotty.buffer;
 
+import net.ihiroky.niotty.util.Objects;
+
 import java.io.IOException;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.GatheringByteChannel;
-import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**

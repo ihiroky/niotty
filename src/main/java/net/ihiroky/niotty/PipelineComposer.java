@@ -1,5 +1,7 @@
 package net.ihiroky.niotty;
 
+import net.ihiroky.niotty.util.Closable;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -11,16 +13,16 @@ import java.util.List;
  *
  * <h3>Set up and close for support objects.</h3>
  * <p>This class has life cycle methods {@link #setUp()} and {@link #close()},
- * and a subsidiary method {@link #addCloseable(AutoCloseable)} . If it is necessary
+ * and a subsidiary method {@link #addClosable(Closable)} . If it is necessary
  * to set up support objects like {@link DefaultTaskLoopGroup} to execute {@link LoadStage}
  * and {@link StoreStage}, and {@link net.ihiroky.niotty.buffer.ChunkPool}, which are used
  * over the composing plural sets of load and store pipelines, {@link #setUp()} is overridden
  * and the objects is initialized in it. If tear down, {@link #close()} is overridden.
  * If the objects implements {@code java.lang.AutoCloseable},
- * {@link #addCloseable(AutoCloseable)} can be used to tear down the objects.
+ * {@link #addClosable(Closable)} can be used to tear down the objects.
  * The default implementation of {@code close()} calls these
- * {@link java.lang.AutoCloseable#close()}. So {@link #close()} should not be
- * overridden or should be called by sub class if {@link #addCloseable(AutoCloseable)}
+ * {@link net.ihiroky.niotty.util.Closable#close()}. So {@link #close()} should not be
+ * overridden or should be called by sub class if {@link #addClosable(Closable)}
  * is used.</p>
  *
  * TODO setUp() and close() are called in a skeletal implementation of Processor.
@@ -28,13 +30,13 @@ import java.util.List;
  */
 public abstract class PipelineComposer {
 
-    private final List<AutoCloseable> closeableList_;
+    private final List<Closable> closeableList_;
 
     private static final int INITIAL_CAPACITY = 3;
 
     private static final PipelineComposer EMPTY = new PipelineComposer(0) {
         @Override
-        protected void addCloseable(AutoCloseable closeable) {
+        protected void addClosable(Closable closeable) {
             throw new UnsupportedOperationException();
         }
         @Override
@@ -53,7 +55,7 @@ public abstract class PipelineComposer {
     /**
      * <p>Constructs a new instance.</p>
      *
-     * <p>The size of area to hold the objects be added by {@link #addCloseable(AutoCloseable)} is set to 3</p>.
+     * <p>The size of area to hold the objects be added by {@link #addClosable(Closable)} is set to 3</p>.
      */
     protected PipelineComposer() {
         this(INITIAL_CAPACITY);
@@ -62,14 +64,15 @@ public abstract class PipelineComposer {
     /**
      * <p>Constructs a new instance.</p>
      *
-     * <p>The size of area to hold the objects be added by {@link #addCloseable(AutoCloseable)} is set to
+     * <p>The size of area to hold the objects be added by {@link #addClosable(Closable)} is set to
      * {@code initialCapacity}.</p>.
      *
      * @param initialCapacity the initial size of array, which holds the support objects.
-     *                        If there is no need to use {@link #addCloseable(AutoCloseable)}, 0 is recommended.
+     *                        If there is no need to use {@link #addClosable(net.ihiroky.niotty.util.Closable)},
+     *                        0 is recommended.
      */
     protected PipelineComposer(int initialCapacity) {
-        closeableList_ = new ArrayList<AutoCloseable>(initialCapacity);
+        closeableList_ = new ArrayList<Closable>(initialCapacity);
     }
 
     /**
@@ -77,11 +80,11 @@ public abstract class PipelineComposer {
      *
      * <p>They are closed by the default implementation of {@link #close()}. If this method is used,
      * {@link #close()} should not be overridden or should be called by sub class.</p>
-     * @param closeable the objects which is closed with proper timing.
+     * @param closable the objects which is closed with proper timing.
      */
-    protected void addCloseable(AutoCloseable closeable) {
+    protected void addClosable(Closable closable) {
         synchronized (closeableList_) {
-            closeableList_.add(closeable);
+            closeableList_.add(closable);
         }
     }
 
@@ -97,14 +100,14 @@ public abstract class PipelineComposer {
      * <p>Closes the support objects.</p>
      *
      * <p>The default implementation of this method calls {@code} methods for the support objects
-     * added by {@link #addCloseable(AutoCloseable)}. So this method should not be
-     * overridden or should be called by sub class if {@link #addCloseable(AutoCloseable)} is used.</p>
+     * added by {@link #addClosable(net.ihiroky.niotty.util.Closable)}. So this method should not be
+     * overridden or should be called by sub class if {@link #addClosable(net.ihiroky.niotty.util.Closable)} is used.</p>
      */
     public void close() {
         synchronized (closeableList_) {
-            for (AutoCloseable closeable : closeableList_) {
+            for (Closable closable : closeableList_) {
                 try {
-                    closeable.close();
+                    closable.close();
                 } catch (Throwable t) {
                     t.printStackTrace();
                 }

@@ -3,8 +3,7 @@ package net.ihiroky.niotty.nio;
 import net.ihiroky.niotty.AbstractProcessor;
 import net.ihiroky.niotty.NameCountThreadFactory;
 import net.ihiroky.niotty.PipelineComposer;
-
-import java.util.Objects;
+import net.ihiroky.niotty.util.Objects;
 
 /**
  * An implementation of {@link net.ihiroky.niotty.Processor} for NIO {@code SocketChannel}.

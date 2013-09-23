@@ -37,7 +37,7 @@ public class FailedTransportFuture extends CompletedTransportFuture {
         } else if (throwable_ instanceof Error) {
             throw (Error) throwable_;
         }
-        throw new AssertionError("Unexpected throwable", throwable_);
+        throw new Error("Unexpected throwable", throwable_);
     }
 
     @Override
@@ -50,7 +50,7 @@ public class FailedTransportFuture extends CompletedTransportFuture {
             } else if (throwable_ instanceof Error) {
                 throw (Error) throwable_;
             }
-            throw new AssertionError("Unexpected throwable", throwable_);
+            throw new Error("Unexpected throwable", throwable_);
         }
     }
 }

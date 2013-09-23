@@ -7,6 +7,8 @@ import net.ihiroky.niotty.TransportStateEvent;
 import net.ihiroky.niotty.buffer.BufferSink;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.CodecBuffer;
+import net.ihiroky.niotty.util.JavaVersion;
+import net.ihiroky.niotty.util.Platform;
 
 import java.io.IOException;
 import java.util.zip.Deflater;
@@ -30,6 +32,9 @@ public class DeflaterEncoder implements StoreStage<BufferSink, CodecBuffer> {
     }
 
     public DeflaterEncoder(int level, int bufferSize, byte[] dictionary, boolean nowrap) {
+
+        Platform.javaVersion().throwIfUnsupported(JavaVersion.JAVA7);
+
         deflater_ = new Deflater(level, nowrap);
         buffer_ = new BufferChannel(new byte[bufferSize]);
         if (dictionary != null) {

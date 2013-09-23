@@ -5,6 +5,8 @@ import net.ihiroky.niotty.TransportState;
 import net.ihiroky.niotty.buffer.ArrayCodecBuffer;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.CodecBuffer;
+import net.ihiroky.niotty.util.JavaVersion;
+import net.ihiroky.niotty.util.Platform;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -12,8 +14,10 @@ import org.junit.Test;
 import java.util.Arrays;
 import java.util.zip.Deflater;
 
+import static net.ihiroky.niotty.util.JavaVersionMatchers.*;
 import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.MatcherAssert.*;
+import static org.junit.Assume.*;
 
 /**
  * @author Hiroki Itoh
@@ -24,6 +28,7 @@ public class ZlibTest {
 
     @Before
     public void setUp() {
+        assumeThat(Platform.javaVersion(), greaterOrEqual(JavaVersion.JAVA7));
         context_ = new StageContextMock<CodecBuffer>();
     }
 
