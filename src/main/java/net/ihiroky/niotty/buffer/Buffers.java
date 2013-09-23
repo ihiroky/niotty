@@ -27,6 +27,7 @@ public final class Buffers {
     }
 
     static final int DEFAULT_CAPACITY = 512;
+    static final CodecBuffer EMPTY = new SlicedCodecBuffer(new ArrayCodecBuffer(new byte[0], 0, 0));
 
     static int outputByteBufferSize(CharsetEncoder encoder, int chars) {
         return (int) Math.max(encoder.averageBytesPerChar() * chars, encoder.maxBytesPerChar()) + 1;
@@ -275,5 +276,14 @@ public final class Buffers {
         CodecBuffer b = Buffers.wrap(new byte[length], 0, 0);
         b.drainFrom(buffer, length);
         return b;
+    }
+
+    /**
+     * Returns a buffer which contains no content.
+     *
+     * @return the buffer
+     */
+    public static CodecBuffer emptyBuffer() {
+        return EMPTY;
     }
 }

@@ -20,6 +20,7 @@ public class BuffersTest {
 
     private static final Charset CHARSET = Charsets.UTF_8;
 
+    @Test
     public void testExpand() throws Exception {
         CharsetDecoder decoder = CHARSET.newDecoder();
         CharBuffer b = CharBuffer.wrap("0123");
@@ -52,5 +53,12 @@ public class BuffersTest {
         } catch (RuntimeException re) {
             assertThat(re.getCause(), is(instanceOf(MalformedInputException.class)));
         }
+    }
+
+    @Test(expected = IndexOutOfBoundsException.class)
+    public void testEmpty_ThrowsExceptionWhenWriteValue() throws Exception {
+        CodecBuffer sut = Buffers.emptyBuffer();
+
+        sut.writeByte(Byte.MAX_VALUE);
     }
 }
