@@ -1,7 +1,7 @@
 package net.ihiroky.niotty;
 
 /**
- * <p>Provides a set of {@link LoadStage} or {@link StoreStage} to process
+ * <p>Provides a chain of {@link LoadStage} or {@link StoreStage} to process
  * transmission data and states of a {@link Transport} which has this pipeline.</p>
  *
  * <p>Each stage is associated with {@link StageKey}. The stage key must be unique
@@ -142,9 +142,28 @@ public interface Pipeline<S> {
     Pipeline<S> replace(StageKey oldKey, StageKey newKey, S newStage, TaskLoopGroup<? extends TaskLoop> pool);
 
     /**
-     * Returns the name of this pipeline.
-     * @return the name of this pipeline
+     * Calls a message handler chain in this pipeline.
+     * @param input the message
      */
+    void execute(final Object input);
+
+    /**
+     * Calls a message handler chain with a parameter in this pipeline.
+     * @param input the message
+     * @param parameter the parameter
+     */
+    void execute(final Object input, final TransportParameter parameter);
+
+    /**
+     * Calls a state event handler chain in this pipeline.
+     * @param event the state event
+     */
+    void execute(final TransportStateEvent event);
+
+        /**
+         * Returns the name of this pipeline.
+         * @return the name of this pipeline
+         */
     String name();
 
     /**

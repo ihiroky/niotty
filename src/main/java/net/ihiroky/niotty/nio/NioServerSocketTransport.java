@@ -259,7 +259,7 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
             logger_.debug("[registerReadLater] accepted socket's {} = {}", name, child.option(name));
         }
 
-        child.loadEvent(new DefaultTransportStateEvent(TransportState.CONNECTED, remoteAddress));
+        child.loadPipeline().execute(new DefaultTransportStateEvent(TransportState.CONNECTED, remoteAddress));
         ioSelectorPool.register(channel, SelectionKey.OP_READ, child);
         childAggregate_.add(child);
     }

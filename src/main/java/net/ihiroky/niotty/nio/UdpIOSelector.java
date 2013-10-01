@@ -70,14 +70,14 @@ public class UdpIOSelector extends AbstractSelector {
                         localByteBuffer.flip();
                         CodecBuffer buffer = duplicateBuffer_
                                 ? duplicate(localByteBuffer) : Buffers.wrap(localByteBuffer, false);
-                        transport.loadEvent(buffer);
+                        transport.loadPipeline().execute(buffer);
                         localByteBuffer.clear();
                     } else {
                         SocketAddress source = channel.receive(localByteBuffer);
                         localByteBuffer.flip();
                         CodecBuffer buffer = duplicateBuffer_
                                 ? duplicate(localByteBuffer) : Buffers.wrap(localByteBuffer, false);
-                        transport.loadEvent(buffer, new DefaultTransportParameter(source));
+                        transport.loadPipeline().execute(buffer, new DefaultTransportParameter(source));
                         localByteBuffer.clear();
                     }
                 } else if (key.isWritable()) {

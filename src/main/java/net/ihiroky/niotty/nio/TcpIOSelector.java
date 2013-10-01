@@ -65,7 +65,7 @@ public class TcpIOSelector extends AbstractSelector {
                     localByteBuffer.flip();
                     CodecBuffer cb = duplicateBuffer_
                             ? duplicate(localByteBuffer) : Buffers.wrap(localByteBuffer, false);
-                    transport.loadEvent(cb);
+                    transport.loadPipeline().execute(cb);
                     localByteBuffer.clear();
                     // TODO There is any need to check if content is remaining?
                 } else if (key.isWritable()) {

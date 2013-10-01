@@ -280,7 +280,7 @@ public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> 
             channel_.configureBlocking(true);
             channel_.connect(remote);
             channel_.configureBlocking(false);
-            loadEvent(new DefaultTransportStateEvent(TransportState.CONNECTED, remote));
+            loadPipeline().execute(new DefaultTransportStateEvent(TransportState.CONNECTED, remote));
             pools.ioPool_.register(channel_, SelectionKey.OP_READ, this);
             return new SuccessfulTransportFuture(this);
         } catch (IOException ioe) {

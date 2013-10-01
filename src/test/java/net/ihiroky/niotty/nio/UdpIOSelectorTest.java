@@ -1,6 +1,7 @@
 package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.DefaultTransportParameter;
+import net.ihiroky.niotty.LoadPipeline;
 import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.Task;
 import net.ihiroky.niotty.TransportParameter;
@@ -76,15 +77,17 @@ public class UdpIOSelectorTest {
             }
         });
         NioDatagramSocketTransport transport = mock(NioDatagramSocketTransport.class);
+        LoadPipeline pipeline = mock(LoadPipeline.class);
         SelectionKey key = spy(new SelectionKeyMock());
         when(key.channel()).thenReturn(channel);
         when(key.readyOps()).thenReturn(SelectionKey.OP_READ);
+        when(transport.loadPipeline()).thenReturn(pipeline);
         key.attach(transport);
 
         sut.processSelectedKeys(new HashSet<SelectionKey>(Arrays.asList(key)));
 
         ArgumentCaptor<CodecBuffer> captor = ArgumentCaptor.forClass(CodecBuffer.class);
-        verify(transport).loadEvent(captor.capture());
+        verify(transport.loadPipeline()).execute(captor.capture());
         CodecBuffer cb = captor.getValue();
         assertThat(cb, is(instanceOf(ByteBufferCodecBuffer.class)));
     }
@@ -103,15 +106,17 @@ public class UdpIOSelectorTest {
             }
         });
         NioDatagramSocketTransport transport = mock(NioDatagramSocketTransport.class);
+        LoadPipeline pipeline = mock(LoadPipeline.class);
         SelectionKey key = spy(new SelectionKeyMock());
         when(key.channel()).thenReturn(channel);
         when(key.readyOps()).thenReturn(SelectionKey.OP_READ);
+        when(transport.loadPipeline()).thenReturn(pipeline);
         key.attach(transport);
 
         sut.processSelectedKeys(new HashSet<SelectionKey>(Arrays.asList(key)));
 
         ArgumentCaptor<CodecBuffer> captor = ArgumentCaptor.forClass(CodecBuffer.class);
-        verify(transport).loadEvent(captor.capture());
+        verify(transport.loadPipeline()).execute(captor.capture());
         CodecBuffer cb = captor.getValue();
         assertThat(cb, is(instanceOf(ArrayCodecBuffer.class)));
         assertThat(cb.remainingBytes(), is(10));
@@ -131,15 +136,17 @@ public class UdpIOSelectorTest {
             }
         });
         NioDatagramSocketTransport transport = mock(NioDatagramSocketTransport.class);
+        LoadPipeline pipeline = mock(LoadPipeline.class);
         SelectionKey key = spy(new SelectionKeyMock());
         when(key.channel()).thenReturn(channel);
         when(key.readyOps()).thenReturn(SelectionKey.OP_READ);
+        when(transport.loadPipeline()).thenReturn(pipeline);
         key.attach(transport);
 
         sut.processSelectedKeys(new HashSet<SelectionKey>(Arrays.asList(key)));
 
         ArgumentCaptor<CodecBuffer> captor = ArgumentCaptor.forClass(CodecBuffer.class);
-        verify(transport).loadEvent(captor.capture(), Mockito.any(TransportParameter.class));
+        verify(transport.loadPipeline()).execute(captor.capture(), Mockito.any(TransportParameter.class));
         CodecBuffer cb = captor.getValue();
         assertThat(cb, is(instanceOf(ByteBufferCodecBuffer.class)));
     }
@@ -158,15 +165,17 @@ public class UdpIOSelectorTest {
             }
         });
         NioDatagramSocketTransport transport = mock(NioDatagramSocketTransport.class);
+        LoadPipeline pipeline = mock(LoadPipeline.class);
         SelectionKey key = spy(new SelectionKeyMock());
         when(key.channel()).thenReturn(channel);
         when(key.readyOps()).thenReturn(SelectionKey.OP_READ);
+        when(transport.loadPipeline()).thenReturn(pipeline);
         key.attach(transport);
 
         sut.processSelectedKeys(new HashSet<SelectionKey>(Arrays.asList(key)));
 
         ArgumentCaptor<CodecBuffer> captor = ArgumentCaptor.forClass(CodecBuffer.class);
-        verify(transport).loadEvent(captor.capture(), Mockito.any(TransportParameter.class));
+        verify(transport.loadPipeline()).execute(captor.capture(), Mockito.any(TransportParameter.class));
         CodecBuffer cb = captor.getValue();
         assertThat(cb, is(instanceOf(ArrayCodecBuffer.class)));
         assertThat(cb.remainingBytes(), is(10));

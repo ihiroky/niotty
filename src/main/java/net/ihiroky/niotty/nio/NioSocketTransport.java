@@ -8,7 +8,6 @@ import net.ihiroky.niotty.SuccessfulTransportFuture;
 import net.ihiroky.niotty.Task;
 import net.ihiroky.niotty.TaskLoopGroup;
 import net.ihiroky.niotty.TransportFuture;
-import net.ihiroky.niotty.TransportParameter;
 import net.ihiroky.niotty.TransportState;
 import net.ihiroky.niotty.TransportStateEvent;
 import net.ihiroky.niotty.buffer.BufferSink;
@@ -93,18 +92,6 @@ public abstract class NioSocketTransport<S extends AbstractSelector> extends Abs
     }
 
     void onCloseSelectableChannel() {
-    }
-
-    final void loadEvent(Object message) {
-        executeLoad(message);
-    }
-
-    final void loadEvent(Object message, TransportParameter parameter) {
-        executeLoad(message, parameter);
-    }
-
-    final void loadEvent(final TransportStateEvent event) {
-        executeLoad(event);
     }
 
     final SelectionKey key() {

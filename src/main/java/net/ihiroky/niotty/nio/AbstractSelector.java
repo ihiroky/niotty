@@ -100,7 +100,7 @@ public abstract class AbstractSelector extends TaskLoop implements StoreStage<Bu
         try {
             SelectionKey key = channel.register(selector_, ops, transport);
             transport.setSelectionKey(key);
-            transport.loadEvent(new DefaultTransportStateEvent(TransportState.INTEREST_OPS, ops));
+            transport.loadPipeline().execute(new DefaultTransportStateEvent(TransportState.INTEREST_OPS, ops));
             logger_.debug("[register] channel {} is registered to {}.", channel, Thread.currentThread());
         } catch (IOException ioe) {
             logger_.warn("[register] failed to register channel:" + channel, ioe);
@@ -109,7 +109,7 @@ public abstract class AbstractSelector extends TaskLoop implements StoreStage<Bu
 
     void unregister(SelectionKey key, NioSocketTransport<?> transport) {
         key.cancel();
-        transport.loadEvent(new DefaultTransportStateEvent(TransportState.INTEREST_OPS, 0));
+        transport.loadPipeline().execute(new DefaultTransportStateEvent(TransportState.INTEREST_OPS, 0));
         reject(transport);
         logger_.debug("[unregister] channel {} is unregistered from {}.", key.channel(), Thread.currentThread());
     }
