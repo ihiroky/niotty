@@ -24,7 +24,7 @@ public class DefaultStorePipeline<L extends TaskLoop>
     }
 
     @Override
-    protected Tail<StoreStage<?, ?>> createTail(TaskLoopGroup<L> defaultPool) {
+    protected final Tail<StoreStage<?, ?>> createTail(TaskLoopGroup<L> defaultPool) {
         return new StoreTail(this, IO_STAGE_KEY, defaultPool);
     }
 

@@ -25,7 +25,7 @@ public class DefaultLoadPipeline<L extends TaskLoop>
     }
 
     @Override
-    protected Tail<LoadStage<?, ?>> createTail(TaskLoopGroup<L> defaultPool) {
+    protected final Tail<LoadStage<?, ?>> createTail(TaskLoopGroup<L> defaultPool) {
         return new LoadTail(this, TAIL_STAGE, AbstractPipeline.NULL_POOL);
     }
 
