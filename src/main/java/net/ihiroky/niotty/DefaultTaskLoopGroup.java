@@ -1,5 +1,7 @@
 package net.ihiroky.niotty;
 
+import net.ihiroky.niotty.util.Arguments;
+
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
@@ -40,10 +42,7 @@ public final class DefaultTaskLoopGroup
      * @param threadNamePrefix a prefix of the thread name, "ExecutorFor" is used if null.
      */
     public DefaultTaskLoopGroup(int numberOfThread, String threadNamePrefix) {
-        if (numberOfThread <= 0) {
-            throw new IllegalArgumentException("numberOfThread must be positive.");
-        }
-        numberOfThread_ = numberOfThread;
+        numberOfThread_ = Arguments.requirePositive(numberOfThread, "numberOfThread");
         threadNamePrefix_ = threadNamePrefix;
         state_ = State.INITIALIZED;
         stateLock_ = new Object();

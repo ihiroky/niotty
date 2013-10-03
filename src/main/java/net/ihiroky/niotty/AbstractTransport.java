@@ -1,6 +1,6 @@
 package net.ihiroky.niotty;
 
-import net.ihiroky.niotty.util.Objects;
+import net.ihiroky.niotty.util.Arguments;
 
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -29,8 +29,8 @@ public abstract class AbstractTransport<T extends TaskLoop> implements Transport
      */
     protected AbstractTransport(
             String name, PipelineComposer pipelineComposer, TaskLoopGroup<T> taskLoopGroup) {
-        Objects.requireNonNull(name, "name");
-        Objects.requireNonNull(pipelineComposer, "pipelineComposer");
+        Arguments.requireNonNull(name, "name");
+        Arguments.requireNonNull(pipelineComposer, "pipelineComposer");
 
         attachmentReference_ = new AtomicReference<Object>();
         closeFuture_ = new DefaultTransportFuture(this);
@@ -117,7 +117,7 @@ public abstract class AbstractTransport<T extends TaskLoop> implements Transport
      * @param ioStage the stage
      */
     public void setIOStage(StoreStage<?, ?> ioStage) {
-        Objects.requireNonNull(ioStage, "ioStage");
+        Arguments.requireNonNull(ioStage, "ioStage");
         storePipeline_.setTailStage(ioStage);
     }
 

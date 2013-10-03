@@ -1,6 +1,6 @@
 package net.ihiroky.niotty.buffer;
 
-import net.ihiroky.niotty.util.Objects;
+import net.ihiroky.niotty.util.Arguments;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -120,8 +120,8 @@ public class SlicedCodecBuffer extends AbstractCodecBuffer {
 
     @Override
     public void writeString(String s, CharsetEncoder encoder) {
-        Objects.requireNonNull(s, "s");
-        Objects.requireNonNull(encoder, "encoder");
+        Arguments.requireNonNull(s, "s");
+        Arguments.requireNonNull(encoder, "encoder");
 
         CharBuffer input = CharBuffer.wrap(s);
         ByteBuffer output = base_.byteBuffer();

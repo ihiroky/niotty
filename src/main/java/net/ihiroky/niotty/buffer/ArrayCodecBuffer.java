@@ -1,6 +1,6 @@
 package net.ihiroky.niotty.buffer;
 
-import net.ihiroky.niotty.util.Objects;
+import net.ihiroky.niotty.util.Arguments;
 
 import java.io.IOException;
 import java.nio.BufferOverflowException;
@@ -29,22 +29,17 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer {
     }
 
     ArrayCodecBuffer(ChunkManager<byte[]> manager, int initialCapacity) {
-        Objects.requireNonNull(manager, "manager");
-        if (initialCapacity < 0) {
-            throw new IllegalArgumentException("initialCapacity must not be negative.");
-        }
+        Arguments.requireNonNull(manager, "manager");
+        Arguments.requirePositiveOrZero(initialCapacity, "initialCapacity");
+
         chunk_ = manager.newChunk(initialCapacity);
         buffer_ = chunk_.initialize();
     }
 
     ArrayCodecBuffer(byte[] b, int beginning, int length) {
-        Objects.requireNonNull(b, "b");
-        if (beginning < 0) {
-            throw new IllegalArgumentException("beginning must be zero or positive.");
-        }
-        if (length < 0) {
-            throw new IllegalArgumentException("length must be zero or positive.");
-        }
+        Arguments.requireNonNull(b, "b");
+        Arguments.requirePositiveOrZero(beginning, "beginning");
+        Arguments.requirePositiveOrZero(length, "length");
         if (beginning + length > b.length) {
             throw new IndexOutOfBoundsException(
                     "offset + length (" + (beginning + length) + ") exceeds buffer capacity " + b.length);
@@ -181,8 +176,8 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer {
      * {@inheritDoc}
      */
     public void writeString(String s, CharsetEncoder encoder) {
-        Objects.requireNonNull(encoder, "encoder");
-        Objects.requireNonNull(s, "s");
+        Arguments.requireNonNull(encoder, "encoder");
+        Arguments.requireNonNull(s, "s");
 
         int end = end_;
         CharBuffer input = CharBuffer.wrap(s);
@@ -398,7 +393,7 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer {
 
     @Override
     public ArrayCodecBuffer addFirst(CodecBuffer buffer) {
-        Objects.requireNonNull(buffer, "buffer");
+        Arguments.requireNonNull(buffer, "buffer");
         int inputSize = buffer.remainingBytes();
         if (inputSize == 0) {
             return this;
@@ -438,7 +433,7 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer {
 
     @Override
     public ArrayCodecBuffer addLast(CodecBuffer buffer) {
-        Objects.requireNonNull(buffer, "buffer");
+        Arguments.requireNonNull(buffer, "buffer");
         int inputSize = buffer.remainingBytes();
         if (inputSize == 0) {
             return this;

@@ -1,6 +1,6 @@
 package net.ihiroky.niotty;
 
-import net.ihiroky.niotty.util.Objects;
+import net.ihiroky.niotty.util.Arguments;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,10 +40,7 @@ public abstract class TaskLoopGroup<L extends TaskLoop> {
      * @param workers the number of threads held in the thread pool
      */
     public void open(ThreadFactory threadFactory, int workers) {
-        if (workers <= 0) {
-            throw new IllegalArgumentException("The workers must be positive.");
-        }
-
+        Arguments.requirePositive(workers, "workers");
         synchronized (taskLoops_) {
             if (executor_ == null) {
                 ThreadPoolExecutor executor = new ThreadPoolExecutor(
@@ -114,7 +111,7 @@ public abstract class TaskLoopGroup<L extends TaskLoop> {
      * @return the task loop
      */
     protected L assign(TaskSelection selection) {
-        Objects.requireNonNull(selection, "selection");
+        Arguments.requireNonNull(selection, "selection");
 
         int minCount = Integer.MAX_VALUE;
         L minCountLoop = null;

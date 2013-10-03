@@ -1,6 +1,6 @@
 package net.ihiroky.niotty;
 
-import net.ihiroky.niotty.util.Objects;
+import net.ihiroky.niotty.util.Arguments;
 
 import java.util.concurrent.ThreadFactory;
 
@@ -13,7 +13,7 @@ public class NameCountThreadFactory implements ThreadFactory {
     private int count_;
 
     public NameCountThreadFactory(String name) {
-        Objects.requireNonNull(name, "name");
+        Arguments.requireNonNull(name, "name");
         this.name_ = name.concat(":");
     }
 

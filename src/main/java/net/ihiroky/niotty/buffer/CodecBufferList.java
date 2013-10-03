@@ -1,6 +1,6 @@
 package net.ihiroky.niotty.buffer;
 
-import net.ihiroky.niotty.util.Objects;
+import net.ihiroky.niotty.util.Arguments;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -37,7 +37,7 @@ public class CodecBufferList extends AbstractCodecBuffer {
     }
 
     CodecBufferList(CodecBuffer buffer0) {
-        Objects.requireNonNull(buffer0, "buffer0");
+        Arguments.requireNonNull(buffer0, "buffer0");
 
         List<CodecBuffer> list = new ArrayList<CodecBuffer>(INITIAL_BUFFERS_CAPACITY);
         list.add(new SlicedCodecBuffer(buffer0));
@@ -46,8 +46,8 @@ public class CodecBufferList extends AbstractCodecBuffer {
     }
 
     CodecBufferList(CodecBuffer buffer0, CodecBuffer buffer1) {
-        Objects.requireNonNull(buffer0, "buffer0");
-        Objects.requireNonNull(buffer1, "buffer1");
+        Arguments.requireNonNull(buffer0, "buffer0");
+        Arguments.requireNonNull(buffer1, "buffer1");
 
         List<CodecBuffer> list = new ArrayList<CodecBuffer>(INITIAL_BUFFERS_CAPACITY);
         list.add(new SlicedCodecBuffer(buffer0));
@@ -57,7 +57,7 @@ public class CodecBufferList extends AbstractCodecBuffer {
     }
 
     CodecBufferList(CodecBuffer... buffers) {
-        Objects.requireNonNull(buffers, "buffers");
+        Arguments.requireNonNull(buffers, "buffers");
         if (buffers.length >= MAX_BUFFER_COUNT) {
             throw new IllegalArgumentException("length of buffers must be less than " + MAX_BUFFER_COUNT + ".");
         }
@@ -125,9 +125,7 @@ public class CodecBufferList extends AbstractCodecBuffer {
 
     @Override
     public CodecBufferList addFirst(CodecBuffer buffer) {
-        if (buffer == null) {
-            throw new IllegalArgumentException("buffer must not be null.");
-        }
+        Arguments.requireNonNull(buffer, "buffer");
 
         int beginning = beginningBufferIndex_;
         while (beginning <= endBufferIndex_
@@ -272,8 +270,8 @@ public class CodecBufferList extends AbstractCodecBuffer {
 
     @Override
     public void writeString(String s, CharsetEncoder encoder) {
-        Objects.requireNonNull(s, "s");
-        Objects.requireNonNull(encoder, "encoder");
+        Arguments.requireNonNull(s, "s");
+        Arguments.requireNonNull(encoder, "encoder");
 
         CodecBuffer buffer = buffers_.get(endBufferIndex_);
         CharBuffer input = CharBuffer.wrap(s);

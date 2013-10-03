@@ -3,7 +3,7 @@ package net.ihiroky.niotty.nio;
 import net.ihiroky.niotty.AbstractProcessor;
 import net.ihiroky.niotty.NameCountThreadFactory;
 import net.ihiroky.niotty.PipelineComposer;
-import net.ihiroky.niotty.util.Objects;
+import net.ihiroky.niotty.util.Arguments;
 
 /**
  * An implementation of {@link net.ihiroky.niotty.Processor} for NIO {@code DatagramChannel}.
@@ -68,10 +68,7 @@ public class NioDatagramSocketProcessor extends AbstractProcessor<NioDatagramSoc
     }
 
     public NioDatagramSocketProcessor setNumberOfMessageIOThread(int numberOfMessageIOThread) {
-        if (numberOfMessageIOThread <= 0) {
-            throw new IllegalArgumentException("numberOfMessageIOThread must be positive.");
-        }
-        this.numberOfMessageIOThread_ = numberOfMessageIOThread;
+        this.numberOfMessageIOThread_ = Arguments.requirePositive(numberOfMessageIOThread, "numberOfMessageIOThread");
         return this;
     }
 
@@ -80,9 +77,6 @@ public class NioDatagramSocketProcessor extends AbstractProcessor<NioDatagramSoc
     }
 
     public NioDatagramSocketProcessor setReadBufferSize(int readBufferSize) {
-        if (readBufferSize <= 0) {
-            throw new IllegalArgumentException("readBufferSize must be positive.");
-        }
         ioSelectorPool_.setReadBufferSize(readBufferSize);
         return this;
     }
@@ -92,9 +86,6 @@ public class NioDatagramSocketProcessor extends AbstractProcessor<NioDatagramSoc
     }
 
     public NioDatagramSocketProcessor setWriteBufferSize(int writeBufferSize) {
-        if (writeBufferSize <= 0) {
-            throw new IllegalArgumentException("writeBufferSize must be positive.");
-        }
         ioSelectorPool_.setWriteBufferSize(writeBufferSize);
         return this;
     }
@@ -122,8 +113,7 @@ public class NioDatagramSocketProcessor extends AbstractProcessor<NioDatagramSoc
     }
 
     public NioDatagramSocketProcessor setWriteQueueFactory(WriteQueueFactory writeQueueFactory) {
-        Objects.requireNonNull(writeQueueFactory, "writeQueueFactory");
-        writeQueueFactory_ = writeQueueFactory;
+        writeQueueFactory_ = Arguments.requireNonNull(writeQueueFactory, "writeQueueFactory");
         return this;
     }
 }

@@ -13,8 +13,8 @@ import net.ihiroky.niotty.TransportOptions;
 import net.ihiroky.niotty.TransportState;
 import net.ihiroky.niotty.TransportStateEvent;
 import net.ihiroky.niotty.buffer.BufferSink;
+import net.ihiroky.niotty.util.Arguments;
 import net.ihiroky.niotty.util.JavaVersion;
-import net.ihiroky.niotty.util.Objects;
 import net.ihiroky.niotty.util.Platform;
 
 import java.io.IOException;
@@ -59,9 +59,9 @@ public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> 
             ConnectSelectorPool connectorPool, TcpIOSelectorPool ioPool, WriteQueueFactory writeQueueFactory) {
         super(name, composer, ioPool);
 
-        Objects.requireNonNull(connectorPool, "connectorPool");
-        Objects.requireNonNull(ioPool, "ioPool");
-        Objects.requireNonNull(writeQueueFactory, "writeQueueFactory");
+        Arguments.requireNonNull(connectorPool, "connectorPool");
+        Arguments.requireNonNull(ioPool, "ioPool");
+        Arguments.requireNonNull(writeQueueFactory, "writeQueueFactory");
 
         try {
             SocketChannel clientChannel = SocketChannel.open();
@@ -79,8 +79,8 @@ public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> 
             TcpIOSelectorPool ioPool, WriteQueueFactory writeQueueFactory, SocketChannel child) {
         super(name, composer, ioPool);
 
-        Objects.requireNonNull(writeQueueFactory, "writeQueueFactory");
-        Objects.requireNonNull(child, "child");
+        Arguments.requireNonNull(writeQueueFactory, "writeQueueFactory");
+        Arguments.requireNonNull(child, "child");
 
         channel_ = child;
         pools_ = null;

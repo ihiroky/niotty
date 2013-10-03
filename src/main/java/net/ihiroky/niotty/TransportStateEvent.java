@@ -1,6 +1,8 @@
 package net.ihiroky.niotty;
 
-import net.ihiroky.niotty.util.Objects;
+import net.ihiroky.niotty.util.Arguments;
+
+import java.util.Arrays;
 
 /**
  * Created on 13/01/11, 13:47
@@ -17,7 +19,7 @@ public abstract class TransportStateEvent implements Task {
     }
 
     public TransportStateEvent(TransportState state, Object value) {
-        Objects.requireNonNull(state, "state");
+        Arguments.requireNonNull(state, "state");
         state_ = state;
         value_ = value;
     }
@@ -36,7 +38,7 @@ public abstract class TransportStateEvent implements Task {
 
     @Override
     public int hashCode() {
-        return Objects.hash(state_, value_);
+        return Arrays.hashCode(new Object[]{state_, value_});
     }
 
     @Override

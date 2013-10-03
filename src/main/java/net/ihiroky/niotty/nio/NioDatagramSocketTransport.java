@@ -12,8 +12,8 @@ import net.ihiroky.niotty.TransportOptions;
 import net.ihiroky.niotty.TransportState;
 import net.ihiroky.niotty.TransportStateEvent;
 import net.ihiroky.niotty.buffer.BufferSink;
+import net.ihiroky.niotty.util.Arguments;
 import net.ihiroky.niotty.util.JavaVersion;
-import net.ihiroky.niotty.util.Objects;
 import net.ihiroky.niotty.util.Platform;
 
 import java.io.IOException;
@@ -55,7 +55,7 @@ public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector
             String name, UdpIOSelectorPool selectorPool, WriteQueueFactory writeQueueFactory) {
         super(name, composer, selectorPool);
 
-        Objects.requireNonNull(writeQueueFactory, "writeQueueFactory");
+        Arguments.requireNonNull(writeQueueFactory, "writeQueueFactory");
 
         DatagramChannel channel = null;
         try {
@@ -87,7 +87,7 @@ public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector
             String name, UdpIOSelectorPool selectorPool, WriteQueueFactory writeQueueFactory, DatagramChannel channel) {
         super(name, composer, selectorPool);
 
-        Objects.requireNonNull(writeQueueFactory, "writeQueueFactory");
+        Arguments.requireNonNull(writeQueueFactory, "writeQueueFactory");
 
         channel_ = channel;
         writeQueue_ = writeQueueFactory.newWriteQueue();
@@ -511,7 +511,7 @@ public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector
 
         @Override
         public int hashCode() {
-            return Objects.hash(group_, networkInterface_);
+            return Arrays.hashCode(new Object[]{group_, networkInterface_});
         }
 
         @Override

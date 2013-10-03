@@ -1,5 +1,7 @@
 package net.ihiroky.niotty.nio;
 
+import net.ihiroky.niotty.util.Arguments;
+
 /**
  * @author Hiroki Itoh
  */
@@ -21,11 +23,8 @@ public class TcpIOSelectorPool extends AbstractSelectorPool<TcpIOSelector> {
         return readBufferSize_;
     }
 
-    public void setReadBufferSize(int size) {
-        if (readBufferSize_ <= 0) {
-            throw new IllegalArgumentException("readBufferSize must be positive.");
-        }
-        readBufferSize_ = size;
+    public void setReadBufferSize(int readBufferSize) {
+        readBufferSize_ = Arguments.requirePositive(readBufferSize, "readBufferSize");
     }
 
     public boolean direct() {

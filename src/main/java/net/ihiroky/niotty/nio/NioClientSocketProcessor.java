@@ -3,7 +3,7 @@ package net.ihiroky.niotty.nio;
 import net.ihiroky.niotty.AbstractProcessor;
 import net.ihiroky.niotty.NameCountThreadFactory;
 import net.ihiroky.niotty.PipelineComposer;
-import net.ihiroky.niotty.util.Objects;
+import net.ihiroky.niotty.util.Arguments;
 
 /**
  * An implementation of {@link net.ihiroky.niotty.Processor} for NIO {@code SocketChannel}.
@@ -65,26 +65,16 @@ public class NioClientSocketProcessor extends AbstractProcessor<NioClientSocketT
     }
 
     public NioClientSocketProcessor setNumberOfConnectThread(int numberOfConnectThread) {
-        if (numberOfConnectThread < 0) {
-            throw new IllegalArgumentException("numberOfConnectThread must be positive or zero.");
-        }
-        // TODO Set null if numberOfConnectThread is zero and create instance if it changes from zero to positive.
-        this.numberOfConnectThread_ = numberOfConnectThread;
+        this.numberOfConnectThread_ = Arguments.requirePositiveOrZero(numberOfConnectThread, "numberOfConnectThread");
         return this;
     }
 
     public NioClientSocketProcessor setNumberOfMessageIOThread(int numberOfMessageIOThread) {
-        if (numberOfMessageIOThread <= 0) {
-            throw new IllegalArgumentException("numberOfMessageIOThread must be positive.");
-        }
-        this.numberOfMessageIOThread_ = numberOfMessageIOThread;
+        this.numberOfMessageIOThread_ = Arguments.requirePositive(numberOfMessageIOThread, "numberOfMessageIOThread");
         return this;
     }
 
     public NioClientSocketProcessor setReadBufferSize(int readBufferSize) {
-        if (readBufferSize <= 0) {
-            throw new IllegalArgumentException("readBufferSize must be positive.");
-        }
         ioSelectorPool_.setReadBufferSize(readBufferSize);
         return this;
     }
@@ -100,8 +90,7 @@ public class NioClientSocketProcessor extends AbstractProcessor<NioClientSocketT
     }
 
     public NioClientSocketProcessor setWriteQueueFactory(WriteQueueFactory writeQueueFactory) {
-        Objects.requireNonNull(writeQueueFactory, "writeQueueFactory");
-        writeQueueFactory_ = writeQueueFactory;
+        writeQueueFactory_ = Arguments.requireNonNull(writeQueueFactory, "writeQueueFactory");
         return this;
     }
 

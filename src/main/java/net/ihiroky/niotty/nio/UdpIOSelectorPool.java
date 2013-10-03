@@ -1,5 +1,7 @@
 package net.ihiroky.niotty.nio;
 
+import net.ihiroky.niotty.util.Arguments;
+
 /**
  * @author Hiroki Itoh
  */
@@ -23,22 +25,16 @@ public class UdpIOSelectorPool extends AbstractSelectorPool<UdpIOSelector> {
         return readBufferSize_;
     }
 
-    public void setReadBufferSize(int size) {
-        if (size <= 0) {
-            throw new IllegalArgumentException("size must be positive.");
-        }
-        readBufferSize_ = size;
+    public void setReadBufferSize(int readBufferSize) {
+        readBufferSize_ = Arguments.requirePositive(readBufferSize, "readBufferSize");
     }
 
     public int writeBufferSize() {
         return writeBufferSize_;
     }
 
-    public void setWriteBufferSize(int size) {
-        if (size <= 0) {
-            throw new IllegalArgumentException("size must be positive.");
-        }
-        writeBufferSize_ = size;
+    public void setWriteBufferSize(int writeBufferSize) {
+        writeBufferSize_ = Arguments.requirePositive(writeBufferSize, "writeBufferSize");
     }
 
     public boolean direct() {

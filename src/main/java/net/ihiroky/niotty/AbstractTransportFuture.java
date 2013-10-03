@@ -1,6 +1,6 @@
 package net.ihiroky.niotty;
 
-import net.ihiroky.niotty.util.Objects;
+import net.ihiroky.niotty.util.Arguments;
 
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
@@ -31,7 +31,7 @@ public abstract class AbstractTransportFuture implements TransportFuture {
 
     @Override
     public final TransportFuture addListener(final TransportFutureListener listener) {
-        Objects.requireNonNull(listener, "listener");
+        Arguments.requireNonNull(listener, "listener");
 
         TaskLoop taskLoop = transport_.taskLoop();
         synchronized (this) {
@@ -72,7 +72,7 @@ public abstract class AbstractTransportFuture implements TransportFuture {
 
     @Override
     public final TransportFuture removeListener(TransportFutureListener listener) {
-        Objects.requireNonNull(listener, "listener");
+        Arguments.requireNonNull(listener, "listener");
 
         synchronized (this) {
             if (listener_ == listener) {

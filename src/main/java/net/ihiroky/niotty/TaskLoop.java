@@ -1,6 +1,6 @@
 package net.ihiroky.niotty;
 
-import net.ihiroky.niotty.util.Objects;
+import net.ihiroky.niotty.util.Arguments;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -76,8 +76,8 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
      * @throws NullPointerException if task or timeUnit is null
      */
     public TaskFuture schedule(final Task task, long delay, TimeUnit timeUnit) {
-        Objects.requireNonNull(task, "task");
-        Objects.requireNonNull(timeUnit, "timeUnit");
+        Arguments.requireNonNull(task, "task");
+        Arguments.requireNonNull(timeUnit, "timeUnit");
 
         long expire = System.nanoTime() + timeUnit.toNanos(delay);
         final TaskFuture future = new TaskFuture(expire, task);
@@ -327,7 +327,7 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
      * @throws NullPointerException if selection is null
      */
     public int accept(TaskSelection selection) {
-        Objects.requireNonNull(selection, "selection");
+        Arguments.requireNonNull(selection, "selection");
         int size;
         synchronized (selectionCountMap_) {
             Integer count = selectionCountMap_.get(selection);
@@ -346,7 +346,7 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
      * @return the number of the selections weight associated with this object, exclude the selection
      */
     public int reject(TaskSelection selection) {
-        Objects.requireNonNull(selection, "selection");
+        Arguments.requireNonNull(selection, "selection");
         int size;
         synchronized (selectionCountMap_) {
             Integer count = selectionCountMap_.get(selection);

@@ -1,6 +1,6 @@
 package net.ihiroky.niotty.buffer;
 
-import net.ihiroky.niotty.util.Objects;
+import net.ihiroky.niotty.util.Arguments;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -18,8 +18,8 @@ public class BufferSinkList implements BufferSink {
     private final BufferSink cdr_;
 
     BufferSinkList(BufferSink car, BufferSink cdr) {
-        Objects.requireNonNull(car, "car");
-        Objects.requireNonNull(cdr, "cdr");
+        Arguments.requireNonNull(car, "car");
+        Arguments.requireNonNull(cdr, "cdr");
         car_ = car;
         cdr_ = cdr;
     }

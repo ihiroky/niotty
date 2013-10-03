@@ -1,6 +1,6 @@
 package net.ihiroky.niotty;
 
-import net.ihiroky.niotty.util.Objects;
+import net.ihiroky.niotty.util.Arguments;
 
 import java.util.concurrent.TimeUnit;
 
@@ -16,9 +16,9 @@ public abstract class PipelineElement<I, O> implements StageContext<O> {
     private final TaskLoop taskLoop_;
 
     protected PipelineElement(AbstractPipeline<?, ?> pipeline, StageKey key, TaskLoopGroup<? extends TaskLoop> pool) {
-        Objects.requireNonNull(pipeline, "pipeline");
-        Objects.requireNonNull(key, "key");
-        Objects.requireNonNull(pool, "pool");
+        Arguments.requireNonNull(pipeline, "pipeline");
+        Arguments.requireNonNull(key, "key");
+        Arguments.requireNonNull(pool, "pool");
         pipeline_ = pipeline;
         key_ = key;
         taskLoop_ = (pipeline != null) ? pool.assign(pipeline.transport()) : null;
@@ -48,7 +48,7 @@ public abstract class PipelineElement<I, O> implements StageContext<O> {
     }
 
     protected void setNext(PipelineElement<O, Object> next) {
-        Objects.requireNonNull(next, "next");
+        Arguments.requireNonNull(next, "next");
         this.next_ = next;
     }
 

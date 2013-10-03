@@ -11,7 +11,7 @@ import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.TransportState;
 import net.ihiroky.niotty.TransportStateEvent;
 import net.ihiroky.niotty.buffer.BufferSink;
-import net.ihiroky.niotty.util.Objects;
+import net.ihiroky.niotty.util.Arguments;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -38,7 +38,7 @@ public abstract class NioSocketTransport<S extends AbstractSelector> extends Abs
     }
 
     final void setSelectionKey(SelectionKey key) {
-        Objects.requireNonNull(key, "key");
+        Arguments.requireNonNull(key, "key");
         this.key_ = key;
     }
 

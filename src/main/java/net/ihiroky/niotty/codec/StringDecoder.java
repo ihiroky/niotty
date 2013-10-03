@@ -4,8 +4,8 @@ import net.ihiroky.niotty.LoadStage;
 import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.TransportStateEvent;
 import net.ihiroky.niotty.buffer.CodecBuffer;
+import net.ihiroky.niotty.util.Arguments;
 import net.ihiroky.niotty.util.Charsets;
-import net.ihiroky.niotty.util.Objects;
 
 import java.nio.charset.Charset;
 
@@ -22,7 +22,7 @@ public class StringDecoder implements LoadStage<CodecBuffer, String> {
     }
 
     public StringDecoder(Charset charset) {
-        Objects.requireNonNull(charset, "charset");
+        Arguments.requireNonNull(charset, "charset");
         charset_ = charset;
     }
 

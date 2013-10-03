@@ -6,7 +6,7 @@ import net.ihiroky.niotty.TransportStateEvent;
 import net.ihiroky.niotty.buffer.BufferSink;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.CodecBuffer;
-import net.ihiroky.niotty.util.Objects;
+import net.ihiroky.niotty.util.Arguments;
 
 import java.util.Arrays;
 
@@ -18,7 +18,7 @@ public class DelimiterEncoder implements StoreStage<BufferSink, BufferSink> {
     private byte[] delimiter_;
 
     public DelimiterEncoder(byte[] delimiter) {
-        Objects.requireNonNull(delimiter, "delimiter");
+        Arguments.requireNonNull(delimiter, "delimiter");
         if (delimiter.length == 0) {
             throw new IllegalArgumentException("The delimiter must not be empty.");
         }

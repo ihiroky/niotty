@@ -1,6 +1,6 @@
 package net.ihiroky.niotty;
 
-import net.ihiroky.niotty.util.Objects;
+import net.ihiroky.niotty.util.Arguments;
 
 /**
  * <p>A skeletal implementation of {@link Processor}.</p>
@@ -46,7 +46,7 @@ public abstract class AbstractProcessor<T extends Transport> implements Processo
 
     @Override
     public AbstractProcessor<T> setPipelineComposer(PipelineComposer composer) {
-        Objects.requireNonNull(composer, "composer");
+        Arguments.requireNonNull(composer, "composer");
         pipelineComposer_ = composer;
         return this;
     }
@@ -64,7 +64,7 @@ public abstract class AbstractProcessor<T extends Transport> implements Processo
      * @param name a name of this instance
      */
     public AbstractProcessor<T> setName(String name) {
-        Objects.requireNonNull(name, "name");
+        Arguments.requireNonNull(name, "name");
         this.name_ = name;
         return this;
     }

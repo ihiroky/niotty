@@ -1,6 +1,6 @@
 package net.ihiroky.niotty.nio;
 
-import net.ihiroky.niotty.util.Objects;
+import net.ihiroky.niotty.util.Arguments;
 
 /**
  * Implementation of {@link net.ihiroky.niotty.nio.WriteQueueFactory}
@@ -36,13 +36,8 @@ public class DeficitRoundRobinWriteQueueFactory implements WriteQueueFactory {
      * @param weights flush size weights of the queues other than the base queue
      */
     public DeficitRoundRobinWriteQueueFactory(int initialBaseQuantum, float...weights) {
-        if (initialBaseQuantum <= 0) {
-            throw new IllegalArgumentException("initialBaseQuantum must be positive.");
-        }
-        Objects.requireNonNull(weights, "weights");
-
-        initialBaseQuantum_ = initialBaseQuantum;
-        weights_ = weights.clone();
+        initialBaseQuantum_ = Arguments.requirePositive(initialBaseQuantum, "initialBaseQuantum");
+        weights_ = Arguments.requireNonNull(weights, "weights").clone();
     }
 
     /**

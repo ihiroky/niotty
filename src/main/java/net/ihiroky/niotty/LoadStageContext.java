@@ -1,6 +1,6 @@
 package net.ihiroky.niotty;
 
-import net.ihiroky.niotty.util.Objects;
+import net.ihiroky.niotty.util.Arguments;
 
 /**
  * @param <I> the type of the input object for the stage.
@@ -14,7 +14,7 @@ class LoadStageContext<I, O> extends PipelineElement<I, O> {
     LoadStageContext(AbstractPipeline<?, ?> pipeline,
                             StageKey key, LoadStage<Object, Object> stage, TaskLoopGroup<? extends TaskLoop> pool) {
         super(pipeline, key, pool);
-        Objects.requireNonNull(stage, "stage");
+        Arguments.requireNonNull(stage, "stage");
         this.stage_ = (LoadStage<I, O>) stage;
     }
 

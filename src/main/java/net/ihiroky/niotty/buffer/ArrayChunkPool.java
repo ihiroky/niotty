@@ -1,5 +1,7 @@
 package net.ihiroky.niotty.buffer;
 
+import net.ihiroky.niotty.util.Arguments;
+
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 /**
@@ -32,10 +34,7 @@ public class ArrayChunkPool extends ChunkPool<byte[]> {
      * @throws IllegalArgumentException if the maxPoolingBytes is not positive integer.
      */
     public ArrayChunkPool(int maxPoolingBytes) {
-        if (maxPoolingBytes <= 0) {
-            throw new IllegalArgumentException("maxPoolingBytes must be positive.");
-        }
-        maxPoolingBytes_ = maxPoolingBytes;
+        maxPoolingBytes_ = Arguments.requirePositive(maxPoolingBytes, "maxPoolingBytes");
     }
 
     @Override

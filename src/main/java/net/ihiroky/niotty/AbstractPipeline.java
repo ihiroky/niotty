@@ -1,6 +1,6 @@
 package net.ihiroky.niotty;
 
-import net.ihiroky.niotty.util.Objects;
+import net.ihiroky.niotty.util.Arguments;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,9 +40,9 @@ public abstract class AbstractPipeline<S, L extends TaskLoop> implements Pipelin
      */
     protected AbstractPipeline(
             String name, AbstractTransport<L> transport, TaskLoopGroup<L> taskLoopGroup) {
-        Objects.requireNonNull(name, "name");
-        Objects.requireNonNull(transport, "transport");
-        Objects.requireNonNull(taskLoopGroup, "taskLoopGroup");
+        Arguments.requireNonNull(name, "name");
+        Arguments.requireNonNull(transport, "transport");
+        Arguments.requireNonNull(taskLoopGroup, "taskLoopGroup");
 
         transport_ = transport;
 
@@ -64,8 +64,8 @@ public abstract class AbstractPipeline<S, L extends TaskLoop> implements Pipelin
 
     @Override
     public Pipeline<S> add(StageKey key, S stage, TaskLoopGroup<? extends TaskLoop> pool) {
-        Objects.requireNonNull(key, "key");
-        Objects.requireNonNull(stage, "stage");
+        Arguments.requireNonNull(key, "key");
+        Arguments.requireNonNull(stage, "stage");
         if (key.equals(IO_STAGE_KEY)) {
             throw new IllegalArgumentException(IO_STAGE_KEY + " must not be added.");
         }
@@ -101,9 +101,9 @@ public abstract class AbstractPipeline<S, L extends TaskLoop> implements Pipelin
 
     @Override
     public Pipeline<S> addBefore(StageKey baseKey, StageKey key, S stage, TaskLoopGroup<? extends TaskLoop> pool) {
-        Objects.requireNonNull(baseKey, "baseKey");
-        Objects.requireNonNull(key, "key");
-        Objects.requireNonNull(stage, "stage");
+        Arguments.requireNonNull(baseKey, "baseKey");
+        Arguments.requireNonNull(key, "key");
+        Arguments.requireNonNull(stage, "stage");
         if (key.equals(IO_STAGE_KEY)) {
             throw new IllegalArgumentException(IO_STAGE_KEY + " must not be added.");
         }
@@ -139,9 +139,9 @@ public abstract class AbstractPipeline<S, L extends TaskLoop> implements Pipelin
 
     @Override
     public Pipeline<S> addAfter(StageKey baseKey, StageKey key, S stage, TaskLoopGroup<? extends TaskLoop> pool) {
-        Objects.requireNonNull(baseKey, "baseKey");
-        Objects.requireNonNull(key, "key");
-        Objects.requireNonNull(stage, "stage");
+        Arguments.requireNonNull(baseKey, "baseKey");
+        Arguments.requireNonNull(key, "key");
+        Arguments.requireNonNull(stage, "stage");
         if (baseKey.equals(IO_STAGE_KEY)) {
             throw new IllegalArgumentException(IO_STAGE_KEY + " must be the tail of this pipeline.");
         }
@@ -174,7 +174,7 @@ public abstract class AbstractPipeline<S, L extends TaskLoop> implements Pipelin
 
     @Override
     public Pipeline<S> remove(StageKey key) {
-        Objects.requireNonNull(key, "key");
+        Arguments.requireNonNull(key, "key");
         if (key.equals(IO_STAGE_KEY)) {
             throw new IllegalArgumentException(IO_STAGE_KEY + " must not be removed.");
         }
@@ -200,9 +200,9 @@ public abstract class AbstractPipeline<S, L extends TaskLoop> implements Pipelin
 
     @Override
     public Pipeline<S> replace(StageKey oldKey, StageKey newKey, S newStage, TaskLoopGroup<? extends TaskLoop> pool) {
-        Objects.requireNonNull(oldKey, "oldKey");
-        Objects.requireNonNull(newKey, "newKey");
-        Objects.requireNonNull(newStage, "newStage");
+        Arguments.requireNonNull(oldKey, "oldKey");
+        Arguments.requireNonNull(newKey, "newKey");
+        Arguments.requireNonNull(newStage, "newStage");
         if (oldKey.equals(IO_STAGE_KEY)) {
             throw new IllegalArgumentException(IO_STAGE_KEY + " must not be removed.");
         }
@@ -244,7 +244,7 @@ public abstract class AbstractPipeline<S, L extends TaskLoop> implements Pipelin
 
     @Override
     public StageContext<Object> searchContext(StageKey key) {
-        Objects.requireNonNull(key, "key");
+        Arguments.requireNonNull(key, "key");
         for (Iterator<PipelineElement<Object, Object>> i = new PipelineElementIterator(head_); i.hasNext();) {
             PipelineElement<Object, Object> e = i.next();
             if (e.key().equals(key)) {
@@ -260,7 +260,7 @@ public abstract class AbstractPipeline<S, L extends TaskLoop> implements Pipelin
     protected abstract Tail<S> createTail(TaskLoopGroup<L> defaultPool);
 
     void setTailStage(S stage) {
-        Objects.requireNonNull(stage, "stage");
+        Arguments.requireNonNull(stage, "stage");
         logger_.debug("[setTailStage] {}", stage);
         tail_.setStage(stage);
     }

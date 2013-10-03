@@ -1,6 +1,6 @@
 package net.ihiroky.niotty.buffer;
 
-import net.ihiroky.niotty.util.Objects;
+import net.ihiroky.niotty.util.Arguments;
 
 import java.io.IOException;
 import java.nio.BufferOverflowException;
@@ -36,14 +36,6 @@ public class FileBufferSink implements BufferSink {
     }
 
     private FileBufferSink(FileChannel channel, long beginning, long length, AtomicInteger referenceCount) {
-        Objects.requireNonNull(channel, "channel");
-        if (beginning < 0) {
-            throw new IllegalArgumentException("beginning is negative.");
-        }
-        if (length < 0) {
-            throw new IllegalArgumentException("length is negative.");
-        }
-
         if (referenceCount != null) {
             if (referenceCount.getAndIncrement() == 0) {
                 throw new IllegalStateException("reference count is already 0.");
@@ -52,9 +44,9 @@ public class FileBufferSink implements BufferSink {
             referenceCount = new AtomicInteger(1);
         }
 
-        channel_ = channel;
-        beginning_ = beginning;
-        end_ = beginning + length;
+        channel_ = Arguments.requireNonNull(channel, "channel");
+        beginning_ = Arguments.requirePositiveOrZero(beginning, "beginning");
+        end_ = beginning + Arguments.requirePositiveOrZero(length, "length");
         referenceCount_ = referenceCount;
 
         header_ = Buffers.newCodecBuffer(0);
@@ -129,7 +121,7 @@ public class FileBufferSink implements BufferSink {
         if (header_.remainingBytes() > 0) {
             header_.addFirst(buffer);
         } else {
-            Objects.requireNonNull(buffer, "buffer");
+            Arguments.requireNonNull(buffer, "buffer");
             if (buffer.remainingBytes() > 0) {
                 header_ = new CodecBufferList(buffer); // wrap and allow header to be added
             }
@@ -142,7 +134,7 @@ public class FileBufferSink implements BufferSink {
         if (footer_.remainingBytes() > 0) {
             footer_.addLast(buffer);
         } else {
-            Objects.requireNonNull(buffer, "buffer");
+            Arguments.requireNonNull(buffer, "buffer");
             if (buffer.remainingBytes() > 0) {
                 footer_ = new CodecBufferList(buffer); // wrap and allow footer to be added
             }

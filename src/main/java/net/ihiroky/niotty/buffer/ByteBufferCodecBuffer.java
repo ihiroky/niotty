@@ -1,6 +1,6 @@
 package net.ihiroky.niotty.buffer;
 
-import net.ihiroky.niotty.util.Objects;
+import net.ihiroky.niotty.util.Arguments;
 
 import java.io.IOException;
 import java.nio.BufferOverflowException;
@@ -45,7 +45,7 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer {
     }
 
     ByteBufferCodecBuffer(ByteBuffer buffer, boolean cleanOnDispose) {
-        Objects.requireNonNull(buffer, "buffer");
+        Arguments.requireNonNull(buffer, "buffer");
 
         ByteBufferChunkFactory chunkManager = buffer.isDirect()
                 ? ByteBufferChunkFactory.direct(cleanOnDispose)
@@ -214,8 +214,8 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer {
      * {@inheritDoc}
      */
     public void writeString(String s, CharsetEncoder encoder) {
-        Objects.requireNonNull(s, "s");
-        Objects.requireNonNull(encoder, "encoder");
+        Arguments.requireNonNull(s, "s");
+        Arguments.requireNonNull(encoder, "encoder");
 
         changeModeToWrite();
         CharBuffer input = CharBuffer.wrap(s);
@@ -407,7 +407,7 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer {
 
     @Override
     public ByteBufferCodecBuffer addFirst(CodecBuffer buffer) {
-        Objects.requireNonNull(buffer, "buffer");
+        Arguments.requireNonNull(buffer, "buffer");
         int inputSize = buffer.remainingBytes();
         if (inputSize == 0) {
             return this;
@@ -461,7 +461,7 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer {
 
     @Override
     public ByteBufferCodecBuffer addLast(CodecBuffer buffer) {
-        Objects.requireNonNull(buffer, "buffer");
+        Arguments.requireNonNull(buffer, "buffer");
         int inputSize = buffer.remainingBytes();
         if (inputSize == 0) {
             return this;

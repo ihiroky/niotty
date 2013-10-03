@@ -3,6 +3,7 @@ package net.ihiroky.niotty.nio;
 import net.ihiroky.niotty.AbstractProcessor;
 import net.ihiroky.niotty.NameCountThreadFactory;
 import net.ihiroky.niotty.PipelineComposer;
+import net.ihiroky.niotty.util.Arguments;
 
 /**
  * An implementation of {@link net.ihiroky.niotty.Processor} for NIO {@code ServerSocketChannel}.
@@ -63,25 +64,16 @@ public class NioServerSocketProcessor extends AbstractProcessor<NioServerSocketT
     }
 
     public NioServerSocketProcessor setNumberOfAcceptThread(int numberOfAcceptThread) {
-        if (numberOfAcceptThread <= 0) {
-            throw new IllegalArgumentException("numberOfAcceptThread must be positive.");
-        }
-        this.numberOfAcceptThread_ = numberOfAcceptThread;
+        this.numberOfAcceptThread_ = Arguments.requirePositive(numberOfAcceptThread, "numberOfAcceptThread");
         return this;
     }
 
     public NioServerSocketProcessor setNumberOfMessageIOThread(int numberOfMessageIOThread) {
-        if (numberOfMessageIOThread <= 0) {
-            throw new IllegalArgumentException("numberOfMessageIOThread must be positive.");
-        }
-        this.numberOfMessageIOThread_ = numberOfMessageIOThread;
+        this.numberOfMessageIOThread_ = Arguments.requirePositive(numberOfMessageIOThread, "numberofMessageIOThread");
         return this;
     }
 
     public NioServerSocketProcessor setReadBufferSize(int readBufferSize) {
-        if (readBufferSize <= 0) {
-            throw new IllegalArgumentException("readBufferSize must be positive.");
-        }
         ioSelectorPool_.setReadBufferSize(readBufferSize);
         return this;
     }

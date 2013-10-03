@@ -1,5 +1,6 @@
 package net.ihiroky.niotty.buffer;
 
+import net.ihiroky.niotty.util.Arguments;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sun.nio.ch.DirectBuffer;
@@ -43,9 +44,7 @@ public class ByteBufferChunkPool extends ChunkPool<ByteBuffer> {
      * @throws IllegalArgumentException if the maxPoolingBytes is not positive.
      */
     public ByteBufferChunkPool(int maxPoolingBytes, boolean direct) {
-        if (maxPoolingBytes <= 0) {
-            throw new IllegalArgumentException("maxPoolingBytes must be positive.");
-        }
+        Arguments.requirePositive(maxPoolingBytes, "maxPoolingBytes");
         whole_ = direct ? ByteBuffer.allocateDirect(maxPoolingBytes) : ByteBuffer.allocate(maxPoolingBytes);
     }
 

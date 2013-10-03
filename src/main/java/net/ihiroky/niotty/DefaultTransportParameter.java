@@ -1,6 +1,6 @@
 package net.ihiroky.niotty;
 
-import net.ihiroky.niotty.util.Objects;
+import java.util.Arrays;
 
 /**
  * A default implementation of {@link net.ihiroky.niotty.TransportParameter}.
@@ -55,7 +55,7 @@ public class DefaultTransportParameter implements TransportParameter {
 
     @Override
     public int hashCode() {
-        return Objects.hash(priority_, argument_);
+        return Arrays.hashCode(new Object[]{priority_, argument_});
     }
 
     @Override
