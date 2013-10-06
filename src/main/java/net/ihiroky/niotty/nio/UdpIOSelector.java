@@ -108,12 +108,26 @@ public class UdpIOSelector extends AbstractSelector {
     public void store(StageContext<Void> context, BufferSink input) {
         final NioDatagramSocketTransport transport = (NioDatagramSocketTransport) context.transport();
         transport.readyToWrite(new AttachedMessage<BufferSink>(input, context.transportParameter()));
-        execute(new Task() {
-            @Override
-            public long execute(TimeUnit timeUnit) throws Exception {
+        if (isInLoopThread()) {
+            try {
                 transport.flush(writeBuffer_);
-                return DONE;
+            } catch (IOException ioe) {
+                logger_.warn("[store] Flush failed.", ioe);
+                transport.doCloseSelectableChannel(true);
             }
-        });
+        } else {
+            offer(new Task() {
+                @Override
+                public long execute(TimeUnit timeUnit) throws Exception {
+                    try {
+                        transport.flush(writeBuffer_);
+                    } catch (IOException ioe) {
+                        logger_.warn("[store] Flush failed.", ioe);
+                        transport.doCloseSelectableChannel(true);
+                    }
+                    return DONE;
+                }
+            });
+        }
     }
 }

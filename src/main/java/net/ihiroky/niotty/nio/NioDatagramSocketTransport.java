@@ -71,7 +71,7 @@ public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector
                     e.printStackTrace();
                 }
             }
-            throw new RuntimeException("failed to open DatagramChannel.", ioe);
+            throw new RuntimeException("Failed to open DatagramChannel.", ioe);
         }
 
         channel_ = channel;
@@ -80,7 +80,6 @@ public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector
 
         // TODO attach a thread for remote ip from a pool.
         // TODO set read buffer size to 64k.
-        selectorPool.register(channel, SelectionKey.OP_READ, this);
     }
 
     public NioDatagramSocketTransport(PipelineComposer composer,
@@ -92,8 +91,6 @@ public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector
         channel_ = channel;
         writeQueue_ = writeQueueFactory.newWriteQueue();
         membershipKeyMap_ = Collections.synchronizedMap(new HashMap<GroupKey, MembershipKey>());
-
-        selectorPool.register(channel, SelectionKey.OP_READ, this);
     }
 
     /**
@@ -213,18 +210,33 @@ public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector
         return closeSelectableChannel();
     }
 
+    /**
+     * Binds the channel of this transport to the specified address and makes this transport readable.
+     *
+     * @param local The local address
+     * @return a future object to get the result of this operation
+     */
     @Override
-    public TransportFuture bind(SocketAddress local) {
-        try {
-            if (Platform.javaVersion().ge(JavaVersion.JAVA7)) {
-                channel_.bind(local);
-            } else {
-                channel_.socket().bind(local);
+    public TransportFuture bind(final SocketAddress local) {
+        final DefaultTransportFuture future = new DefaultTransportFuture(this);
+        storePipeline().execute(new TransportStateEvent(TransportState.BOUND) {
+            @Override
+            public long execute(TimeUnit timeUnit) throws Exception {
+                try {
+                    register(channel_, SelectionKey.OP_READ, loadPipeline());
+                    if (Platform.javaVersion().ge(JavaVersion.JAVA7)) {
+                        channel_.bind(local);
+                    } else {
+                        channel_.socket().bind(local);
+                    }
+                    future.done();
+                } catch (IOException ioe) {
+                    future.setThrowable(ioe);
+                }
+                return DONE;
             }
-            return new SuccessfulTransportFuture(this);
-        } catch (IOException ioe) {
-            return new FailedTransportFuture(this, ioe);
-        }
+        });
+        return future;
     }
 
     @Override
@@ -273,10 +285,11 @@ public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector
      */
     public TransportFuture connect(final SocketAddress remote) {
         final DefaultTransportFuture future = new DefaultTransportFuture(this);
-        executeStore(new TransportStateEvent(TransportState.CONNECTED) {
+        storePipeline().execute(new TransportStateEvent(TransportState.CONNECTED) {
             @Override
-            public long execute(TimeUnit timeUnit) {
+            public long execute(TimeUnit timeUnit) throws Exception {
                 try {
+                    register(channel_, SelectionKey.OP_READ, loadPipeline());
                     channel_.connect(remote);
                     future.done();
                 } catch (IOException ioe) {
@@ -306,7 +319,7 @@ public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector
      */
     public TransportFuture disconnect() {
         final DefaultTransportFuture future = new DefaultTransportFuture(this);
-        executeStore(new TransportStateEvent(TransportState.DISCONNECT) {
+        storePipeline().execute(new TransportStateEvent(TransportState.DISCONNECT) {
             @Override
             public long execute(TimeUnit timeUnit) {
                 try {

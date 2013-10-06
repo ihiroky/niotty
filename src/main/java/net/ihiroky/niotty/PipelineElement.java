@@ -16,12 +16,9 @@ public abstract class PipelineElement<I, O> implements StageContext<O> {
     private final TaskLoop taskLoop_;
 
     protected PipelineElement(AbstractPipeline<?, ?> pipeline, StageKey key, TaskLoopGroup<? extends TaskLoop> pool) {
-        Arguments.requireNonNull(pipeline, "pipeline");
-        Arguments.requireNonNull(key, "key");
-        Arguments.requireNonNull(pool, "pool");
-        pipeline_ = pipeline;
-        key_ = key;
-        taskLoop_ = (pipeline != null) ? pool.assign(pipeline.transport()) : null;
+        pipeline_ = Arguments.requireNonNull(pipeline, "pipeline");
+        key_ = Arguments.requireNonNull(key, "key");
+        taskLoop_ = Arguments.requireNonNull(pool, "pool").assign(pipeline.transport());
     }
 
     PipelineElement(TaskLoop taskLoop) {
@@ -63,13 +60,18 @@ public abstract class PipelineElement<I, O> implements StageContext<O> {
 
     @Override
     public void proceed(final O output) {
-        next_.taskLoop_.execute(new Task() {
-            @Override
-            public long execute(TimeUnit timeUnit) throws Exception {
-                next_.fire(output);
-                return DONE;
-            }
-        });
+        TaskLoop tl = next_.taskLoop();
+        if (tl.isInLoopThread()) {
+            next_.fire(output);
+        } else {
+            tl.offer(new Task() {
+                @Override
+                public long execute(TimeUnit timeUnit) throws Exception {
+                    next_.fire(output);
+                    return DONE;
+                }
+            });
+        }
     }
 
     @Override
@@ -78,24 +80,35 @@ public abstract class PipelineElement<I, O> implements StageContext<O> {
     }
 
     protected void proceed(final O output, final TransportParameter parameter) {
-        next_.taskLoop_.execute(new Task() {
-            @Override
-            public long execute(TimeUnit timeUnit) throws Exception {
-                next_.fire(output, parameter);
-                return DONE;
-            }
-        });
+        TaskLoop tl = next_.taskLoop_;
+        if (tl.isInLoopThread()) {
+            next_.fire(output, parameter);
+        } else {
+            tl.offer(new Task() {
+                @Override
+                public long execute(TimeUnit timeUnit) throws Exception {
+                    next_.fire(output, parameter);
+                    return DONE;
+                }
+            });
+        }
     }
 
     protected void proceed(final TransportStateEvent event) {
-        next_.taskLoop_.execute(new Task() {
-            @Override
-            public long execute(TimeUnit timeUnit) throws Exception {
-                next_.fire(event);
-                next_.proceed(event);
-                return DONE;
-            }
-        });
+        TaskLoop tl = next_.taskLoop_;
+        if (tl.isInLoopThread()) {
+            next_.fire(event);
+            next_.proceed(event);
+        } else {
+            tl.offer(new Task() {
+                @Override
+                public long execute(TimeUnit timeUnit) throws Exception {
+                    next_.fire(event);
+                    next_.proceed(event);
+                    return DONE;
+                }
+            });
+        }
     }
 
     protected StageContext<O> wrappedStageContext(PipelineElement<?, O> context, TransportParameter parameter) {

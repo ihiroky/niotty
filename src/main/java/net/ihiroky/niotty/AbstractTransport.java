@@ -37,7 +37,7 @@ public abstract class AbstractTransport<T extends TaskLoop> implements Transport
         loop_ = taskLoopGroup.assign(this);
 
         DefaultLoadPipeline<T> loadPipeline = new DefaultLoadPipeline<T>(name, this, taskLoopGroup);
-        DefaultStorePipeline<T> storePipeline = new DefaultStorePipeline<T>(name, this, taskLoopGroup);
+        DefaultStorePipeline<T> storePipeline = new DefaultStorePipeline<T>(name, this, taskLoopGroup, ioStage());
         pipelineComposer.compose(loadPipeline, storePipeline);
 
         loadPipeline_ = loadPipeline;
@@ -45,54 +45,12 @@ public abstract class AbstractTransport<T extends TaskLoop> implements Transport
     }
 
     /**
-     * <p>Executes the load pipeline.</p>
-     * @param message A message to be processed.
+     * Creates a stage which handle I/O operation.
+     * The implementation class should define this method as final and safe.
+     * This method is called in the constructor.
+     * @return the stage
      */
-    protected void executeLoad(Object message) {
-        loadPipeline_.execute(message);
-    }
-
-    /**
-     * <p>Executes the load pipeline.</p>
-     * @param message A message to be processed.
-     * @param parameter A parameter which is passed to I/O implementation.
-     */
-    protected void executeLoad(Object message, TransportParameter parameter) {
-        loadPipeline_.execute(message, parameter);
-    }
-
-    /**
-     * <p>Executes the load pipeline.</p>
-     * @param stateEvent an event to change transport state.
-     */
-    protected void executeLoad(TransportStateEvent stateEvent) {
-        loadPipeline_.execute(stateEvent);
-    }
-
-    /**
-     * <p>Executes the store pipeline.</p>
-     * @param message A message to be processed.
-     */
-    protected void executeStore(Object message) {
-        storePipeline_.execute(message);
-    }
-
-    /**
-     * <p>Executes the store pipeline.</p>
-     * @param message A message to be processed.
-     * @param parameter A parameter which is passed to I/O implementation.
-     */
-    protected void executeStore(Object message, TransportParameter parameter) {
-        storePipeline_.execute(message, parameter);
-    }
-
-    /**
-     * <p>Executes the store pipeline.</p>
-     * @param stateEvent an event to change transport state.
-     */
-    protected void executeStore(TransportStateEvent stateEvent) {
-        storePipeline_.execute(stateEvent);
-    }
+    protected abstract StoreStage<?, ?> ioStage();
 
     @Override
     public LoadPipeline loadPipeline() {
@@ -113,15 +71,6 @@ public abstract class AbstractTransport<T extends TaskLoop> implements Transport
     }
 
     /**
-     * Sets the specified stage at the end of the store pipeline.
-     * @param ioStage the stage
-     */
-    public void setIOStage(StoreStage<?, ?> ioStage) {
-        Arguments.requireNonNull(ioStage, "ioStage");
-        storePipeline_.setTailStage(ioStage);
-    }
-
-    /**
      * Gets the instance of {@link net.ihiroky.niotty.TaskLoop}.
      * @return <T> the TaskLoop.
      */
@@ -136,12 +85,12 @@ public abstract class AbstractTransport<T extends TaskLoop> implements Transport
 
     @Override
     public void write(Object message) {
-        executeStore(message);
+        storePipeline_.execute(message);
     }
 
     @Override
     public void write(Object message, TransportParameter parameter) {
-        executeStore(message, parameter);
+        storePipeline_.execute(message, parameter);
     }
 
     /**
@@ -154,8 +103,9 @@ public abstract class AbstractTransport<T extends TaskLoop> implements Transport
      * @param priority the priority
      */
     public void write(Object message, int priority) {
-        executeStore(message, new DefaultTransportParameter(priority));
+        storePipeline_.execute(message, new DefaultTransportParameter(priority));
     }
+
     @Override
     public Object attach(Object attachment) {
         return attachmentReference_.getAndSet(attachment);

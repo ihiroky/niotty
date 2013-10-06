@@ -4,7 +4,6 @@ import net.ihiroky.niotty.LoadPipeline;
 import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.StageKey;
 import net.ihiroky.niotty.StorePipeline;
-import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.CodecBuffer;
 import net.ihiroky.niotty.codec.FrameLengthPrependEncoder;
@@ -61,9 +60,12 @@ public class DrrMain {
         NioClientSocketTransport clientTransport = clientProcessor.createTransport();
         try {
             InetSocketAddress endpoint = new InetSocketAddress(serverPort);
-            serverTransport.bind(endpoint).throwExceptionIfFailed();
-            TransportFuture connectFuture = clientTransport.connect(endpoint);
-            connectFuture.waitForCompletion();
+            serverTransport.bind(endpoint)
+                    .waitForCompletion()
+                    .throwExceptionIfFailed();
+            clientTransport.connect(endpoint)
+                    .waitForCompletion()
+                    .throwExceptionIfFailed();
 
             CodecBuffer buffer = Buffers.newCodecBuffer(4);
             buffer.writeInt(30);

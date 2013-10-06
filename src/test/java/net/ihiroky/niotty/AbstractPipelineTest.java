@@ -4,9 +4,12 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
@@ -18,15 +21,18 @@ import static org.mockito.Mockito.*;
 public class AbstractPipelineTest {
 
     private AbstractPipeline<Object, TaskLoop> sut_;
+    private AbstractTransport<TaskLoop> transport_;
+    private TaskLoopGroup<TaskLoop> taskLoopGroup_;
+    private TaskLoop taskLoop_;
 
     @Before
+    @SuppressWarnings("unchecked")
     public void setUp() throws Exception {
-        @SuppressWarnings("unchecked")
-        AbstractTransport<TaskLoop> t = mock(AbstractTransport.class);
-        @SuppressWarnings("unchecked")
-        TaskLoopGroup<TaskLoop> tlg = mock(TaskLoopGroup.class);
-        when(tlg.assign(t)).thenReturn(new TaskLoopMock());
-        sut_ = new PipelineImpl(t, tlg);
+        transport_ = mock(AbstractTransport.class);
+        taskLoopGroup_ = mock(TaskLoopGroup.class);
+        taskLoop_ = mock(TaskLoop.class);
+        when(taskLoopGroup_.assign(transport_)).thenReturn(taskLoop_);
+        sut_ = new PipelineImpl(transport_, taskLoopGroup_);
     }
 
     @Rule
@@ -51,7 +57,7 @@ public class AbstractPipelineTest {
         assertThat(context.stage(), is(stage1));
         assertThat(i.hasNext(), is(true));
         context = i.next();
-        assertThat(context.key(), is(Pipeline.IO_STAGE_KEY));
+        assertThat(context.key(), is(PipelineImpl.LAST));
     }
 
     @Test
@@ -101,7 +107,7 @@ public class AbstractPipelineTest {
         assertThat(context.stage(), is(stage0));
         assertThat(i.hasNext(), is(true));
         context = i.next();
-        assertThat(context.key(), is(Pipeline.IO_STAGE_KEY));
+        assertThat(context.key(), is(PipelineImpl.LAST));
     }
 
     @Test
@@ -174,7 +180,7 @@ public class AbstractPipelineTest {
         assertThat(context.stage(), is(stage1));
         assertThat(i.hasNext(), is(true));
         context = i.next();
-        assertThat(context.key(), is(Pipeline.IO_STAGE_KEY));
+        assertThat(context.key(), is(PipelineImpl.LAST));
     }
 
     @Test
@@ -256,7 +262,7 @@ public class AbstractPipelineTest {
         assertThat(context.stage(), is(stage2));
         assertThat(i.hasNext(), is(true));
         context = i.next();
-        assertThat(context.key(), is(Pipeline.IO_STAGE_KEY));
+        assertThat(context.key(), is(PipelineImpl.LAST));
     }
 
     @Test
@@ -282,7 +288,7 @@ public class AbstractPipelineTest {
         assertThat(context.stage(), is(stage2));
         assertThat(i.hasNext(), is(true));
         context = i.next();
-        assertThat(context.key(), is(Pipeline.IO_STAGE_KEY));
+        assertThat(context.key(), is(PipelineImpl.LAST));
     }
 
     @Test
@@ -308,7 +314,7 @@ public class AbstractPipelineTest {
         assertThat(context.stage(), is(stage1));
         assertThat(i.hasNext(), is(true));
         context = i.next();
-        assertThat(context.key(), is(Pipeline.IO_STAGE_KEY));
+        assertThat(context.key(), is(PipelineImpl.LAST));
     }
 
     @Test
@@ -362,7 +368,7 @@ public class AbstractPipelineTest {
         assertThat(context.stage(), is(stage2));
         assertThat(i.hasNext(), is(true));
         context = i.next();
-        assertThat(context.key(), is(Pipeline.IO_STAGE_KEY));
+        assertThat(context.key(), is(PipelineImpl.LAST));
     }
 
     @Test
@@ -393,7 +399,7 @@ public class AbstractPipelineTest {
         assertThat(context.stage(), is(stage2));
         assertThat(i.hasNext(), is(true));
         context = i.next();
-        assertThat(context.key(), is(Pipeline.IO_STAGE_KEY));
+        assertThat(context.key(), is(PipelineImpl.LAST));
     }
 
     @Test
@@ -424,7 +430,7 @@ public class AbstractPipelineTest {
         assertThat(context.stage(), is(stage3));
         assertThat(i.hasNext(), is(true));
         context = i.next();
-        assertThat(context.key(), is(Pipeline.IO_STAGE_KEY));
+        assertThat(context.key(), is(PipelineImpl.LAST));
     }
 
     @Test
@@ -498,24 +504,124 @@ public class AbstractPipelineTest {
 
         StageContext<Object> context0 = sut_.searchContext(key0);
         StageContext<Object> context1 = sut_.searchContext(key1);
-        StageContext<Object> context2 = sut_.searchContext(Pipeline.IO_STAGE_KEY);
+        StageContext<Object> context2 = sut_.searchContext(PipelineImpl.LAST);
         assertThat(context0.key(), is(key0));
         assertThat(context1.key(), is(key1));
-        assertThat(context2.key(), is(Pipeline.IO_STAGE_KEY));
+        assertThat(context2.key(), is(PipelineImpl.LAST));
 
+    }
+
+    @Test
+    public void testExecuteMessage_DirectlyIfInLoopThread() throws Exception {
+        when(taskLoop_.isInLoopThread()).thenReturn(true);
+        sut_.add(StageKeys.of(0), new Object());
+        Object message = new Object();
+
+        sut_.execute(message);
+
+        @SuppressWarnings("unchecked")
+        PipelineElement<Object, Object> context = (PipelineElement<Object, Object>) sut_.searchContext(StageKeys.of(0));
+        verify(context).fire(message);
+        verify(taskLoop_, never()).offer(Mockito.<Task>any());
+    }
+
+    @Test
+    public void testExecuteMessage_IndirectlyIfNotInLoopThread() throws Exception {
+        when(taskLoop_.isInLoopThread()).thenReturn(false);
+        sut_.add(StageKeys.of(0), new Object());
+        Object message = new Object();
+
+        sut_.execute(message);
+
+        @SuppressWarnings("unchecked")
+        PipelineElement<Object, Object> context = (PipelineElement<Object, Object>) sut_.searchContext(StageKeys.of(0));
+        verify(context, never()).fire(message);
+
+        ArgumentCaptor<Task> taskCaptor = ArgumentCaptor.forClass(Task.class);
+        verify(taskLoop_).offer(taskCaptor.capture());
+        taskCaptor.getValue().execute(TimeUnit.MILLISECONDS);
+        verify(context).fire(message);
+    }
+
+    @Test
+    public void testExecuteMessageAndParameter_DirectlyIfInLoopThread() throws Exception {
+        when(taskLoop_.isInLoopThread()).thenReturn(true);
+        sut_.add(StageKeys.of(0), new Object());
+        Object message = new Object();
+        TransportParameter parameter = new DefaultTransportParameter(0);
+
+        sut_.execute(message, parameter);
+
+        @SuppressWarnings("unchecked")
+        PipelineElement<Object, Object> context = (PipelineElement<Object, Object>) sut_.searchContext(StageKeys.of(0));
+        verify(context).fire(message, parameter);
+        verify(taskLoop_, never()).offer(Mockito.<Task>any());
+    }
+
+    @Test
+    public void testExecuteMessageAndParameter_IndirectlyIfNotInLoopThread() throws Exception {
+        when(taskLoop_.isInLoopThread()).thenReturn(false);
+        sut_.add(StageKeys.of(0), new Object());
+        Object message = new Object();
+        TransportParameter parameter = new DefaultTransportParameter(0);
+
+        sut_.execute(message, parameter);
+
+        @SuppressWarnings("unchecked")
+        PipelineElement<Object, Object> context = (PipelineElement<Object, Object>) sut_.searchContext(StageKeys.of(0));
+        verify(context, never()).fire(message, parameter);
+
+        ArgumentCaptor<Task> taskCaptor = ArgumentCaptor.forClass(Task.class);
+        verify(taskLoop_).offer(taskCaptor.capture());
+        taskCaptor.getValue().execute(TimeUnit.MILLISECONDS);
+        verify(context).fire(message, parameter);
+    }
+
+    @Test
+    public void testExecuteTransportStateEvent_DirectlyIfInLoopThread() throws Exception {
+        when(taskLoop_.isInLoopThread()).thenReturn(true);
+        sut_.add(StageKeys.of(0), new Object());
+        TransportStateEvent event = new DefaultTransportStateEvent(TransportState.BOUND, new Object());
+
+        sut_.execute(event);
+
+        @SuppressWarnings("unchecked")
+        PipelineElement<Object, Object> context = (PipelineElement<Object, Object>) sut_.searchContext(StageKeys.of(0));
+        verify(context).fire(event);
+        verify(taskLoop_, never()).offer(Mockito.<Task>any());
+    }
+
+    @Test
+    public void testExecuteTransportStateEvent_IndirectlyIfNotInLoopThread() throws Exception {
+        when(taskLoop_.isInLoopThread()).thenReturn(false);
+        sut_.add(StageKeys.of(0), new Object());
+        TransportStateEvent event = new DefaultTransportStateEvent(TransportState.BOUND, new Object());
+
+        sut_.execute(event);
+
+        @SuppressWarnings("unchecked")
+        PipelineElement<Object, Object> context = (PipelineElement<Object, Object>) sut_.searchContext(StageKeys.of(0));
+        verify(context, never()).fire(event);
+
+        ArgumentCaptor<Task> taskCaptor = ArgumentCaptor.forClass(Task.class);
+        verify(taskLoop_).offer(taskCaptor.capture());
+        taskCaptor.getValue().execute(TimeUnit.MILLISECONDS);
+        verify(context).fire(event);
     }
 
     private static class PipelineImpl extends AbstractPipeline<Object, TaskLoop> {
 
+        static final StageKey LAST = StageKeys.of("LAST");
+
         @SuppressWarnings("unchecked")
         protected PipelineImpl(AbstractTransport<TaskLoop> transport, TaskLoopGroup<TaskLoop> taskLoopGroup) {
-            super("test", transport, taskLoopGroup);
+            super("test", transport, taskLoopGroup, LAST, new Object());
         }
 
         @Override
         protected PipelineElement<Object, Object> createContext(
                 StageKey key, final Object stage, TaskLoopGroup<? extends TaskLoop> pool) {
-            return new PipelineElement<Object, Object>(this, key, pool) {
+            PipelineElement<Object, Object> context = new PipelineElement<Object, Object>(this, key, pool) {
                 @Override
                 protected Object stage() {
                     return stage;
@@ -534,44 +640,7 @@ public class AbstractPipelineTest {
                     return DefaultTransportParameter.NO_PARAMETER;
                 }
             };
-        }
-
-        @Override
-        protected Tail<Object> createTail(TaskLoopGroup<TaskLoop> defaultPool) {
-            return new Tail<Object>(this, IO_STAGE_KEY, AbstractPipeline.NULL_POOL) {
-                @Override
-                void setStage(Object stage) {
-                }
-
-                @Override
-                protected Object stage() {
-                    return null;
-                }
-
-                @Override
-                protected void fire(Object input) {
-                }
-
-                @Override
-                protected void fire(Object input, TransportParameter parameter) {
-                }
-
-                @Override
-                protected void fire(TransportStateEvent event) {
-                }
-
-                @Override
-                public TransportParameter transportParameter() {
-                    return DefaultTransportParameter.NO_PARAMETER;
-                }
-            };
-        }
-    }
-
-    private static class TaskLoopGroupMock extends TaskLoopGroup<TaskLoop> {
-        @Override
-        protected TaskLoop newTaskLoop() {
-            return new TaskLoopMock();
+            return spy(context);
         }
     }
 }

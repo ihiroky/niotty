@@ -53,13 +53,16 @@ public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> 
             connectorPool_ = connectorPool;
             ioPool_ = ioPool;
         }
+
+        boolean isConnectorPoolAvailable() {
+            return connectorPool_ != null && connectorPool_.isOpen();
+        }
     }
 
     public NioClientSocketTransport(PipelineComposer composer, String name,
             ConnectSelectorPool connectorPool, TcpIOSelectorPool ioPool, WriteQueueFactory writeQueueFactory) {
         super(name, composer, ioPool);
 
-        Arguments.requireNonNull(connectorPool, "connectorPool");
         Arguments.requireNonNull(ioPool, "ioPool");
         Arguments.requireNonNull(writeQueueFactory, "writeQueueFactory");
 
@@ -200,17 +203,25 @@ public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> 
     }
 
     @Override
-    public TransportFuture bind(SocketAddress local) {
-        try {
-            if (Platform.javaVersion().ge(JavaVersion.JAVA7)) {
-                channel_.bind(local);
-            } else {
-                channel_.socket().bind(local);
+    public TransportFuture bind(final SocketAddress local) {
+        final DefaultTransportFuture future = new DefaultTransportFuture(this);
+        storePipeline().execute(new TransportStateEvent(TransportState.BOUND) {
+            @Override
+            public long execute(TimeUnit timeUnit) throws Exception {
+                try {
+                    if (Platform.javaVersion().ge(JavaVersion.JAVA7)) {
+                        channel_.bind(local);
+                    } else {
+                        channel_.socket().bind(local);
+                    }
+                    future.done();
+                } catch (IOException ioe) {
+                    future.setThrowable(ioe);
+                }
+                return DONE;
             }
-            return new SuccessfulTransportFuture(this);
-        } catch (IOException ioe) {
-            return new FailedTransportFuture(this, ioe);
-        }
+        });
+        return future;
     }
 
     @Override
@@ -259,29 +270,28 @@ public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> 
             throw new IllegalStateException("No ConnectSelectorPool is found.");
         }
 
-        if (pools.connectorPool_.isOpen()) {
-            // try non blocking connection
+        if (pools.isConnectorPoolAvailable()) {
+            // Try non blocking connection
             try {
                 if (channel_.connect(remote)) {
                     return new SuccessfulTransportFuture(this);
                 }
                 DefaultTransportFuture future = new DefaultTransportFuture(this);
-                pools.connectorPool_.register(
-                        channel_, SelectionKey.OP_CONNECT,
-                        new ConnectionWaitTransport(pools.connectorPool_, this, future));
-                return future;
+                ConnectionWaitTransport cwt = new ConnectionWaitTransport(pools.connectorPool_, this, future);
+                cwt.register(channel_, SelectionKey.OP_CONNECT, loadPipeline()); // call pipeline of this, not cwt.
             } catch (IOException ioe) {
                 return new FailedTransportFuture(this, ioe);
             }
         }
 
-        // try blocking connection
+        // Try blocking connection
+        // This operation blocks thread. So don't execute it in I/O thread.
         try {
             channel_.configureBlocking(true);
             channel_.connect(remote);
             channel_.configureBlocking(false);
             loadPipeline().execute(new DefaultTransportStateEvent(TransportState.CONNECTED, remote));
-            pools.ioPool_.register(channel_, SelectionKey.OP_READ, this);
+            register(channel_, SelectionKey.OP_READ, loadPipeline());
             return new SuccessfulTransportFuture(this);
         } catch (IOException ioe) {
             try {
@@ -303,7 +313,7 @@ public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> 
             return new SuccessfulTransportFuture(this);
         }
         final DefaultTransportFuture future = new DefaultTransportFuture(this);
-        executeStore(new TransportStateEvent(TransportState.SHUTDOWN_OUTPUT) {
+        storePipeline().execute(new TransportStateEvent(TransportState.SHUTDOWN_OUTPUT) {
             @Override
             public long execute(TimeUnit timeUnit) {
                 SelectionKey key = key();
@@ -332,7 +342,7 @@ public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> 
             return new SuccessfulTransportFuture(this);
         }
         final DefaultTransportFuture future = new DefaultTransportFuture(this);
-        executeStore(new TransportStateEvent(TransportState.SHUTDOWN_INPUT) {
+        storePipeline().execute(new TransportStateEvent(TransportState.SHUTDOWN_INPUT) {
             @Override
             public long execute(TimeUnit timeUnit) {
                 SelectionKey key = key();

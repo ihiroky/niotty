@@ -9,11 +9,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Provides a thread pool to execute {@link TaskLoop} and manages the task loop lifecycle.
@@ -24,44 +20,61 @@ import java.util.concurrent.TimeUnit;
 public abstract class TaskLoopGroup<L extends TaskLoop> {
 
     private final Collection<L> taskLoops_;
-    private ThreadPoolExecutor executor_;
+    private final ThreadFactory threadFactory_;
+    private final int workers_;
     private Logger logger_ = LoggerFactory.getLogger(TaskLoopGroup.class);
 
     /**
      * Constructs a new instance.
+     *
+     * @param threadFactory a factory to create thread which runs a task loop
+     * @param workers the number of threads held in the thread pool
      */
-    protected TaskLoopGroup() {
+    protected TaskLoopGroup(ThreadFactory threadFactory, int workers) {
         taskLoops_ = new HashSet<L>();
+        threadFactory_ = Arguments.requireNonNull(threadFactory, "threadFactory");
+        workers_ = Arguments.requirePositive(workers, "workers");
     }
 
     /**
      * Creates the thread pool internally if not created.
-     * @param threadFactory a thread factory
-     * @param workers the number of threads held in the thread pool
      */
-    public void open(ThreadFactory threadFactory, int workers) {
-        Arguments.requirePositive(workers, "workers");
+    public final void open() {
+        List<L> newTaskLoopList;
         synchronized (taskLoops_) {
-            if (executor_ == null) {
-                ThreadPoolExecutor executor = new ThreadPoolExecutor(
-                        workers, workers, 1L, TimeUnit.MINUTES, new SynchronousQueue<Runnable>(), threadFactory);
-                Collection<L> taskLoops = new ArrayList<L>(workers);
-                for (int i = 0; i < workers; i++) {
-                    L taskLoop = newTaskLoop();
-                    logger_.debug("[open] New task loop: {}.", taskLoop);
-                    executor.execute(taskLoop);
-                    taskLoops.add(taskLoop);
-                }
-                try {
-                    for (L taskLoop : taskLoops) {
-                        taskLoop.waitUntilStarted();
-                    }
-                    executor_ = executor;
-                    taskLoops_.addAll(taskLoops);
-                } catch (InterruptedException ie) {
-                    logger_.debug("Interrupted.", ie);
+            for (Iterator<L> iterator = taskLoops_.iterator(); iterator.hasNext();) {
+                L taskLoop = iterator.next();
+                if (!taskLoop.isAlive()) {
+                    logger_.debug("[open0] Dead task loop {} is found. Remove it and assign a new one.", taskLoop);
+                    iterator.remove();
                 }
             }
+
+            int n = workers_ - taskLoops_.size();
+            if (n == 0) {
+                return;
+            }
+            newTaskLoopList = new ArrayList<L>(n);
+            for (int i = 0; i < n; i++) {
+                L newTaskLoop = newTaskLoop();
+                Thread thread = threadFactory_.newThread(newTaskLoop);
+                thread.start();
+                taskLoops_.add(newTaskLoop);
+                newTaskLoopList.add(newTaskLoop);
+                logger_.debug("[open0] New task loop {} is created. Task loop count: {}.",
+                        newTaskLoop, taskLoops_.size());
+            }
+        }
+
+        // Ensure that loop.onOpen() is called now.
+        // And doesn't wait in the synchronized block.
+        try {
+            for (L newTaskLoop : newTaskLoopList) {
+                newTaskLoop.waitUntilStarted();
+            }
+        } catch (InterruptedException ie) {
+            logger_.debug("[open0] Interrupted. Close active task loops.", ie);
+            close();
         }
     }
 
@@ -74,11 +87,6 @@ public abstract class TaskLoopGroup<L extends TaskLoop> {
                 taskLoop.close();
             }
             taskLoops_.clear();
-            ExecutorService executor = executor_;
-            if (executor != null) {
-                executor.shutdownNow();
-                executor_ = null;
-            }
         }
     }
 
@@ -88,7 +96,7 @@ public abstract class TaskLoopGroup<L extends TaskLoop> {
      */
     public boolean isOpen() {
         synchronized (taskLoops_) {
-            return (executor_ != null) && !executor_.isShutdown();
+            return !taskLoops_.isEmpty();
         }
     }
 
@@ -110,13 +118,13 @@ public abstract class TaskLoopGroup<L extends TaskLoop> {
      * @param selection the selection added to a selected task loop
      * @return the task loop
      */
-    protected L assign(TaskSelection selection) {
+    public L assign(TaskSelection selection) {
         Arguments.requireNonNull(selection, "selection");
 
         int minCount = Integer.MAX_VALUE;
         L minCountLoop = null;
+        open();
         synchronized (taskLoops_) {
-            sweepDeadLoop();
             for (L loop : taskLoops_) {
                 if (loop.countUpIfContains(selection)) {
                     logger_.debug("[assign] [{}] is already assigned to [{}]", selection, loop);
@@ -137,55 +145,10 @@ public abstract class TaskLoopGroup<L extends TaskLoop> {
         return minCountLoop;
     }
 
-    private L addTaskLoop() {
-        L newTaskLoop = newTaskLoop();
-        executor_.execute(newTaskLoop);
-        taskLoops_.add(newTaskLoop);
-        logger_.debug("[addTaskLoop] New task loop {} is created. Task loop count: {}.", taskLoops_.size());
-        return newTaskLoop;
-    }
-
-    private void sweepDeadLoop() {
-        for (Iterator<L> iterator = taskLoops_.iterator(); iterator.hasNext();) {
-            L taskLoop = iterator.next();
-            if (!taskLoop.isAlive()) {
-                logger_.debug("[sweepDeadLoop] Dead loop is found: {}", taskLoop);
-                iterator.remove();
-            }
-        }
-
-        int min = (executor_ != null) ? executor_.getCorePoolSize() : 0;
-        int n = min - taskLoops_.size();
-        for (int i = 0; i < n; i++) {
-            addTaskLoop();
-        }
-    }
-
-    /**
-     * Returns the number of task loops.
-     * @return the number of task loops
-     */
-    public int pooledTaskLoops() {
-        synchronized (taskLoops_) {
-            return taskLoops_.size();
-        }
-    }
-
-    /**
-     * Returns a view of the task loops.
-     * @return a view of the task loops
-     */
-    protected List<L> taskLoopsView() {
-        List<L> view;
-        synchronized (taskLoops_) {
-            view = new ArrayList<L>(taskLoops_);
-        }
-        return view;
-    }
-
     /**
      * Creates a new task loop.
-     * @return a new task loop
+     *
+     * @return the task loop
      */
     protected abstract L newTaskLoop();
 }

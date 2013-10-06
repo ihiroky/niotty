@@ -89,4 +89,40 @@ public final class Arguments {
         }
         return value;
     }
+
+    /**
+     * Checks if the int value is in the specified range.
+     *
+     * @param value the value to check
+     * @param name the name of the variable
+     * @param begin the beginning of the range
+     * @param end the end of he range
+     * @return the value
+     */
+    public static int requireInRange(int value, String name, int begin, int end) {
+        if (value < begin || value > end) {
+            throw (name != null)
+                    ? new IllegalArgumentException("The " + name + " must be in [" + begin + ", " + end + "].")
+                    : new IllegalArgumentException();
+        }
+        return value;
+    }
+
+    /**
+     * Checks if the long value is in the specified range.
+     *
+     * @param value the value to check
+     * @param name the name of the variable
+     * @param begin the beginning of the range
+     * @param end the end of he range
+     * @return the value
+     */
+    public static long requireInRange(long value, String name, long begin, long end) {
+        if (value < begin || value > end) {
+            throw (name != null)
+                    ? new IllegalArgumentException("The " + name + " must be in [" + begin + ", " + end + "].")
+                    : new IllegalArgumentException();
+        }
+        return value;
+    }
 }

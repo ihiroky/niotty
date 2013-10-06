@@ -3,13 +3,16 @@ package net.ihiroky.niotty;
 import java.util.concurrent.TimeUnit;
 
 /**
- * A implementation of {@link TaskLoop}. Wait operation depends on {@code java.util.ReentrantLock}.
+ * A implementation of {@link TaskLoop}. Wait operation depends on {@code Object.wait()} and {@code Object.notify()}.
  */
 public class DefaultTaskLoop extends TaskLoop {
 
     private boolean signaled_;
     private final Object lock_;
 
+    /**
+     * Create a new instance.
+     */
     public DefaultTaskLoop() {
         signaled_ = false;
         lock_ = new Object();

@@ -1,6 +1,8 @@
 package net.ihiroky.niotty.nio;
 
+import net.ihiroky.niotty.StorePipeline;
 import net.ihiroky.niotty.TransportOptions;
+import net.ihiroky.niotty.TransportStateEvent;
 import net.ihiroky.niotty.util.JavaVersion;
 import net.ihiroky.niotty.util.Platform;
 import org.junit.After;
@@ -9,6 +11,9 @@ import org.junit.Test;
 import org.junit.experimental.runners.Enclosed;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
@@ -16,6 +21,7 @@ import java.net.Socket;
 import java.net.StandardSocketOptions;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.util.concurrent.TimeUnit;
 
 import static net.ihiroky.niotty.util.JavaVersionMatchers.*;
 import static org.hamcrest.CoreMatchers.*;
@@ -113,8 +119,22 @@ public class NioServerSocketTransportTest {
         @Test
         public void testBind() throws Exception {
             InetSocketAddress address = new InetSocketAddress("127.0.0.1", 12345);
+            StorePipeline storePipeline = spy(sut_.storePipeline());
+            doAnswer(new Answer<Void>() {
+                @Override
+                public Void answer(InvocationOnMock invocation) throws Throwable {
+                    TransportStateEvent event = (TransportStateEvent) invocation.getArguments()[0];
+                    event.execute(TimeUnit.NANOSECONDS);
+                    return null;
+                }
+            }).when(storePipeline).execute(Mockito.<TransportStateEvent>any());
+            AcceptSelector selector = mock(AcceptSelector.class);
+            when(selector.isInLoopThread()).thenReturn(true);
+            NioServerSocketTransport sut = spy(sut_);
+            when(sut.storePipeline()).thenReturn(storePipeline);
+            when(sut.taskLoop()).thenReturn(selector);
 
-            sut_.bind(address);
+            sut.bind(address);
 
             ArgumentCaptor<InetSocketAddress> valueCaptor = ArgumentCaptor.forClass(InetSocketAddress.class);
             ArgumentCaptor<Integer> backlogCaptor = ArgumentCaptor.forClass(Integer.class);
@@ -225,8 +245,22 @@ public class NioServerSocketTransportTest {
         @Test
         public void testBind() throws Exception {
             InetSocketAddress address = new InetSocketAddress("127.0.0.1", 12345);
+            StorePipeline storePipeline = spy(sut_.storePipeline());
+            doAnswer(new Answer<Void>() {
+                @Override
+                public Void answer(InvocationOnMock invocation) throws Throwable {
+                    TransportStateEvent event = (TransportStateEvent) invocation.getArguments()[0];
+                    event.execute(TimeUnit.NANOSECONDS);
+                    return null;
+                }
+            }).when(storePipeline).execute(Mockito.<TransportStateEvent>any());
+            AcceptSelector selector = mock(AcceptSelector.class);
+            when(selector.isInLoopThread()).thenReturn(true);
+            NioServerSocketTransport sut = spy(sut_);
+            when(sut.storePipeline()).thenReturn(storePipeline);
+            when(sut.taskLoop()).thenReturn(selector);
 
-            sut_.bind(address);
+            sut.bind(address);
 
             ArgumentCaptor<InetSocketAddress> valueCaptor = ArgumentCaptor.forClass(InetSocketAddress.class);
             ArgumentCaptor<Integer> backlogCaptor = ArgumentCaptor.forClass(Integer.class);

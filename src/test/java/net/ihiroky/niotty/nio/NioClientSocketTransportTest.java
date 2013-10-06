@@ -1,8 +1,11 @@
 package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.PipelineComposer;
+import net.ihiroky.niotty.StorePipeline;
 import net.ihiroky.niotty.Task;
+import net.ihiroky.niotty.TaskSelection;
 import net.ihiroky.niotty.TransportOptions;
+import net.ihiroky.niotty.TransportStateEvent;
 import net.ihiroky.niotty.util.JavaVersion;
 import net.ihiroky.niotty.util.Platform;
 import org.junit.Before;
@@ -11,6 +14,8 @@ import org.junit.experimental.runners.Enclosed;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -40,7 +45,9 @@ public class NioClientSocketTransportTest {
 
         @Before
         public void setUp() throws Exception {
+            TcpIOSelector selector = mock(TcpIOSelector.class);
             TcpIOSelectorPool ioPool = mock(TcpIOSelectorPool.class);
+            when(ioPool.assign(Mockito.<TaskSelection>any())).thenReturn(selector);
             Socket socket = mock(Socket.class);
             channel_ = mock(SocketChannel.class);
             when(channel_.socket()).thenReturn(socket);
@@ -126,7 +133,9 @@ public class NioClientSocketTransportTest {
         public void setUp() throws Exception {
             assumeThat(Platform.javaVersion(), is(greaterOrEqual(JavaVersion.JAVA7)));
 
+            TcpIOSelector selector = mock(TcpIOSelector.class);
             TcpIOSelectorPool ioPool = mock(TcpIOSelectorPool.class);
+            when(ioPool.assign(Mockito.<TaskSelection>any())).thenReturn(selector);
             Socket socket = mock(Socket.class);
             channel_ = mock(SocketChannel.class);
             when(channel_.socket()).thenReturn(socket);
@@ -263,8 +272,21 @@ public class NioClientSocketTransportTest {
         @Test
         public void testBind() throws Exception {
             InetSocketAddress bindAddress = new InetSocketAddress(1);
+            StorePipeline storePipeline = mock(StorePipeline.class);
+            doAnswer(new Answer<Void>() {
+                @Override
+                public Void answer(InvocationOnMock invocation) throws Throwable {
+                    TransportStateEvent event = (TransportStateEvent) invocation.getArguments()[0];
+                    event.execute(TimeUnit.NANOSECONDS);
+                    return null;
+                }
+            }).when(storePipeline).execute(Mockito.<TransportStateEvent>any());
+            TcpIOSelector selector = mock(TcpIOSelector.class);
+            when(selector.isInLoopThread()).thenReturn(true);
+            NioClientSocketTransport sut = spy(sut_);
+            when(sut.storePipeline()).thenReturn(storePipeline);
 
-            sut_.bind(bindAddress);
+            sut.bind(bindAddress);
 
             ArgumentCaptor<InetSocketAddress> captor = ArgumentCaptor.forClass(InetSocketAddress.class);
             verify(channel_).bind(captor.capture());
@@ -302,7 +324,9 @@ public class NioClientSocketTransportTest {
         public void setUp() throws Exception {
             assumeThat(Platform.javaVersion(), is(equal(JavaVersion.JAVA6)));
 
+            TcpIOSelector selector = mock(TcpIOSelector.class);
             TcpIOSelectorPool ioPool = mock(TcpIOSelectorPool.class);
+            when(ioPool.assign(Mockito.<TaskSelection>any())).thenReturn(selector);
             socket_ = mock(Socket.class);
             SocketChannel channel = mock(SocketChannel.class);
             when(channel.socket()).thenReturn(socket_);
@@ -448,6 +472,19 @@ public class NioClientSocketTransportTest {
         @Test
         public void testBind() throws Exception {
             InetSocketAddress bindAddress = new InetSocketAddress(1);
+            StorePipeline storePipeline = mock(StorePipeline.class);
+            doAnswer(new Answer<Void>() {
+                @Override
+                public Void answer(InvocationOnMock invocation) throws Throwable {
+                    TransportStateEvent event = (TransportStateEvent) invocation.getArguments()[0];
+                    event.execute(TimeUnit.NANOSECONDS);
+                    return null;
+                }
+            }).when(storePipeline).execute(Mockito.<TransportStateEvent>any());
+            TcpIOSelector selector = mock(TcpIOSelector.class);
+            when(selector.isInLoopThread()).thenReturn(true);
+            NioClientSocketTransport sut = spy(sut_);
+            when(sut.storePipeline()).thenReturn(storePipeline);
 
             sut_.bind(bindAddress);
 

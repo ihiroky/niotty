@@ -1,8 +1,9 @@
 package net.ihiroky.niotty.nio;
 
+import net.ihiroky.niotty.DefaultTransportFuture;
 import net.ihiroky.niotty.DefaultTransportParameter;
 import net.ihiroky.niotty.DefaultTransportStateEvent;
-import net.ihiroky.niotty.FailedTransportFuture;
+import net.ihiroky.niotty.LoadPipeline;
 import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.SuccessfulTransportFuture;
 import net.ihiroky.niotty.Transport;
@@ -14,6 +15,7 @@ import net.ihiroky.niotty.TransportOption;
 import net.ihiroky.niotty.TransportOptions;
 import net.ihiroky.niotty.TransportParameter;
 import net.ihiroky.niotty.TransportState;
+import net.ihiroky.niotty.TransportStateEvent;
 import net.ihiroky.niotty.buffer.BufferSink;
 import net.ihiroky.niotty.util.JavaVersion;
 import net.ihiroky.niotty.util.Platform;
@@ -35,6 +37,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 /**
  * An implementation of {@link net.ihiroky.niotty.Transport} for NIO {@code ServerSocketChannel}.
@@ -204,24 +207,33 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
     }
 
     /**
-     * Binds the transport's socket to a local address.
+     * Binds the socket of this transport to a local address, and makes this transport acceptable.
      *
      * @param socketAddress the local address
      * @param backlog maximum number of pending connections
      * @return a future object to get the result of this operation
      */
-    public TransportFuture bind(SocketAddress socketAddress, int backlog) {
-        try {
-            if (Platform.javaVersion().ge(JavaVersion.JAVA7)) {
-                serverChannel_.bind(socketAddress, backlog);
-            } else {
-                serverChannel_.socket().bind(socketAddress, backlog);
+    public TransportFuture bind(final SocketAddress socketAddress, final int backlog) {
+        final DefaultTransportFuture future = new DefaultTransportFuture(this);
+        // should be called from taskLoop().
+        storePipeline().execute(new TransportStateEvent(TransportState.BOUND) {
+            @Override
+            public long execute(TimeUnit timeUnit) throws Exception {
+                try {
+                    register(serverChannel_, SelectionKey.OP_ACCEPT, loadPipeline());
+                    if (Platform.javaVersion().ge(JavaVersion.JAVA7)) {
+                        serverChannel_.bind(socketAddress, backlog);
+                    } else {
+                        serverChannel_.socket().bind(socketAddress, backlog);
+                    }
+                    future.done();
+                } catch (IOException ioe) {
+                    future.setThrowable(ioe);
+                }
+                return DONE;
             }
-            processor_.acceptSelectorPool().register(serverChannel_, SelectionKey.OP_ACCEPT, this);
-            return new SuccessfulTransportFuture(this);
-        } catch (IOException ioe) {
-            return new FailedTransportFuture(this, ioe);
-        }
+        });
+        return future;
     }
 
     @Override
@@ -259,8 +271,9 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
             logger_.debug("[registerReadLater] accepted socket's {} = {}", name, child.option(name));
         }
 
-        child.loadPipeline().execute(new DefaultTransportStateEvent(TransportState.CONNECTED, remoteAddress));
-        ioSelectorPool.register(channel, SelectionKey.OP_READ, child);
+        LoadPipeline targetPipeline = child.loadPipeline();
+        targetPipeline.execute(new DefaultTransportStateEvent(TransportState.CONNECTED, remoteAddress));
+        child.register(channel, SelectionKey.OP_READ, targetPipeline);
         childAggregate_.add(child);
     }
 

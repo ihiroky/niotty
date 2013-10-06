@@ -21,7 +21,7 @@ public abstract class AbstractPipeline<S, L extends TaskLoop> implements Pipelin
     private final String name_;
     private final AbstractTransport<L> transport_;
     private final PipelineElement<Object, Object> head_;
-    private final Tail<S> tail_;
+    private final PipelineElement<Object, Object> tail_;
     private final TaskLoopGroup<L> taskLoopGroup_;
     private Logger logger_ = LoggerFactory.getLogger(AbstractPipeline.class);
 
@@ -36,17 +36,22 @@ public abstract class AbstractPipeline<S, L extends TaskLoop> implements Pipelin
      *
      * @param name name of this pipeline
      * @param transport transport which associate with this pipeline
-     * @param taskLoopGroup an pool which provides TaskLoop to execute stages.
+     * @param taskLoopGroup an pool which provides TaskLoop to execute stages
+     * @param tailStageKey a key to be associated with the tailStage
+     * @param tailStage a stage that is executed at last in this pipeline
      */
     protected AbstractPipeline(
-            String name, AbstractTransport<L> transport, TaskLoopGroup<L> taskLoopGroup) {
+            String name, AbstractTransport<L> transport, TaskLoopGroup<L> taskLoopGroup,
+            StageKey tailStageKey, S tailStage) {
         Arguments.requireNonNull(name, "name");
         Arguments.requireNonNull(transport, "transport");
         Arguments.requireNonNull(taskLoopGroup, "taskLoopGroup");
+        Arguments.requireNonNull(tailStageKey, "tailStageKey");
+        Arguments.requireNonNull(tailStage, "tailStage");
 
         transport_ = transport;
 
-        Tail<S> tail = createTail(taskLoopGroup);
+        PipelineElement<Object, Object> tail = createContext(tailStageKey, tailStage, taskLoopGroup);
         tail.setNext(TERMINAL);
         PipelineElement<Object, Object> head = new NullPipelineElement();
         head.setNext(tail);
@@ -254,16 +259,18 @@ public abstract class AbstractPipeline<S, L extends TaskLoop> implements Pipelin
         throw new NoSuchElementException(key.toString());
     }
 
+    /**
+     * Creates a new context with the specified stage.
+     * The implementation class should define this method as final and safe.
+     * This method is called in the constructor.
+     *
+     * @param key the key to be associated with the stage
+     * @param stage the stage
+     * @param group a group of TaskLoop which assigns TaskLoop to execute the stage
+     * @return the context
+     */
     protected abstract PipelineElement<Object, Object> createContext(
-            StageKey key, S stage, TaskLoopGroup<? extends TaskLoop> pool);
-
-    protected abstract Tail<S> createTail(TaskLoopGroup<L> defaultPool);
-
-    void setTailStage(S stage) {
-        Arguments.requireNonNull(stage, "stage");
-        logger_.debug("[setTailStage] {}", stage);
-        tail_.setStage(stage);
-    }
+            StageKey key, S stage, TaskLoopGroup<? extends TaskLoop> group);
 
     public void close() {
         for (PipelineElement<Object, Object> ctx = head_; ctx != TERMINAL; ctx = ctx.next()) {
@@ -278,14 +285,6 @@ public abstract class AbstractPipeline<S, L extends TaskLoop> implements Pipelin
         for (PipelineElementIterator i = new PipelineElementIterator(head_); i.hasNext();) {
             PipelineElement<Object, Object> e = i.next();
             Object stage = e.stage();
-            if (stage == null) {
-                if (e instanceof Tail) {
-                    logger_.debug("[verifyStageType] The tail stage: {}", stage);
-                } else {
-                    logger_.debug("[verifyStageType] The stage of {} is null.", e);
-                }
-                continue;
-            }
             Class<?> stageClass = stage.getClass();
             for (Type type : stageClass.getGenericInterfaces()) {
                 Type[] actualTypeArguments = stageTypeParameters(type);
@@ -369,37 +368,52 @@ public abstract class AbstractPipeline<S, L extends TaskLoop> implements Pipelin
 
     public void execute(final Object input) {
         final PipelineElement<Object, Object> next = head_.next();
-        next.taskLoop().execute(new Task() {
+        TaskLoop tl = next.taskLoop();
+        if (tl.isInLoopThread()) {
+            next.fire(input);
+        } else {
+            tl.offer(new Task() {
             @Override
             public long execute(TimeUnit timeUnit) throws Exception {
                 next.fire(input);
                 return DONE;
             }
-        });
+            });
+        }
     }
 
     public void execute(final Object input, final TransportParameter parameter) {
         final PipelineElement<Object, Object> next = head_.next();
-        next.taskLoop().execute(new Task() {
+        TaskLoop tl = next.taskLoop();
+        if (tl.isInLoopThread()) {
+            next.fire(input, parameter);
+        } else {
+            tl.offer(new Task() {
             @Override
             public long execute(TimeUnit timeUnit) throws Exception {
                 next.fire(input, parameter);
                 return DONE;
             }
-        });
+            });
+        }
     }
 
     public void execute(final TransportStateEvent event) {
         final PipelineElement<?, ?> next = head_.next();
-        next.taskLoop().execute(new Task() {
-            @Override
-            public long execute(TimeUnit timeUnit) throws Exception {
-                next.fire(event);
-                next.proceed(event);
-                return DONE;
-            }
-        });
-
+        TaskLoop tl = next.taskLoop();
+        if (tl.isInLoopThread()) {
+            next.fire(event);
+            next.proceed(event);
+        } else {
+            tl.offer(new Task() {
+                @Override
+                public long execute(TimeUnit timeUnit) throws Exception {
+                    next.fire(event);
+                    next.proceed(event);
+                    return DONE;
+                }
+            });
+        }
     }
 
     AbstractTransport<L> transport() {
@@ -478,6 +492,10 @@ public abstract class AbstractPipeline<S, L extends TaskLoop> implements Pipelin
             }
         };
 
+        protected NullPipelineElementExecutorPool() {
+            super(new NameCountThreadFactory("UNUSED0"), 1);
+        }
+
         @Override
         public TaskLoop assign(TaskSelection context) {
             return NULL_TASK_LOOP;
@@ -535,14 +553,5 @@ public abstract class AbstractPipeline<S, L extends TaskLoop> implements Pipelin
         public PipelineElement<Object, Object> prev() {
             return prev_;
         }
-    }
-
-    static abstract class Tail<S> extends PipelineElement<Object, Object> {
-
-        protected Tail(AbstractPipeline<?, ?> pipeline, StageKey key, TaskLoopGroup<? extends TaskLoop> pool) {
-            super(pipeline, key, pool);
-        }
-
-        abstract void setStage(S stage);
     }
 }

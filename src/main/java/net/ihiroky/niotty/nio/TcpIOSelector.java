@@ -96,12 +96,26 @@ public class TcpIOSelector extends AbstractSelector {
     public void store(StageContext<Void> context, BufferSink input) {
         final NioClientSocketTransport transport = (NioClientSocketTransport) context.transport();
         transport.readyToWrite(new AttachedMessage<BufferSink>(input, context.transportParameter()));
-        execute(new Task() {
-            @Override
-            public long execute(TimeUnit timeUnit) throws Exception {
+        if (isInLoopThread()) {
+            try {
                 transport.flush(null);
-                return DONE;
+            } catch (IOException ioe) {
+                logger_.warn("[store] Flush failed.", ioe);
+                transport.doCloseSelectableChannel(true);
             }
-        });
+        } else {
+            offer(new Task() {
+                @Override
+                public long execute(TimeUnit timeUnit) throws Exception {
+                    try {
+                        transport.flush(null);
+                    } catch (IOException ioe) {
+                        logger_.warn("[store] Flush failed.", ioe);
+                        transport.doCloseSelectableChannel(true);
+                    }
+                    return DONE;
+                }
+            });
+        }
     }
 }

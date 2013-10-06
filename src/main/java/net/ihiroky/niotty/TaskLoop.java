@@ -57,6 +57,14 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
         selectionCountMap_ = new HashMap<TaskSelection, Integer>();
     }
 
+    void close() {
+        Thread t = thread_;
+        if (t != null) {
+            t.interrupt();
+            thread_ = null;
+        }
+    }
+
     /**
      * Inserts a specified task to the task queue.
      * @param task the task to be inserted to the task queue
@@ -259,7 +267,7 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
      * Returns true if the caller is executed on the thread which executes this loop.
      * @return true if the caller is executed on the thread which executes this loop
      */
-    protected boolean isInLoopThread() {
+    public boolean isInLoopThread() {
         return Thread.currentThread() == thread_;
     }
 
@@ -267,22 +275,14 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
      * Returns true if the thread which executes this loop is alive.
      * @return true if the thread which executes this loop is alive
      */
-    protected boolean isAlive() {
+    public boolean isAlive() {
         Thread t = thread_;
         return (t != null) && t.isAlive();
     }
 
-    void close() {
-        Thread t = thread_;
-        if (t != null) {
-            t.interrupt();
-            thread_ = null;
-        }
-    }
-
     @Override
     public String toString() {
-        return (thread_ != null) ? thread_.getName() : super.toString();
+        return (thread_ != null) ? thread_.toString() : super.toString();
     }
 
     @Override

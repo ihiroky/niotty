@@ -145,7 +145,7 @@ public class TaskLoopTest {
     public void testToString_ReturnsThreadNameIfSutIsExecuted() throws Exception {
         executor_.execute(sut_);
 
-        while (!sut_.toString().equals(THREAD_NAME)) {
+        while (!sut_.toString().contains(THREAD_NAME)) {
             Thread.sleep(10);
         }
     }

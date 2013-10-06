@@ -1,10 +1,8 @@
 package net.ihiroky.niotty.nio;
 
-import net.ihiroky.niotty.DefaultTransportStateEvent;
 import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.StoreStage;
 import net.ihiroky.niotty.TaskLoop;
-import net.ihiroky.niotty.TransportState;
 import net.ihiroky.niotty.TransportStateEvent;
 import net.ihiroky.niotty.buffer.BufferSink;
 import org.slf4j.Logger;
@@ -19,9 +17,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Created on 13/01/10, 17:56
- *
- * @author Hiroki Itoh
+ * An implementation of {@link net.ihiroky.niotty.TaskLoop} to handle {@link java.nio.channels.Selector}.
  */
 public abstract class AbstractSelector extends TaskLoop implements StoreStage<BufferSink, Void> {
 
@@ -96,22 +92,14 @@ public abstract class AbstractSelector extends TaskLoop implements StoreStage<Bu
     }
 
 
-    void register(SelectableChannel channel, int ops, NioSocketTransport<?> transport) {
+    SelectionKey register(SelectableChannel channel, int ops, NioSocketTransport<?> transport) throws IOException {
         try {
-            SelectionKey key = channel.register(selector_, ops, transport);
-            transport.setSelectionKey(key);
-            transport.loadPipeline().execute(new DefaultTransportStateEvent(TransportState.INTEREST_OPS, ops));
-            logger_.debug("[register] channel {} is registered to {}.", channel, Thread.currentThread());
+            logger_.debug("[register] channel {} is registered to {}.", transport, Thread.currentThread());
+            return channel.register(selector_, ops, transport);
         } catch (IOException ioe) {
             logger_.warn("[register] failed to register channel:" + channel, ioe);
+            throw ioe;
         }
-    }
-
-    void unregister(SelectionKey key, NioSocketTransport<?> transport) {
-        key.cancel();
-        transport.loadPipeline().execute(new DefaultTransportStateEvent(TransportState.INTEREST_OPS, 0));
-        reject(transport);
-        logger_.debug("[unregister] channel {} is unregistered from {}.", key.channel(), Thread.currentThread());
     }
 
     Set<SelectionKey> keys() {

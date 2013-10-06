@@ -9,55 +9,29 @@ public class DefaultLoadPipeline<L extends TaskLoop>
         extends AbstractPipeline<LoadStage<?, ?>, L> implements LoadPipeline {
 
     private static final String SUFFIX_LOAD = "[load]";
-    private static final StageKey TAIL_STAGE = StageKeys.of("LOAD_TAIL_STAGE");
+    private static final StageKey TAIL_STAGE_KEY = StageKeys.of("LOAD_TAIL_STAGE");
+    private static final LoadStage<Object, Object> TAIL_STAGE = new TailStage();
 
     public DefaultLoadPipeline(
             String name, AbstractTransport<L> transport, TaskLoopGroup<L> taskLoopGroup) {
-        super(String.valueOf(name).concat(SUFFIX_LOAD), transport, taskLoopGroup);
+        super(String.valueOf(name).concat(SUFFIX_LOAD), transport, taskLoopGroup, TAIL_STAGE_KEY, TAIL_STAGE);
     }
 
     @Override
-    protected PipelineElement<Object, Object> createContext(
+    protected final PipelineElement<Object, Object> createContext(
             StageKey key, LoadStage<?, ?> stage, TaskLoopGroup<? extends TaskLoop> pool) {
         @SuppressWarnings("unchecked")
         LoadStage<Object, Object> s = (LoadStage<Object, Object>) stage;
         return new LoadStageContext<Object, Object>(this, key, s, pool);
     }
 
-    @Override
-    protected final Tail<LoadStage<?, ?>> createTail(TaskLoopGroup<L> defaultPool) {
-        return new LoadTail(this, TAIL_STAGE, AbstractPipeline.NULL_POOL);
-    }
-
-    private static class LoadTail extends Tail<LoadStage<?, ?>> {
-        protected LoadTail(AbstractPipeline<?, ?> pipeline, StageKey key, TaskLoopGroup<? extends TaskLoop> pool) {
-            super(pipeline, key, pool);
+    private static class TailStage implements LoadStage<Object, Object> {
+        @Override
+        public void load(StageContext<Object> context, Object input) {
         }
 
         @Override
-        void setStage(LoadStage<?, ?> stage) {
-        }
-
-        @Override
-        protected Object stage() {
-            return null;
-        }
-
-        @Override
-        protected void fire(Object input) {
-        }
-
-        @Override
-        protected void fire(Object input, TransportParameter parameter) {
-        }
-
-        @Override
-        protected void fire(TransportStateEvent event) {
-        }
-
-        @Override
-        public TransportParameter transportParameter() {
-            return DefaultTransportParameter.NO_PARAMETER;
+        public void load(StageContext<Object> context, TransportStateEvent event) {
         }
     }
 }

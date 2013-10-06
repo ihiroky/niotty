@@ -36,7 +36,7 @@ public class TcpIOSelectorTest {
 
     @Test
     @SuppressWarnings({"unchecked", "rawtypes"})
-    public void testStore_Flush() throws Exception {
+    public void testStore_FlushQueuing() throws Exception {
         NioClientSocketTransport transport = mock(NioClientSocketTransport.class);
         TcpIOSelector sut = spy(new TcpIOSelector(256, false, false));
         doAnswer(new Answer<Object>() {
@@ -46,7 +46,26 @@ public class TcpIOSelectorTest {
                 task.execute(TimeUnit.NANOSECONDS);
                 return null;
             }
-        }).when(sut).execute(Mockito.any(Task.class));
+        }).when(sut).offer(Mockito.any(Task.class));
+        StageContext<Void> context = mock(StageContext.class);
+        when(context.transport()).thenReturn(transport);
+        when(context.transportParameter()).thenReturn(new DefaultTransportParameter(0));
+        BufferSink data = Buffers.newCodecBuffer(0);
+
+        sut.store(context, data);
+
+        ArgumentCaptor<AttachedMessage> captor = ArgumentCaptor.forClass(AttachedMessage.class);
+        verify(transport).readyToWrite(captor.capture());
+        assertThat(captor.getValue().message(), is((Object) data));
+        verify(transport).flush(null);
+    }
+
+    @Test
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public void testStore_FlushDirect() throws Exception {
+        NioClientSocketTransport transport = mock(NioClientSocketTransport.class);
+        TcpIOSelector sut = spy(new TcpIOSelector(256, false, false));
+        when(sut.isInLoopThread()).thenReturn(true);
         StageContext<Void> context = mock(StageContext.class);
         when(context.transport()).thenReturn(transport);
         when(context.transportParameter()).thenReturn(new DefaultTransportParameter(0));

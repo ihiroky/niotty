@@ -1,9 +1,12 @@
 package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.PipelineComposer;
+import net.ihiroky.niotty.StorePipeline;
 import net.ihiroky.niotty.Task;
+import net.ihiroky.niotty.TaskSelection;
 import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.TransportOptions;
+import net.ihiroky.niotty.TransportStateEvent;
 import net.ihiroky.niotty.util.JavaVersion;
 import net.ihiroky.niotty.util.Platform;
 import org.junit.Before;
@@ -14,6 +17,8 @@ import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import java.io.IOException;
 import java.net.DatagramSocket;
@@ -33,8 +38,8 @@ import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.MatcherAssert.*;
 import static org.junit.Assume.*;
 import static org.mockito.Matchers.anyLong;
-import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.eq;
 
 /**
  *
@@ -49,7 +54,9 @@ public class NioDatagramSocketTransportTest {
 
         @Before
         public void setUp() throws Exception {
+            UdpIOSelector selector = mock(UdpIOSelector.class);
             UdpIOSelectorPool ioPool = mock(UdpIOSelectorPool.class);
+            when(ioPool.assign(Mockito.<TaskSelection>any())).thenReturn(selector);
             writeQueue_ = mock(WriteQueue.class);
             WriteQueueFactory writeQueueFactory = mock(WriteQueueFactory.class);
             when(writeQueueFactory.newWriteQueue()).thenReturn(writeQueue_);
@@ -136,7 +143,9 @@ public class NioDatagramSocketTransportTest {
         public void setUp() throws Exception {
             assumeThat(Platform.javaVersion(), is(greaterOrEqual(JavaVersion.JAVA7)));
 
+            UdpIOSelector selector = mock(UdpIOSelector.class);
             UdpIOSelectorPool ioPool = mock(UdpIOSelectorPool.class);
+            when(ioPool.assign(Mockito.<TaskSelection>any())).thenReturn(selector);
             DatagramSocket socket = mock(DatagramSocket.class);
             channel_ = mock(DatagramChannel.class);
             when(channel_.socket()).thenReturn(socket);
@@ -315,7 +324,21 @@ public class NioDatagramSocketTransportTest {
         @Test
         public void testBind() throws Exception {
             InetSocketAddress endpoint = new InetSocketAddress(InetAddress.getByName("127.0.0.1"), 12345);
-            sut_.bind(endpoint);
+            StorePipeline storePipeline = spy(sut_.storePipeline());
+            doAnswer(new Answer<Void>() {
+                @Override
+                public Void answer(InvocationOnMock invocation) throws Throwable {
+                    TransportStateEvent event = (TransportStateEvent) invocation.getArguments()[0];
+                    event.execute(TimeUnit.NANOSECONDS);
+                    return null;
+                }
+            }).when(storePipeline).execute(Mockito.<TransportStateEvent>any());
+            UdpIOSelector selector = mock(UdpIOSelector.class);
+            when(selector.isInLoopThread()).thenReturn(true);
+            NioDatagramSocketTransport sut = spy(sut_);
+            when(sut.storePipeline()).thenReturn(storePipeline);
+
+            sut.bind(endpoint);
 
             verify(channel_).bind(endpoint);
         }
@@ -417,7 +440,9 @@ public class NioDatagramSocketTransportTest {
         public void setUp() throws Exception {
             assumeThat(Platform.javaVersion(), is(equal(JavaVersion.JAVA6)));
 
+            UdpIOSelector selector = mock(UdpIOSelector.class);
             UdpIOSelectorPool ioPool = mock(UdpIOSelectorPool.class);
+            when(ioPool.assign(Mockito.<TaskSelection>any())).thenReturn(selector);
             socket_ = mock(DatagramSocket.class);
             DatagramChannel channel = mock(DatagramChannel.class);
             when(channel.socket()).thenReturn(socket_);
@@ -585,7 +610,21 @@ public class NioDatagramSocketTransportTest {
         @Test
         public void testBind() throws Exception {
             InetSocketAddress endpoint = new InetSocketAddress(InetAddress.getByName("127.0.0.1"), 12345);
-            sut_.bind(endpoint);
+            StorePipeline storePipeline = spy(sut_.storePipeline());
+            doAnswer(new Answer<Void>() {
+                @Override
+                public Void answer(InvocationOnMock invocation) throws Throwable {
+                    TransportStateEvent event = (TransportStateEvent) invocation.getArguments()[0];
+                    event.execute(TimeUnit.NANOSECONDS);
+                    return null;
+                }
+            }).when(storePipeline).execute(Mockito.<TransportStateEvent>any());
+            UdpIOSelector selector = mock(UdpIOSelector.class);
+            when(selector.isInLoopThread()).thenReturn(true);
+            NioDatagramSocketTransport sut = spy(sut_);
+            when(sut.storePipeline()).thenReturn(storePipeline);
+
+            sut.bind(endpoint);
 
             verify(socket_).bind(endpoint);
         }

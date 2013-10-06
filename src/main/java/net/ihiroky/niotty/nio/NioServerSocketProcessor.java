@@ -16,6 +16,9 @@ public class NioServerSocketProcessor extends AbstractProcessor<NioServerSocketT
 
     private int numberOfAcceptThread_;
     private int numberOfMessageIOThread_;
+    private int readBufferSize_;
+    private boolean useDirectBuffer_;
+    private boolean duplicateReadBuffer_;
 
     private static final int DEFAULT_NUMBER_OF_ACCEPT_THREAD = 1;
     private static final int DEFAULT_NUMBER_OF_MESSAGE_IO_THREAD =
@@ -24,20 +27,23 @@ public class NioServerSocketProcessor extends AbstractProcessor<NioServerSocketT
     static final String DEFAULT_NAME = "NioServerSocket";
 
     public NioServerSocketProcessor() {
-        acceptSelectorPool_ = new AcceptSelectorPool();
-        ioSelectorPool_ = new TcpIOSelectorPool();
         writeQueueFactory_ = new SimpleWriteQueueFactory();
 
         numberOfAcceptThread_ = DEFAULT_NUMBER_OF_ACCEPT_THREAD;
         numberOfMessageIOThread_ = DEFAULT_NUMBER_OF_MESSAGE_IO_THREAD;
+        readBufferSize_ = TcpIOSelectorPool.DEFAULT_READ_BUFFER_SIZE;
+        useDirectBuffer_ = TcpIOSelectorPool.DEFAULT_USE_DIRECT_BUFFER;
+        duplicateReadBuffer_ = TcpIOSelectorPool.DEFAULT_DUPLICATE_READ_BUFFER;
 
         setName(DEFAULT_NAME);
     }
 
     @Override
     protected void onStart() {
-        ioSelectorPool_.open(new NameCountThreadFactory(name().concat("-MessageIO")), numberOfMessageIOThread_);
-        acceptSelectorPool_.open(new NameCountThreadFactory(name().concat("-Accept")), numberOfAcceptThread_);
+        ioSelectorPool_ = new TcpIOSelectorPool(
+                new NameCountThreadFactory(name().concat("-MessageIO")), numberOfMessageIOThread_,
+                readBufferSize_, useDirectBuffer_, duplicateReadBuffer_);
+        acceptSelectorPool_ = new AcceptSelectorPool(new NameCountThreadFactory(name().concat("-Accept")));
     }
 
     @Override
@@ -74,17 +80,17 @@ public class NioServerSocketProcessor extends AbstractProcessor<NioServerSocketT
     }
 
     public NioServerSocketProcessor setReadBufferSize(int readBufferSize) {
-        ioSelectorPool_.setReadBufferSize(readBufferSize);
+        readBufferSize_ = Arguments.requirePositive(readBufferSize, "readBufferSize");
         return this;
     }
 
     public NioServerSocketProcessor setUseDirectBuffer(boolean useDirectBuffer) {
-        ioSelectorPool_.setDirect(useDirectBuffer);
+        useDirectBuffer_ = useDirectBuffer;
         return this;
     }
 
-    public NioServerSocketProcessor setDuplicateReceiveBuffer(boolean duplicateReceiveBuffer) {
-        ioSelectorPool_.setDuplicateBuffer(duplicateReceiveBuffer);
+    public NioServerSocketProcessor setDuplicateReadBuffer(boolean duplicateReadBuffer) {
+        duplicateReadBuffer_ = duplicateReadBuffer;
         return this;
     }
 
@@ -114,14 +120,14 @@ public class NioServerSocketProcessor extends AbstractProcessor<NioServerSocketT
     }
 
     public int readBufferSize() {
-        return ioSelectorPool_.readBufferSize();
+        return readBufferSize_;
     }
 
-    public boolean isUseDirectBuffer() {
-        return ioSelectorPool_.direct();
+    public boolean useDirectBuffer() {
+        return useDirectBuffer_;
     }
 
-    public boolean isDuplicateReceiveBuffer() {
-        return ioSelectorPool_.duplicateBuffer();
+    public boolean duplicateReadBuffer() {
+        return duplicateReadBuffer_;
     }
 }
