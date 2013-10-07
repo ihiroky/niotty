@@ -25,7 +25,6 @@ public abstract class AbstractPipeline<S, L extends TaskLoop> implements Pipelin
     private final TaskLoopGroup<L> taskLoopGroup_;
     private Logger logger_ = LoggerFactory.getLogger(AbstractPipeline.class);
 
-    static final NullPipelineElementExecutorPool NULL_POOL = new NullPipelineElementExecutorPool();
     static final PipelineElement<Object, Object> TERMINAL = new NullPipelineElement();
 
     private static final int INPUT_TYPE = 0;
@@ -75,6 +74,9 @@ public abstract class AbstractPipeline<S, L extends TaskLoop> implements Pipelin
             throw new IllegalArgumentException(IO_STAGE_KEY + " must not be added.");
         }
 
+        if (pool == null) {
+            pool = taskLoopGroup_;
+        }
         synchronized (head_) {
             if (head_.next() == tail_) {
                 PipelineElement<Object, Object> newContext = createContext(key, stage, pool);
@@ -113,6 +115,9 @@ public abstract class AbstractPipeline<S, L extends TaskLoop> implements Pipelin
             throw new IllegalArgumentException(IO_STAGE_KEY + " must not be added.");
         }
 
+        if (pool == null) {
+            pool = taskLoopGroup_;
+        }
         synchronized (head_) {
             PipelineElement<Object, Object> prev = null;
             PipelineElement<Object, Object> target = null;
@@ -154,6 +159,9 @@ public abstract class AbstractPipeline<S, L extends TaskLoop> implements Pipelin
             throw new IllegalArgumentException(IO_STAGE_KEY + " must not be added.");
         }
 
+        if (pool == null) {
+            pool = taskLoopGroup_;
+        }
         synchronized (head_) {
             PipelineElement<Object, Object> target = null;
             for (PipelineElementIterator i = new PipelineElementIterator(head_); i.hasNext();) {
@@ -215,6 +223,9 @@ public abstract class AbstractPipeline<S, L extends TaskLoop> implements Pipelin
             throw new IllegalArgumentException(IO_STAGE_KEY + " must not be added.");
         }
 
+        if (pool == null) {
+            pool = taskLoopGroup_;
+        }
         synchronized (head_) {
             PipelineElement<Object, Object> prev = null;
             PipelineElement<Object, Object> target = null;

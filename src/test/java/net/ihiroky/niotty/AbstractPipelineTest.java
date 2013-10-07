@@ -61,6 +61,18 @@ public class AbstractPipelineTest {
     }
 
     @Test
+    public void testAdd_NullTaskLoopGroupReplacesToDefault() throws Exception {
+        StageKey key0 = StageKeys.of(0);
+        Object stage0 = new Object();
+
+        sut_.add(key0, stage0, null);
+
+        @SuppressWarnings("unchecked")
+        PipelineElement<Object, Object> pe = (PipelineElement<Object, Object>) sut_.searchContext(key0);
+        assertThat(pe.taskLoop(), is(sameInstance(taskLoop_)));
+    }
+
+    @Test
     public void testAdd_KeyAlreadyExists() throws Exception {
         StageKey key0 = StageKeys.of(0);
         Object stage0 = new Object();
@@ -108,6 +120,21 @@ public class AbstractPipelineTest {
         assertThat(i.hasNext(), is(true));
         context = i.next();
         assertThat(context.key(), is(PipelineImpl.LAST));
+    }
+
+    @Test
+    public void testAddBefore_NullTaskLoopGroupReplacesToDefault() throws Exception {
+        StageKey key0 = StageKeys.of(0);
+        Object stage0 = new Object();
+        StageKey key1 = StageKeys.of(1);
+        Object stage1 = new Object();
+
+        sut_.add(key0, stage0);
+        sut_.addBefore(key0, key1, stage1, null);
+
+        @SuppressWarnings("unchecked")
+        PipelineElement<Object, Object> pe = (PipelineElement<Object, Object>) sut_.searchContext(key1);
+        assertThat(pe.taskLoop(), is(sameInstance(taskLoop_)));
     }
 
     @Test
@@ -184,6 +211,21 @@ public class AbstractPipelineTest {
     }
 
     @Test
+    public void testAddAfter_NullTaskLoopGroupReplacesToDefault() throws Exception {
+        StageKey key0 = StageKeys.of(0);
+        Object stage0 = new Object();
+        StageKey key1 = StageKeys.of(1);
+        Object stage1 = new Object();
+
+        sut_.add(key0, stage0);
+        sut_.addAfter(key0, key1, stage1, null);
+
+        @SuppressWarnings("unchecked")
+        PipelineElement<Object, Object> pe = (PipelineElement<Object, Object>) sut_.searchContext(key1);
+        assertThat(pe.taskLoop(), is(sameInstance(taskLoop_)));
+    }
+
+    @Test
     public void testAddAfter_KeyAlreadyExists() throws Exception {
         StageKey key0 = StageKeys.of(0);
         Object stage0 = new Object();
@@ -237,6 +279,21 @@ public class AbstractPipelineTest {
         exceptionRule_.expectMessage("StringStageKey:IO_STAGE_KEY must be the tail of this pipeline.");
 
         sut_.addAfter(StageKeys.of("IO_STAGE_KEY"), key, new Object());
+    }
+
+    @Test
+    public void testReplace_NullTaskLoopGroupReplacesToDefault() throws Exception {
+        StageKey key0 = StageKeys.of(0);
+        Object stage0 = new Object();
+        StageKey key1 = StageKeys.of(1);
+        Object stage1 = new Object();
+
+        sut_.add(key0, stage0);
+        sut_.replace(key0, key1, stage1, null);
+
+        @SuppressWarnings("unchecked")
+        PipelineElement<Object, Object> pe = (PipelineElement<Object, Object>) sut_.searchContext(key1);
+        assertThat(pe.taskLoop(), is(sameInstance(taskLoop_)));
     }
 
     @Test
