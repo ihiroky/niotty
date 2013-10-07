@@ -486,7 +486,7 @@ public class NioClientSocketTransportTest {
             NioClientSocketTransport sut = spy(sut_);
             when(sut.storePipeline()).thenReturn(storePipeline);
 
-            sut_.bind(bindAddress);
+            sut.bind(bindAddress);
 
             ArgumentCaptor<InetSocketAddress> captor = ArgumentCaptor.forClass(InetSocketAddress.class);
             verify(socket_).bind(captor.capture());
