@@ -1,6 +1,7 @@
 package net.ihiroky.niotty;
 
 import net.ihiroky.niotty.util.Arguments;
+import net.ihiroky.niotty.util.Closable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,7 +18,7 @@ import java.util.concurrent.ThreadFactory;
  * @param <L> the actual type of the TaskLoop
  * @author Hiroki Itoh
  */
-public abstract class TaskLoopGroup<L extends TaskLoop> {
+public abstract class TaskLoopGroup<L extends TaskLoop> implements Closable {
 
     private final Collection<L> taskLoops_;
     private final ThreadFactory threadFactory_;
@@ -37,7 +38,8 @@ public abstract class TaskLoopGroup<L extends TaskLoop> {
     }
 
     /**
-     * Creates the thread pool internally if not created.
+     * Cleans up and Sets up the thread pool and if not created.
+     * This method may as well bing called ahead.
      */
     public final void open() {
         List<L> newTaskLoopList;
