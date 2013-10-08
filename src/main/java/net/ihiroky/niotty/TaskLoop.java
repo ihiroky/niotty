@@ -305,11 +305,11 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
     }
 
     /**
-     * Returns true if a object specified by the selection is associated with this object.
+     * Counts the duplication counter by one if a object specified by the selection is associated with this object.
      * @param selection the object to test
      * @return true if a object specified by the selection is associated with this object
      */
-    boolean countUpIfContains(TaskSelection selection) {
+    boolean countUpDuplication(TaskSelection selection) {
         Integer count;
         synchronized (selectionCountMap_) {
             count = selectionCountMap_.get(selection);

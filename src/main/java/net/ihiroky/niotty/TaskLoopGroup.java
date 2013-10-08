@@ -128,7 +128,7 @@ public abstract class TaskLoopGroup<L extends TaskLoop> implements Closable {
         open();
         synchronized (taskLoops_) {
             for (L loop : taskLoops_) {
-                if (loop.countUpIfContains(selection)) {
+                if (loop.countUpDuplication(selection)) {
                     logger_.debug("[assign] [{}] is already assigned to [{}]", selection, loop);
                     return loop;
                 }
