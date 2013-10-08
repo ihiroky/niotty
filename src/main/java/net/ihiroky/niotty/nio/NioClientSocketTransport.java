@@ -260,6 +260,7 @@ public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> 
         return writeQueue_.size();
     }
 
+    @Override
     public TransportFuture connect(SocketAddress remote) {
         if (channel_.isConnectionPending() || channel_.isConnected()) {
             return new CancelledTransportFuture(this);

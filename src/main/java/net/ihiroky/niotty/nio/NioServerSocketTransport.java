@@ -1,14 +1,10 @@
 package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.DefaultTransportFuture;
-import net.ihiroky.niotty.DefaultTransportParameter;
 import net.ihiroky.niotty.DefaultTransportStateEvent;
 import net.ihiroky.niotty.LoadPipeline;
 import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.SuccessfulTransportFuture;
-import net.ihiroky.niotty.Transport;
-import net.ihiroky.niotty.TransportAggregate;
-import net.ihiroky.niotty.TransportAggregateSupport;
 import net.ihiroky.niotty.TransportException;
 import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.TransportOption;
@@ -42,11 +38,10 @@ import java.util.concurrent.TimeUnit;
 /**
  * An implementation of {@link net.ihiroky.niotty.Transport} for NIO {@code ServerSocketChannel}.
  */
-public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector> implements TransportAggregate {
+public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector> {
 
     private ServerSocketChannel serverChannel_;
     private NioServerSocketProcessor processor_;
-    private TransportAggregateSupport childAggregate_;
     private final Map<TransportOption<Object>, Object> acceptedSocketOptionMap_;
     private Logger logger_ = LoggerFactory.getLogger(NioServerSocketTransport.class);
 
@@ -64,7 +59,6 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
 
             serverChannel_ = serverChannel;
             processor_ = processor;
-            childAggregate_ = new TransportAggregateSupport();
             acceptedSocketOptionMap_ = new HashMap<TransportOption<Object>, Object>();
         } catch (IOException ioe) {
             if (serverChannel != null) {
@@ -83,7 +77,6 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
 
         serverChannel_ = channel;
         processor_ = processor;
-        childAggregate_ = new TransportAggregateSupport();
         acceptedSocketOptionMap_ = new HashMap<TransportOption<Object>, Object>();
     }
 
@@ -168,16 +161,12 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
 
     @Override
     public void write(Object message) {
-        childAggregate_.write(message);
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void write(Object message, TransportParameter parameter) {
-        childAggregate_.write(message, parameter);
-    }
-
-    public void write(Object message, int priority) {
-        write(message, new DefaultTransportParameter(priority));
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -204,6 +193,11 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
     @Override
     public TransportFuture bind(SocketAddress socketAddress) {
         return bind(socketAddress, 0);
+    }
+
+    @Override
+    public TransportFuture connect(SocketAddress local) {
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -246,9 +240,7 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
         } catch (IOException ioe) {
             ioe.printStackTrace();
         }
-        TransportFuture future = new SuccessfulTransportFuture(this);
-        future.addListener(childAggregate_);
-        return future;
+        return new SuccessfulTransportFuture(this);
     }
 
     void registerReadLater(SelectableChannel channel) throws IOException {
@@ -274,11 +266,6 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
         LoadPipeline targetPipeline = child.loadPipeline();
         targetPipeline.execute(new DefaultTransportStateEvent(TransportState.CONNECTED, remoteAddress));
         child.register(channel, SelectionKey.OP_READ, targetPipeline);
-        childAggregate_.add(child);
-    }
-
-    public Set<Transport> childSet() {
-        return childAggregate_.childSet();
     }
 
     @Override

@@ -134,7 +134,7 @@ public abstract class NioSocketTransport<S extends AbstractSelector> extends Abs
             key_ = loop.register(channel, ops, NioSocketTransport.this);
             loadPipeline.execute(new DefaultTransportStateEvent(TransportState.INTEREST_OPS, ops));
         } else {
-            // case: ConnectorSelector <-> TcpIOSelector
+            // case: ConnectorSelector, AcceptSelector <-> TcpIOSelector
             loop.offer(new Task() {
                 @Override
                 public long execute(TimeUnit timeUnit) {

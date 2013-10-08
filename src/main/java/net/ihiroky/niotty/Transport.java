@@ -15,11 +15,18 @@ import java.util.Set;
 public interface Transport extends TaskSelection {
 
     /**
-     * Binds the transport's socket to a local address.
+     * Binds the socket of this transport to a local address.
      * @param local The local address
      * @return a future object to get the result of this operation
      */
     TransportFuture bind(SocketAddress local);
+
+    /**
+     * Connects the  socket of this transport to a remote address.
+     * @param local The local address
+     * @return a future object to get the result of this operation
+     */
+    TransportFuture connect(SocketAddress local);
 
     /**
      * Closes this transport.
@@ -55,13 +62,13 @@ public interface Transport extends TaskSelection {
     TransportFuture closeFuture();
 
     /**
-     * Returns the local address that this transport's socket is bound to.
+     * Returns the local address that the socket of this transport is bound to.
      * @return The local address, or null if this transport is not bound
      */
     SocketAddress localAddress();
 
     /**
-     * Returns the remote address to which this transport's socket is connected.
+     * Returns the remote address to which the socket of this transport is connected to.
      * @return The remote address, or null if this transport is not connected
      */
     SocketAddress remoteAddress();
