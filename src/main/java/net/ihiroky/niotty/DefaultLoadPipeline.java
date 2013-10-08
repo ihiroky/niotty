@@ -1,5 +1,7 @@
 package net.ihiroky.niotty;
 
+import java.util.concurrent.TimeUnit;
+
 /**
  * A pipeline for the {@link LoadStage}.
  *
@@ -9,7 +11,7 @@ public class DefaultLoadPipeline<L extends TaskLoop>
         extends AbstractPipeline<LoadStage<?, ?>, L> implements LoadPipeline {
 
     private static final String SUFFIX_LOAD = "[load]";
-    private static final StageKey TAIL_STAGE_KEY = StageKeys.of("LOAD_TAIL_STAGE");
+    private static final StageKey TAIL_STAGE_KEY = StageKeys.of("TAIL_LOAD_STAGE");
     private static final LoadStage<Object, Object> TAIL_STAGE = new TailStage();
 
     public DefaultLoadPipeline(
@@ -32,6 +34,11 @@ public class DefaultLoadPipeline<L extends TaskLoop>
 
         @Override
         public void load(StageContext<Object> context, TransportStateEvent event) {
+            try {
+                event.execute(TimeUnit.NANOSECONDS);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 }
