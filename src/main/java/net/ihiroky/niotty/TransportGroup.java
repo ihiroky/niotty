@@ -1,5 +1,6 @@
 package net.ihiroky.niotty;
 
+import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -7,19 +8,20 @@ import java.util.concurrent.ConcurrentMap;
 /**
  *
  */
-public class TransportAggregateSupport implements TransportAggregate, TransportFutureListener {
+public class TransportGroup implements TransportFutureListener {
 
     private final ConcurrentMap<Transport, Boolean> transportMap_;
     private final boolean removeOnClose_;
-    // TODO eviction by time if Transport is closed.
+    private final Set<Transport> transportViewSet_;
 
-    public TransportAggregateSupport() {
+    public TransportGroup() {
         this(true);
     }
 
-    public TransportAggregateSupport(boolean removeOnClose) {
-        this.transportMap_ = new ConcurrentHashMap<Transport, Boolean>();
-        this.removeOnClose_ = removeOnClose;
+    public TransportGroup(boolean removeOnClose) {
+        transportMap_ = new ConcurrentHashMap<Transport, Boolean>();
+        removeOnClose_ = removeOnClose;
+        transportViewSet_ = Collections.unmodifiableSet(transportMap_.keySet());
     }
 
     public void write(Object message) {
@@ -41,23 +43,17 @@ public class TransportAggregateSupport implements TransportAggregate, TransportF
     }
 
     public void add(Transport transport) {
-        if (!(transport instanceof AbstractTransport)) {
-            throw new IllegalArgumentException("transport must be an instance of AbstractTransport.");
-        }
-        AbstractTransport<?> abstractTransport = (AbstractTransport<?>) transport;
-        if (transportMap_.putIfAbsent(abstractTransport, Boolean.FALSE) == null && removeOnClose_) {
+        if (transportMap_.putIfAbsent(transport, Boolean.FALSE) == null && removeOnClose_) {
             transport.closeFuture().addListener(this);
         }
-        // log
-    }
+     }
 
     public void remove(Transport transport) {
         transportMap_.remove(transport);
     }
 
-    @Override
     public Set<Transport> childSet() {
-        return transportMap_.keySet();
+        return transportViewSet_;
     }
 
     @Override
