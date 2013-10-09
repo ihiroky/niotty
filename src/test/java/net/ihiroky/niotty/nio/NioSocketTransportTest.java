@@ -103,6 +103,11 @@ public class NioSocketTransportTest {
         }
 
         @Override
+        public TransportFuture connect(SocketAddress local) {
+            return null;
+        }
+
+        @Override
         public TransportFuture close() {
             return null;
         }

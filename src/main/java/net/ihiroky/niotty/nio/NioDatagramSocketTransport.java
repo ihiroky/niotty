@@ -271,7 +271,7 @@ public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector
     }
 
     /**
-     * <p>Connects the socket of this transport to the remote address.</p>
+     * <p>Connects the socket of this transport.</p>
      *
      * <p>The socket is configured so that it only receives datagrams from, and sends datagrams to,
      * the given remote peer address. Once connected, datagrams may not be received from or sent to any other address.

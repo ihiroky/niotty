@@ -22,7 +22,7 @@ public interface Transport extends TaskSelection {
     TransportFuture bind(SocketAddress local);
 
     /**
-     * Connects the  socket of this transport to a remote address.
+     * Connects the socket of this transport to a local address.
      * @param local The local address
      * @return a future object to get the result of this operation
      */
@@ -62,13 +62,13 @@ public interface Transport extends TaskSelection {
     TransportFuture closeFuture();
 
     /**
-     * Returns the local address that the socket of this transport is bound to.
+     * Returns the local address to which this socket of this transport is bound.
      * @return The local address, or null if this transport is not bound
      */
     SocketAddress localAddress();
 
     /**
-     * Returns the remote address to which the socket of this transport is connected to.
+     * Returns the remote address to which this socket of this transport is connected.
      * @return The remote address, or null if this transport is not connected
      */
     SocketAddress remoteAddress();
@@ -79,10 +79,28 @@ public interface Transport extends TaskSelection {
      */
     boolean isOpen();
 
+    /**
+     * Sets the option with the specified value.
+     *
+     * @param option the option to be set
+     * @param value the value of the option
+     * @param <T> the type of the value
+     * @return this transport
+     */
     <T> Transport setOption(TransportOption<T> option, T value);
 
+    /**
+     * Returns the value of the option.
+     * @param option the option to get
+     * @param <T> the type of the value
+     * @return the value
+     */
     <T> T option(TransportOption<T> option);
 
+    /**
+     * Returns the supported options.
+     * @return the supported options
+     */
     Set<TransportOption<?>> supportedOptions();
 
     /**

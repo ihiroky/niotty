@@ -1,6 +1,14 @@
 package net.ihiroky.niotty.nio;
 
+import net.ihiroky.niotty.LoadPipeline;
+import net.ihiroky.niotty.LoadStage;
+import net.ihiroky.niotty.PipelineComposer;
+import net.ihiroky.niotty.StageContext;
+import net.ihiroky.niotty.StageKeys;
+import net.ihiroky.niotty.StorePipeline;
 import net.ihiroky.niotty.Transport;
+import net.ihiroky.niotty.TransportState;
+import net.ihiroky.niotty.TransportStateEvent;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -16,14 +24,41 @@ public class TcpTest {
     private NioClientSocketTransport clientSut_;
     private NioServerSocketProcessor serverSocketProcessor_;
     private NioClientSocketProcessor clientSocketProcessor_;
+    private TransportStatusListener serverStatusListener_;
 
     private static final int SLEEP_MILLIS = 10;
     private static final InetSocketAddress SERVER_ENDPOINT = new InetSocketAddress(12345);
 
+    private static class TransportStatusListener implements LoadStage<Object, Void> {
+
+        volatile boolean connected_;
+        volatile boolean closed_;
+
+        @Override
+        public void load(StageContext<Void> context, Object input) {
+        }
+
+        @Override
+        public void load(StageContext<Void> context, TransportStateEvent event) {
+            if (event.state() == TransportState.CONNECTED) {
+                connected_ = true;
+            }
+            if (event.state() == TransportState.CLOSED) {
+                closed_ = true;
+            }
+        }
+    }
+
     @Before
     public void setUp() throws Exception {
-
-        serverSocketProcessor_ = new NioServerSocketProcessor();
+        serverStatusListener_ = new TransportStatusListener();
+        serverSocketProcessor_ = new NioServerSocketProcessor()
+                .setPipelineComposer(new PipelineComposer() {
+                    @Override
+                    public void compose(LoadPipeline loadPipeline, StorePipeline storePipeline) {
+                        loadPipeline.add(StageKeys.of("Listener"), serverStatusListener_);
+                    }
+                });
         clientSocketProcessor_ = new NioClientSocketProcessor();
         serverSocketProcessor_.start();
         clientSocketProcessor_.start();
@@ -39,15 +74,14 @@ public class TcpTest {
         serverSocketProcessor_.stop();
     }
 
-    private static void waitUntilConnected(NioServerSocketTransport serverSut) throws InterruptedException {
-        while (serverSut.childSet().isEmpty()) {
+    private static void waitUntilConnected(TransportStatusListener tsl) throws InterruptedException {
+        while (!tsl.connected_) {
             Thread.sleep(SLEEP_MILLIS);
         }
     }
 
-    private static void waitWhileConnected(NioServerSocketTransport serverSut) throws InterruptedException {
-        while (!serverSut.childSet().isEmpty()) {
-            System.out.println(serverSut.childSet());
+    private static void waitWhileConnected(TransportStatusListener tsl) throws InterruptedException {
+        while (!tsl.closed_) {
             Thread.sleep(SLEEP_MILLIS);
         }
     }
@@ -62,11 +96,11 @@ public class TcpTest {
     public void testShutdownOutput() throws Exception {
         serverSut_.bind(SERVER_ENDPOINT).waitForCompletion();
         clientSut_.connect(SERVER_ENDPOINT).waitForCompletion();
-        waitUntilConnected(serverSut_);
+        waitUntilConnected(serverStatusListener_);
 
         // TODO use TransportStateEvent.SHUTDOWN_OUTPUT
         clientSut_.shutdownOutput();
-        waitWhileConnected(serverSut_);
+        waitWhileConnected(serverStatusListener_);
         waitUntilClosed(clientSut_);
     }
 
@@ -74,11 +108,11 @@ public class TcpTest {
     public void testShutdownInput() throws Exception {
         serverSut_.bind(SERVER_ENDPOINT).waitForCompletion();
         clientSut_.connect(SERVER_ENDPOINT).waitForCompletion();
-        waitUntilConnected(serverSut_);
+        waitUntilConnected(serverStatusListener_);
 
         // TODO use TransportStateEvent.INPUT_OUTPUT
         clientSut_.shutdownInput();
-        waitWhileConnected(serverSut_);
+        waitWhileConnected(serverStatusListener_);
         waitUntilClosed(clientSut_);
     }
 
@@ -92,10 +126,10 @@ public class TcpTest {
 
             serverSut_.bind(SERVER_ENDPOINT).waitForCompletion();
             clientSut.connect(SERVER_ENDPOINT).waitForCompletion();
-            waitUntilConnected(serverSut_);
+            waitUntilConnected(serverStatusListener_);
 
             clientSut.close();
-            waitWhileConnected(serverSut_);
+            waitWhileConnected(serverStatusListener_);
             waitUntilClosed(clientSut);
         } finally {
             p.stop();

@@ -1,6 +1,7 @@
 package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.DefaultTransportFuture;
+import net.ihiroky.niotty.DefaultTransportParameter;
 import net.ihiroky.niotty.DefaultTransportStateEvent;
 import net.ihiroky.niotty.LoadPipeline;
 import net.ihiroky.niotty.PipelineComposer;
@@ -169,6 +170,10 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
         throw new UnsupportedOperationException();
     }
 
+    public void write(Object message, int priority) {
+        write(message, new DefaultTransportParameter(priority));
+    }
+
     @Override
     public InetSocketAddress localAddress() {
         try {
@@ -240,7 +245,8 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
         } catch (IOException ioe) {
             ioe.printStackTrace();
         }
-        return new SuccessfulTransportFuture(this);
+        TransportFuture future = new SuccessfulTransportFuture(this);
+        return future;
     }
 
     void registerReadLater(SelectableChannel channel) throws IOException {
