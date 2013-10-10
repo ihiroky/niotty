@@ -2,7 +2,7 @@ package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.DefaultTransportParameter;
 import net.ihiroky.niotty.StageContext;
-import net.ihiroky.niotty.TaskLoop;
+import net.ihiroky.niotty.Task;
 import net.ihiroky.niotty.buffer.BufferSink;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.CodecBuffer;
@@ -17,27 +17,30 @@ import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectionKey;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created on 13/01/15, 15:35
  *
- * @author Hiroki Itoh
+ * TODO There is any need to check if content is remaining after the read operation ?
  */
 public class UdpIOSelector extends AbstractSelector {
 
     private final ByteBuffer readBuffer_;
     private final ByteBuffer writeBuffer_; // TODO Use ByteBufferPool
+    private final boolean duplicateBuffer_;
     private Logger logger_ = LoggerFactory.getLogger(UdpIOSelector.class);
 
     private static final int MIN_BUFFER_SIZE = 256;
 
-    UdpIOSelector(int readBufferSize, int writeBufferSize, boolean direct) {
+    UdpIOSelector(int readBufferSize, int writeBufferSize, boolean direct, boolean duplicateBuffer) {
         if (readBufferSize < MIN_BUFFER_SIZE) {
             readBufferSize = MIN_BUFFER_SIZE;
             logger_.warn("readBufferSize is set to {}.", readBufferSize);
         }
         readBuffer_ = direct ? ByteBuffer.allocateDirect(readBufferSize) : ByteBuffer.allocate(readBufferSize);
         writeBuffer_ = direct ? ByteBuffer.allocateDirect(writeBufferSize) : ByteBuffer.allocate(writeBufferSize);
+        duplicateBuffer_ = duplicateBuffer;
     }
 
     @Override
@@ -52,31 +55,33 @@ public class UdpIOSelector extends AbstractSelector {
             DatagramChannel channel = (DatagramChannel) key.channel();
             NioSocketTransport<?> transport = (NioSocketTransport<?>) key.attachment();
             try {
-                if (channel.isConnected()) {
-                    read = channel.read(localByteBuffer);
-                    if (read == -1) {
-                        if (logger_.isDebugEnabled()) {
-                            logger_.debug("transport reaches the end of its stream:" + transport);
+                if (key.isReadable()) {
+                    if (channel.isConnected()) {
+                        read = channel.read(localByteBuffer);
+                        if (read == -1) {
+                            if (logger_.isDebugEnabled()) {
+                                logger_.debug("transport reaches the end of its stream:" + transport);
+                            }
+                            // TODO Discuss to call loadEvent(TransportEvent) and change ops to achieve have close
+                            transport.doCloseSelectableChannel(true);
+                            localByteBuffer.clear();
+                            continue;
                         }
-                        // TODO Discuss to call loadEvent(TransportEvent) and change ops to achieve have close
-                        transport.doCloseSelectableChannel(true);
-                        continue;
+                        localByteBuffer.flip();
+                        CodecBuffer buffer = duplicateBuffer_
+                                ? duplicate(localByteBuffer) : Buffers.wrap(localByteBuffer, false);
+                        transport.loadPipeline().execute(buffer);
+                        localByteBuffer.clear();
+                    } else {
+                        SocketAddress source = channel.receive(localByteBuffer);
+                        localByteBuffer.flip();
+                        CodecBuffer buffer = duplicateBuffer_
+                                ? duplicate(localByteBuffer) : Buffers.wrap(localByteBuffer, false);
+                        transport.loadPipeline().execute(buffer, new DefaultTransportParameter(source));
+                        localByteBuffer.clear();
                     }
-                    localByteBuffer.flip();
-                    CodecBuffer buffer = Buffers.wrap(localByteBuffer, false);
-                    transport.loadEvent(buffer);
-                } else {
-                    SocketAddress source = channel.receive(localByteBuffer);
-                    if (source == null) {
-                        if (logger_.isDebugEnabled()) {
-                            logger_.debug("transport reaches the end of its stream:" + transport);
-                        }
-                        transport.doCloseSelectableChannel(true);
-                        continue;
-                    }
-                    localByteBuffer.flip();
-                    CodecBuffer buffer = Buffers.wrap(localByteBuffer);
-                    transport.loadEvent(buffer, new DefaultTransportParameter(source));
+                } else if (key.isWritable()) {
+                    transport.flush(writeBuffer_);
                 }
             } catch (ClosedByInterruptException ie) {
                 if (logger_.isDebugEnabled()) {
@@ -92,21 +97,37 @@ public class UdpIOSelector extends AbstractSelector {
         }
     }
 
+    private CodecBuffer duplicate(ByteBuffer bb) {
+        int length = bb.limit();
+        byte[] data = new byte[length];
+        bb.get(data, 0, length);
+        return Buffers.wrap(data, 0, length);
+    }
+
     @Override
     public void store(StageContext<Void> context, BufferSink input) {
         final NioDatagramSocketTransport transport = (NioDatagramSocketTransport) context.transport();
-        transport.readyToWrite(new AttachedMessage<>(input, context.transportParameter()));
-        offerTask(new TaskLoop.Task() {
-            @Override
-            public int execute() throws Exception {
-                try {
-                    return transport.flush(writeBuffer_);
-                } catch (IOException ioe) {
-                    logger_.error("failed to flush buffer to " + transport, ioe);
-                    transport.closeSelectableChannel();
-                }
-                return WAIT_NO_LIMIT;
+        transport.readyToWrite(new AttachedMessage<BufferSink>(input, context.transportParameter()));
+        if (isInLoopThread()) {
+            try {
+                transport.flush(writeBuffer_);
+            } catch (IOException ioe) {
+                logger_.warn("[store] Flush failed.", ioe);
+                transport.doCloseSelectableChannel(true);
             }
-        });
+        } else {
+            offer(new Task() {
+                @Override
+                public long execute(TimeUnit timeUnit) throws Exception {
+                    try {
+                        transport.flush(writeBuffer_);
+                    } catch (IOException ioe) {
+                        logger_.warn("[store] Flush failed.", ioe);
+                        transport.doCloseSelectableChannel(true);
+                    }
+                    return DONE;
+                }
+            });
+        }
     }
 }

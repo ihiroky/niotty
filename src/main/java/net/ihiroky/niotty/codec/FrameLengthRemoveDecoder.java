@@ -21,28 +21,28 @@ public class FrameLengthRemoveDecoder implements LoadStage<CodecBuffer, CodecBuf
 
             // load frame length
             if (frameBytes == 0) {
-                CodecBuffer b = readFully(input, FrameLengthPrependEncoder.SHORT_BYTES, true);
+                CodecBuffer b = readFully(input, FrameLengthPrependEncoder.SHORT_BYTES);
                 if (b == null) {
-                    return;
+                    break;
                 }
                 int length = b.readShort();
                 if (length >= 0) { // it's also satisfies length <= Short.MAX_VALUE
                     frameBytes = length;
                 } else {
                     length <<= FrameLengthPrependEncoder.SHIFT_TWO_BYTES;
-                    b = readFully(input, FrameLengthPrependEncoder.SHORT_BYTES, true);
+                    b = readFully(input, FrameLengthPrependEncoder.SHORT_BYTES);
                     if (b == null) {
                         poolingFrameBytes_ = length; // negative
-                        return;
+                        break;
                     }
                     int upper = length & ~FrameLengthPrependEncoder.INT_FLAG;
                     int lower = b.readShort() & FrameLengthPrependEncoder.MASK_TWO_BYTES;
                     frameBytes = upper | lower;
                 }
             } else if (frameBytes < 0) {
-                CodecBuffer b = readFully(input, FrameLengthPrependEncoder.SHORT_BYTES, true);
+                CodecBuffer b = readFully(input, FrameLengthPrependEncoder.SHORT_BYTES);
                 if (b == null) {
-                    return;
+                    break;
                 }
                 int upper = frameBytes & ~FrameLengthPrependEncoder.INT_FLAG;
                 int lower = b.readShort() & FrameLengthPrependEncoder.MASK_TWO_BYTES;
@@ -50,10 +50,13 @@ public class FrameLengthRemoveDecoder implements LoadStage<CodecBuffer, CodecBuf
             }
 
             // load frame
-            CodecBuffer output = readFully(input, frameBytes, false);
+            CodecBuffer output = readFully(input, frameBytes);
             if (output == null) {
                 poolingFrameBytes_ = frameBytes; // positive
-                return;
+                break;
+            }
+            if (output == input) {
+                output = input.slice(frameBytes);
             }
 
             poolingFrameBytes_ = 0;
@@ -75,12 +78,9 @@ public class FrameLengthRemoveDecoder implements LoadStage<CodecBuffer, CodecBuf
      *
      * @param input a input buffer
      * @param requiredLength expected read length
-     * @param noCopyIfEnough true if this method returns the {@code input} when the {@code input}
-     *                       has enough data to read data to the amount of {@code requiredLength},
-     *                       or returns new copied buffer.
      * @return the buffer which contains the data at least the {@code requiredLength}, or null.
      */
-    CodecBuffer readFully(CodecBuffer input, int requiredLength, boolean noCopyIfEnough) {
+    CodecBuffer readFully(CodecBuffer input, int requiredLength) {
         if (buffer_ != null) {
             buffer_.drainFrom(input, requiredLength - buffer_.remainingBytes());
             if (buffer_.remainingBytes() == requiredLength) {
@@ -93,19 +93,12 @@ public class FrameLengthRemoveDecoder implements LoadStage<CodecBuffer, CodecBuf
 
         int remainingBytes = input.remainingBytes();
         if (remainingBytes >= requiredLength) {
-            return noCopyIfEnough ? input : copy(input, requiredLength);
+            return input;
         }
         if (remainingBytes > 0) {
-            buffer_ = copy(input, requiredLength);
+            buffer_ = Buffers.newCodecBuffer(input, requiredLength);
         }
-        input.dispose();
         return null;
-    }
-
-    private static CodecBuffer copy(CodecBuffer input, int bytes) {
-        CodecBuffer b = Buffers.wrap(new byte[bytes], 0, 0);
-        b.drainFrom(input, bytes);
-        return b;
     }
 
     int getPoolingFrameBytes() {

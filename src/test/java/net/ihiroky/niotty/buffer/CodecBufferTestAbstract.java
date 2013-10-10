@@ -1,5 +1,6 @@
 package net.ihiroky.niotty.buffer;
 
+import net.ihiroky.niotty.util.Charsets;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -12,7 +13,7 @@ import java.io.IOException;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.channels.GatheringByteChannel;
-import java.nio.charset.StandardCharsets;
+import java.nio.charset.Charset;
 import java.util.Arrays;
 
 import static org.hamcrest.CoreMatchers.*;
@@ -24,6 +25,8 @@ import static org.mockito.Mockito.*;
  * @author Hiroki Itoh
  */
 public class CodecBufferTestAbstract {
+
+    private static final Charset CHARSET = Charsets.UTF_8;
 
     public static abstract class AbstractEmptyTests {
 
@@ -179,7 +182,7 @@ public class CodecBufferTestAbstract {
         @Test
         public void testReadByte() throws Exception {
             for (int i = 0; i < 10; i++) {
-                assertThat(sut_.readByte(), is(i + 0x30));
+                assertThat(sut_.readByte(), is((byte) (i + 0x30)));
             }
         }
 
@@ -285,6 +288,25 @@ public class CodecBufferTestAbstract {
         }
 
         @Test
+        public void testReadMedium() throws Exception {
+            byte[] data = new byte[]{0x7F, (byte) 0xFF, (byte) 0xFF, (byte) 0x80, 0x00, 0x00};
+            CodecBuffer sut = createCodecBuffer(data, 0, data.length);
+            int m0 = sut.readMedium();
+            int m1 = sut.readMedium();
+            assertThat(m0, is(8388607));  // 0x007FFFFF
+            assertThat(m1, is(-8388608)); // 0xFF800000
+        }
+
+        @Test
+        public void testReadMediumUnderflow() throws Exception {
+            int remaining = sut_.remainingBytes();
+            sut_.readBytes(new byte[remaining - 2], 0, remaining - 2);
+
+            exceptionRule_.expect(RuntimeException.class);
+            sut_.readMedium();
+        }
+
+        @Test
         public void testReadInt() throws Exception {
             int i = sut_.readInt();
             assertThat(i, is(0x30313233));
@@ -347,11 +369,11 @@ public class CodecBufferTestAbstract {
         @Test
         public void testReadString() throws Exception {
             String string = "0０1１2２3３";
-            byte[] data = string.getBytes(StandardCharsets.UTF_8);
+            byte[] data = string.getBytes(CHARSET);
             sut_.clear();
             sut_.writeBytes(data, 0, data.length);
 
-            String result = sut_.readString(StandardCharsets.UTF_8.newDecoder(), sut_.remainingBytes());
+            String result = sut_.readString(CHARSET.newDecoder(), sut_.remainingBytes());
 
             assertThat(result, is(string));
         }
@@ -415,7 +437,7 @@ public class CodecBufferTestAbstract {
         public void testToArray() throws Exception {
             byte[] array = sut_.array();
             array[0] = 'a';
-            assertThat(sut_.readByte(), is((int) 'a')); // read 1 byte
+            assertThat(sut_.readByte(), is((byte) 'a')); // read 1 byte
             assertThat(array.length, is(sut_.remainingBytes() + 1));
         }
 
@@ -485,7 +507,7 @@ public class CodecBufferTestAbstract {
             assertThat(duplicated.end(), is(45));
             assertThat(duplicated.remainingBytes(), is(40));
             duplicated.writeByte(0xFF);
-            assertThat(sut_.beginning(45).end(46).readByte(), is(0xFF));
+            assertThat(sut_.beginning(45).end(46).readByte(), is((byte) 0xFF));
         }
 
         @Test
@@ -665,6 +687,9 @@ public class CodecBufferTestAbstract {
 
             sut_.writeByte(20);
             assertThat(sut_.array()[1], is((byte) 20));
+
+            sut_.writeByte(0x80);
+            assertThat(sut_.array()[2], is((byte) 0x80));
         }
 
         @Test
@@ -793,10 +818,13 @@ public class CodecBufferTestAbstract {
         @Test
         public void testWriteShort() throws Exception {
             sut_.writeShort(Short.MAX_VALUE);
+            sut_.writeShort(Short.MAX_VALUE + 1);
             byte[] actual = sut_.array();
             assertThat(actual[0], is((byte) 0x7F));
             assertThat(actual[1], is((byte) 0xFF));
-            assertThat(sut_.remainingBytes(), is(2));
+            assertThat(actual[2], is((byte) 0x80));
+            assertThat(actual[3], is((byte) 0x00));
+            assertThat(sut_.remainingBytes(), is(4));
         }
 
         @Test
@@ -832,6 +860,31 @@ public class CodecBufferTestAbstract {
             byte[] expected = new byte[16];
             expected[7] = (byte) 0xFF;
             expected[8] = (byte) 0xFF;
+            assertThat(actual, is(expected));
+            assertThat(sut_.remainingBytes(), is(9));
+        }
+
+        @Test
+        public void testMediumInt() throws Exception {
+            sut_.writeMedium(0x00FFFEFD);
+            byte[] actual = sut_.array();
+            assertThat(actual[0], is((byte) 0xFF));
+            assertThat(actual[1], is((byte) 0xFE));
+            assertThat(actual[2], is((byte) 0xFD));
+            assertThat(sut_.remainingBytes(), is(3));
+        }
+
+        @Test
+        public void testWriteMedium_Expand() throws Exception {
+            sut_.end(6);
+
+            sut_.writeMedium(0x00FFFFFF);
+
+            byte[] actual = sut_.array();
+            byte[] expected = new byte[16];
+            expected[6] = (byte) -1;
+            expected[7] = (byte) -1;
+            expected[8] = (byte) -1;
             assertThat(actual, is(expected));
             assertThat(sut_.remainingBytes(), is(9));
         }
@@ -992,6 +1045,85 @@ public class CodecBufferTestAbstract {
         }
     }
 
+    public static abstract class AbstractUnsignedTest {
+        private CodecBuffer sut_;
+
+        protected abstract CodecBuffer createCodecBuffer(byte[] buffer, int offset, int length);
+
+        @Rule
+        public ExpectedException exceptionRule_ = ExpectedException.none();
+
+        @Before
+        public void setUp() throws Exception {
+            byte[] data = new byte[8];
+            for (int i = 0; i < data.length; i += 2) {
+                data[i] = (byte) 0x80;
+                data[i + 1] = 0;
+            }
+            sut_ = createCodecBuffer(data, 0, data.length);
+        }
+
+        @Test
+        public void testReadUnsignedByte() throws Exception {
+            int v = sut_.readUnsignedByte();
+            assertThat(v, is(0x80));
+        }
+
+        @Test
+        public void testReadUnsignedByteOverflow() throws Exception {
+            sut_.skipBytes(7);
+            sut_.readUnsignedByte();
+
+            exceptionRule_.expect(RuntimeException.class);
+            sut_.readUnsignedByte();
+        }
+
+        @Test
+        public void testReadUnsignedShort() throws Exception {
+            int v = sut_.readUnsignedShort();
+            assertThat(v, is(0x8000));
+        }
+
+        @Test
+        public void testReadUnsignedShortOverflow() throws Exception {
+            sut_.skipBytes(5);
+            sut_.readUnsignedShort();
+
+            exceptionRule_.expect(RuntimeException.class);
+            sut_.readUnsignedShort();
+        }
+
+        @Test
+        public void testReadUnsignedMedium() throws Exception {
+            int v = sut_.readUnsignedMedium();
+            assertThat(v, is(0x800080));
+        }
+
+        @Test
+        public void testReadUnsignedMediumOverflow() throws Exception {
+            sut_.skipBytes(3);
+            sut_.readUnsignedMedium();
+
+            exceptionRule_.expect(RuntimeException.class);
+            sut_.readUnsignedMedium();
+        }
+
+        @Test
+        public void testReadUnsignedInt() throws Exception {
+            long v = sut_.readUnsignedInt();
+            assertThat(v, is(0x80008000L));
+        }
+
+        @Test
+        public void testReadUnsignedIntOverflow() throws Exception {
+            sut_.skipBytes(1);
+            sut_.readUnsignedInt();
+
+            exceptionRule_.expect(RuntimeException.class);
+            sut_.readUnsignedInt();
+        }
+    }
+
     public static abstract class AbstractBufferSinkTests {
 
         private CodecBuffer sut_;
@@ -1063,19 +1195,19 @@ public class CodecBufferTestAbstract {
         }
 
         @Test
-        public void testTransferTo_ByteBufferAll() throws Exception {
+        public void testCopyTo_ByteBufferAll() throws Exception {
             ByteBuffer buffer = ByteBuffer.allocate(sut_.remainingBytes());
 
-            sut_.transferTo(buffer);
+            sut_.copyTo(buffer);
 
             assertThat(sut_.remainingBytes(), is(32)); // remaining all
             assertThat(buffer.array(), is(sut_.array()));
         }
 
         @Test(expected = BufferOverflowException.class)
-        public void testTransferTo_ByteBufferPart() throws Exception {
+        public void testCopyTo_ByteBufferPart() throws Exception {
             ByteBuffer buffer = ByteBuffer.allocate(sut_.remainingBytes() - 1);
-            sut_.transferTo(buffer);
+            sut_.copyTo(buffer);
         }
 
         @Test

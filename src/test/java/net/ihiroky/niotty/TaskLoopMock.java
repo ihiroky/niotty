@@ -1,13 +1,24 @@
 package net.ihiroky.niotty;
 
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
 /**
 * @author Hiroki Itoh
 */
 class TaskLoopMock extends TaskLoop {
 
-    private final Object mutex_ = new Object();
+    private final Lock lock_;
+    private final Condition condition_;
+    private volatile boolean signaled_;
 
-    @Override
+    TaskLoopMock() {
+        lock_ = new ReentrantLock();
+        condition_ = lock_.newCondition();
+    }
+
     protected void onOpen() {
     }
 
@@ -16,20 +27,27 @@ class TaskLoopMock extends TaskLoop {
     }
 
     @Override
-    protected void process(int waitTimeMillis) throws Exception {
-        synchronized (mutex_) {
-            if (waitTimeMillis > 0) {
-                mutex_.wait(waitTimeMillis);
-            } else if (waitTimeMillis < 0) {
-                mutex_.wait();
+    protected void poll(long timeout, TimeUnit timeUnit) throws Exception {
+        long timeoutNanos = timeUnit.toNanos(timeout);
+        lock_.lock();
+        try {
+            while (!signaled_ && timeoutNanos > 0) {
+                timeoutNanos = condition_.awaitNanos(timeoutNanos);
             }
+            signaled_ = false;
+        } finally {
+            lock_.unlock();
         }
     }
 
     @Override
     protected void wakeUp() {
-        synchronized (mutex_) {
-            mutex_.notifyAll();
+        lock_.lock();
+        try {
+            signaled_ = true;
+            condition_.signal();
+        } finally {
+            lock_.unlock();
         }
     }
 }

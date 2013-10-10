@@ -1,19 +1,20 @@
 package net.ihiroky.niotty;
 
-import java.util.Objects;
+import net.ihiroky.niotty.util.Arguments;
 
 /**
- * @author Hiroki Itoh
+ * @param <I> the type of the input object for the stage.
+ * @param <O> the type of the output object for the stage.
  */
-public class LoadStageContext<I, O> extends PipelineElement<I, O> {
+class LoadStageContext<I, O> extends PipelineElement<I, O> {
 
     private LoadStage<I, O> stage_;
 
     @SuppressWarnings("unchecked")
-    public LoadStageContext(Pipeline<?> pipeline,
-                            StageKey key, LoadStage<Object, Object> stage, PipelineElementExecutorPool pool) {
+    LoadStageContext(AbstractPipeline<?, ?> pipeline,
+                            StageKey key, LoadStage<Object, Object> stage, TaskLoopGroup<? extends TaskLoop> pool) {
         super(pipeline, key, pool);
-        Objects.requireNonNull(stage, "stage");
+        Arguments.requireNonNull(stage, "stage");
         this.stage_ = (LoadStage<I, O>) stage;
     }
 

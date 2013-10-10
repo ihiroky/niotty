@@ -39,7 +39,7 @@ public abstract class ChunkPool<E> extends ChunkManager<E> {
     ChunkPool() {
         pools_ = newArray(Integer.SIZE);
         for (int i = 0; i < Integer.SIZE; i++) {
-            pools_[i] = new ConcurrentLinkedQueue<>();
+            pools_[i] = new ConcurrentLinkedQueue<Chunk<E>>();
         }
         referredChunkCount_ = new AtomicInteger();
     }
@@ -99,7 +99,7 @@ public abstract class ChunkPool<E> extends ChunkManager<E> {
     Queue<Chunk<E>>[] pools() {
         Queue<Chunk<E>>[] copy = newArray(pools_.length);
         for (int i = 0; i < copy.length; i++) {
-            copy[i] = new ArrayDeque<>(pools_[i]);
+            copy[i] = new ArrayDeque<Chunk<E>>(pools_[i]);
         }
         return copy;
     }

@@ -2,8 +2,7 @@ package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.TransportParameter;
 import net.ihiroky.niotty.buffer.BufferSink;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import net.ihiroky.niotty.util.Arguments;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -20,11 +19,11 @@ import java.util.List;
  * They are checked and flushed in a round which is executed by calling
  * {@link #flushTo(java.nio.channels.GatheringByteChannel)} or
  * {@link #flushTo(java.nio.channels.DatagramChannel, java.nio.ByteBuffer)}.
- * The base queue is a basis of flush size of calculation. The flush size for the base queue is limited by
- * {@code baseQueueLimit} specified by its constructor. If some packets ({@link net.ihiroky.niotty.buffer.BufferSink})
+ * The base queue is a basis of flush size of calculation. The flush size limit of the base queue is
+ * {@code Integer.MAX_VALUE}. If some packets ({@link net.ihiroky.niotty.buffer.BufferSink})
  * are in the base queue, a flush operation for the base queue is executed. The basis of flush size
  * is a result of the operation. On the other hand, the flush size of the weighted queues are limited
- * by the actual flush size of the base queue and their weight, which is a rate against the base queue.
+ * by the smoothed flush size of the base queue and their weight, which is a rate against the smoothed flush size.
  * The weight is in [5%, 100%]. The flush sizes of the weighted queues, as known as deficit counter, is accumulated
  * across the rounds. If the counters get over the size of an element in the weighted queues, then the element is
  * flushed and the counter is decremented by its actual flush size.
@@ -34,7 +33,6 @@ import java.util.List;
  * If the priority is negative, then the {@code BufferSink} is inserted to the base queue. If positive, then it
  * is inserted to the weighted queue, the same order as {@code weights} specified by the constructor.
  *
- * @author Hiroki Itoh
  */
 public class DeficitRoundRobinWriteQueue implements WriteQueue {
 
@@ -42,64 +40,56 @@ public class DeficitRoundRobinWriteQueue implements WriteQueue {
     private final List<SimpleWriteQueue> weightedQueueList_;
     private final int[] weights_;
     private final int[] deficitCounter_;
-    private final int baseQueueLimit_;
     private int queueIndex_;
     private int lastFlushedBytes_;
-    private Logger logger_ = LoggerFactory.getLogger(DeficitRoundRobinWriteQueue.class);
+    private int smoothedBaseQuantum_;
 
     private static final int BASE_WEIGHT = 100;
     private static final int QUEUE_INDEX_BASE = -1;
     private static final float MIN_WEIGHT = 0.05f;
     private static final float MAX_WEIGHT = 1f;
-    private static final int BONUS_QUANTUM_DIVISOR = 2;
+    private static final int SMOOTH_SHIFT = 3;
+    private static final int QUOTER_BY_SHIFT = 2;
+    private static final int MIN_BASE_QUANTUM = 1;
 
     /**
      * Creates a instance of {@code DeficitRoundRobinWriteQueue}.
      * The weighed queues are created according to a specified {@code weights}.
-     * The {@code weights} should be a instance created by {@link #convertWeightsRateToPercent(int, float...)}.
      *
-     * @param baseQueueLimit a flush size limitation of the base queue
-     * @param weights array of the weight for the weighted queues, the weight unit is percent
+     * @param initialBaseQuantum an initial value of the smoothed flush size for the base queue
+     * @param weights an array of the weight for the weighted queues, each weight must be in [0.05, 1]
      */
-    DeficitRoundRobinWriteQueue(int baseQueueLimit, int ...weights) {
+    DeficitRoundRobinWriteQueue(int initialBaseQuantum, float ...weights) {
         int length = weights.length;
-        List<SimpleWriteQueue> ql = new ArrayList<>(length);
+        List<SimpleWriteQueue> ql = new ArrayList<SimpleWriteQueue>(length);
         for (int i = 0; i < length; i++) {
             ql.add(new SimpleWriteQueue());
         }
         baseQueue_ = new SimpleWriteQueue();
         weightedQueueList_ = ql;
-        weights_ = weights.clone();
+        weights_ = convertWeightsRateToPercent(weights);
         deficitCounter_ = new int[length];
-        baseQueueLimit_ = baseQueueLimit;
         queueIndex_ = QUEUE_INDEX_BASE;
+        smoothedBaseQuantum_ = Arguments.requirePositive(initialBaseQuantum, "initialBaseQuantum");
     }
 
     /**
      * Converts specified {@code weights} unit from rate to percent.
      *
-     * @param baseQueueLimit a base queue limit
      * @param weights array of the weight which is rate against the base queue, each elements must be in [0.05, 1].
      * @return array of the weight, which is percent
      * @throws IllegalArgumentException if the element of {@code weights} is not in [0.05, 1],
      *    or it is possible that the result of the flush size calculation overflows
      */
-    static int[] convertWeightsRateToPercent(int baseQueueLimit, float... weights) {
+    private static int[] convertWeightsRateToPercent(float... weights) {
         int length = weights.length;
         int[] ps = new int[length];
-        if (baseQueueLimit < BASE_WEIGHT) {
-            throw new IllegalArgumentException("baseQueueLimit must be >= " + BASE_WEIGHT);
-        }
         for (int i = 0; i < length; i++) {
             float weight = weights[i];
             if (weight < MIN_WEIGHT || weight > MAX_WEIGHT) {
-                throw new IllegalArgumentException("weight must be in [" + MIN_WEIGHT + ", " + MAX_WEIGHT + "]");
+                throw new IllegalArgumentException("The weight must be in [" + MIN_WEIGHT + ", " + MAX_WEIGHT + "]");
             }
-            int p = Math.round(BASE_WEIGHT * weights[i]);
-            if (p > Integer.MAX_VALUE / baseQueueLimit) {
-                throw new IllegalArgumentException("quantum for queue " + i + " might overflow.");
-            }
-            ps[i] = p;
+            ps[i] = (int) Math.round(BASE_WEIGHT * (double) weights[i]);
         }
         return ps;
     }
@@ -133,9 +123,12 @@ public class DeficitRoundRobinWriteQueue implements WriteQueue {
         int flushedBytes = previousFlushedByte;
         int queueIndex = queueIndex_;
         if (queueIndex == QUEUE_INDEX_BASE) {
-            FlushStatus status = delegate.flush(baseQueue_, baseQueueLimit_);
+            FlushStatus status = delegate.flush(baseQueue_, Integer.MAX_VALUE);
             baseQuantum = baseQueue_.lastFlushedBytes();
-            flushedBytes += baseQuantum;
+            if (baseQuantum > 0) {
+                smoothedBaseQuantum_ = smooth(smoothedBaseQuantum_, baseQuantum);
+                flushedBytes += baseQuantum;
+            }
             if (status == FlushStatus.FLUSHING) {
                 countUpDeficitCounters(baseQuantum, 0, weightedQueueList_.size());
                 lastFlushedBytes_ = flushedBytes;
@@ -144,7 +137,8 @@ public class DeficitRoundRobinWriteQueue implements WriteQueue {
             queueIndex = 0;
         }
         if (baseQuantum == 0) {
-            baseQuantum = baseQueueLimit_ / BONUS_QUANTUM_DIVISOR;
+            int quoterOfSbq = smoothedBaseQuantum_ >> QUOTER_BY_SHIFT;
+            baseQuantum = (quoterOfSbq > 0) ? quoterOfSbq : MIN_BASE_QUANTUM;
         }
 
         int size = weightedQueueList_.size();
@@ -171,7 +165,7 @@ public class DeficitRoundRobinWriteQueue implements WriteQueue {
                 queueIndex_ = i;
                 lastFlushedBytes_ = flushedBytes;
                 return status;
-            } else if (status == FlushStatus.SKIP) {
+            } else if (status == FlushStatus.SKIPPED) {
                 existsSkipped = true;
             }
         }
@@ -179,14 +173,19 @@ public class DeficitRoundRobinWriteQueue implements WriteQueue {
 
         // finish if baseQueue_ is already checked.
         if (queueIndex_ == QUEUE_INDEX_BASE) {
-            return existsSkipped ? FlushStatus.SKIP : FlushStatus.FLUSHED;
+            return existsSkipped ? FlushStatus.SKIPPED : FlushStatus.FLUSHED;
         }
 
         // one more round if this method starts in queueList.
         queueIndex_ = QUEUE_INDEX_BASE;
         return baseQueue_.isEmpty()
-                ? (existsSkipped ? FlushStatus.SKIP : FlushStatus.FLUSHED)
+                ? (existsSkipped ? FlushStatus.SKIPPED : FlushStatus.FLUSHED)
                 : flushTo(delegate, flushedBytes);
+    }
+
+    private static int smooth(int oldValue, int newValue) {
+        // The same as oldValue * 7/8 + newValue * 1/8
+        return oldValue + ((newValue - oldValue) >> SMOOTH_SHIFT);
     }
 
     private void countUpDeficitCounters(int baseQuantum, int from, int size) {
@@ -232,8 +231,8 @@ public class DeficitRoundRobinWriteQueue implements WriteQueue {
         }
     }
 
-    int baseQueueLimit() {
-        return baseQueueLimit_;
+    int smoothedBaseQuantum() {
+        return smoothedBaseQuantum_;
     }
 
     int weights(int priority) {

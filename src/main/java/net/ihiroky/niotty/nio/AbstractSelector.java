@@ -1,10 +1,8 @@
 package net.ihiroky.niotty.nio;
 
-import net.ihiroky.niotty.DefaultTransportStateEvent;
 import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.StoreStage;
 import net.ihiroky.niotty.TaskLoop;
-import net.ihiroky.niotty.TransportState;
 import net.ihiroky.niotty.TransportStateEvent;
 import net.ihiroky.niotty.buffer.BufferSink;
 import org.slf4j.Logger;
@@ -15,17 +13,25 @@ import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Created on 13/01/10, 17:56
- *
- * @author Hiroki Itoh
+ * An implementation of {@link net.ihiroky.niotty.TaskLoop} to handle {@link java.nio.channels.Selector}.
  */
 public abstract class AbstractSelector extends TaskLoop implements StoreStage<BufferSink, Void> {
 
     private Selector selector_;
+    private AtomicBoolean wakenUp_;
 
     private Logger logger_ = LoggerFactory.getLogger(AbstractSelector.class);
+
+    /**
+     * Creates a new instance.
+     */
+    protected AbstractSelector() {
+        wakenUp_ = new AtomicBoolean();
+    }
 
     @Override
     protected void onOpen() {
@@ -45,15 +51,11 @@ public abstract class AbstractSelector extends TaskLoop implements StoreStage<Bu
     }
 
     @Override
-    protected void process(int waitTimeMillis) throws Exception {
-        int selected;
-        if (waitTimeMillis > 0) {
-            selected = selector_.select(waitTimeMillis);
-        } else if (waitTimeMillis == 0) {
-            selected = selector_.selectNow();
-        } else { // if (timeout < 0) {
-            selected = selector_.select();
-        }
+    protected void poll(long timeout, TimeUnit timeUnit) throws Exception {
+        int selected = (timeout == 0)
+                ? selector_.selectNow()
+                : selector_.select(Math.max(timeUnit.toMillis(timeout), 1));
+        wakenUp_.set(false);
         if (selected > 0) {
             processSelectedKeys(selector_.selectedKeys());
         }
@@ -61,7 +63,9 @@ public abstract class AbstractSelector extends TaskLoop implements StoreStage<Bu
 
     @Override
     protected void wakeUp() {
-        selector_.wakeup();
+        if (wakenUp_.compareAndSet(false, true)) {
+            selector_.wakeup();
+        }
     }
 
     protected abstract void processSelectedKeys(Set<SelectionKey> selectedKeys) throws Exception;
@@ -88,22 +92,14 @@ public abstract class AbstractSelector extends TaskLoop implements StoreStage<Bu
     }
 
 
-    void register(SelectableChannel channel, int ops, NioSocketTransport<?> transport) {
+    SelectionKey register(SelectableChannel channel, int ops, NioSocketTransport<?> transport) throws IOException {
         try {
-            SelectionKey key = channel.register(selector_, ops, transport);
-            transport.setSelectionKey(key);
-            transport.loadEvent(new DefaultTransportStateEvent(TransportState.INTEREST_OPS, ops));
-            logger_.debug("channel {} is registered to {}.", channel, Thread.currentThread());
+            logger_.debug("[register] channel {} is registered to {}.", transport, Thread.currentThread());
+            return channel.register(selector_, ops, transport);
         } catch (IOException ioe) {
-            logger_.warn("failed to register channel:" + channel, ioe);
+            logger_.warn("[register] failed to register channel:" + channel, ioe);
+            throw ioe;
         }
-    }
-
-    void unregister(SelectionKey key, NioSocketTransport<?> transport) {
-        key.cancel();
-        transport.loadEvent(new DefaultTransportStateEvent(TransportState.INTEREST_OPS, 0));
-        reject(transport);
-        logger_.debug("channel {} is unregistered from {}.", key.channel(), Thread.currentThread());
     }
 
     Set<SelectionKey> keys() {
@@ -115,21 +111,7 @@ public abstract class AbstractSelector extends TaskLoop implements StoreStage<Bu
     }
 
     @Override
-    public void store(StageContext<Void> context, BufferSink input) {
-    }
-
-    @Override
     public void store(StageContext<Void> context, final TransportStateEvent event) {
-        if (isInLoopThread()) {
-            event.execute();
-        } else {
-            offerTask(new Task() {
-                    @Override
-                    public int execute() throws Exception {
-                        event.execute();
-                        return TaskLoop.WAIT_NO_LIMIT;
-                    }
-            });
-        }
+        execute(event);
     }
 }

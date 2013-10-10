@@ -1,10 +1,11 @@
 package net.ihiroky.niotty.buffer;
 
+import net.ihiroky.niotty.util.Charsets;
+
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CharsetEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -33,10 +34,13 @@ final class StringCache {
     }
 
     private static Set<Charset> charsetContainingAscii() {
-        Set<Charset> set = new HashSet<>();
-        set.add(StandardCharsets.US_ASCII);
-        set.add(StandardCharsets.ISO_8859_1);
-        set.add(StandardCharsets.UTF_8);
+        Set<Charset> set = new HashSet<Charset>();
+        set.add(Charsets.US_ASCII);
+        set.add(Charsets.ISO_8859_1);
+        set.add(Charsets.SHIFT_JIS);
+        set.add(Charsets.EUC_JP);
+        set.add(Charsets.UTF_8);
+        set.add(Charset.defaultCharset());
         return set;
     }
 

@@ -1,6 +1,7 @@
 package net.ihiroky.niotty;
 
 import java.net.SocketAddress;
+import java.util.Set;
 
 /**
  * <p>A nexus for network I/O operations.</p>
@@ -11,14 +12,21 @@ import java.net.SocketAddress;
  *
  * @author Hiroki Itoh
  */
-public interface Transport {
+public interface Transport extends TaskSelection {
 
     /**
-     * Binds the transport's socket to a local address.
+     * Binds the socket of this transport to a local address.
      * @param local The local address
      * @return a future object to get the result of this operation
      */
     TransportFuture bind(SocketAddress local);
+
+    /**
+     * Connects the socket of this transport to a local address.
+     * @param local The local address
+     * @return a future object to get the result of this operation
+     */
+    TransportFuture connect(SocketAddress local);
 
     /**
      * Closes this transport.
@@ -48,19 +56,19 @@ public interface Transport {
     void write(Object message, TransportParameter parameter);
 
     /**
-     * Returns the future which represents an asynchronous close operation..
+     * Returns the future which represents an asynchronous close operation.
      * @return the future
      */
     TransportFuture closeFuture();
 
     /**
-     * Returns the local address that this transport's socket is bound to.
+     * Returns the local address to which this socket of this transport is bound.
      * @return The local address, or null if this transport is not bound
      */
     SocketAddress localAddress();
 
     /**
-     * Returns the remote address to which this transport's socket is connected.
+     * Returns the remote address to which this socket of this transport is connected.
      * @return The remote address, or null if this transport is not connected
      */
     SocketAddress remoteAddress();
@@ -70,6 +78,30 @@ public interface Transport {
      * @return true if, and only if, this channel is open
      */
     boolean isOpen();
+
+    /**
+     * Sets the option with the specified value.
+     *
+     * @param option the option to be set
+     * @param value the value of the option
+     * @param <T> the type of the value
+     * @return this transport
+     */
+    <T> Transport setOption(TransportOption<T> option, T value);
+
+    /**
+     * Returns the value of the option.
+     * @param option the option to get
+     * @param <T> the type of the value
+     * @return the value
+     */
+    <T> T option(TransportOption<T> option);
+
+    /**
+     * Returns the supported options.
+     * @return the supported options
+     */
+    Set<TransportOption<?>> supportedOptions();
 
     /**
      * Attaches the specified attachment to this transport.
@@ -83,4 +115,16 @@ public interface Transport {
      * @return the attachment
      */
     Object attachment();
+
+    /**
+     * Returns the load pipeline.
+     * @return the load pipeline
+     */
+    LoadPipeline loadPipeline();
+
+    /**
+     * Returns the store pipeline.
+     * @return the store pipeline
+     */
+    StorePipeline storePipeline();
 }

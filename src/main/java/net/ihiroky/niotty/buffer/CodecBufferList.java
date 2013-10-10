@@ -1,5 +1,7 @@
 package net.ihiroky.niotty.buffer;
 
+import net.ihiroky.niotty.util.Arguments;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
@@ -10,7 +12,6 @@ import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CoderResult;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * A {@link net.ihiroky.niotty.buffer.CodecBuffer} which consists of {@link net.ihiroky.niotty.buffer.CodecBuffer}s.
@@ -20,8 +21,6 @@ import java.util.Objects;
  * does not happen. But the beginning and end of the added instance can change according to read and write operation
  * ot this instance. This object allocates a new heap {@code CodecBuffer} and add it to the list
  * if the object need expand its space. The maximum elements that can be held by the object is 1024.
- *
- * @author Hiroki Itoh
  */
 public class CodecBufferList extends AbstractCodecBuffer {
 
@@ -33,42 +32,38 @@ public class CodecBufferList extends AbstractCodecBuffer {
     private static final int MAX_BUFFER_COUNT = 1024;
 
     private CodecBufferList() {
-        buffers_ = new ArrayList<>(INITIAL_BUFFERS_CAPACITY);
+        buffers_ = new ArrayList<CodecBuffer>(INITIAL_BUFFERS_CAPACITY);
         endBufferIndex_ = -1;
     }
 
     CodecBufferList(CodecBuffer buffer0) {
-        Objects.requireNonNull(buffer0, "buffer0");
+        Arguments.requireNonNull(buffer0, "buffer0");
 
-        List<CodecBuffer> list = new ArrayList<>(INITIAL_BUFFERS_CAPACITY);
+        List<CodecBuffer> list = new ArrayList<CodecBuffer>(INITIAL_BUFFERS_CAPACITY);
         list.add(new SlicedCodecBuffer(buffer0));
         buffers_ = list;
         endBufferIndex_ = 0;
     }
 
     CodecBufferList(CodecBuffer buffer0, CodecBuffer buffer1) {
-        Objects.requireNonNull(buffer0, "buffer0");
-        Objects.requireNonNull(buffer1, "buffer1");
+        Arguments.requireNonNull(buffer0, "buffer0");
+        Arguments.requireNonNull(buffer1, "buffer1");
 
-        List<CodecBuffer> list = new ArrayList<>(INITIAL_BUFFERS_CAPACITY);
+        List<CodecBuffer> list = new ArrayList<CodecBuffer>(INITIAL_BUFFERS_CAPACITY);
         list.add(new SlicedCodecBuffer(buffer0));
         list.add(new SlicedCodecBuffer(buffer1));
         buffers_ = list;
         endBufferIndex_ = 1;
     }
 
-    CodecBufferList(CodecBuffer buffer0, CodecBuffer buffer1, CodecBuffer... buffers) {
-        Objects.requireNonNull(buffer0, "buffer0");
-        Objects.requireNonNull(buffer0, "buffer1");
-        Objects.requireNonNull(buffers, "buffers");
+    CodecBufferList(CodecBuffer... buffers) {
+        Arguments.requireNonNull(buffers, "buffers");
         if (buffers.length >= MAX_BUFFER_COUNT) {
             throw new IllegalArgumentException("length of buffers must be less than " + MAX_BUFFER_COUNT + ".");
         }
 
-        List<CodecBuffer> list = new ArrayList<>(Math.max(INITIAL_BUFFERS_CAPACITY, buffers.length + 1));
-        list.add(new SlicedCodecBuffer(buffer0));
-        list.add(new SlicedCodecBuffer(buffer1));
-        int end = 1;
+        List<CodecBuffer> list = new ArrayList<CodecBuffer>(Math.max(INITIAL_BUFFERS_CAPACITY, buffers.length));
+        int end = -1;
         for (CodecBuffer b : buffers) {
             list.add(new SlicedCodecBuffer(b));
             end++;
@@ -120,19 +115,17 @@ public class CodecBufferList extends AbstractCodecBuffer {
     }
 
     @Override
-    public void transferTo(ByteBuffer buffer) {
+    public void copyTo(ByteBuffer buffer) {
         int end = endBufferIndex_;
         List<CodecBuffer> buffers = buffers_;
         for (int i = beginningBufferIndex_; i <= end; i++) {
-            buffers.get(i).transferTo(buffer);
+            buffers.get(i).copyTo(buffer);
         }
     }
 
     @Override
     public CodecBufferList addFirst(CodecBuffer buffer) {
-        if (buffer == null) {
-            throw new IllegalArgumentException("buffer must not be null.");
-        }
+        Arguments.requireNonNull(buffer, "buffer");
 
         int beginning = beginningBufferIndex_;
         while (beginning <= endBufferIndex_
@@ -190,36 +183,38 @@ public class CodecBufferList extends AbstractCodecBuffer {
     }
 
     @Override
-    public void writeByte(int value) {
+    public CodecBufferList writeByte(int value) {
         CodecBuffer buffer = buffers_.get(endBufferIndex_);
         if (buffer.spaceBytes() == 0) {
             buffer = appendNewCodecBuffer(buffer, 1);
         }
         buffer.writeByte(value);
+        return this;
     }
 
     @Override
-    public void writeBytes(byte[] bytes, int offset, int length) {
+    public CodecBufferList writeBytes(byte[] bytes, int offset, int length) {
         CodecBuffer buffer = buffers_.get(endBufferIndex_);
         int space = buffer.spaceBytes();
         if (space >= length) {
             buffer.writeBytes(bytes, offset, length);
-            return;
+            return this;
         }
         buffer.writeBytes(bytes, offset, space);
 
         length -= space;
         CodecBuffer newBuffer = appendNewCodecBuffer(buffer, length);
         newBuffer.writeBytes(bytes, offset + space, length);
+        return this;
     }
 
     @Override
-    public void writeBytes(ByteBuffer byteBuffer) {
+    public CodecBufferList writeBytes(ByteBuffer byteBuffer) {
         CodecBuffer buffer = buffers_.get(endBufferIndex_);
         int space = buffer.spaceBytes();
         if (space >= byteBuffer.remaining()) {
             buffer.writeBytes(byteBuffer);
-            return;
+            return this;
         }
         int limit = byteBuffer.limit();
         byteBuffer.limit(byteBuffer.position() + space);
@@ -229,56 +224,73 @@ public class CodecBufferList extends AbstractCodecBuffer {
         int writeBytesInNewBuffer = byteBuffer.remaining();
         CodecBuffer newBuffer = appendNewCodecBuffer(buffer, writeBytesInNewBuffer);
         newBuffer.writeBytes(byteBuffer);
+        return this;
     }
 
     @Override
-    public void writeShort(short value) {
+    public CodecBufferList writeShort(int value) {
         CodecBuffer buffer = buffers_.get(endBufferIndex_);
         if (buffer.spaceBytes() >= CodecUtil.SHORT_BYTES) {
             buffer.writeShort(value);
-            return;
+            return this;
         }
         CodecBuffer nextBuffer = nextBuffer(buffer, CodecUtil.SHORT_BYTES);
         nextBuffer.writeShort(value);
+        return this;
     }
 
     @Override
-    public void writeChar(char value) {
+    public CodecBufferList writeChar(char value) {
         CodecBuffer buffer = buffers_.get(endBufferIndex_);
         if (buffer.spaceBytes() >= CodecUtil.CHAR_BYTES) {
             buffer.writeChar(value);
-            return;
+            return this;
         }
         CodecBuffer newBuffer = nextBuffer(buffer, CodecUtil.CHAR_BYTES);
         newBuffer.writeChar(value);
+        return this;
     }
 
     @Override
-    public void writeInt(int value) {
+    public CodecBufferList writeMedium(int value) {
+        CodecBuffer buffer = buffers_.get(endBufferIndex_);
+        if (buffer.spaceBytes() >= CodecUtil.MEDIUM_BYTES) {
+            buffer.writeMedium(value);
+            return this;
+        }
+        writeShort((value >>> CodecUtil.BYTE_SHIFT1) & CodecUtil.SHORT_MASK);
+        writeByte(value & CodecUtil.BYTE_MASK);
+        return this;
+    }
+
+    @Override
+    public CodecBufferList writeInt(int value) {
         CodecBuffer buffer = buffers_.get(endBufferIndex_);
         if (buffer.spaceBytes() >= CodecUtil.INT_BYTES) {
             buffer.writeInt(value);
-            return;
+            return this;
         }
-        writeShort((short) (value >>> CodecUtil.BYTE_SHIFT2));
-        writeShort((short) (value & CodecUtil.SHORT_MASK));
+        writeShort((value >>> CodecUtil.BYTE_SHIFT2));
+        writeShort((value & CodecUtil.SHORT_MASK));
+        return this;
     }
 
     @Override
-    public void writeLong(long value) {
+    public CodecBufferList writeLong(long value) {
         CodecBuffer buffer = buffers_.get(endBufferIndex_);
         if (buffer.spaceBytes() >= CodecUtil.LONG_BYTES) {
             buffer.writeLong(value);
-            return;
+            return this;
         }
         writeInt((int) (value >>> CodecUtil.BYTE_SHIFT4));
         writeInt((int) (value & CodecUtil.INT_MASK));
+        return this;
     }
 
     @Override
-    public void writeString(String s, CharsetEncoder encoder) {
-        Objects.requireNonNull(s, "s");
-        Objects.requireNonNull(encoder, "encoder");
+    public CodecBufferList writeString(String s, CharsetEncoder encoder) {
+        Arguments.requireNonNull(s, "s");
+        Arguments.requireNonNull(encoder, "encoder");
 
         CodecBuffer buffer = buffers_.get(endBufferIndex_);
         CharBuffer input = CharBuffer.wrap(s);
@@ -318,6 +330,7 @@ public class CodecBufferList extends AbstractCodecBuffer {
                 }
             }
         }
+        return this;
     }
 
     private CodecBuffer nextReadBufferOrNull() {
@@ -343,9 +356,15 @@ public class CodecBufferList extends AbstractCodecBuffer {
     }
 
     @Override
-    public int readByte() {
+    public byte readByte() {
         CodecBuffer buffer = nextReadBuffer();
         return buffer.readByte();
+    }
+
+    @Override
+    public int readUnsignedByte() {
+        CodecBuffer buffer = nextReadBuffer();
+        return buffer.readUnsignedByte();
     }
 
     @Override
@@ -388,7 +407,7 @@ public class CodecBufferList extends AbstractCodecBuffer {
         if (buffer.remainingBytes() >= CodecUtil.CHAR_BYTES) {
             return buffer.readChar();
         }
-        return (char) ((readByte() << CodecUtil.BYTE_SHIFT1) | readByte());
+        return (char) ((readUnsignedByte() << CodecUtil.BYTE_SHIFT1) | readUnsignedByte());
     }
 
     @Override
@@ -397,7 +416,16 @@ public class CodecBufferList extends AbstractCodecBuffer {
         if (buffer.remainingBytes() >= CodecUtil.SHORT_BYTES) {
             return buffer.readShort();
         }
-        return (short) ((readByte() << CodecUtil.BYTE_SHIFT1) | readByte());
+        return (short) ((readUnsignedByte() << CodecUtil.BYTE_SHIFT1) | readUnsignedByte());
+    }
+
+    @Override
+    public int readUnsignedMedium() {
+        CodecBuffer buffer = nextReadBuffer();
+        if (buffer.remainingBytes() >= CodecUtil.MEDIUM_BYTES) {
+            return buffer.readUnsignedMedium();
+        }
+        return ((readShort() & CodecUtil.SHORT_MASK) << CodecUtil.BYTE_SHIFT1) | readUnsignedByte();
     }
 
     @Override
@@ -763,7 +791,7 @@ public class CodecBufferList extends AbstractCodecBuffer {
         }
 
         if (beginningBufferIndex_ > 0) {
-            List<CodecBuffer> t = new ArrayList<>(endBufferIndex_ - beginningBufferIndex_ + 1);
+            List<CodecBuffer> t = new ArrayList<CodecBuffer>(endBufferIndex_ - beginningBufferIndex_ + 1);
             for (int i = beginningBufferIndex_; i <= endBufferIndex_; i++) {
                 t.add(buffers_.get(i));
             }
@@ -829,7 +857,7 @@ public class CodecBufferList extends AbstractCodecBuffer {
         }
         int remaining = remainingBytes();
         ByteBuffer bb = ByteBuffer.allocate(remaining);
-        transferTo(bb);
+        copyTo(bb);
         return bb.array();
     }
 

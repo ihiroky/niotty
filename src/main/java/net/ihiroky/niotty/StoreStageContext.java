@@ -1,19 +1,20 @@
 package net.ihiroky.niotty;
 
-import java.util.Objects;
+import net.ihiroky.niotty.util.Arguments;
 
 /**
- * @author Hiroki Itoh
+ * @param <I> the type of the input object for the stage.
+ * @param <O> the type of the output object for the stage.
  */
-public class StoreStageContext<I, O> extends PipelineElement<I, O> {
+class StoreStageContext<I, O> extends PipelineElement<I, O> {
 
     private StoreStage<I, O> stage_;
 
     @SuppressWarnings("unchecked")
-    public StoreStageContext(Pipeline<?> pipeline,
-                             StageKey key, StoreStage<Object, Object> stage, PipelineElementExecutorPool pool) {
+    StoreStageContext(AbstractPipeline<?, ?> pipeline,
+                             StageKey key, StoreStage<Object, Object> stage, TaskLoopGroup<? extends TaskLoop> pool) {
         super(pipeline, key, pool);
-        Objects.requireNonNull(stage, "stage");
+        Arguments.requireNonNull(stage, "stage");
         this.stage_ = (StoreStage<I, O>) stage;
     }
 
@@ -28,8 +29,8 @@ public class StoreStageContext<I, O> extends PipelineElement<I, O> {
     }
 
     @Override
-    protected void fire(I input, TransportParameter paramter) {
-        StageContext<O> context = wrappedStageContext(this, paramter);
+    protected void fire(I input, TransportParameter parameter) {
+        StageContext<O> context = wrappedStageContext(this, parameter);
         stage_.store(context, input);
     }
 

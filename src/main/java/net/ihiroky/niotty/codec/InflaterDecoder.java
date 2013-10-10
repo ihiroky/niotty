@@ -6,6 +6,8 @@ import net.ihiroky.niotty.TransportState;
 import net.ihiroky.niotty.TransportStateEvent;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.CodecBuffer;
+import net.ihiroky.niotty.util.JavaVersion;
+import net.ihiroky.niotty.util.Platform;
 
 import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
@@ -31,6 +33,9 @@ public class InflaterDecoder implements LoadStage<CodecBuffer, CodecBuffer> {
     }
 
     public InflaterDecoder(int bufferSize, byte[] dictionary, boolean nowrap) {
+
+        Platform.javaVersion().throwIfUnsupported(JavaVersion.JAVA7);
+
         inflater_ = new Inflater(nowrap);
         buffer_ = new byte[bufferSize];
         dictionary_ = dictionary;

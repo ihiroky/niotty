@@ -1,25 +1,30 @@
 package net.ihiroky.niotty;
 
-import java.util.Objects;
+import net.ihiroky.niotty.util.Arguments;
+
+import java.util.concurrent.TimeUnit;
 
 /**
- * Created on 13/01/09, 17:24
- *
- * @author Hiroki Itoh
+ * @param <I> the type of the input object for the stage.
+ * @param <O> the type of the output object for the stage.
  */
-public abstract class PipelineElement<I, O> implements StageContext<O>, TaskSelection {
+public abstract class PipelineElement<I, O> implements StageContext<O> {
 
-    private final Pipeline<?> pipeline_;
+    private final AbstractPipeline<?, ?> pipeline_;
     private final StageKey key_;
     private volatile PipelineElement<O, Object> next_;
-    private final PipelineElementExecutor executor_;
+    private final TaskLoop taskLoop_;
 
-    private static final PipelineElementExecutor DEFAULT_EXECUTOR = new DefaultPipelineElementExecutor();
+    protected PipelineElement(AbstractPipeline<?, ?> pipeline, StageKey key, TaskLoopGroup<? extends TaskLoop> pool) {
+        pipeline_ = Arguments.requireNonNull(pipeline, "pipeline");
+        key_ = Arguments.requireNonNull(key, "key");
+        taskLoop_ = Arguments.requireNonNull(pool, "pool").assign(pipeline.transport());
+    }
 
-    protected PipelineElement(Pipeline<?> pipeline, StageKey key, PipelineElementExecutorPool pool) {
-        this.pipeline_ = pipeline;
-        this.key_ = key;
-        this.executor_ = (pool != null) ? pool.assign(this) : DEFAULT_EXECUTOR;
+    PipelineElement(TaskLoop taskLoop) {
+        pipeline_ = null;
+        key_ = null;
+        taskLoop_ = taskLoop;
     }
 
     @Override
@@ -27,12 +32,12 @@ public abstract class PipelineElement<I, O> implements StageContext<O>, TaskSele
         return key_;
     }
 
-    protected Pipeline<?> pipeline() {
-        return pipeline_;
+    protected TaskLoop taskLoop() {
+        return taskLoop_;
     }
 
-    protected PipelineElementExecutor executor() {
-        return executor_;
+    protected Pipeline<?> pipeline() {
+        return pipeline_;
     }
 
     protected PipelineElement<O, Object> next() {
@@ -40,7 +45,7 @@ public abstract class PipelineElement<I, O> implements StageContext<O>, TaskSele
     }
 
     protected void setNext(PipelineElement<O, Object> next) {
-        Objects.requireNonNull(next, "next");
+        Arguments.requireNonNull(next, "next");
         this.next_ = next;
     }
 
@@ -50,32 +55,67 @@ public abstract class PipelineElement<I, O> implements StageContext<O>, TaskSele
     }
 
     protected void close() {
-        executor_.close(this);
+        taskLoop_.reject(pipeline_.transport());
     }
 
     @Override
-    public void proceed(O output) {
-        next_.executor_.execute(next_, output);
+    public void proceed(final O output) {
+        TaskLoop tl = next_.taskLoop();
+        if (tl.isInLoopThread()) {
+            next_.fire(output);
+        } else {
+            tl.offer(new Task() {
+                @Override
+                public long execute(TimeUnit timeUnit) throws Exception {
+                    next_.fire(output);
+                    return DONE;
+                }
+            });
+        }
     }
 
-    protected void proceed(O output, TransportParameter parameter) {
-        next_.executor_.execute(next_, output, parameter);
+    @Override
+    public TaskFuture schedule(Task task, long timeout, TimeUnit timeUnit) {
+        return taskLoop_.schedule(task, timeout, timeUnit);
     }
 
-    protected void proceed(TransportStateEvent event) {
-        next_.executor_.execute(next_, event);
+    protected void proceed(final O output, final TransportParameter parameter) {
+        TaskLoop tl = next_.taskLoop_;
+        if (tl.isInLoopThread()) {
+            next_.fire(output, parameter);
+        } else {
+            tl.offer(new Task() {
+                @Override
+                public long execute(TimeUnit timeUnit) throws Exception {
+                    next_.fire(output, parameter);
+                    return DONE;
+                }
+            });
+        }
+    }
+
+    protected void proceed(final TransportStateEvent event) {
+        TaskLoop tl = next_.taskLoop_;
+        if (tl.isInLoopThread()) {
+            next_.fire(event);
+            next_.proceed(event);
+        } else {
+            tl.offer(new Task() {
+                @Override
+                public long execute(TimeUnit timeUnit) throws Exception {
+                    next_.fire(event);
+                    next_.proceed(event);
+                    return DONE;
+                }
+            });
+        }
     }
 
     protected StageContext<O> wrappedStageContext(PipelineElement<?, O> context, TransportParameter parameter) {
-        return new WrappedStageContext<>(context, parameter);
+        return new WrappedStageContext<O>(context, parameter);
     }
 
-    @Override
-    public int weight() {
-        return 1; // TODO correspond to transport ?
-    }
-
-    private static class WrappedStageContext<O> implements StageContext<O> {
+    static class WrappedStageContext<O> implements StageContext<O> {
 
         private final PipelineElement<?, O> context_;
         private final TransportParameter parameter_;
@@ -103,6 +143,11 @@ public abstract class PipelineElement<I, O> implements StageContext<O>, TaskSele
         @Override
         public void proceed(O output) {
             context_.proceed(output, parameter_);
+        }
+
+        @Override
+        public TaskFuture schedule(Task task, long timeout, TimeUnit timeUnit) {
+            return context_.schedule(task, timeout, timeUnit);
         }
     }
 

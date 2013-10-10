@@ -171,7 +171,7 @@ public class SimpleWriteQueueTest {
         sut_.offer(new AttachedMessage<BufferSink>(Buffers.wrap(data, 0, data.length)));
         WriteQueue.FlushStatus status = sut_.flushTo(channel, data.length);
 
-        assertThat(status, is(WriteQueue.FlushStatus.SKIP));
+        assertThat(status, is(WriteQueue.FlushStatus.SKIPPED));
         assertThat(sut_.lastFlushedBytes(), is(data.length));
         verify(channel, times(1)).write(Mockito.any(ByteBuffer.class));
     }
@@ -195,7 +195,7 @@ public class SimpleWriteQueueTest {
         sut_.offer(new AttachedMessage<BufferSink>(Buffers.wrap(data, 0, data.length)));
         WriteQueue.FlushStatus status = sut_.flushTo(channel, writeBuffer_, data.length);
 
-        assertThat(status, is(WriteQueue.FlushStatus.SKIP));
+        assertThat(status, is(WriteQueue.FlushStatus.SKIPPED));
         assertThat(sut_.lastFlushedBytes(), is(data.length));
         verify(channel, times(1)).write(writeBuffer_);
     }
@@ -305,7 +305,7 @@ public class SimpleWriteQueueTest {
         sut_.offer(new AttachedMessage<BufferSink>(Buffers.wrap(data, 0, data.length)));
         WriteQueue.FlushStatus status = sut_.flushTo(channel, writeBuffer_);
 
-        assertThat(status, CoreMatchers.is(WriteQueue.FlushStatus.SKIP));
+        assertThat(status, CoreMatchers.is(WriteQueue.FlushStatus.SKIPPED));
         assertThat(sut_.lastFlushedBytes(), is(0));
         verify(channel, times(1)).write(writeBuffer_);
     }

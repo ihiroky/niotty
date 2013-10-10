@@ -1,10 +1,12 @@
 package net.ihiroky.niotty;
 
-import java.util.Objects;
+import net.ihiroky.niotty.util.Arguments;
+
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 
 /**
- * @author Hiroki Itoh
+ *
  */
 public abstract class AbstractTransportFuture implements TransportFuture {
 
@@ -13,6 +15,10 @@ public abstract class AbstractTransportFuture implements TransportFuture {
 
     private static final TransportFutureListener NULL_LISTENER = new NullListener();
 
+    /**
+     * Create a new instance.
+     * @param transport a transport associated with this future
+     */
     protected AbstractTransportFuture(AbstractTransport<?> transport) {
         transport_ = transport;
     }
@@ -25,7 +31,7 @@ public abstract class AbstractTransportFuture implements TransportFuture {
 
     @Override
     public final TransportFuture addListener(final TransportFutureListener listener) {
-        Objects.requireNonNull(listener, "listener");
+        Arguments.requireNonNull(listener, "listener");
 
         TaskLoop taskLoop = transport_.taskLoop();
         synchronized (this) {
@@ -51,14 +57,14 @@ public abstract class AbstractTransportFuture implements TransportFuture {
             listener.onComplete(this);
         } else {
             @SuppressWarnings("unchecked")
-            TaskLoop.Task task = new TaskLoop.Task() {
+            Task task = new Task() {
                 @Override
-                public int execute() throws Exception {
+                public long execute(TimeUnit timeUnit) throws Exception {
                     listener.onComplete(AbstractTransportFuture.this);
-                    return TaskLoop.WAIT_NO_LIMIT;
+                    return DONE;
                 }
             };
-            taskLoop.offerTask(task);
+            taskLoop.offer(task);
         }
 
         return this;
@@ -66,7 +72,7 @@ public abstract class AbstractTransportFuture implements TransportFuture {
 
     @Override
     public final TransportFuture removeListener(TransportFutureListener listener) {
-        Objects.requireNonNull(listener, "listener");
+        Arguments.requireNonNull(listener, "listener");
 
         synchronized (this) {
             if (listener_ == listener) {
@@ -92,11 +98,11 @@ public abstract class AbstractTransportFuture implements TransportFuture {
         if (taskLoop.isInLoopThread()) {
             listener_.onComplete(this);
         } else {
-            taskLoop.offerTask(new TaskLoop.Task() {
+            taskLoop.offer(new Task() {
                 @Override
-                public int execute() throws Exception {
+                public long execute(TimeUnit timeUnit) throws Exception {
                     listener_.onComplete(AbstractTransportFuture.this);
-                    return TaskLoop.WAIT_NO_LIMIT;
+                    return DONE;
                 }
             });
         }
@@ -113,7 +119,7 @@ public abstract class AbstractTransportFuture implements TransportFuture {
      */
     private static class ListenerList implements TransportFutureListener {
 
-        CopyOnWriteArrayList<TransportFutureListener> list_ = new CopyOnWriteArrayList<>();
+        CopyOnWriteArrayList<TransportFutureListener> list_ = new CopyOnWriteArrayList<TransportFutureListener>();
 
         @Override
         public void onComplete(TransportFuture future) {

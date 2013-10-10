@@ -1,23 +1,26 @@
 package net.ihiroky.niotty.nio;
 
-import java.util.Objects;
+import net.ihiroky.niotty.TaskLoopGroup;
+
+import java.util.concurrent.ThreadFactory;
 
 /**
- * Created on 13/01/17, 18:11
- *
- * @author Hiroki Itoh
+ * An implementation of {@link net.ihiroky.niotty.nio.AbstractSelector} to handle asynchronous connections.
  */
-public class ConnectSelectorPool extends AbstractSelectorPool<ConnectSelector> {
+public class ConnectSelectorPool extends TaskLoopGroup<ConnectSelector> {
 
-    private final TcpIOSelectorPool ioSelectorPool_;
-
-    public ConnectSelectorPool(TcpIOSelectorPool ioSelectorPool) {
-        Objects.requireNonNull(ioSelectorPool, "ioSelectorPool");
-        ioSelectorPool_ = ioSelectorPool;
+    /**
+     * Constructs a new instance.
+     *
+     * @param threadFactory a factory to create thread which runs a task loop
+     * @param workers       the number of threads held in the thread pool
+     */
+    protected ConnectSelectorPool(ThreadFactory threadFactory, int workers) {
+        super(threadFactory, workers);
     }
 
     @Override
     protected ConnectSelector newTaskLoop() {
-        return new ConnectSelector(ioSelectorPool_);
+        return new ConnectSelector();
     }
 }

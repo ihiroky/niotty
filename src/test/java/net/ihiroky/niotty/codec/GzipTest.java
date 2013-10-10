@@ -4,6 +4,8 @@ import net.ihiroky.niotty.DefaultTransportStateEvent;
 import net.ihiroky.niotty.TransportState;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.CodecBuffer;
+import net.ihiroky.niotty.util.JavaVersion;
+import net.ihiroky.niotty.util.Platform;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
@@ -19,6 +21,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.zip.Deflater;
 
+import static net.ihiroky.niotty.util.JavaVersionMatchers.*;
 import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.MatcherAssert.*;
 import static org.junit.Assume.*;
@@ -35,7 +38,8 @@ public class GzipTest {
 
     @Before
     public void setUp() {
-        context_ = new StageContextMock<>();
+        assumeThat(Platform.javaVersion(), greaterOrEqual(JavaVersion.JAVA7));
+        context_ = new StageContextMock<CodecBuffer>();
     }
 
     @Test
@@ -168,6 +172,9 @@ public class GzipTest {
 
     @Test
     public void testEncode_DecodedByCommand() throws Exception {
+        final String command = "/bin/gzip";
+        assumeThat(new File(command).exists(), is(true));
+
         byte[] data = new byte[512];
         Arrays.fill(data, (byte) '0');
         CodecBuffer buffer = Buffers.wrap(data, 0, data.length);
@@ -191,14 +198,20 @@ public class GzipTest {
         }
 
         byte[] input = new byte[data.length];
-        try (InputStream in = commandInputStream(Arrays.asList("/bin/gzip", "-cd", file.getPath()))) {
+        InputStream in = commandInputStream(Arrays.asList(command, "-cd", file.getPath()));
+        try {
             in.read(input, 0, input.length);
+        } finally {
+            in.close();
         }
         assertThat(input, is(data));
     }
 
     @Test
     public void testDecode_EncodedByCommand() throws Exception {
+        final String command = "/bin/gzip";
+        assumeThat(new File(command).exists(), is(true));
+
         byte[] data = new byte[512];
         Arrays.fill(data, (byte) '0');
 
@@ -207,8 +220,11 @@ public class GzipTest {
 
         byte[] input = new byte[data.length];
         int inputLength;
-        try (InputStream in = commandInputStream(Arrays.asList("/bin/gzip", "-c", file.getPath()))) {
+        InputStream in = commandInputStream(Arrays.asList(command, "-c", file.getPath()));
+        try {
             inputLength = in.read(input, 0, input.length);
+        } finally {
+            in.close();
         }
 
         GzipDecoder decoder = new GzipDecoder();

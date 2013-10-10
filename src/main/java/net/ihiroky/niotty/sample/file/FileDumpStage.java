@@ -4,13 +4,13 @@ import net.ihiroky.niotty.LoadStage;
 import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.TransportStateEvent;
 import net.ihiroky.niotty.buffer.CodecBuffer;
+import net.ihiroky.niotty.util.Charsets;
 
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CoderResult;
 import java.nio.charset.CodingErrorAction;
-import java.nio.charset.StandardCharsets;
 
 /**
  * @author Hiroki Itoh
@@ -29,7 +29,7 @@ public class FileDumpStage implements LoadStage<CodecBuffer, Void> {
     public void load(StageContext<Void> context, CodecBuffer input) {
         ByteBuffer in = input.byteBuffer();
         CharBuffer out = CharBuffer.allocate(BUFFER_SIZE);
-        CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder()
+        CharsetDecoder decoder = Charsets.UTF_8.newDecoder()
                 .onMalformedInput(CodingErrorAction.REPLACE)
                 .onUnmappableCharacter(CodingErrorAction.REPLACE);
 

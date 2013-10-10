@@ -6,6 +6,8 @@ import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import java.util.concurrent.TimeUnit;
+
 import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.MatcherAssert.*;
 import static org.mockito.Mockito.*;
@@ -17,15 +19,17 @@ public class AbstractTransportFutureTest {
 
     private DefaultTransportFuture sut_;
     private AbstractTransport<?> transport_;
+    private TaskLoop taskLoop_;
 
     @Before
     public void setUp() {
         @SuppressWarnings("unchecked")
         AbstractTransport<TaskLoop> transport = mock(AbstractTransport.class);
         TaskLoop taskLoop = mock(TaskLoop.class);
-        transport.setTaskLoop(taskLoop);
+        when(transport.taskLoop()).thenReturn(taskLoop);
 
         transport_ = transport;
+        taskLoop_ = taskLoop;
         sut_ = new DefaultTransportFuture(transport);
     }
 
@@ -132,22 +136,22 @@ public class AbstractTransportFutureTest {
 
     @Test
     public void testFireOnComplete_CallsOfferTask() throws Exception {
-        final int[] taskResult = new int[]{0};
+        final long[] taskResult = new long[]{0L};
         when(transport_.taskLoop().isInLoopThread()).thenReturn(false);
         doAnswer(new Answer<Void>() {
             @Override
             public Void answer(InvocationOnMock invocation) throws Throwable {
-                TaskLoop.Task task = (TaskLoop.Task) invocation.getArguments()[0];
-                taskResult[0] = task.execute();
+                Task task = (Task) invocation.getArguments()[0];
+                taskResult[0] = task.execute(TimeUnit.MILLISECONDS);
                 return null;
             }
-        }).when(transport_.taskLoop()).offerTask(Mockito.any(TaskLoop.Task.class));
+        }).when(taskLoop_).offer(Mockito.any(Task.class));
         TransportFutureListener listener = mock(TransportFutureListener.class);
 
         sut_.addListener(listener);
         sut_.fireOnComplete();
 
         verify(listener).onComplete(sut_);
-        assertThat(taskResult[0], is(-1));
+        assertThat(taskResult[0], is(Long.MAX_VALUE));
     }
 }

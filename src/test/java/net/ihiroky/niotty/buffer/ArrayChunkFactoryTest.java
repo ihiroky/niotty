@@ -37,7 +37,7 @@ public class ArrayChunkFactoryTest {
         chunk0.initialize();
         chunk0.release();
 
-        // verify(sut_, times(1)).release(chunk0);
+        // capture(sut_, times(1)).release(chunk0);
     }
 
     @Test

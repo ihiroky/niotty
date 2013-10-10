@@ -1,5 +1,7 @@
 package net.ihiroky.niotty.buffer;
 
+import net.ihiroky.niotty.util.Arguments;
+
 import java.io.IOException;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
@@ -9,7 +11,6 @@ import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CoderResult;
-import java.util.Objects;
 
 /**
  * Implementation of {@link net.ihiroky.niotty.buffer.CodecBuffer} using {@code java.nio.ByteBuffer}.
@@ -44,7 +45,7 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer {
     }
 
     ByteBufferCodecBuffer(ByteBuffer buffer, boolean cleanOnDispose) {
-        Objects.requireNonNull(buffer, "buffer");
+        Arguments.requireNonNull(buffer, "buffer");
 
         ByteBufferChunkFactory chunkManager = buffer.isDirect()
                 ? ByteBufferChunkFactory.direct(cleanOnDispose)
@@ -130,91 +131,96 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer {
      * {@inheritDoc}
      */
     @Override
-    public void writeByte(int value) {
+    public ByteBufferCodecBuffer writeByte(int value) {
         changeModeToWrite();
         ensureSpace(1);
         buffer_.put((byte) value);
+        return this;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void writeBytes(byte[] bytes, int offset, int length) {
+    public ByteBufferCodecBuffer writeBytes(byte[] bytes, int offset, int length) {
         changeModeToWrite();
         ensureSpace(length);
         buffer_.put(bytes, offset, length);
+        return this;
     }
 
     /**
      * {@inheritDoc}
      */
-    public void writeBytes(ByteBuffer byteBuffer) {
+    public ByteBufferCodecBuffer writeBytes(ByteBuffer byteBuffer) {
         changeModeToWrite();
         ensureSpace(byteBuffer.remaining());
         buffer_.put(byteBuffer);
-    }
-
-    /**
-     * Implementation of writeBytes8() without {@code byte} range check.
-     * @param bits the set of bit to be written
-     * @param bytes the byte size of {@code bits}
-     */
-    private void writeBytes8RangeUnchecked(long bits, int bytes) {
-        changeModeToWrite();
-        ensureSpace(bytes);
-        int bytesMinus1 = bytes - 1;
-        for (int i = 0; i < bytes; i++) {
-            buffer_.put((byte) ((bits >>> (bytesMinus1 - i)) & CodecUtil.BYTE_MASK));
-        }
+        return this;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void writeShort(short value) {
+    public ByteBufferCodecBuffer writeShort(int value) {
         changeModeToWrite();
         ensureSpace(CodecUtil.SHORT_BYTES);
-        buffer_.putShort(value);
+        buffer_.putShort((short) value);
+        return this;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void writeChar(char value) {
+    public ByteBufferCodecBuffer writeChar(char value) {
         changeModeToWrite();
         ensureSpace(CodecUtil.CHAR_BYTES);
         buffer_.putChar(value);
+        return this;
+    }
+
+    @Override
+    public ByteBufferCodecBuffer writeMedium(int value) {
+        changeModeToWrite();
+        ensureSpace(CodecUtil.MEDIUM_BYTES);
+
+        // forcibly big endian.
+        buffer_.put((byte) ((value >>> CodecUtil.BYTE_SHIFT2) & CodecUtil.BYTE_MASK));
+        buffer_.put((byte) ((value >>> CodecUtil.BYTE_SHIFT1) & CodecUtil.BYTE_MASK));
+        buffer_.put((byte) (value & CodecUtil.BYTE_MASK));
+        return this;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void writeInt(int value) {
+    public ByteBufferCodecBuffer writeInt(int value) {
         changeModeToWrite();
         ensureSpace(CodecUtil.INT_BYTES);
         buffer_.putInt(value);
+        return this;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void writeLong(long value) {
+    public ByteBufferCodecBuffer writeLong(long value) {
         changeModeToWrite();
         ensureSpace(CodecUtil.LONG_BYTES);
         buffer_.putLong(value);
+        return this;
     }
 
     /**
      * {@inheritDoc}
      */
-    public void writeString(String s, CharsetEncoder encoder) {
-        Objects.requireNonNull(s, "s");
-        Objects.requireNonNull(encoder, "encoder");
+    public ByteBufferCodecBuffer writeString(String s, CharsetEncoder encoder) {
+        Arguments.requireNonNull(s, "s");
+        Arguments.requireNonNull(encoder, "encoder");
 
         changeModeToWrite();
         CharBuffer input = CharBuffer.wrap(s);
@@ -241,13 +247,20 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer {
                 }
             }
         }
+        return this;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public int readByte() {
+    public byte readByte() {
+        changeModeToRead();
+        return buffer_.get();
+    }
+
+    @Override
+    public int readUnsignedByte() {
         changeModeToRead();
         return buffer_.get() & CodecUtil.BYTE_MASK;
     }
@@ -307,6 +320,15 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer {
         return buffer_.getShort();
     }
 
+    @Override
+    public int readUnsignedMedium() {
+        changeModeToRead();
+        ByteBuffer b = buffer_;
+        return ((b.get() & CodecUtil.BYTE_MASK) << CodecUtil.BYTE_SHIFT2)
+                | ((b.get() & CodecUtil.BYTE_MASK) << CodecUtil.BYTE_SHIFT1)
+                |  (b.get() & CodecUtil.BYTE_MASK);
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -333,7 +355,6 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer {
             return cached;
         }
 
-        float charsPerByte = decoder.averageCharsPerByte();
         ByteBuffer input = buffer_;
         CharBuffer output = CharBuffer.allocate(Buffers.outputCharBufferSize(decoder, bytes));
         int limit = input.limit();
@@ -391,7 +412,7 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer {
     }
 
     @Override
-    public void transferTo(ByteBuffer byteBuffer) {
+    public void copyTo(ByteBuffer byteBuffer) {
         changeModeToRead();
         ByteBuffer myBuffer = buffer_;
         int position = myBuffer.position();
@@ -406,7 +427,7 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer {
 
     @Override
     public ByteBufferCodecBuffer addFirst(CodecBuffer buffer) {
-        Objects.requireNonNull(buffer, "buffer");
+        Arguments.requireNonNull(buffer, "buffer");
         int inputSize = buffer.remainingBytes();
         if (inputSize == 0) {
             return this;
@@ -460,7 +481,7 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer {
 
     @Override
     public ByteBufferCodecBuffer addLast(CodecBuffer buffer) {
-        Objects.requireNonNull(buffer, "buffer");
+        Arguments.requireNonNull(buffer, "buffer");
         int inputSize = buffer.remainingBytes();
         if (inputSize == 0) {
             return this;
@@ -641,7 +662,7 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer {
         }
         int remaining = remainingBytes();
         ByteBuffer bb = ByteBuffer.allocate(remaining);
-        transferTo(bb);
+        copyTo(bb);
         return bb.array();
     }
 
@@ -816,8 +837,7 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer {
     public String toString() {
         syncBeginEnd();
         return ByteBufferCodecBuffer.class.getName()
-                + "(beginning:" + beginning_ + ", end:" + end_ + ", capacity:" + buffer_.capacity()
-                + ", attachment:" + ')';
+                + "(beginning:" + beginning_ + ", end:" + end_ + ", capacity:" + buffer_.capacity() + ')';
     }
 
     /**

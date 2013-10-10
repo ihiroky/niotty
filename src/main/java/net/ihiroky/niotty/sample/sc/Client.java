@@ -10,7 +10,6 @@ import net.ihiroky.niotty.codec.DelimiterDecoder;
 import net.ihiroky.niotty.codec.DelimiterEncoder;
 import net.ihiroky.niotty.codec.StringDecoder;
 import net.ihiroky.niotty.codec.StringEncoder;
-import net.ihiroky.niotty.nio.NioClientSocketConfig;
 import net.ihiroky.niotty.nio.NioClientSocketProcessor;
 import net.ihiroky.niotty.nio.NioClientSocketTransport;
 
@@ -41,7 +40,7 @@ public class Client {
             }
         });
         processor.start();
-        final NioClientSocketTransport transport = processor.createTransport(new NioClientSocketConfig());
+        final NioClientSocketTransport transport = processor.createTransport();
         transport.connect(new InetSocketAddress(serverPort));
 
         ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
@@ -51,13 +50,6 @@ public class Client {
                 transport.write(new Date().toString());
             }
         }, 1, 1, TimeUnit.SECONDS);
-        transport.closeFuture().addListener(new TransportFutureListener() {
-            @Override
-            public void onComplete(TransportFuture future) {
-                System.out.println("Cancel the scheduler.");
-                scheduledFuture.cancel(true);
-            }
-        });
 
         try {
             System.in.read();
@@ -65,7 +57,13 @@ public class Client {
             e.printStackTrace();
         } finally {
             executor.shutdownNow();
-            transport.close();
+            transport.close().addListener(new TransportFutureListener() {
+                @Override
+                public void onComplete(TransportFuture future) {
+                    System.out.println("Cancel the scheduler.");
+                    scheduledFuture.cancel(true);
+                }
+            });
             processor.stop();
         }
 

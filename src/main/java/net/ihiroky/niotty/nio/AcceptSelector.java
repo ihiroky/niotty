@@ -1,5 +1,7 @@
 package net.ihiroky.niotty.nio;
 
+import net.ihiroky.niotty.StageContext;
+import net.ihiroky.niotty.buffer.BufferSink;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -10,13 +12,17 @@ import java.util.Iterator;
 import java.util.Set;
 
 /**
- * Created on 13/01/15, 16:34
- *
- * @author Hiroki Itoh
+ * An implementation of {@link net.ihiroky.niotty.nio.AbstractSelector} to handle asynchronous acceptances.
  */
 public class AcceptSelector extends AbstractSelector {
 
     private Logger logger_ = LoggerFactory.getLogger(AcceptSelector.class);
+
+    /**
+     * Creates a new instance.
+     */
+    protected AcceptSelector() {
+    }
 
     @Override
     protected void processSelectedKeys(Set<SelectionKey> selectedKeys) throws Exception {
@@ -32,5 +38,9 @@ public class AcceptSelector extends AbstractSelector {
 
             transport.registerReadLater(childChannel);
         }
+    }
+
+    @Override
+    public void store(StageContext<Void> context, BufferSink input) {
     }
 }

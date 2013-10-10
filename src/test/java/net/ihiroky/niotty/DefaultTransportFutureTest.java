@@ -40,7 +40,7 @@ public class DefaultTransportFutureTest {
         AbstractTransport<TaskLoop> transport = mock(AbstractTransport.class);
         TaskLoop taskLoop = mock(TaskLoop.class);
         when(taskLoop.isInLoopThread()).thenReturn(true);
-        transport.setTaskLoop(taskLoop);
+        when(transport.taskLoop()).thenReturn(taskLoop);
         sut_ = new DefaultTransportFuture(transport);
     }
 

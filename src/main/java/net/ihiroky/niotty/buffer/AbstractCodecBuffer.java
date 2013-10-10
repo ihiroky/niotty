@@ -9,6 +9,28 @@ public abstract class AbstractCodecBuffer implements CodecBuffer {
     /** A factor to expand internal buffer. */
     protected static final int EXPAND_MULTIPLIER = 2;
 
+    @Override
+    public int readUnsignedByte() {
+        return readByte() & CodecUtil.BYTE_MASK;
+    }
+
+    @Override
+    public int readUnsignedShort() {
+        return readShort() & CodecUtil.SHORT_MASK;
+    }
+
+    @Override
+    public int readMedium() {
+        int value = readUnsignedMedium();
+        return ((value & CodecUtil.MEDIUM_SIGN_MASK) != 0)
+                ? (value | CodecUtil.MEDIUM_UPPER8_MASK) : value;
+    }
+
+    @Override
+    public long readUnsignedInt() {
+        return readInt() & CodecUtil.INT_MASK;
+    }
+
     /**
      * Writes {@code Long.MIN_VALUE} with signed VBC.
      */
@@ -49,27 +71,26 @@ public abstract class AbstractCodecBuffer implements CodecBuffer {
     /**
      * {@inheritDoc}
      */
-    public void writeVariableByteNull() {
-        writeByte(CodecUtil.VB_END_BIT | CodecUtil.VB_SIGN_BIT);
+    public CodecBuffer writeVariableByteNull() {
+        return writeByte(CodecUtil.VB_END_BIT | CodecUtil.VB_SIGN_BIT);
     }
 
     /**
      * {@inheritDoc}
      */
-    public void writeVariableByteLong(long value) {
+    public CodecBuffer writeVariableByteLong(long value) {
 
         // Long.MIN_VALUE overflows if calculate it using ordinary logic.
         if (value == Long.MIN_VALUE) {
             writeVBLongMinValue();
-            return;
+            return this;
         }
 
         boolean isPositiveOrZero = (value >= 0);
         long magnitude = isPositiveOrZero ? value : -value; // negative zero is null see #
 
         if (magnitude <= CodecUtil.VB_MASK_BIT6) { // end with one byte
-            writeByte((int) magnitude | (isPositiveOrZero ? 0 : CodecUtil.VB_SIGN_BIT) | CodecUtil.VB_END_BIT);
-            return;
+            return writeByte((int) magnitude | (isPositiveOrZero ? 0 : CodecUtil.VB_SIGN_BIT) | CodecUtil.VB_END_BIT);
         }
 
         writeByte((int) magnitude & CodecUtil.VB_MASK_BIT6 | (isPositiveOrZero ? 0 : CodecUtil.VB_SIGN_BIT));
@@ -77,26 +98,25 @@ public abstract class AbstractCodecBuffer implements CodecBuffer {
         for ( ; magnitude > CodecUtil.VB_MASK_BIT7; magnitude >>>= CodecUtil.VB_BIT_IN_BYTE) {
             writeByte((int) magnitude & CodecUtil.VB_MASK_BIT7);
         }
-        writeByte((int) magnitude | CodecUtil.VB_END_BIT);
+        return writeByte((int) magnitude | CodecUtil.VB_END_BIT);
     }
 
     /**
      * {@inheritDoc}
      */
-    public void writeVariableByteInteger(int value) {
+    public CodecBuffer writeVariableByteInteger(int value) {
 
         // Integer.MIN_VALUE overflows if calculate it using ordinary logic.
         if (value == Integer.MIN_VALUE) {
             writeVBIntMinValue();
-            return;
+            return this;
         }
 
         boolean isPositiveOrZero = (value >= 0);
         int magnitude = isPositiveOrZero ? value : -value; // negative zero is null see #
 
         if (magnitude <= CodecUtil.VB_MASK_BIT6) { // end with one byte
-            writeByte(magnitude | (isPositiveOrZero ? 0 : CodecUtil.VB_SIGN_BIT) | CodecUtil.VB_END_BIT);
-            return;
+            return writeByte(magnitude | (isPositiveOrZero ? 0 : CodecUtil.VB_SIGN_BIT) | CodecUtil.VB_END_BIT);
         }
 
         writeByte(magnitude & CodecUtil.VB_MASK_BIT6 | (isPositiveOrZero ? 0 : CodecUtil.VB_SIGN_BIT));
@@ -104,29 +124,29 @@ public abstract class AbstractCodecBuffer implements CodecBuffer {
         for ( ; magnitude > CodecUtil.VB_MASK_BIT7; magnitude >>>= CodecUtil.VB_BIT_IN_BYTE) {
             writeByte(magnitude & CodecUtil.VB_MASK_BIT7);
         }
-        writeByte(magnitude | CodecUtil.VB_END_BIT);
+        return writeByte(magnitude | CodecUtil.VB_END_BIT);
     }
 
     /**
      * {@inheritDoc}
      */
-    public void writeVariableByteInteger(Integer value) {
+    public CodecBuffer writeVariableByteInteger(Integer value) {
         if (value == null) {
             writeVariableByteNull();
-            return;
+            return this;
         }
-        writeVariableByteInteger(value.intValue());
+        return writeVariableByteInteger(value.intValue());
     }
 
     /**
      * {@inheritDoc}
      */
-    public void writeVariableByteLong(Long value) {
+    public CodecBuffer writeVariableByteLong(Long value) {
         if (value == null) {
             writeVariableByteNull();
-            return;
+            return this;
         }
-        writeVariableByteLong(value.longValue());
+        return writeVariableByteLong(value.longValue());
     }
 
     /**
@@ -227,16 +247,16 @@ public abstract class AbstractCodecBuffer implements CodecBuffer {
      * {@inheritDoc}
      */
     @Override
-    public void writeFloat(float value) {
-        writeInt(Float.floatToIntBits(value));
+    public CodecBuffer writeFloat(float value) {
+        return writeInt(Float.floatToIntBits(value));
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void writeDouble(double value) {
-        writeLong(Double.doubleToLongBits(value));
+    public CodecBuffer writeDouble(double value) {
+        return writeLong(Double.doubleToLongBits(value));
     }
 
     /**

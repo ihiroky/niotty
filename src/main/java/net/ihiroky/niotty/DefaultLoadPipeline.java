@@ -1,35 +1,44 @@
 package net.ihiroky.niotty;
 
-import java.util.Iterator;
+import java.util.concurrent.TimeUnit;
 
 /**
- * Created on 13/01/10, 17:21
+ * A pipeline for the {@link LoadStage}.
  *
- * @author Hiroki Itoh
+ * @param <L> the type of the TaskLoop which executes the stages by default
  */
-public class DefaultLoadPipeline extends AbstractPipeline<LoadStage<?, ?>> implements LoadPipeline {
+public class DefaultLoadPipeline<L extends TaskLoop>
+        extends AbstractPipeline<LoadStage<?, ?>, L> implements LoadPipeline {
 
     private static final String SUFFIX_LOAD = "[load]";
+    private static final StageKey TAIL_STAGE_KEY = StageKeys.of("TAIL_LOAD_STAGE");
+    private static final LoadStage<Object, Object> TAIL_STAGE = new TailStage();
 
-    public DefaultLoadPipeline(String name, Transport transport) {
-        super(String.valueOf(name).concat(SUFFIX_LOAD), transport);
+    public DefaultLoadPipeline(
+            String name, AbstractTransport<L> transport, TaskLoopGroup<L> taskLoopGroup) {
+        super(String.valueOf(name).concat(SUFFIX_LOAD), transport, taskLoopGroup, TAIL_STAGE_KEY, TAIL_STAGE);
     }
 
     @Override
-    protected PipelineElement<Object, Object> createContext(
-            StageKey key, LoadStage<?, ?> stage, PipelineElementExecutorPool pool) {
+    protected final PipelineElement<Object, Object> createContext(
+            StageKey key, LoadStage<?, ?> stage, TaskLoopGroup<? extends TaskLoop> pool) {
         @SuppressWarnings("unchecked")
         LoadStage<Object, Object> s = (LoadStage<Object, Object>) stage;
-        return new LoadStageContext<>(this, key, s, pool);
+        return new LoadStageContext<Object, Object>(this, key, s, pool);
     }
 
-    public DefaultLoadPipeline createCopy() {
-        DefaultLoadPipeline copy = new DefaultLoadPipeline(name(), transport());
-        for (Iterator<PipelineElement<Object, Object>> i = iterator(); i.hasNext();) {
-            @SuppressWarnings("unchecked")
-            LoadStageContext<Object, Object> context = (LoadStageContext<Object, Object>) i.next();
-            copy.add(context.key(), context.stage(), context.executor().pool());
+    private static class TailStage implements LoadStage<Object, Object> {
+        @Override
+        public void load(StageContext<Object> context, Object input) {
         }
-        return copy;
+
+        @Override
+        public void load(StageContext<Object> context, TransportStateEvent event) {
+            try {
+                event.execute(TimeUnit.NANOSECONDS);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
     }
 }

@@ -41,6 +41,13 @@ public class ArrayCodecBufferTest {
         }
     }
 
+    public static class UnsignedReadTests extends CodecBufferTestAbstract.AbstractUnsignedTest {
+        @Override
+        protected CodecBuffer createCodecBuffer(byte[] buffer, int offset, int length) {
+            return new ArrayCodecBuffer(buffer, offset, length);
+        }
+    }
+
     public static class WriteTests extends CodecBufferTestAbstract.AbstractWriteTests {
         @Override
         protected CodecBuffer createDefaultCodecBuffer() {

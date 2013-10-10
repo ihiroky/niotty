@@ -1,51 +1,66 @@
 package net.ihiroky.niotty.nio;
 
+import net.ihiroky.niotty.DefaultTransportFuture;
 import net.ihiroky.niotty.DefaultTransportParameter;
 import net.ihiroky.niotty.DefaultTransportStateEvent;
-import net.ihiroky.niotty.FailedTransportFuture;
+import net.ihiroky.niotty.LoadPipeline;
 import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.SuccessfulTransportFuture;
-import net.ihiroky.niotty.Transport;
-import net.ihiroky.niotty.TransportAggregate;
-import net.ihiroky.niotty.TransportAggregateSupport;
+import net.ihiroky.niotty.TransportException;
 import net.ihiroky.niotty.TransportFuture;
+import net.ihiroky.niotty.TransportOption;
+import net.ihiroky.niotty.TransportOptions;
 import net.ihiroky.niotty.TransportParameter;
 import net.ihiroky.niotty.TransportState;
+import net.ihiroky.niotty.TransportStateEvent;
+import net.ihiroky.niotty.buffer.BufferSink;
+import net.ihiroky.niotty.util.JavaVersion;
+import net.ihiroky.niotty.util.Platform;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.net.StandardSocketOptions;
+import java.nio.ByteBuffer;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 /**
- * Created on 13/01/10, 14:38
- *
- * @author Hiroki Itoh
+ * An implementation of {@link net.ihiroky.niotty.Transport} for NIO {@code ServerSocketChannel}.
  */
-public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector> implements TransportAggregate {
+public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector> {
 
     private ServerSocketChannel serverChannel_;
     private NioServerSocketProcessor processor_;
-    private NioServerSocketConfig config_;
-    private TransportAggregateSupport childAggregate_;
+    private final Map<TransportOption<Object>, Object> acceptedSocketOptionMap_;
+    private Logger logger_ = LoggerFactory.getLogger(NioServerSocketTransport.class);
 
-    NioServerSocketTransport(NioServerSocketConfig config, NioServerSocketProcessor processor) {
-        super(processor.name(), PipelineComposer.empty(), DEFAULT_WEIGHT);
+    private static Set<TransportOption<?>> SUPPORTED_OPTIONS = Collections.unmodifiableSet(
+            new HashSet<TransportOption<?>>(Arrays.<TransportOption<?>>asList(
+                    TransportOptions.SO_RCVBUF, TransportOptions.SO_REUSEADDR)));
+
+    public NioServerSocketTransport(NioServerSocketProcessor processor) {
+        super(processor.name(), PipelineComposer.empty(), processor.acceptSelectorPool());
 
         ServerSocketChannel serverChannel = null;
         try {
             serverChannel = ServerSocketChannel.open();
             serverChannel.configureBlocking(false);
-            config.applySocketOptions(serverChannel);
 
-            this.config_ = config;
-            this.serverChannel_ = serverChannel;
-            this.processor_ = processor;
-            this.childAggregate_ = new TransportAggregateSupport();
+            serverChannel_ = serverChannel;
+            processor_ = processor;
+            acceptedSocketOptionMap_ = new HashMap<TransportOption<Object>, Object>();
         } catch (IOException ioe) {
             if (serverChannel != null) {
                 try {
@@ -58,14 +73,101 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
         }
     }
 
+    public NioServerSocketTransport(NioServerSocketProcessor processor, ServerSocketChannel channel) {
+        super(processor.name(), PipelineComposer.empty(), processor.acceptSelectorPool());
+
+        serverChannel_ = channel;
+        processor_ = processor;
+        acceptedSocketOptionMap_ = new HashMap<TransportOption<Object>, Object>();
+    }
+
+    /**
+     * Set a socket option.
+     * @param option the option
+     * @param value the value of the option
+     * @param <T> the type of the option
+     * @return this object
+     * @throws net.ihiroky.niotty.TransportException if an I/O error occurs
+     */
+    public <T> NioServerSocketTransport setOption(TransportOption<T> option, T value) {
+        try {
+            JavaVersion javaVersion = Platform.javaVersion();
+            if (javaVersion.ge(JavaVersion.JAVA7)) {
+                if (option == TransportOptions.SO_RCVBUF) {
+                    serverChannel_.setOption(StandardSocketOptions.SO_RCVBUF, (Integer) value);
+                } else if (option == TransportOptions.SO_REUSEADDR) {
+                    serverChannel_.setOption(StandardSocketOptions.SO_REUSEADDR, (Boolean) value);
+                } else {
+                    throw new UnsupportedOperationException(option.toString());
+                }
+            } else {
+                if (option == TransportOptions.SO_RCVBUF) {
+                    serverChannel_.socket().setReceiveBufferSize((Integer) value);
+                } else if (option == TransportOptions.SO_REUSEADDR) {
+                    serverChannel_.socket().setReuseAddress((Boolean) value);
+                } else {
+                    throw new UnsupportedOperationException(option.toString());
+                }
+            }
+        } catch (IOException ioe) {
+            throw new TransportException("Failed to set option " + option, ioe);
+        }
+        return this;
+    }
+
+    /**
+     * Returns a socket option value for a specified option.
+     * @param option the option
+     * @param <T> the type of the value
+     * @return the value
+     * @throws net.ihiroky.niotty.TransportException if I/O error occurs
+     */
+    public <T> T option(TransportOption<T> option) throws TransportException {
+        try {
+            JavaVersion javaVersion = Platform.javaVersion();
+            if (javaVersion.ge(JavaVersion.JAVA7)) {
+                if (option == TransportOptions.SO_RCVBUF) {
+                    return option.cast(serverChannel_.getOption(StandardSocketOptions.SO_RCVBUF));
+                } else if (option == TransportOptions.SO_REUSEADDR) {
+                    return option.cast(serverChannel_.getOption(StandardSocketOptions.SO_REUSEADDR));
+                } else {
+                    throw new UnsupportedOperationException(option.toString());
+                }
+            } else {
+                if (option == TransportOptions.SO_RCVBUF) {
+                    return option.cast(serverChannel_.socket().getReceiveBufferSize());
+                } else if (option == TransportOptions.SO_REUSEADDR) {
+                    return option.cast(serverChannel_.socket().getReuseAddress());
+                } else {
+                    throw new UnsupportedOperationException(option.toString());
+                }
+            }
+        } catch (IOException ioe) {
+            throw new TransportException("Failed to get option " + option, ioe);
+        }
+    }
+
+    @Override
+    public Set<TransportOption<?>> supportedOptions() {
+        return SUPPORTED_OPTIONS;
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T> NioServerSocketTransport setAcceptedTransportOption(TransportOption<T> option, T value) {
+        synchronized (acceptedSocketOptionMap_) {
+            acceptedSocketOptionMap_.put((TransportOption<Object>) option, value);
+        }
+        return this;
+    }
+
     @Override
     public void write(Object message) {
-        childAggregate_.write(message);
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void write(Object message, TransportParameter parameter) {
-        childAggregate_.write(message, parameter);
+        throw new UnsupportedOperationException();
     }
 
     public void write(Object message, int priority) {
@@ -75,7 +177,9 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
     @Override
     public InetSocketAddress localAddress() {
         try {
-            return (InetSocketAddress) serverChannel_.getLocalAddress();
+            return Platform.javaVersion().ge(JavaVersion.JAVA7)
+                    ? (InetSocketAddress) serverChannel_.getLocalAddress()
+                    : (InetSocketAddress) serverChannel_.socket().getLocalSocketAddress();
         } catch (IOException ioe) {
             throw new RuntimeException(ioe);
         }
@@ -83,7 +187,7 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
 
     @Override
     public InetSocketAddress remoteAddress() {
-        return null;
+        throw new UnsupportedOperationException("remoteAddress");
     }
 
     @Override
@@ -93,13 +197,42 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
 
     @Override
     public TransportFuture bind(SocketAddress socketAddress) {
-        try {
-            serverChannel_.bind(socketAddress, config_.backlog());
-            processor_.acceptSelectorPool().register(serverChannel_, SelectionKey.OP_ACCEPT, this);
-            return new SuccessfulTransportFuture(this);
-        } catch (IOException ioe) {
-            return new FailedTransportFuture(this, ioe);
-        }
+        return bind(socketAddress, 0);
+    }
+
+    @Override
+    public TransportFuture connect(SocketAddress local) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Binds the socket of this transport to a local address, and makes this transport acceptable.
+     *
+     * @param socketAddress the local address
+     * @param backlog maximum number of pending connections
+     * @return a future object to get the result of this operation
+     */
+    public TransportFuture bind(final SocketAddress socketAddress, final int backlog) {
+        final DefaultTransportFuture future = new DefaultTransportFuture(this);
+        // should be called from taskLoop().
+        storePipeline().execute(new TransportStateEvent(TransportState.BOUND) {
+            @Override
+            public long execute(TimeUnit timeUnit) throws Exception {
+                try {
+                    register(serverChannel_, SelectionKey.OP_ACCEPT, loadPipeline());
+                    if (Platform.javaVersion().ge(JavaVersion.JAVA7)) {
+                        serverChannel_.bind(socketAddress, backlog);
+                    } else {
+                        serverChannel_.socket().bind(socketAddress, backlog);
+                    }
+                    future.done();
+                } catch (IOException ioe) {
+                    future.setThrowable(ioe);
+                }
+                return DONE;
+            }
+        });
+        return future;
     }
 
     @Override
@@ -112,22 +245,42 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
         } catch (IOException ioe) {
             ioe.printStackTrace();
         }
-        return new SuccessfulTransportFuture(this);
+        TransportFuture future = new SuccessfulTransportFuture(this);
+        return future;
     }
 
     void registerReadLater(SelectableChannel channel) throws IOException {
         // SocketChannel#getRemoteAddress() may throw IOException, so get remoteAddress first.
-        InetSocketAddress remoteAddress = (InetSocketAddress) ((SocketChannel) channel).getRemoteAddress();
-        config_.applySocketOptions((SocketChannel) channel);
+        SocketChannel socketChannel = (SocketChannel) channel;
+        InetSocketAddress remoteAddress = Platform.javaVersion().ge(JavaVersion.JAVA7)
+                ? (InetSocketAddress) socketChannel.getRemoteAddress()
+                : (InetSocketAddress) socketChannel.socket().getRemoteSocketAddress();
 
+        TcpIOSelectorPool ioSelectorPool = processor_.ioSelectorPool();
         NioClientSocketTransport child = new NioClientSocketTransport(
-                config_, processor_.pipelineComposer(), DEFAULT_WEIGHT, processor_.name(), (SocketChannel) channel);
-        child.loadEvent(new DefaultTransportStateEvent(TransportState.CONNECTED, remoteAddress));
-        processor_.ioSelectorPool().register(channel, SelectionKey.OP_READ, child);
-        childAggregate_.add(child);
+                processor_.pipelineComposer(), processor_.name(),
+                ioSelectorPool, processor_.writeQueueFactory(), socketChannel);
+        synchronized (acceptedSocketOptionMap_) {
+            for (Map.Entry<TransportOption<Object>, Object> option : acceptedSocketOptionMap_.entrySet()) {
+                child.setOption(option.getKey(), option.getValue());
+            }
+        }
+        for (TransportOption<?> name : child.supportedOptions()) {
+            logger_.debug("[registerReadLater] accepted socket's {} = {}", name, child.option(name));
+        }
+
+        LoadPipeline targetPipeline = child.loadPipeline();
+        targetPipeline.execute(new DefaultTransportStateEvent(TransportState.CONNECTED, remoteAddress));
+        child.register(channel, SelectionKey.OP_READ, targetPipeline);
     }
 
-    public Set<Transport> childSet() {
-        return childAggregate_.childSet();
+    @Override
+    void flush(ByteBuffer writeBuffer) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    void readyToWrite(AttachedMessage<BufferSink> message) {
+        throw new UnsupportedOperationException();
     }
 }

@@ -21,7 +21,7 @@ public class SimpleWriteQueue implements WriteQueue {
     private int lastFlushedBytes_;
 
     SimpleWriteQueue() {
-        queue_ = new ConcurrentLinkedQueue<>();
+        queue_ = new ConcurrentLinkedQueue<AttachedMessage<BufferSink>>();
     }
 
     @Override
@@ -49,7 +49,7 @@ public class SimpleWriteQueue implements WriteQueue {
             limitBytes -= beforeTransfer;
             if (limitBytes < 0) {
                 lastFlushedBytes_ = flushedBytes;
-                return FlushStatus.SKIP;
+                return FlushStatus.SKIPPED;
             }
             if (buffer.transferTo(channel)) {
                 flushedBytes += beforeTransfer;
@@ -57,7 +57,7 @@ public class SimpleWriteQueue implements WriteQueue {
                 queue_.poll();
                 if (flushedBytes >= limitBytes) {
                     lastFlushedBytes_ = flushedBytes;
-                    return queue_.isEmpty() ? FlushStatus.FLUSHED : FlushStatus.SKIP;
+                    return queue_.isEmpty() ? FlushStatus.FLUSHED : FlushStatus.SKIPPED;
                 }
             } else {
                 lastFlushedBytes_ = flushedBytes + (beforeTransfer - buffer.remainingBytes());
@@ -84,7 +84,7 @@ public class SimpleWriteQueue implements WriteQueue {
 
             BufferSink buffer = message.message();
             byteBuffer.clear();
-            buffer.transferTo(byteBuffer);
+            buffer.copyTo(byteBuffer);
             byteBuffer.flip();
             SocketAddress target = (SocketAddress) message.parameter().argument();
 
@@ -97,11 +97,11 @@ public class SimpleWriteQueue implements WriteQueue {
                 queue_.poll();
                 if (flushedBytes >= limitBytes) {
                     lastFlushedBytes_ = flushedBytes;
-                    return queue_.isEmpty() ? FlushStatus.FLUSHED : FlushStatus.SKIP;
+                    return queue_.isEmpty() ? FlushStatus.FLUSHED : FlushStatus.SKIPPED;
                 }
             } else {
                 lastFlushedBytes_ = flushedBytes;
-                return FlushStatus.SKIP;
+                return FlushStatus.SKIPPED;
             }
         }
     }

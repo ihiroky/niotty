@@ -1,9 +1,10 @@
 package net.ihiroky.niotty.buffer;
 
+import net.ihiroky.niotty.util.Arguments;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.GatheringByteChannel;
-import java.util.Objects;
 
 /**
  * Holds a pair of {@link net.ihiroky.niotty.buffer.BufferSink}.
@@ -17,8 +18,8 @@ public class BufferSinkList implements BufferSink {
     private final BufferSink cdr_;
 
     BufferSinkList(BufferSink car, BufferSink cdr) {
-        Objects.requireNonNull(car, "car");
-        Objects.requireNonNull(cdr, "cdr");
+        Arguments.requireNonNull(car, "car");
+        Arguments.requireNonNull(cdr, "cdr");
         car_ = car;
         cdr_ = cdr;
     }
@@ -29,9 +30,9 @@ public class BufferSinkList implements BufferSink {
     }
 
     @Override
-    public void transferTo(ByteBuffer buffer) {
-        car_.transferTo(buffer);
-        car_.transferTo(buffer);
+    public void copyTo(ByteBuffer buffer) {
+        car_.copyTo(buffer);
+        cdr_.copyTo(buffer);
     }
 
 
@@ -86,7 +87,7 @@ public class BufferSinkList implements BufferSink {
     public byte[] array() {
         int remaining = remainingBytes();
         ByteBuffer bb = ByteBuffer.allocate(remaining);
-        transferTo(bb);
+        copyTo(bb);
         return bb.array();
     }
 
@@ -108,6 +109,11 @@ public class BufferSinkList implements BufferSink {
     public void dispose() {
         car_.dispose();
         cdr_.dispose();
+    }
+
+    @Override
+    public String toString() {
+        return "[" + car_ + ", " + cdr_ + "]";
     }
 
     BufferSink car() {

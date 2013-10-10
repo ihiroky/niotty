@@ -6,6 +6,9 @@ package net.ihiroky.niotty;
  * @author Hiroki Itoh
  */
 public enum TransportState {
+    /** The state to bind. */
+    BOUND,
+
     /** The state to connect. */
     CONNECTED,
 

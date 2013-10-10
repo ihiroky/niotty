@@ -1,33 +1,76 @@
 package net.ihiroky.niotty.nio;
 
+import net.ihiroky.niotty.NameCountThreadFactory;
+import net.ihiroky.niotty.TaskLoopGroup;
+import net.ihiroky.niotty.util.Arguments;
+
+import java.util.concurrent.ThreadFactory;
+
 /**
- * @author Hiroki Itoh
+ * An implementation of {@link net.ihiroky.niotty.nio.AcceptSelectorPool}
+ * to handle {@link net.ihiroky.niotty.nio.TcpIOSelector}.
  */
-public class TcpIOSelectorPool extends AbstractSelectorPool<TcpIOSelector> {
+public class TcpIOSelectorPool extends TaskLoopGroup<TcpIOSelector> {
 
-    private int readBufferSize_;
-    private boolean direct_;
+    private final int readBufferSize_;
+    private final boolean useDirectBuffer_;
+    private final boolean duplicateReadBuffer_;
 
-    private static final int DEFAULT_BUFFER_SIZE = 8192;
+    static final int DEFAULT_THREAD_NUM = Math.max(Runtime.getRuntime().availableProcessors() / 2, 1);
+    static final int DEFAULT_READ_BUFFER_SIZE = 8192;
+    static final boolean DEFAULT_USE_DIRECT_BUFFER = false;
+    static final boolean DEFAULT_DUPLICATE_READ_BUFFER = true;
 
+    /**
+     * Creates a new instance.
+     */
     public TcpIOSelectorPool() {
-        readBufferSize_ = DEFAULT_BUFFER_SIZE;
-        direct_ = false;
+        this(new NameCountThreadFactory("TcpIO"), DEFAULT_THREAD_NUM);
     }
 
-    public void setReadBufferSize(int size) {
-        if (readBufferSize_ <= 0) {
-            throw new IllegalArgumentException("readBufferSize must be positive.");
-        }
-        readBufferSize_ = size;
+    /**
+     * Creates a new instance.
+     *
+     * @param threadFactory a factory to create thread which runs this object
+     * @param workers the number of threads
+     */
+    public TcpIOSelectorPool(ThreadFactory threadFactory, int workers) {
+        this(threadFactory, workers,
+                DEFAULT_READ_BUFFER_SIZE, DEFAULT_USE_DIRECT_BUFFER, DEFAULT_DUPLICATE_READ_BUFFER);
     }
 
-    public void setDirect(boolean direct) {
-        direct_ = direct;
+    /**
+     * Creates a new instance.
+     *
+     * @param threadFactory a factory to create thread which runs this object
+     * @param workers the number of threads
+     * @param readBufferSize the size of a read buffer used to read data from a channel
+     * @param useDirectBuffer true if the read buffer is direct
+     * @param duplicateReadBuffer true if a content of the read buffer is duplicated
+     *                            when the content is passed to a pipeline
+     */
+    public TcpIOSelectorPool(ThreadFactory threadFactory, int workers,
+            int readBufferSize, boolean useDirectBuffer, boolean duplicateReadBuffer) {
+        super(threadFactory, workers);
+        readBufferSize_ = Arguments.requirePositive(readBufferSize, "readBufferSize");
+        useDirectBuffer_ = useDirectBuffer;
+        duplicateReadBuffer_ = duplicateReadBuffer;
+    }
+
+    public int readBufferSize() {
+        return readBufferSize_;
+    }
+
+    public boolean useDirectBuffer() {
+        return useDirectBuffer_;
+    }
+
+    public boolean duplicateReadBuffer() {
+        return duplicateReadBuffer_;
     }
 
     @Override
     protected TcpIOSelector newTaskLoop() {
-        return new TcpIOSelector(readBufferSize_, direct_);
+        return new TcpIOSelector(readBufferSize_, useDirectBuffer_, duplicateReadBuffer_);
     }
 }

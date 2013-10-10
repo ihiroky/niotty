@@ -2,42 +2,42 @@ package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.AbstractProcessor;
 import net.ihiroky.niotty.NameCountThreadFactory;
+import net.ihiroky.niotty.PipelineComposer;
+import net.ihiroky.niotty.util.Arguments;
 
 /**
- * @author Hiroki Itoh
+ * An implementation of {@link net.ihiroky.niotty.Processor} for NIO {@code DatagramChannel}.
  */
-public class NioDatagramSocketProcessor
-        extends AbstractProcessor<NioDatagramSocketTransport, NioDatagramSocketConfig> {
+public class NioDatagramSocketProcessor extends AbstractProcessor<NioDatagramSocketTransport> {
 
-    UdpIOSelectorPool ioSelectorPool_;
+    private UdpIOSelectorPool ioSelectorPool_;
     private int numberOfMessageIOThread_;
+    private WriteQueueFactory writeQueueFactory_;
+
     private int readBufferSize_;
     private int writeBufferSize_;
     private boolean useDirectBuffer_;
+    private boolean duplicateReadBuffer_;
 
-    private static final int DEFAULT_NUMBER_OF_MESSAGE_IO_THREAD =
-            Math.max(Runtime.getRuntime().availableProcessors() / 2, 2);
-    private static final int DEFAULT_BUFFER_SIZE = Short.MAX_VALUE;
-    private static final boolean DEFAULT_DIRECT_BUFFER = true;
+    private static final int DEFAULT_NUMBER_OF_MESSAGE_IO_THREAD = 1;
 
     private static final String DEFAULT_NAME = "NioDatagramSocket";
 
     public NioDatagramSocketProcessor() {
-        ioSelectorPool_ = new UdpIOSelectorPool();
-
         numberOfMessageIOThread_ = DEFAULT_NUMBER_OF_MESSAGE_IO_THREAD;
-        readBufferSize_ = DEFAULT_BUFFER_SIZE;
-        writeBufferSize_ = DEFAULT_BUFFER_SIZE;
-        useDirectBuffer_ = DEFAULT_DIRECT_BUFFER;
+        writeQueueFactory_ = new SimpleWriteQueueFactory();
+
+        readBufferSize_ = UdpIOSelectorPool.DEFAULT_READ_BUFFER_SIZE;
+        writeBufferSize_ = UdpIOSelectorPool.DEFAULT_WRITE_BUFFER_SIZE;
+        useDirectBuffer_ = UdpIOSelectorPool.DEFAULT_USE_DIRECT_BUFFER;
+        duplicateReadBuffer_ = UdpIOSelectorPool.DEFAULT_DUPLICATE_READ_BUFFER;
+        setName(DEFAULT_NAME);
     }
 
     @Override
     protected void onStart() {
-        ioSelectorPool_.setReadBufferSize(readBufferSize_);
-        ioSelectorPool_.setWriteBufferSize(writeBufferSize_);
-        ioSelectorPool_.setDirect(useDirectBuffer_);
-        ioSelectorPool_.open(new NameCountThreadFactory(name().concat("-IO")), numberOfMessageIOThread_);
-
+        ioSelectorPool_ = new UdpIOSelectorPool(new NameCountThreadFactory(name().concat("-IO")),
+                numberOfMessageIOThread_, readBufferSize_, writeBufferSize_, useDirectBuffer_, duplicateReadBuffer_);
     }
 
     @Override
@@ -46,27 +46,84 @@ public class NioDatagramSocketProcessor
     }
 
     @Override
-    public NioDatagramSocketTransport createTransport(NioDatagramSocketConfig config) {
-        return new NioDatagramSocketTransport(config, pipelineComposer(),
-                NioDatagramSocketTransport.DEFAULT_WEIGHT, name(), ioSelectorPool_);
+    public NioDatagramSocketTransport createTransport() {
+        return new NioDatagramSocketTransport(
+                null, pipelineComposer(), name(), ioSelectorPool_, writeQueueFactory_);
     }
 
     /**
      * Constructs the transport.
+     * The {@code protocolFamily} parameter is used to specify the {@code InternetProtocolFamily}.
+     * If the datagram channel is to be used for IP multicasing then this should correspond to
+     * the address type of the multicast groups that this channel will join.
      *
-     * @param config a configuration to construct the transport.
-     * @param weight a weight to choose I/O thread.
+     * @param family the protocolFamily
      * @return the transport.
      */
-    public NioDatagramSocketTransport createTransport(NioDatagramSocketConfig config, int weight) {
-        return new NioDatagramSocketTransport(config, pipelineComposer(), weight, name(), ioSelectorPool_);
+    public NioDatagramSocketTransport createTransport(InternetProtocolFamily family) {
+        return new NioDatagramSocketTransport(
+                family, pipelineComposer(), name(), ioSelectorPool_, writeQueueFactory_);
     }
 
-    public void setTaskWeightThresholdOfIOSelectorPool(int threshold) {
-        ioSelectorPool_.setTaskWeightThreshold(threshold);
+    @Override
+    public NioDatagramSocketProcessor setName(String name) {
+        super.setName(name);
+        return this;
     }
 
-    public int getTaskWeightThresholdOfIOSelectorPool() {
-        return ioSelectorPool_.getTaskWeightThreshold();
+    @Override
+    public NioDatagramSocketProcessor setPipelineComposer(PipelineComposer composer) {
+        super.setPipelineComposer(composer);
+        return this;
+    }
+
+    public NioDatagramSocketProcessor setNumberOfMessageIOThread(int numberOfMessageIOThread) {
+        this.numberOfMessageIOThread_ = Arguments.requirePositive(numberOfMessageIOThread, "numberOfMessageIOThread");
+        return this;
+    }
+
+    public int numberOfMessageIOThread() {
+        return numberOfMessageIOThread_;
+    }
+
+    public NioDatagramSocketProcessor setReadBufferSize(int readBufferSize) {
+        readBufferSize_ = Arguments.requirePositive(readBufferSize, "readBufferSize");
+        return this;
+    }
+
+    public int readBufferSize() {
+        return readBufferSize_;
+    }
+
+    public NioDatagramSocketProcessor setWriteBufferSize(int writeBufferSize) {
+        writeBufferSize_ = Arguments.requirePositive(writeBufferSize, "writeBufferSize");
+        return this;
+    }
+
+    public int writeBufferSize() {
+        return writeBufferSize_;
+    }
+
+    public NioDatagramSocketProcessor setUseDirectBuffer(boolean useDirectBuffer) {
+        useDirectBuffer_ = useDirectBuffer;
+        return this;
+    }
+
+    public boolean isUseDirectBuffer() {
+        return useDirectBuffer_;
+    }
+
+    public boolean duplicateReceiveBuffer() {
+        return ioSelectorPool_.duplicateBuffer();
+    }
+
+    public NioDatagramSocketProcessor setDuplicateReadeBuffer(boolean duplicateReadBuffer) {
+        duplicateReadBuffer_ = duplicateReadBuffer;
+        return this;
+    }
+
+    public NioDatagramSocketProcessor setWriteQueueFactory(WriteQueueFactory writeQueueFactory) {
+        writeQueueFactory_ = Arguments.requireNonNull(writeQueueFactory, "writeQueueFactory");
+        return this;
     }
 }

@@ -1,5 +1,7 @@
 package net.ihiroky.niotty.buffer;
 
+import net.ihiroky.niotty.util.Arguments;
+
 import java.io.IOException;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
@@ -9,7 +11,6 @@ import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CoderResult;
-import java.util.Objects;
 
 /**
  * Implementation of {@link net.ihiroky.niotty.buffer.CodecBuffer} using {@code byte[]}.
@@ -28,22 +29,17 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer {
     }
 
     ArrayCodecBuffer(ChunkManager<byte[]> manager, int initialCapacity) {
-        Objects.requireNonNull(manager, "manager");
-        if (initialCapacity < 0) {
-            throw new IllegalArgumentException("initialCapacity must not be negative.");
-        }
+        Arguments.requireNonNull(manager, "manager");
+        Arguments.requirePositiveOrZero(initialCapacity, "initialCapacity");
+
         chunk_ = manager.newChunk(initialCapacity);
         buffer_ = chunk_.initialize();
     }
 
     ArrayCodecBuffer(byte[] b, int beginning, int length) {
-        Objects.requireNonNull(b, "b");
-        if (beginning < 0) {
-            throw new IllegalArgumentException("beginning must be zero or positive.");
-        }
-        if (length < 0) {
-            throw new IllegalArgumentException("length must be zero or positive.");
-        }
+        Arguments.requireNonNull(b, "b");
+        Arguments.requirePositiveOrZero(beginning, "beginning");
+        Arguments.requirePositiveOrZero(length, "length");
         if (beginning + length > b.length) {
             throw new IndexOutOfBoundsException(
                     "offset + length (" + (beginning + length) + ") exceeds buffer capacity " + b.length);
@@ -89,62 +85,80 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer {
      * {@inheritDoc}
      */
     @Override
-    public void writeByte(int value) {
+    public ArrayCodecBuffer writeByte(int value) {
         ensureSpace(1);
         buffer_[end_++] = (byte) value;
+        return this;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void writeBytes(byte[] bytes, int offset, int length) {
+    public ArrayCodecBuffer writeBytes(byte[] bytes, int offset, int length) {
         ensureSpace(length);
         System.arraycopy(bytes, offset, buffer_, end_, length);
         end_ += length;
+        return this;
     }
 
     /**
      * {@inheritDoc}
      */
-    public void writeBytes(ByteBuffer byteBuffer) {
+    public ArrayCodecBuffer writeBytes(ByteBuffer byteBuffer) {
         int remaining = byteBuffer.remaining();
         ensureSpace(remaining);
         byteBuffer.get(buffer_, end_, remaining);
         end_ += remaining;
+        return this;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void writeShort(short value) {
+    public ArrayCodecBuffer writeShort(int value) {
         ensureSpace(CodecUtil.SHORT_BYTES);
         int c = end_;
         byte[] b = buffer_;
         b[c] = (byte) ((value >>> CodecUtil.BYTE_SHIFT1) & CodecUtil.BYTE_MASK);
         b[c + 1] = (byte) (value & CodecUtil.BYTE_MASK);
         end_ = c + CodecUtil.SHORT_BYTES;
+        return this;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void writeChar(char value) {
+    public ArrayCodecBuffer writeChar(char value) {
         ensureSpace(CodecUtil.CHAR_BYTES);
         int c = end_;
         byte[] b = buffer_;
         b[c] = (byte) ((value >>> CodecUtil.BYTE_SHIFT1) & CodecUtil.BYTE_MASK);
         b[c + 1] = (byte) (value & CodecUtil.BYTE_MASK);
         end_ = c + CodecUtil.CHAR_BYTES;
+        return this;
+    }
+
+    @Override
+    public ArrayCodecBuffer writeMedium(int value) {
+        ensureSpace(CodecUtil.MEDIUM_BYTES);
+        int c = end_;
+        byte[] b = buffer_;
+        int offset = 1;
+        b[c] = (byte) ((value >>> CodecUtil.BYTE_SHIFT2) & CodecUtil.BYTE_MASK);
+        b[c + offset++] = (byte) ((value >>> CodecUtil.BYTE_SHIFT1) & CodecUtil.BYTE_MASK);
+        b[c + offset] = (byte) (value & CodecUtil.BYTE_MASK);
+        end_ = c + CodecUtil.MEDIUM_BYTES;
+        return this;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void writeInt(int value) {
+    public ArrayCodecBuffer writeInt(int value) {
         ensureSpace(CodecUtil.INT_BYTES);
         int c = end_;
         byte[] b = buffer_;
@@ -154,13 +168,14 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer {
         b[c + offset++] = (byte) ((value >>> CodecUtil.BYTE_SHIFT1) & CodecUtil.BYTE_MASK);
         b[c + offset] = (byte) (value & CodecUtil.BYTE_MASK);
         end_ = c + CodecUtil.INT_BYTES;
+        return this;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void writeLong(long value) {
+    public ArrayCodecBuffer writeLong(long value) {
         ensureSpace(CodecUtil.LONG_BYTES);
         int c = end_;
         byte[] b = buffer_;
@@ -174,14 +189,15 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer {
         b[c + offset++] = (byte) ((value >>> CodecUtil.BYTE_SHIFT1) & CodecUtil.BYTE_MASK);
         b[c + offset] = (byte) (value & CodecUtil.BYTE_MASK);
         end_ = c + CodecUtil.LONG_BYTES;
+        return this;
     }
 
     /**
      * {@inheritDoc}
      */
-    public void writeString(String s, CharsetEncoder encoder) {
-        Objects.requireNonNull(encoder, "encoder");
-        Objects.requireNonNull(s, "s");
+    public ArrayCodecBuffer writeString(String s, CharsetEncoder encoder) {
+        Arguments.requireNonNull(encoder, "encoder");
+        Arguments.requireNonNull(s, "s");
 
         int end = end_;
         CharBuffer input = CharBuffer.wrap(s);
@@ -212,13 +228,22 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer {
                 }
             }
         }
+        return this;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public int readByte() {
+    public byte readByte() {
+        if (beginning_ >= end_) {
+            throw new IndexOutOfBoundsException("position exceeds end of buffer.");
+        }
+        return buffer_[beginning_++];
+    }
+
+    @Override
+    public int readUnsignedByte() {
         if (beginning_ >= end_) {
             throw new IndexOutOfBoundsException("position exceeds end of buffer.");
         }
@@ -282,6 +307,21 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer {
                 | (b[beginning_++] & CodecUtil.BYTE_MASK));
     }
 
+    @Override
+    public int readUnsignedMedium() {
+        byte[] b = buffer_;
+        int pos = beginning_;
+        if (pos + CodecUtil.MEDIUM_BYTES > end_) {
+            throw new IndexOutOfBoundsException("position exceeds the end of buffer if read medium wide byte.");
+        }
+        int result = ((b[pos++] & CodecUtil.BYTE_MASK) << CodecUtil.BYTE_SHIFT2)
+                | ((b[pos++] & CodecUtil.BYTE_MASK) << CodecUtil.BYTE_SHIFT1)
+                |  (b[pos++] & CodecUtil.BYTE_MASK);
+        beginning_ = pos;
+        return result;
+
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -292,10 +332,10 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer {
         if (pos + CodecUtil.INT_BYTES > end_) {
             throw new IndexOutOfBoundsException("position exceeds the end of buffer if read int wide byte.");
         }
-        int result = (((b[pos++] & CodecUtil.BYTE_MASK) << CodecUtil.BYTE_SHIFT3)
+        int result = ((b[pos++] & CodecUtil.BYTE_MASK) << CodecUtil.BYTE_SHIFT3)
                 | ((b[pos++] & CodecUtil.BYTE_MASK) << CodecUtil.BYTE_SHIFT2)
                 | ((b[pos++] & CodecUtil.BYTE_MASK) << CodecUtil.BYTE_SHIFT1)
-                |  (b[pos++] & CodecUtil.BYTE_MASK));
+                |  (b[pos++] & CodecUtil.BYTE_MASK);
         beginning_ = pos;
         return result;
     }
@@ -385,7 +425,7 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer {
     }
 
     @Override
-    public void transferTo(ByteBuffer byteBuffer) {
+    public void copyTo(ByteBuffer byteBuffer) {
         int space = byteBuffer.remaining();
         int beginning = beginning_;
         int remaining = end_ - beginning;
@@ -397,7 +437,7 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer {
 
     @Override
     public ArrayCodecBuffer addFirst(CodecBuffer buffer) {
-        Objects.requireNonNull(buffer, "buffer");
+        Arguments.requireNonNull(buffer, "buffer");
         int inputSize = buffer.remainingBytes();
         if (inputSize == 0) {
             return this;
@@ -437,7 +477,7 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer {
 
     @Override
     public ArrayCodecBuffer addLast(CodecBuffer buffer) {
-        Objects.requireNonNull(buffer, "buffer");
+        Arguments.requireNonNull(buffer, "buffer");
         int inputSize = buffer.remainingBytes();
         if (inputSize == 0) {
             return this;
@@ -542,10 +582,10 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer {
     @Override
     public CodecBuffer end(int end) {
         if (end < beginning_) {
-            throw new IndexOutOfBoundsException("end is less than beginning.");
+            throw new IndexOutOfBoundsException("The end " + end + " is less than beginning " + beginning_ + ".");
         }
         if (end > buffer_.length) {
-            throw new IndexOutOfBoundsException("end is greater than capacity.");
+            throw new IndexOutOfBoundsException("The end " + end+ " is greater than capacity " + buffer_.length + ".");
         }
         end_ = end;
         return this;
@@ -632,15 +672,16 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer {
 
         byte[] buffer = buffer_;
         int e = end - b.length;
-        for (int i = fromIndexInContent; i <= e; i++) {
+        BUFFER_LOOP: for (int i = fromIndexInContent; i <= e; i++) {
             if (buffer[i] != b[0]) {
                 continue;
             }
             for (int bi = 1; bi < b.length; bi++) {
-                if (buffer[i + bi] == b[bi]) {
-                    return i - beginning_;
+                if (buffer[i + bi] != b[bi]) {
+                    continue BUFFER_LOOP;
                 }
             }
+            return i - beginning_;
         }
         return -1;
     }

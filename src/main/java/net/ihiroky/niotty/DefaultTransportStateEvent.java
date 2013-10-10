@@ -1,5 +1,7 @@
 package net.ihiroky.niotty;
 
+import java.util.concurrent.TimeUnit;
+
 /**
  * @author Hiroki Itoh
  */
@@ -10,6 +12,7 @@ public class DefaultTransportStateEvent extends TransportStateEvent {
     }
 
     @Override
-    public void execute() {
+    public long execute(TimeUnit timeUnit) throws Exception {
+        return DONE;
     }
 }

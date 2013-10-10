@@ -61,6 +61,14 @@ public class SlicedCodecBufferTest {
         }
     }
 
+    public static class UnsignedTests extends CodecBufferTestAbstract.AbstractUnsignedTest {
+        @Override
+        protected CodecBuffer createCodecBuffer(byte[] buffer, int offset, int length) {
+            CodecBuffer b = new ArrayCodecBuffer(buffer, offset, length);
+            return new SlicedCodecBuffer(b);
+        }
+    }
+
     public static class WriteTests {
 
         SlicedCodecBuffer sut_;

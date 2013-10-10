@@ -5,9 +5,9 @@ import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.TransportStateEvent;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.CodecBuffer;
+import net.ihiroky.niotty.util.Arguments;
 
 import java.util.Arrays;
-import java.util.Objects;
 
 /**
  * @author Hiroki Itoh
@@ -19,7 +19,7 @@ public class DelimiterDecoder implements LoadStage<CodecBuffer, CodecBuffer> {
     private CodecBuffer buffer_;
 
     public DelimiterDecoder(byte[] delimiter, boolean removeDelimiter) {
-        Objects.requireNonNull(delimiter, "delimiter");
+        Arguments.requireNonNull(delimiter, "delimiter");
         if (delimiter.length == 0) {
             throw new IllegalArgumentException("The delimiter must not be empty.");
         }
@@ -53,8 +53,7 @@ public class DelimiterDecoder implements LoadStage<CodecBuffer, CodecBuffer> {
             }
 
             int frameLength = removeDelimiter_ ? end : end + delimiter_.length;
-            CodecBuffer output = Buffers.newCodecBuffer(frameLength);
-            output.drainFrom(b, frameLength);
+            CodecBuffer output = (b == input) ? b.slice(frameLength) : Buffers.newCodecBuffer(b, frameLength);
             if (removeDelimiter_) {
                 b.skipBytes(delimiter_.length);
             }

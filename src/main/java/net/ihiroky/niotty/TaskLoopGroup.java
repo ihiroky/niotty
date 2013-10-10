@@ -1,5 +1,7 @@
 package net.ihiroky.niotty;
 
+import net.ihiroky.niotty.util.Arguments;
+import net.ihiroky.niotty.util.Closable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -8,12 +10,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Provides a thread pool to execute {@link TaskLoop} and manages the task loop lifecycle.
@@ -21,75 +18,65 @@ import java.util.concurrent.TimeUnit;
  * @param <L> the actual type of the TaskLoop
  * @author Hiroki Itoh
  */
-public abstract class TaskLoopGroup<L extends TaskLoop> {
+public abstract class TaskLoopGroup<L extends TaskLoop> implements Closable {
 
     private final Collection<L> taskLoops_;
-    private ThreadPoolExecutor executor_;
+    private final ThreadFactory threadFactory_;
+    private final int workers_;
     private Logger logger_ = LoggerFactory.getLogger(TaskLoopGroup.class);
-    private int taskWeightThreshold_;
 
     /**
      * Constructs a new instance.
-     */
-    protected TaskLoopGroup() {
-        taskLoops_ = new HashSet<>();
-    }
-
-    /**
-     * Creates the thread pool internally if not created.
-     * @param threadFactory a thread factory
+     *
+     * @param threadFactory a factory to create thread which runs a task loop
      * @param workers the number of threads held in the thread pool
      */
-    public void open(ThreadFactory threadFactory, int workers) {
-        if (workers <= 0) {
-            throw new IllegalArgumentException("The workers must be positive.");
-        }
-        open(threadFactory, workers, workers);
+    protected TaskLoopGroup(ThreadFactory threadFactory, int workers) {
+        taskLoops_ = new HashSet<L>();
+        threadFactory_ = Arguments.requireNonNull(threadFactory, "threadFactory");
+        workers_ = Arguments.requirePositive(workers, "workers");
     }
 
     /**
-     * Creates the thread pool internally if not created.
-     *
-     * @param threadFactory a thread factory
-     * @param minWorkers a minimum number of threads held in the thread pool
-     * @param maxWorkers a maximum number of threads held in the thread pool
-     * @throws IllegalArgumentException if the threadFactory is null,
-     *                                  the minWorkers and the maxWorkers is not positive
-     *                                  or the minWorkers is greater than the maxWorkers
+     * Cleans up and Sets up the thread pool and if not created.
+     * This method may as well bing called ahead.
      */
-    public void open(ThreadFactory threadFactory, int minWorkers, int maxWorkers) {
-        Objects.requireNonNull(threadFactory, "threadFactory");
-        if (minWorkers <= 0) {
-            throw new IllegalArgumentException("minWorkers must be positive.");
-        }
-        if (maxWorkers <= 0) {
-            throw new IllegalArgumentException("minWorkers must be positive.");
-        }
-        if (minWorkers > maxWorkers) {
-            throw new IllegalArgumentException("maxWorkers must be equal or greater than minWorkers.");
-        }
-
+    public final void open() {
+        List<L> newTaskLoopList;
         synchronized (taskLoops_) {
-            if (executor_ == null) {
-                ThreadPoolExecutor executor = new ThreadPoolExecutor(
-                        minWorkers, maxWorkers, 1L, TimeUnit.MINUTES, new SynchronousQueue<Runnable>(), threadFactory);
-                Collection<L> taskLoops = new ArrayList<>(minWorkers);
-                for (int i = 0; i < minWorkers; i++) {
-                    L taskLoop = newTaskLoop();
-                    logger_.debug("[open] New task loop: {}.", taskLoop);
-                    executor.execute(taskLoop);
-                    taskLoops.add(taskLoop);
-                }
-                try {
-                    for (L taskLoop : taskLoops) {
-                        taskLoop.waitUntilStarted();
-                    }
-                    executor_ = executor;
-                    taskLoops_.addAll(taskLoops);
-                } catch (InterruptedException ie) {
-                    logger_.debug("Interrupted.", ie);
+            for (Iterator<L> iterator = taskLoops_.iterator(); iterator.hasNext();) {
+                L taskLoop = iterator.next();
+                if (!taskLoop.isAlive()) {
+                    logger_.debug("[open0] Dead task loop {} is found. Remove it and assign a new one.", taskLoop);
+                    iterator.remove();
                 }
             }
+
+            int n = workers_ - taskLoops_.size();
+            if (n == 0) {
+                return;
+            }
+            newTaskLoopList = new ArrayList<L>(n);
+            for (int i = 0; i < n; i++) {
+                L newTaskLoop = newTaskLoop();
+                Thread thread = threadFactory_.newThread(newTaskLoop);
+                thread.start();
+                taskLoops_.add(newTaskLoop);
+                newTaskLoopList.add(newTaskLoop);
+                logger_.debug("[open0] New task loop {} is created. Task loop count: {}.",
+                        newTaskLoop, taskLoops_.size());
+            }
+        }
+
+        // Ensure that loop.onOpen() is called now.
+        // And doesn't wait in the synchronized block.
+        try {
+            for (L newTaskLoop : newTaskLoopList) {
+                newTaskLoop.waitUntilStarted();
+            }
+        } catch (InterruptedException ie) {
+            logger_.debug("[open0] Interrupted. Close active task loops.", ie);
+            close();
         }
     }
 
@@ -102,11 +89,6 @@ public abstract class TaskLoopGroup<L extends TaskLoop> {
                 taskLoop.close();
             }
             taskLoops_.clear();
-            ExecutorService executor = executor_;
-            if (executor != null) {
-                executor.shutdownNow();
-                executor_ = null;
-            }
         }
     }
 
@@ -116,7 +98,7 @@ public abstract class TaskLoopGroup<L extends TaskLoop> {
      */
     public boolean isOpen() {
         synchronized (taskLoops_) {
-            return (executor_ != null) && !executor_.isShutdown();
+            return !taskLoops_.isEmpty();
         }
     }
 
@@ -124,31 +106,12 @@ public abstract class TaskLoopGroup<L extends TaskLoop> {
      * Offers a task for each task loop.
      * @param task the task to be executed in the task loops
      */
-    public void offerTask(TaskLoop.Task task) {
+    public void offerTask(Task task) {
         synchronized (taskLoops_) {
             for (L loop : taskLoops_) {
-                loop.offerTask(task);
+                loop.offer(task);
             }
         }
-    }
-
-    /**
-     * Returns the weight threshold to choose a task loop.
-     * @return the weight threshold to choose a task loop
-     */
-    public int getTaskWeightThreshold() {
-        return taskWeightThreshold_;
-    }
-
-    /**
-     * Sets the weight threshold to choose a task loop.
-     * @param taskWeightThreshold the threshold
-     */
-    public void setTaskWeightThreshold(int taskWeightThreshold) {
-        if (taskWeightThreshold < 0) {
-            throw new IllegalArgumentException("The taskWeightThreshold must not be negative");
-        }
-        taskWeightThreshold_ = taskWeightThreshold;
     }
 
     /**
@@ -157,108 +120,37 @@ public abstract class TaskLoopGroup<L extends TaskLoop> {
      * @param selection the selection added to a selected task loop
      * @return the task loop
      */
-    protected L assign(TaskSelection selection) {
-        Objects.requireNonNull(selection, "selection");
-        if (selection.weight() <= 0) {
-            throw new IllegalArgumentException("The selection.weight() must be positive.");
-        }
+    public L assign(TaskSelection selection) {
+        Arguments.requireNonNull(selection, "selection");
 
-        int minWeight = Integer.MAX_VALUE;
-        L minWeighted = null;
-        int minWeightedUnderThreshold = Integer.MAX_VALUE;
-        L weightedUnderThreshold = null;
+        int minCount = Integer.MAX_VALUE;
+        L minCountLoop = null;
+        open();
         synchronized (taskLoops_) {
-            sweepDeadLoop();
             for (L loop : taskLoops_) {
-                if (loop.contains(selection)) {
+                if (loop.countUpDuplication(selection)) {
                     logger_.debug("[assign] [{}] is already assigned to [{}]", selection, loop);
                     return loop;
                 }
-
-                int taskLoopWeight = loop.weight();
-                if (taskLoopWeight < minWeight) {
-                    minWeight = taskLoopWeight;
-                    minWeighted = loop;
-                }
-
-                // Search already weighted task loops which is light enough to add the selection
-                // and has minimum weight in the loops.
-                if (taskLoopWeight > 0
-                        && taskWeightThreshold_ - taskLoopWeight >= selection.weight()
-                        && taskLoopWeight < minWeightedUnderThreshold) {
-                    minWeightedUnderThreshold = taskLoopWeight;
-                    weightedUnderThreshold = loop;
+                int count = loop.selectionCount();
+                if (count < minCount) {
+                    minCount = count;
+                    minCountLoop = loop;
                 }
             }
-            if (weightedUnderThreshold != null) {
-                weightedUnderThreshold.accept(selection);
-                return weightedUnderThreshold;
-            }
-            if (minWeight > 0 // There is non idle task loop.
-                    && taskWeightThreshold_ > 0
-                    && taskLoops_.size() < executor_.getMaximumPoolSize()) {
-                weightedUnderThreshold = addTaskLoop();
-                weightedUnderThreshold.accept(selection);
-                return weightedUnderThreshold;
-            }
-            if (minWeighted != null) {
-                minWeighted.accept(selection);
-                return minWeighted;
-            }
         }
-
-        throw new IllegalStateException("This TaskLoopGroup may be closed.");
-    }
-
-    private L addTaskLoop() {
-        L newTaskLoop = newTaskLoop();
-        executor_.execute(newTaskLoop);
-        taskLoops_.add(newTaskLoop);
-        logger_.debug("[addTaskLoop] New task loop {} is created. Task loop count: {}.", taskLoops_.size());
-        return newTaskLoop;
-    }
-
-    private void sweepDeadLoop() {
-        for (Iterator<L> iterator = taskLoops_.iterator(); iterator.hasNext();) {
-            L taskLoop = iterator.next();
-            if (!taskLoop.isAlive()) {
-                logger_.debug("[sweepDeadLoop] Dead loop is found: {}", taskLoop);
-                iterator.remove();
-            }
+        if (minCountLoop == null) {
+            throw new IllegalStateException("This TaskLoopGroup may be closed.");
         }
-
-        int min = (executor_ != null) ? executor_.getCorePoolSize() : 0;
-        int n = min - taskLoops_.size();
-        for (int i = 0; i < n; i++) {
-            addTaskLoop();
-        }
-    }
-
-    /**
-     * Returns the number of task loops.
-     * @return the number of task loops
-     */
-    public int pooledTaskLoops() {
-        synchronized (taskLoops_) {
-            return taskLoops_.size();
-        }
-    }
-
-    /**
-     * Returns a view of the task loops.
-     * @return a view of the task loops
-     */
-    protected List<L> taskLoopsView() {
-        List<L> view;
-        synchronized (taskLoops_) {
-            view = new ArrayList<>(taskLoops_);
-        }
-        return view;
+        minCountLoop.accept(selection);
+        logger_.debug("[assign] {} is assigned to {}", selection, minCountLoop);
+        return minCountLoop;
     }
 
     /**
      * Creates a new task loop.
-     * @return a new task loop
+     *
+     * @return the task loop
      */
     protected abstract L newTaskLoop();
 }

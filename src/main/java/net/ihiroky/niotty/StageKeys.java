@@ -1,6 +1,6 @@
 package net.ihiroky.niotty;
 
-import java.util.Objects;
+import net.ihiroky.niotty.util.Arguments;
 
 /**
  * @author Hiroki Itoh
@@ -48,7 +48,7 @@ public class StageKeys {
         String key_;
 
         StringStageKey(String key) {
-            Objects.requireNonNull(key, "key");
+            Arguments.requireNonNull(key, "key");
             key_ = key;
         }
 

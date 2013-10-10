@@ -1,8 +1,7 @@
 package net.ihiroky.niotty;
 
-import net.ihiroky.niotty.buffer.BufferSink;
+import net.ihiroky.niotty.util.Arguments;
 
-import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -12,170 +11,70 @@ import java.util.concurrent.atomic.AtomicReference;
  * {@link net.ihiroky.niotty.TaskLoop} is also held by this class, which handles asynchronous I/O operations</p>
  *
  * @param <T> The type of {@link net.ihiroky.niotty.TaskLoop}
- * @author Hiroki Itoh
  */
 public abstract class AbstractTransport<T extends TaskLoop> implements Transport, TaskSelection {
 
-    private volatile DefaultLoadPipeline loadPipeline_;
-    private volatile DefaultStorePipeline storePipeline_;
+    private final DefaultLoadPipeline<T> loadPipeline_;
+    private final DefaultStorePipeline<T> storePipeline_;
     private final AtomicReference<Object> attachmentReference_;
-    private DefaultTransportFuture closeFuture_;
-    private T loop_;
-    private final int weight_;
+    private final DefaultTransportFuture closeFuture_;
+    private final T loop_;
 
     /**
      * Creates a new instance.
-     */
-    protected AbstractTransport(String name, PipelineComposer pipelineComposer, int weight) {
-        Objects.requireNonNull(name, "name");
-        Objects.requireNonNull(pipelineComposer, "pipelineComposer");
-        if (weight <= 0) {
-            throw new IllegalArgumentException("The weight must be positive.");
-        }
-
-        attachmentReference_ = new AtomicReference<>();
-        closeFuture_ = new DefaultTransportFuture(this);
-        weight_ = weight;
-        setUpPipelines(name, pipelineComposer);
-    }
-
-    /**
-     * <p>Initializes the load / store pipeline with a specified pipeline composer.</p>
      *
-     * @param baseName a name used in {@link net.ihiroky.niotty.AbstractPipeline}.
-     * @param pipelineComposer the composer to set up the load / store pipeline.
+     * @param name a name of this transport
+     * @param pipelineComposer a composer to initialize a pipeline for this transport
+     * @param taskLoopGroup the pool which offers the TaskLoop to execute the stage
      */
-    private void setUpPipelines(String baseName, PipelineComposer pipelineComposer) {
+    protected AbstractTransport(
+            String name, PipelineComposer pipelineComposer, TaskLoopGroup<T> taskLoopGroup) {
+        Arguments.requireNonNull(name, "name");
+        Arguments.requireNonNull(pipelineComposer, "pipelineComposer");
 
-        DefaultLoadPipeline loadPipeline = new DefaultLoadPipeline(baseName, this);
-        DefaultStorePipeline storePipeline = new DefaultStorePipeline(baseName, this);
+        attachmentReference_ = new AtomicReference<Object>();
+        closeFuture_ = new DefaultTransportFuture(this);
+        loop_ = taskLoopGroup.assign(this);
+
+        DefaultLoadPipeline<T> loadPipeline = new DefaultLoadPipeline<T>(name, this, taskLoopGroup);
+        DefaultStorePipeline<T> storePipeline = new DefaultStorePipeline<T>(name, this, taskLoopGroup, ioStage());
         pipelineComposer.compose(loadPipeline, storePipeline);
-
-        loadPipeline.verifyStageType();
-        storePipeline.verifyStageType();
 
         loadPipeline_ = loadPipeline;
         storePipeline_ = storePipeline;
     }
 
     /**
-     * <p>Executes the load pipeline.</p>
-     * @param message A message to be processed.
+     * Creates a stage which handle I/O operation.
+     * The implementation class should define this method as final and safe.
+     * This method is called in the constructor.
+     * @return the stage
      */
-    protected void executeLoad(Object message) {
-        loadPipeline_.execute(message);
+    protected abstract StoreStage<?, ?> ioStage();
+
+    @Override
+    public LoadPipeline loadPipeline() {
+        return loadPipeline_;
     }
 
-    /**
-     * <p>Executes the load pipeline.</p>
-     * @param message A message to be processed.
-     * @param parameter A parameter which is passed to I/O implementation.
-     */
-    protected void executeLoad(Object message, TransportParameter parameter) {
-        loadPipeline_.execute(message, parameter);
-    }
-
-    /**
-     * <p>Executes the load pipeline.</p>
-     * @param stateEvent an event to change transport state.
-     */
-    protected void executeLoad(TransportStateEvent stateEvent) {
-        loadPipeline_.execute(stateEvent);
-    }
-
-    /**
-     * <p>Executes the store pipeline.</p>
-     * @param message A message to be processed.
-     */
-    protected void executeStore(Object message) {
-        storePipeline_.execute(message);
-    }
-
-    /**
-     * <p>Executes the store pipeline.</p>
-     * @param message A message to be processed.
-     * @param parameter A parameter which is passed to I/O implementation.
-     */
-    protected void executeStore(Object message, TransportParameter parameter) {
-        storePipeline_.execute(message, parameter);
-    }
-
-    /**
-     * <p>Executes the store pipeline.</p>
-     * @param stateEvent an event to change transport state.
-     */
-    protected void executeStore(TransportStateEvent stateEvent) {
-        storePipeline_.execute(stateEvent);
-    }
-
-    /**
-     * Resets the pipelines with the specified composer.
-     * @param composer the composer to reset pipelines.
-     */
-    public final void resetPipelines(PipelineComposer composer) {
-        Objects.requireNonNull(composer, "composer");
-
-        // use the same lock object as listener to save memory footprint.
-        synchronized (this) {
-            DefaultLoadPipeline oldLoadPipeline = loadPipeline_;
-            DefaultStorePipeline oldStorePipeline = storePipeline_;
-            DefaultLoadPipeline loadPipelineCopy = oldLoadPipeline.createCopy();
-            DefaultStorePipeline storePipelineCopy = oldStorePipeline.createCopy();
-            composer.compose(loadPipelineCopy, storePipelineCopy);
-
-            StoreStage<BufferSink, Void> ioStage = oldStorePipeline.searchIOStage();
-            if (ioStage != null) {
-                storePipelineCopy.addIOStage(ioStage);
-            }
-            loadPipelineCopy.verifyStageType();
-            storePipelineCopy.verifyStageType();
-
-            loadPipeline_ = loadPipelineCopy;
-            storePipeline_ = storePipelineCopy;
-            oldLoadPipeline.close();
-            oldStorePipeline.close();
-        }
+    @Override
+    public StorePipeline storePipeline() {
+        return storePipeline_;
     }
 
     /**
      * Closes pipelines.
      */
-    public final void closePipelines() {
+    public void closePipelines() {
         loadPipeline_.close();
         storePipeline_.close();
-    }
-
-    /**
-     * Adds the specified stage at the end of the store pipeline.
-     * @param ioStage the stage
-     */
-    public final void addIOStage(StoreStage<BufferSink, Void> ioStage) {
-        if (storePipeline_ == null) {
-            throw new IllegalStateException("setUpPipelines() is not called.");
-        }
-        Objects.requireNonNull(ioStage, "ioStage");
-        storePipeline_.addIOStage(ioStage);
-    }
-
-    @Override
-    public int weight() {
-        return weight_;
-    }
-
-    /**
-     * Sets the instance of {@link net.ihiroky.niotty.TaskLoop}.
-     * @param loop the the instance of {@code TaskLoop}.
-     */
-    public final void setTaskLoop(T loop) {
-        Objects.requireNonNull(loop, "loop");
-        this.loop_ = loop;
     }
 
     /**
      * Gets the instance of {@link net.ihiroky.niotty.TaskLoop}.
      * @return <T> the TaskLoop.
      */
-    protected final T taskLoop() {
+    public T taskLoop() {
         return loop_;
     }
 
@@ -186,12 +85,12 @@ public abstract class AbstractTransport<T extends TaskLoop> implements Transport
 
     @Override
     public void write(Object message) {
-        executeStore(message);
+        storePipeline_.execute(message);
     }
 
     @Override
     public void write(Object message, TransportParameter parameter) {
-        executeStore(message, parameter);
+        storePipeline_.execute(message, parameter);
     }
 
     /**
@@ -204,8 +103,9 @@ public abstract class AbstractTransport<T extends TaskLoop> implements Transport
      * @param priority the priority
      */
     public void write(Object message, int priority) {
-        executeStore(message, new DefaultTransportParameter(priority));
+        storePipeline_.execute(message, new DefaultTransportParameter(priority));
     }
+
     @Override
     public Object attach(Object attachment) {
         return attachmentReference_.getAndSet(attachment);

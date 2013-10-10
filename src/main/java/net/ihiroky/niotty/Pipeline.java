@@ -1,21 +1,183 @@
 package net.ihiroky.niotty;
 
 /**
- * Created on 13/01/09, 17:21
- * TODO preapre context iterator for rebuild pipeline
- * @author Hiroki Itoh
+ * <p>Provides a chain of {@link LoadStage} or {@link StoreStage} to process
+ * transmission data and states of a {@link Transport} which has this pipeline.</p>
+ *
+ * <p>Each stage is associated with {@link StageKey}. The stage key must be unique
+ * in a pipeline.</p>
+ *
+ * <p>The special stage key {@link #IO_STAGE_KEY} is reserved for Niotty to specify
+ * I/O stage. An user must not use it, or throws {@code IllegalArgumentException}
+ * by add remove and replace operation.</p>
+ *
+ * <h4>Thread model</h4>
+ * <p>Each stage is executed in the {@link TaskLoop} to which the transport belongs
+ * by default. Use {@link DefaultTaskLoopGroup} to allocate dedicated threads for
+ * a stage when it is added to the pipeline. The {@code DefaultTaskLoopGroup} must
+ * be shutdown in application shutdown procedure. See {@link PipelineComposer}
+ * to synchronize its lifecycle with Niotty.</p>
+ *
+ * @param <S> the type of the stage
  */
 public interface Pipeline<S> {
 
+    /** The stage key to specify I/O stage. */
+    StageKey IO_STAGE_KEY = StageKeys.of("IO_STAGE_KEY");
+
+    /**
+     * Adds the specified key and stage to the end of this pipeline.
+     *
+     * @param key the stage key which is associated with the stage
+     * @param stage the stage to be added
+     * @return this pipeline
+     * @throws IllegalArgumentException the key is {@link #IO_STAGE_KEY} or already exist in this pipeline
+     * @throws NullPointerException if the key or stage is null
+     */
     Pipeline<S> add(StageKey key, S stage);
-    Pipeline<S> add(StageKey key, S stage, PipelineElementExecutorPool pool);
+
+    /**
+     * Adds the specified key and stage to the end of this pipeline.
+     *
+     * @param key the stage key which is associated with the stage
+     * @param stage the stage to be added
+     * @param pool the pool which offers the TaskLoop to execute the stage
+     * @throws IllegalArgumentException the key is {@link #IO_STAGE_KEY} or already exist in this pipeline
+     * @throws NullPointerException if the key or stage is null
+     */
+    Pipeline<S> add(StageKey key, S stage, TaskLoopGroup<? extends TaskLoop> pool);
+
+    /**
+     * Adds the specified key and stage before the stage specified with the base stage key.
+     *
+     * @param baseKey the base stage key
+     * @param key the stage key which is associated with the stage
+     * @param stage the stage to be added
+     * @return this pipeline
+     * @throws IllegalArgumentException the key is {@link #IO_STAGE_KEY} or already exist in this pipeline
+     * @throws NullPointerException if the baseKey, key or stage is null
+     * @throws java.util.NoSuchElementException if the base stage key is not found in this pipeline
+     */
     Pipeline<S> addBefore(StageKey baseKey, StageKey key, S stage);
-    Pipeline<S> addBefore(StageKey baseKey, StageKey key, S stage, PipelineElementExecutorPool pool);
+
+    /**
+     * Adds the specified key and stage before the stage specified with the base stage key.
+     *
+     * @param baseKey the base stage key
+     * @param key the stage key which is associated with the stage
+     * @param stage the stage to be added
+     * @param pool the pool which offers the TaskLoop to execute the stage
+     * @return this pipeline
+     * @throws IllegalArgumentException the key is {@link #IO_STAGE_KEY} or already exist in this pipeline
+     * @throws NullPointerException if the baseKey, key or stage is null
+     * @throws java.util.NoSuchElementException if the base stage key is not found in this pipeline
+     */
+    Pipeline<S> addBefore(StageKey baseKey, StageKey key, S stage, TaskLoopGroup<? extends TaskLoop> pool);
+
+    /**
+     * Adds the specified key and stage after the stage specified with the base stage key.
+     *
+     * @param baseKey the base stage key
+     * @param key the stage key which is associated with the stage
+     * @param stage the stage to be added
+     * @return this pipeline
+     * @throws IllegalArgumentException the key is {@link #IO_STAGE_KEY} or already exist in this pipeline
+     * @throws NullPointerException if the baseKey, key or stage is null
+     * @throws java.util.NoSuchElementException if the base stage key is not found in this pipeline
+     */
     Pipeline<S> addAfter(StageKey baseKey, StageKey key, S stage);
-    Pipeline<S> addAfter(StageKey baseKey, StageKey key, S stage, PipelineElementExecutorPool pool);
+
+    /**
+     * Adds the specified key and stage after the stage specified with the base stage key.
+     *
+     * @param baseKey the base stage key
+     * @param key the stage key which is associated with the stage
+     * @param stage the stage to be added
+     * @param pool the pool which offers the TaskLoop to execute the stage
+     * @return this pipeline
+     * @throws IllegalArgumentException the key is {@link #IO_STAGE_KEY} or already exist in this pipeline
+     * @throws NullPointerException if the baseKey, key or stage is null
+     * @throws java.util.NoSuchElementException if the base stage key is not found in this pipeline
+     */
+    Pipeline<S> addAfter(StageKey baseKey, StageKey key, S stage, TaskLoopGroup<? extends TaskLoop> pool);
+
+    /**
+     * Removes a stage specified with the stage key.
+     *
+     * @param key the stage key which is associated with the stage to be removed
+     * @return this pipeline
+     * @throws IllegalArgumentException the key is {@link #IO_STAGE_KEY} or already exist in this pipeline
+     * @throws NullPointerException if the key is null
+     * @throws java.util.NoSuchElementException if the base stage key is not found in this pipeline
+     */
     Pipeline<S> remove(StageKey key);
+
+    /**
+     * Replaces a stage associated with the old key to the new stage associated with the new key.
+     *
+     * @param oldKey the old key which specifies the stage to be removed
+     * @param newKey the new key which is associated with the new stage
+     * @param newStage the new stage to be added
+     * @return this pipeline
+     * @throws IllegalArgumentException the new key is {@link #IO_STAGE_KEY} or already exist in this pipeline
+     * @throws NullPointerException if the old key, new key, new stage is null
+     * @throws java.util.NoSuchElementException if the stage associated with the old key key is not found
+     *         in this pipeline
+     */
     Pipeline<S> replace(StageKey oldKey, StageKey newKey, S newStage);
-    Pipeline<S> replace(StageKey oldKey, StageKey newKey, S newStage, PipelineElementExecutorPool pool);
+
+    /**
+     * Replaces a stage associated with the old key to the new stage associated with the new key.
+     *
+     * @param oldKey the old key which specifies the stage to be removed
+     * @param newKey the new key which is associated with the new stage
+     * @param newStage the new stage to be added
+     * @param pool the pool which offers the TaskLoop to execute the stage
+     * @return this pipeline
+     * @throws IllegalArgumentException the new key is {@link #IO_STAGE_KEY} or already exist in this pipeline
+     * @throws NullPointerException if the old key, new key, new stage is null
+     * @throws java.util.NoSuchElementException if the stage associated with the old key key is not found
+     *         in this pipeline
+     */
+    Pipeline<S> replace(StageKey oldKey, StageKey newKey, S newStage, TaskLoopGroup<? extends TaskLoop> pool);
+
+    /**
+     * Calls a message handler chain in this pipeline.
+     * @param input the message
+     */
+    void execute(final Object input);
+
+    /**
+     * Calls a message handler chain with a parameter in this pipeline.
+     * @param input the message
+     * @param parameter the parameter
+     */
+    void execute(final Object input, final TransportParameter parameter);
+
+    /**
+     * Calls a state event handler chain in this pipeline.
+     * @param event the state event
+     */
+    void execute(final TransportStateEvent event);
+
+        /**
+         * Returns the name of this pipeline.
+         * @return the name of this pipeline
+         */
     String name();
-    Transport transport();
+
+    /**
+     * Searches a context that holds a stage specified with the {@code key}.
+     * @param key the key to specify the context
+     * @return the context
+     */
+    StageContext<Object> searchContext(StageKey key);
+
+    /**
+     * Writes logs of the stage type verification.
+     * Writes logs if the type definition of stage input is not assignable from the output one of the previous stage.
+     * It may not be invalid if the verification is failed. The type chain in the pipeline may not be safe originally.
+     *
+     */
+    void logTypeVerification();
 }

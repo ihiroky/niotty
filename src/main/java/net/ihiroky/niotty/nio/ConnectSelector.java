@@ -2,7 +2,10 @@ package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.DefaultTransportFuture;
 import net.ihiroky.niotty.DefaultTransportStateEvent;
+import net.ihiroky.niotty.LoadPipeline;
+import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.TransportState;
+import net.ihiroky.niotty.buffer.BufferSink;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,16 +19,15 @@ import java.util.Set;
 
 /**
  * Created on 13/01/17, 18:10
- *
- * @author Hiroki Itoh
  */
 public class ConnectSelector extends AbstractSelector {
 
-    private final TcpIOSelectorPool ioSelectorPool_;
     private Logger logger_ = LoggerFactory.getLogger(ConnectSelector.class);
 
-    ConnectSelector(TcpIOSelectorPool ioSelectorPool) {
-        ioSelectorPool_ = ioSelectorPool;
+    /**
+     * Creates a new instance.
+     */
+    protected ConnectSelector() {
     }
 
     @Override
@@ -40,7 +42,7 @@ public class ConnectSelector extends AbstractSelector {
             try {
                 if (channel.finishConnect()) {
                     logger_.info("new channel {} is connected.", channel);
-                    unregister(key, attachment);
+                    attachment.clearInterestOp(SelectionKey.OP_CONNECT);
 
                     registerReadLater(channel, attachment.transport(), attachment.getFuture());
                 }
@@ -54,10 +56,15 @@ public class ConnectSelector extends AbstractSelector {
     void registerReadLater(SelectableChannel channel,
             NioClientSocketTransport transport, DefaultTransportFuture future) throws IOException {
         InetSocketAddress remoteAddress = transport.remoteAddress();
-        transport.loadEvent(new DefaultTransportStateEvent(TransportState.CONNECTED, remoteAddress));
-        ioSelectorPool_.register(channel, SelectionKey.OP_READ, transport);
+        LoadPipeline targetPipeline = transport.loadPipeline();
+        targetPipeline.execute(new DefaultTransportStateEvent(TransportState.CONNECTED, remoteAddress));
+        transport.register(channel, SelectionKey.OP_READ, targetPipeline);
 
         // The done() must be called after register() to ensure that the SelectionKey of IO selector is fixed.
         future.done();
+    }
+
+    @Override
+    public void store(StageContext<Void> context, BufferSink input) {
     }
 }

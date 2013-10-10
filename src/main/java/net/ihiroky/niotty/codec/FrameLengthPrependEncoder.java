@@ -20,9 +20,6 @@ public class FrameLengthPrependEncoder implements StoreStage<BufferSink, BufferS
     @Override
     public void store(StageContext<BufferSink> context, BufferSink input) {
         int contentsLength = input.remainingBytes();
-        if (contentsLength < 0) {
-            throw new IllegalArgumentException("input length is negative: " + contentsLength);
-        }
         CodecBuffer headerBuffer;
         if (contentsLength <= Short.MAX_VALUE) {
             headerBuffer = Buffers.newCodecBuffer(SHORT_BYTES);
