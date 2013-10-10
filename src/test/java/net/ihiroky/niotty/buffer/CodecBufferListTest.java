@@ -276,6 +276,12 @@ public class CodecBufferListTest {
         }
     }
 
+    public static class UnsignedTests extends CodecBufferTestAbstract.AbstractUnsignedTest {
+        @Override
+        protected CodecBuffer createCodecBuffer(byte[] buffer, int offset, int length) {
+            return new CodecBufferList(Buffers.wrap(buffer, offset, length));
+        }
+    }
 
 
     public static class WriteTests {

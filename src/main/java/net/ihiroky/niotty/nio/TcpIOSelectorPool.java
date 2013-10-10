@@ -1,5 +1,6 @@
 package net.ihiroky.niotty.nio;
 
+import net.ihiroky.niotty.NameCountThreadFactory;
 import net.ihiroky.niotty.TaskLoopGroup;
 import net.ihiroky.niotty.util.Arguments;
 
@@ -15,9 +16,17 @@ public class TcpIOSelectorPool extends TaskLoopGroup<TcpIOSelector> {
     private final boolean useDirectBuffer_;
     private final boolean duplicateReadBuffer_;
 
+    static final int DEFAULT_THREAD_NUM = Math.max(Runtime.getRuntime().availableProcessors() / 2, 1);
     static final int DEFAULT_READ_BUFFER_SIZE = 8192;
     static final boolean DEFAULT_USE_DIRECT_BUFFER = false;
     static final boolean DEFAULT_DUPLICATE_READ_BUFFER = true;
+
+    /**
+     * Creates a new instance.
+     */
+    public TcpIOSelectorPool() {
+        this(new NameCountThreadFactory("TcpIO"), DEFAULT_THREAD_NUM);
+    }
 
     /**
      * Creates a new instance.
@@ -26,7 +35,8 @@ public class TcpIOSelectorPool extends TaskLoopGroup<TcpIOSelector> {
      * @param workers the number of threads
      */
     public TcpIOSelectorPool(ThreadFactory threadFactory, int workers) {
-        this(threadFactory, workers, DEFAULT_READ_BUFFER_SIZE, DEFAULT_USE_DIRECT_BUFFER, DEFAULT_DUPLICATE_READ_BUFFER);
+        this(threadFactory, workers,
+                DEFAULT_READ_BUFFER_SIZE, DEFAULT_USE_DIRECT_BUFFER, DEFAULT_DUPLICATE_READ_BUFFER);
     }
 
     /**

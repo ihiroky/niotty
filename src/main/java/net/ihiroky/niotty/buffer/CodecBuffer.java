@@ -39,10 +39,12 @@ public interface CodecBuffer extends BufferSink {
 
     /**
      * Writes a {@code value} as byte.
+     * Upper three bytes of the value is ignored.
      *
-     * @param value byte value
+     * @param value the value
+     * @return this object
      */
-    void writeByte(int value);
+    CodecBuffer writeByte(int value);
 
     /**
      * Writes a specified byte array.
@@ -53,95 +55,135 @@ public interface CodecBuffer extends BufferSink {
      * @param length byte size to be written from {@code offset};
      *               must be non-negative and less than or equal to {@code bytes.length - offset}
      */
-    void writeBytes(byte[] bytes, int offset, int length);
+    CodecBuffer writeBytes(byte[] bytes, int offset, int length);
 
     /**
      * Writes a specified {@code java.nio.ByteBuffer}.
      *
      * @param byteBuffer the byte buffer to be written
+     * @return this object
      */
-    void writeBytes(ByteBuffer byteBuffer);
+    CodecBuffer writeBytes(ByteBuffer byteBuffer);
 
     /**
-     * Writes a specified short {@code value}. The value is written into this buffer with two byte big endian.
-     * @param value the number of short type
+     * Writes a value as short.
+     * Upper two bytes of the value is ignored.
+     *
+     * @param value the value
+     * @return this object
      */
-    void writeShort(short value);
+    CodecBuffer writeShort(int value);
 
     /**
-     * Writes a specified char {@code value}. The value is written into this buffer with two byte big endian.
-     * @param value the number of char type
+     * Writes a specified char {@code value}.
+     *
+     * @param value the value
+     * @return this object
      */
-    void writeChar(char value);
+    CodecBuffer writeChar(char value);
 
     /**
-     * Writes a specified int {@code value}. The value is written into this buffer with four byte big endian.
+     * Writes a value as three bytes int.
+     * Upper one bytes of the value is ignored.
+     *
+     * @param value the value
+     * @return this object
+     */
+    CodecBuffer writeMedium(int value);
+
+    /**
+     * Writes a value as int.
+     *
      * @param value the number of int type
+     * @return this object
      */
-    void writeInt(int value);
+    CodecBuffer writeInt(int value);
 
     /**
-     * Writes a specified long {@code value}. The value is written into this buffer with eight byte big endian.
+     * Writes a value as long.
+     *
      * @param value the number of long type
+     * @return this object
      */
-    void writeLong(long value);
+    CodecBuffer writeLong(long value);
 
     /**
-     * Writes a specified float {@code value}. The value is written into this buffer with four byte big endian.
+     * Writes a specified float {@code value}.
+     *
      * @param value the number of float type
+     * @return this object
      */
-    void writeFloat(float value);
+    CodecBuffer writeFloat(float value);
 
     /**
-     * Writes a specified double {@code value}. The value is written into this buffer with eight byte big endian.
+     * Writes a specified double {@code value}.
+     *
      * @param value the number of double type
+     * @return this object
      */
-    void writeDouble(double value);
+    CodecBuffer writeDouble(double value);
 
     /**
      * Writes a specified long {@code value} with signed VBC.
+     *
      * @param value the number of long type
+     * @return this object
      */
-    void writeVariableByteLong(long value);
+    CodecBuffer writeVariableByteLong(long value);
 
     /**
      * Writes a specified int {@code value} with signed VBC.
+     *
      * @param value the number of int type
+     * @return this object
      */
-    void writeVariableByteInteger(int value);
+    CodecBuffer writeVariableByteInteger(int value);
 
     /**
      * Writes null value with signed VBC.
+     *
+     * @return this object
      */
-    void writeVariableByteNull();
+    CodecBuffer writeVariableByteNull();
 
     /**
      * Writes a specified {@code Integer value} with signed VBC.
+     *
      * @param value the number of {@code Integer}
+     * @return this object
      */
-    void writeVariableByteInteger(Integer value);
+    CodecBuffer writeVariableByteInteger(Integer value);
 
     /**
      * Writes a specified {@code Long value} with signed VBC.
      * @param value the number of {@code Long}
      */
-    void writeVariableByteLong(Long value);
+    CodecBuffer writeVariableByteLong(Long value);
 
     /**
      * Writes a specified string as bytes with a specified {@code encoder}.
      *
      * @param s string to be written
      * @param encoder encoder to convert the string {@code s} to bytes written into this buffer
+     * @return this object
      */
-    void writeString(String s, CharsetEncoder encoder);
+    CodecBuffer writeString(String s, CharsetEncoder encoder);
 
     /**
      * Reads a byte from the buffer at a specified {@code position}.
      *
-     * @return a byte.
+     * @return the byte
      * @throws java.lang.RuntimeException if the beginning exceeds the end
      */
-    int    readByte();
+    byte readByte();
+
+    /**
+     * Reads a unsigned byte from the buffer at a specified {@code position}.
+     *
+     * @return the value
+     * @throws java.lang.RuntimeException if the beginning exceeds the end
+     */
+    int readUnsignedByte();
 
     /**
      * Reads bytes from the buffer into the specified {@code array}.
@@ -153,7 +195,7 @@ public interface CodecBuffer extends BufferSink {
      *               must be non-negative and less than or equal to {@code bytes.length - offset}
      * @return the total number of byte read into the {@code bytes}
      */
-    int   readBytes(byte[] bytes, int offset, int length);
+    int readBytes(byte[] bytes, int offset, int length);
 
     /**
      * Reads bytes from the buffer.
@@ -163,39 +205,71 @@ public interface CodecBuffer extends BufferSink {
      * @param byteBuffer a {@code ByteBuffer} into which is data is written
      * @return the total number of byte read into the {@code bytes}
      */
-    int   readBytes(ByteBuffer byteBuffer);
+    int readBytes(ByteBuffer byteBuffer);
 
     /**
      * Reads char value from the buffer.
      *
-     * @return char value read from the buffer
+     * @return the value read from the buffer
      * @throws java.lang.RuntimeException if the remaining data in the buffer is less than the size of char
      */
-    char   readChar();
+    char readChar();
 
     /**
      * Reads short value from the buffer.
      *
-     * @return short value read from the buffer
+     * @return the value read from the buffer
      * @throws java.lang.RuntimeException if the remaining data in the buffer is less than the size of short
      */
-    short  readShort();
+    short readShort();
 
     /**
-     * Reads int value from the buffer.
+     * Reads unsigned short value from the buffer.
+     *
+     * @return the value read from the buffer
+     * @throws java.lang.RuntimeException if the remaining data in the buffer is less than the size of short
+     */
+    int readUnsignedShort();
+
+    /**
+     * Reads three bytes int value from the buffer.
      *
      * @return int value read from the buffer
      * @throws java.lang.RuntimeException if the remaining data in the buffer is less than the size of int
      */
-    int    readInt();
+    int readMedium();
+
+    /**
+     * Reads unsigned three bytes int value from the buffer.
+     *
+     * @return the value read from the buffer
+     * @throws java.lang.RuntimeException if the remaining data in the buffer is less than the size of int
+     */
+    int readUnsignedMedium();
+
+    /**
+     * Reads int value from the buffer.
+     *
+     * @return the value read from the buffer
+     * @throws java.lang.RuntimeException if the remaining data in the buffer is less than the size of int
+     */
+    int readInt();
+
+    /**
+     * Reads unsigned int value from the buffer.
+     *
+     * @return the value read from the buffer
+     * @throws java.lang.RuntimeException if the remaining data in the buffer is less than the size of int
+     */
+    long readUnsignedInt();
 
     /**
      * Reads long value from the buffer.
      *
-     * @return long value read from the buffer
+     * @return the value read from the buffer
      * @throws java.lang.RuntimeException if the remaining data in the buffer is less than the size of long
      */
-    long   readLong();
+    long readLong();
 
     /**
      * Reads float value from the buffer.
@@ -203,7 +277,7 @@ public interface CodecBuffer extends BufferSink {
      * @return float value read from the buffer
      * @throws java.lang.RuntimeException if the remaining data in the buffer is less than the size of float
      */
-    float  readFloat();
+    float readFloat();
 
     /**
      * Reads double value from the buffer.

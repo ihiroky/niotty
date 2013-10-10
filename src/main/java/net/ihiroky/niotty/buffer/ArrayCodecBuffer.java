@@ -85,62 +85,80 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer {
      * {@inheritDoc}
      */
     @Override
-    public void writeByte(int value) {
+    public ArrayCodecBuffer writeByte(int value) {
         ensureSpace(1);
         buffer_[end_++] = (byte) value;
+        return this;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void writeBytes(byte[] bytes, int offset, int length) {
+    public ArrayCodecBuffer writeBytes(byte[] bytes, int offset, int length) {
         ensureSpace(length);
         System.arraycopy(bytes, offset, buffer_, end_, length);
         end_ += length;
+        return this;
     }
 
     /**
      * {@inheritDoc}
      */
-    public void writeBytes(ByteBuffer byteBuffer) {
+    public ArrayCodecBuffer writeBytes(ByteBuffer byteBuffer) {
         int remaining = byteBuffer.remaining();
         ensureSpace(remaining);
         byteBuffer.get(buffer_, end_, remaining);
         end_ += remaining;
+        return this;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void writeShort(short value) {
+    public ArrayCodecBuffer writeShort(int value) {
         ensureSpace(CodecUtil.SHORT_BYTES);
         int c = end_;
         byte[] b = buffer_;
         b[c] = (byte) ((value >>> CodecUtil.BYTE_SHIFT1) & CodecUtil.BYTE_MASK);
         b[c + 1] = (byte) (value & CodecUtil.BYTE_MASK);
         end_ = c + CodecUtil.SHORT_BYTES;
+        return this;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void writeChar(char value) {
+    public ArrayCodecBuffer writeChar(char value) {
         ensureSpace(CodecUtil.CHAR_BYTES);
         int c = end_;
         byte[] b = buffer_;
         b[c] = (byte) ((value >>> CodecUtil.BYTE_SHIFT1) & CodecUtil.BYTE_MASK);
         b[c + 1] = (byte) (value & CodecUtil.BYTE_MASK);
         end_ = c + CodecUtil.CHAR_BYTES;
+        return this;
+    }
+
+    @Override
+    public ArrayCodecBuffer writeMedium(int value) {
+        ensureSpace(CodecUtil.MEDIUM_BYTES);
+        int c = end_;
+        byte[] b = buffer_;
+        int offset = 1;
+        b[c] = (byte) ((value >>> CodecUtil.BYTE_SHIFT2) & CodecUtil.BYTE_MASK);
+        b[c + offset++] = (byte) ((value >>> CodecUtil.BYTE_SHIFT1) & CodecUtil.BYTE_MASK);
+        b[c + offset] = (byte) (value & CodecUtil.BYTE_MASK);
+        end_ = c + CodecUtil.MEDIUM_BYTES;
+        return this;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void writeInt(int value) {
+    public ArrayCodecBuffer writeInt(int value) {
         ensureSpace(CodecUtil.INT_BYTES);
         int c = end_;
         byte[] b = buffer_;
@@ -150,13 +168,14 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer {
         b[c + offset++] = (byte) ((value >>> CodecUtil.BYTE_SHIFT1) & CodecUtil.BYTE_MASK);
         b[c + offset] = (byte) (value & CodecUtil.BYTE_MASK);
         end_ = c + CodecUtil.INT_BYTES;
+        return this;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void writeLong(long value) {
+    public ArrayCodecBuffer writeLong(long value) {
         ensureSpace(CodecUtil.LONG_BYTES);
         int c = end_;
         byte[] b = buffer_;
@@ -170,12 +189,13 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer {
         b[c + offset++] = (byte) ((value >>> CodecUtil.BYTE_SHIFT1) & CodecUtil.BYTE_MASK);
         b[c + offset] = (byte) (value & CodecUtil.BYTE_MASK);
         end_ = c + CodecUtil.LONG_BYTES;
+        return this;
     }
 
     /**
      * {@inheritDoc}
      */
-    public void writeString(String s, CharsetEncoder encoder) {
+    public ArrayCodecBuffer writeString(String s, CharsetEncoder encoder) {
         Arguments.requireNonNull(encoder, "encoder");
         Arguments.requireNonNull(s, "s");
 
@@ -208,13 +228,22 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer {
                 }
             }
         }
+        return this;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public int readByte() {
+    public byte readByte() {
+        if (beginning_ >= end_) {
+            throw new IndexOutOfBoundsException("position exceeds end of buffer.");
+        }
+        return buffer_[beginning_++];
+    }
+
+    @Override
+    public int readUnsignedByte() {
         if (beginning_ >= end_) {
             throw new IndexOutOfBoundsException("position exceeds end of buffer.");
         }
@@ -278,6 +307,21 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer {
                 | (b[beginning_++] & CodecUtil.BYTE_MASK));
     }
 
+    @Override
+    public int readUnsignedMedium() {
+        byte[] b = buffer_;
+        int pos = beginning_;
+        if (pos + CodecUtil.MEDIUM_BYTES > end_) {
+            throw new IndexOutOfBoundsException("position exceeds the end of buffer if read medium wide byte.");
+        }
+        int result = ((b[pos++] & CodecUtil.BYTE_MASK) << CodecUtil.BYTE_SHIFT2)
+                | ((b[pos++] & CodecUtil.BYTE_MASK) << CodecUtil.BYTE_SHIFT1)
+                |  (b[pos++] & CodecUtil.BYTE_MASK);
+        beginning_ = pos;
+        return result;
+
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -288,10 +332,10 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer {
         if (pos + CodecUtil.INT_BYTES > end_) {
             throw new IndexOutOfBoundsException("position exceeds the end of buffer if read int wide byte.");
         }
-        int result = (((b[pos++] & CodecUtil.BYTE_MASK) << CodecUtil.BYTE_SHIFT3)
+        int result = ((b[pos++] & CodecUtil.BYTE_MASK) << CodecUtil.BYTE_SHIFT3)
                 | ((b[pos++] & CodecUtil.BYTE_MASK) << CodecUtil.BYTE_SHIFT2)
                 | ((b[pos++] & CodecUtil.BYTE_MASK) << CodecUtil.BYTE_SHIFT1)
-                |  (b[pos++] & CodecUtil.BYTE_MASK));
+                |  (b[pos++] & CodecUtil.BYTE_MASK);
         beginning_ = pos;
         return result;
     }

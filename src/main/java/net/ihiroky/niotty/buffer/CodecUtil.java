@@ -11,9 +11,14 @@ final class CodecUtil {
 
     static final int BYTE_MASK = 0xFF;
     static final int SHORT_MASK = 0xFFFF;
+    static final int MEDIUM_MASK = 0xFFFFFF;
     static final long INT_MASK = 0xFFFFFFFFL;
+    static final int MEDIUM_SIGN_MASK = 0x800000;
+    static final int MEDIUM_UPPER8_MASK = 0xFF000000;
+    static final int MEDIUM_BITS = 24;
     static final int CHAR_BYTES = Character.SIZE / Byte.SIZE;
     static final int SHORT_BYTES = Short.SIZE / Byte.SIZE;
+    static final int MEDIUM_BYTES = MEDIUM_BITS / Byte.SIZE;
     static final int INT_BYTES = Integer.SIZE / Byte.SIZE;
     static final int LONG_BYTES = Long.SIZE / Byte.SIZE;
     static final int BITS_PER_BYTE = Byte.SIZE;

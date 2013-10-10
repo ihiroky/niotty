@@ -67,6 +67,13 @@ public class ByteBufferCodecBufferTest {
         }
     }
 
+    public static class UnsignedTests extends CodecBufferTestAbstract.AbstractUnsignedTest {
+        @Override
+        protected CodecBuffer createCodecBuffer(byte[] buffer, int offset, int length) {
+            return Buffers.wrap(ByteBuffer.wrap(buffer, offset, length));
+        }
+    }
+
     public static class WriteTests extends CodecBufferTestAbstract.AbstractWriteTests {
         @Override
         protected CodecBuffer createDefaultCodecBuffer() {

@@ -77,49 +77,63 @@ public class SlicedCodecBuffer extends AbstractCodecBuffer {
     }
 
     @Override
-    public void writeByte(int value) {
+    public SlicedCodecBuffer writeByte(int value) {
         checkSpace(1);
         base_.writeByte(value);
+        return this;
     }
 
     @Override
-    public void writeBytes(byte[] bytes, int offset, int length) {
+    public SlicedCodecBuffer writeBytes(byte[] bytes, int offset, int length) {
         checkSpace(length);
         base_.writeBytes(bytes, offset, length);
+        return this;
     }
 
     @Override
-    public void writeBytes(ByteBuffer byteBuffer) {
+    public SlicedCodecBuffer writeBytes(ByteBuffer byteBuffer) {
         checkSpace(byteBuffer.remaining());
         base_.writeBytes(byteBuffer);
+        return this;
     }
 
     @Override
-    public void writeShort(short value) {
+    public SlicedCodecBuffer writeShort(int value) {
         checkSpace(CodecUtil.SHORT_BYTES);
         base_.writeShort(value);
+        return this;
     }
 
     @Override
-    public void writeChar(char value) {
+    public SlicedCodecBuffer writeChar(char value) {
         checkSpace(CodecUtil.CHAR_BYTES);
         base_.writeChar(value);
+        return this;
     }
 
     @Override
-    public void writeInt(int value) {
+    public SlicedCodecBuffer writeMedium(int value) {
+        checkSpace(CodecUtil.MEDIUM_BYTES);
+        base_.writeMedium(value);
+        return this;
+    }
+
+    @Override
+    public SlicedCodecBuffer writeInt(int value) {
         checkSpace(CodecUtil.INT_BYTES);
         base_.writeInt(value);
+        return this;
     }
 
     @Override
-    public void writeLong(long value) {
+    public SlicedCodecBuffer writeLong(long value) {
         checkSpace(CodecUtil.LONG_BYTES);
         base_.writeLong(value);
+        return this;
     }
 
     @Override
-    public void writeString(String s, CharsetEncoder encoder) {
+    public SlicedCodecBuffer writeString(String s, CharsetEncoder encoder) {
         Arguments.requireNonNull(s, "s");
         Arguments.requireNonNull(encoder, "encoder");
 
@@ -149,11 +163,17 @@ public class SlicedCodecBuffer extends AbstractCodecBuffer {
                 }
             }
         }
+        return this;
     }
 
     @Override
-    public int readByte() {
+    public byte readByte() {
         return base_.readByte();
+    }
+
+    @Override
+    public int readUnsignedByte() {
+        return base_.readUnsignedByte();
     }
 
     @Override
@@ -177,8 +197,23 @@ public class SlicedCodecBuffer extends AbstractCodecBuffer {
     }
 
     @Override
+    public int readUnsignedShort() {
+        return base_.readUnsignedShort();
+    }
+
+    @Override
+    public int readUnsignedMedium() {
+        return base_.readUnsignedMedium();
+    }
+
+    @Override
     public int readInt() {
         return base_.readInt();
+    }
+
+    @Override
+    public long readUnsignedInt() {
+        return base_.readUnsignedInt();
     }
 
     @Override

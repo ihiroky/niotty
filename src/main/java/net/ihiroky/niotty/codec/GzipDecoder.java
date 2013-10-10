@@ -256,7 +256,7 @@ public class GzipDecoder extends InflaterDecoder {
          * Reads unsigned byte.
          */
         private int readUnsignedByte(CodecBuffer buffer, CRC32 crc32) {
-            int b = buffer.readByte();
+            int b = buffer.readUnsignedByte();
             crc32.update(b);
             return b;
         }
@@ -305,8 +305,8 @@ public class GzipDecoder extends InflaterDecoder {
          * Reads unsigned short in Intel byte order.
          */
         private int readUnsignedShort(CodecBuffer buffer) {
-            int b = buffer.readByte();
-            return (buffer.readByte() << Byte.SIZE) | b;
+            int b = buffer.readUnsignedByte();
+            return (buffer.readUnsignedByte() << Byte.SIZE) | b;
         }
     }
 }
