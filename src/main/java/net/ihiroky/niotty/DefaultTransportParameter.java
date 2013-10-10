@@ -3,7 +3,7 @@ package net.ihiroky.niotty;
 import java.util.Arrays;
 
 /**
- * A default implementation of {@link net.ihiroky.niotty.TransportParameter}.
+ * A default implementation of {@link TransportParameter}.
  *
  * @author Hiroki Itoh
  */

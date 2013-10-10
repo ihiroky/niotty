@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * A {@link net.ihiroky.niotty.buffer.CodecBuffer} which consists of {@link net.ihiroky.niotty.buffer.CodecBuffer}s.
+ * A {@link CodecBuffer} which consists of {@link CodecBuffer}s.
  * <p></p>
  * The {@link #addFirst(CodecBuffer)} and {@link #addLast(CodecBuffer)} add the argument into an internal list.
  * The elements contained in the list is limited on its size when added to. So an expansion of each elements

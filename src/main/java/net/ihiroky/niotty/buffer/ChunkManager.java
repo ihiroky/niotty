@@ -21,7 +21,7 @@ public abstract class ChunkManager<E> implements Closable {
 
     /**
      * Retrieves the chunk, which is obtained by {@link #newChunk(int)}.
-     * This method should be called by the {@link net.ihiroky.niotty.buffer.Chunk#release()} if necessary.
+     * This method should be called by the {@link Chunk#release()} if necessary.
      *
      * @param chunk the chunk which is obtained by {@code newChunk(int)}
      */

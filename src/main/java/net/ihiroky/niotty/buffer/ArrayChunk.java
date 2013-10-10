@@ -1,7 +1,7 @@
 package net.ihiroky.niotty.buffer;
 
 /**
- * A implementation of {@link net.ihiroky.niotty.buffer.Chunk} that holds an byte array.
+ * A implementation of {@link Chunk} that holds an byte array.
  * @author Hiroki Itoh
  */
 public class ArrayChunk extends AbstractChunk<byte[]> {

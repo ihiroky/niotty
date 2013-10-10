@@ -70,8 +70,8 @@ public interface WriteQueue {
 
     /**
      * Shows a result of
-     * {@link net.ihiroky.niotty.nio.WriteQueue#flushTo(java.nio.channels.GatheringByteChannel)}
-     * and {@link net.ihiroky.niotty.nio.WriteQueue#flushTo(java.nio.channels.DatagramChannel, java.nio.ByteBuffer)}.
+     * {@link WriteQueue#flushTo(java.nio.channels.GatheringByteChannel)}
+     * and {@link WriteQueue#flushTo(java.nio.channels.DatagramChannel, java.nio.ByteBuffer)}.
      */
     enum FlushStatus {
         /**

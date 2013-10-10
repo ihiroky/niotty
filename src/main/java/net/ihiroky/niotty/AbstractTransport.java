@@ -8,9 +8,9 @@ import java.util.concurrent.atomic.AtomicReference;
  * <p>A skeletal implementation of {@code Transport}.</p>
  *
  * <p>This class holds a load (inbound) and store (outbound) pipeline, an attachment reference and an event listener.
- * {@link net.ihiroky.niotty.TaskLoop} is also held by this class, which handles asynchronous I/O operations</p>
+ * {@link TaskLoop} is also held by this class, which handles asynchronous I/O operations</p>
  *
- * @param <T> The type of {@link net.ihiroky.niotty.TaskLoop}
+ * @param <T> The type of {@link TaskLoop}
  */
 public abstract class AbstractTransport<T extends TaskLoop> implements Transport, TaskSelection {
 
@@ -71,7 +71,7 @@ public abstract class AbstractTransport<T extends TaskLoop> implements Transport
     }
 
     /**
-     * Gets the instance of {@link net.ihiroky.niotty.TaskLoop}.
+     * Gets the instance of {@link TaskLoop}.
      * @return <T> the TaskLoop.
      */
     public T taskLoop() {

@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * An implementation of {@link net.ihiroky.niotty.TaskLoop} to handle {@link java.nio.channels.Selector}.
+ * An implementation of {@link net.ihiroky.niotty.TaskLoop} to handle {@link java.nio.channels.SelectableChannel}.
  */
 public abstract class AbstractSelector extends TaskLoop implements StoreStage<BufferSink, Void> {
 

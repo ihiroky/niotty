@@ -8,8 +8,8 @@ import sun.nio.ch.DirectBuffer;
 import java.nio.ByteBuffer;
 
 /**
- * A implementation of {@link net.ihiroky.niotty.buffer.ChunkPool} which manages
- * {@link net.ihiroky.niotty.buffer.ByteBufferChunk}. This class has maximum size to allocate the chunks.
+ * A implementation of {@link ChunkPool} which manages
+ * {@link ByteBufferChunk}. This class has maximum size to allocate the chunks.
  * If total size of the pooled chunks exceeds the size, unpooled chunks are allocated, which is always
  * in the heap space.
  * <p></p>

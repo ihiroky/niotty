@@ -12,10 +12,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * A implementation of {@link net.ihiroky.niotty.nio.WriteQueue} using
+ * A implementation of {@link WriteQueue} using
  * <a ref="http://en.wikipedia.org/wiki/Deficit_round_robin">deficit round robin</a> algorithm.
  *
- * This class has a base queue and weighted queues. The all queues are {@link net.ihiroky.niotty.nio.SimpleWriteQueue}.
+ * This class has a base queue and weighted queues. The all queues are {@link SimpleWriteQueue}.
  * They are checked and flushed in a round which is executed by calling
  * {@link #flushTo(java.nio.channels.GatheringByteChannel)} or
  * {@link #flushTo(java.nio.channels.DatagramChannel, java.nio.ByteBuffer)}.

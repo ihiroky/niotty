@@ -5,8 +5,8 @@ import net.ihiroky.niotty.util.Arguments;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 /**
- * A implementation of {@link net.ihiroky.niotty.buffer.ChunkPool} which manages
- * {@link net.ihiroky.niotty.buffer.ArrayChunk}. This class has maximum size to allocate the chunks.
+ * A implementation of {@link ChunkPool} which manages
+ * {@link ArrayChunk}. This class has maximum size to allocate the chunks.
  * If total size of the pooled chunks exceeds the size, unpooled chunks are allocated.
  * <p></p>
  * TODO MBean support

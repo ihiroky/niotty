@@ -7,8 +7,8 @@ import net.ihiroky.niotty.util.Arguments;
 import java.util.concurrent.ThreadFactory;
 
 /**
- * An implementation of {@link net.ihiroky.niotty.nio.AcceptSelectorPool}
- * to handle {@link net.ihiroky.niotty.nio.TcpIOSelector}.
+ * An implementation of {@link AcceptSelectorPool}
+ * to handle {@link TcpIOSelector}.
  */
 public class TcpIOSelectorPool extends TaskLoopGroup<TcpIOSelector> {
 

@@ -5,7 +5,7 @@ import sun.nio.ch.DirectBuffer;
 import java.nio.ByteBuffer;
 
 /**
- * A implementation of {@link net.ihiroky.niotty.buffer.Chunk} that holds an {@code ByteBuffer}.
+ * A implementation of {@link Chunk} that holds an {@code ByteBuffer}.
  * @author Hiroki Itoh
  */
 public class ByteBufferChunk extends AbstractChunk<ByteBuffer> {

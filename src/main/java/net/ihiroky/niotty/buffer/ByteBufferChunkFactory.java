@@ -6,7 +6,7 @@ import org.slf4j.LoggerFactory;
 import java.nio.ByteBuffer;
 
 /**
- * A factory class that creates {@link net.ihiroky.niotty.buffer.ByteBufferChunk}.
+ * A factory class that creates {@link ByteBufferChunk}.
  * Use {@link #heap()} to get an instance which creates a heap {@code ByteBuffer}.
  * If a direct {@code ByteBuffer} is needed, use {@link #direct()}.
  * <p></p>

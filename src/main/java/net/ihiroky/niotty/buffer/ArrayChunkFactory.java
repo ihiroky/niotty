@@ -1,7 +1,7 @@
 package net.ihiroky.niotty.buffer;
 
 /**
- * A factory class that creates {@link net.ihiroky.niotty.buffer.ArrayChunk}.
+ * A factory class that creates {@link ArrayChunk}.
  * Use {@link #instance()} to get an instance of this class.
  *
  * @author Hiroki Itoh

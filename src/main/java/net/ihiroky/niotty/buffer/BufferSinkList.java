@@ -7,7 +7,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.GatheringByteChannel;
 
 /**
- * Holds a pair of {@link net.ihiroky.niotty.buffer.BufferSink}.
+ * Holds a pair of {@link BufferSink}.
  * This class itself is also {@code BufferSink}.
  *
  * @author Hiroki Itoh

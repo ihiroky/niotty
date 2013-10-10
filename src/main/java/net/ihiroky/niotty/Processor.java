@@ -5,8 +5,8 @@ package net.ihiroky.niotty;
  *
  * <h3>PipelineComposer life cycle</h3>
  * <p>The life cycle of {@link PipelineComposer} is managed by this instance.
- * If {@link #start()} is called, then {@link net.ihiroky.niotty.PipelineComposer#setUp()}
- * is called. And If {@link #stop()}, then {@link net.ihiroky.niotty.PipelineComposer#close()}.
+ * If {@link #start()} is called, then {@link PipelineComposer#setUp()}
+ * is called. And If {@link #stop()}, then {@link PipelineComposer#close()}.
  * The instance of {@code PipelineComposer} is set by {@link #setPipelineComposer(PipelineComposer)}.
  * It is used by the transport implementation to set up pipelines.</p>
  *

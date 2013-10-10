@@ -6,7 +6,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * An {@link net.ihiroky.niotty.buffer.ChunkManager} that holds available {@link net.ihiroky.niotty.buffer.Chunk}s
+ * An {@link ChunkManager} that holds available {@link Chunk}s
  * in a pool and provides it as necessary from the pool.
  * <p></p>
  * Call {@link ChunkManager#newChunk(int)} to obtain an available chunk. If the chunk is finish using,

@@ -12,7 +12,7 @@ import java.util.Iterator;
 import java.util.Set;
 
 /**
- * An implementation of {@link net.ihiroky.niotty.nio.AbstractSelector} to handle asynchronous acceptances.
+ * An implementation of {@link AbstractSelector} to handle asynchronous acceptances.
  */
 public class AcceptSelector extends AbstractSelector {
 

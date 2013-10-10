@@ -7,7 +7,7 @@ package net.ihiroky.niotty.buffer;
  * and {@link #release()} decrements it. This chunk gets an unusable state if it gets from 1 to 0
  * when {@link #release()} is called. To reuse the chunk after released, call {@link #ready()} to change
  * pre-initialize state, this method should be called in a object who manages {@code Chunk} lifecycle like
- * {@link net.ihiroky.niotty.buffer.ChunkPool} and users need not to call it.
+ * {@link ChunkPool} and users need not to call it.
  * The {@link #initialize()}, {@link #retain()} and {@link #release()} may throw {@code IllegalStateException}
  * if the count is not invalid. The valid count flow is shown below.
  *<pre>

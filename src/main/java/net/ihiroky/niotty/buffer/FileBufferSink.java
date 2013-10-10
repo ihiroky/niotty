@@ -10,9 +10,9 @@ import java.nio.channels.GatheringByteChannel;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * The implementation of {@link net.ihiroky.niotty.buffer.BufferSink} to write a file content
+ * The implementation of {@link BufferSink} to write a file content
  * in a specified range to {@code java.nio.channels.WritableByteChannel} directly.
- * The {@code FileBufferSink} has header and footer as {@link net.ihiroky.niotty.buffer.CodecBuffer},
+ * The {@code FileBufferSink} has header and footer as {@link CodecBuffer},
  * which are added by calling {@link #addFirst(CodecBuffer)} and {@link #addLast(CodecBuffer)}.
  * A lifecycle of a file in the {@code FileBufferSink} is managed byte a reference counting.
  * A reference count is incremented if new {@code FileBufferSink} is instantiated from a base {@code FileBufferSink},

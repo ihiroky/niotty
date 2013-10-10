@@ -3,7 +3,7 @@ package net.ihiroky.niotty.buffer;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 /**
- * A skeletal implementation of {@link net.ihiroky.niotty.buffer.Chunk}.
+ * A skeletal implementation of {@link Chunk}.
  * @param <E> a type of data to be managed by this instance
  * @author Hiroki Itoh
  */

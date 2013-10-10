@@ -5,7 +5,7 @@ import net.ihiroky.niotty.TaskLoopGroup;
 import java.util.concurrent.ThreadFactory;
 
 /**
- * An implementation of {@link net.ihiroky.niotty.nio.AbstractSelector} to handle asynchronous connections.
+ * An implementation of {@link AbstractSelector} to handle asynchronous connections.
  */
 public class ConnectSelectorPool extends TaskLoopGroup<ConnectSelector> {
 

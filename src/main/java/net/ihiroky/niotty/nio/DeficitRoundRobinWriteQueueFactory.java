@@ -3,8 +3,8 @@ package net.ihiroky.niotty.nio;
 import net.ihiroky.niotty.util.Arguments;
 
 /**
- * Implementation of {@link net.ihiroky.niotty.nio.WriteQueueFactory}
- * to create {@link net.ihiroky.niotty.nio.DeficitRoundRobinWriteQueue}.
+ * Implementation of {@link WriteQueueFactory}
+ * to create {@link DeficitRoundRobinWriteQueue}.
  *
  * This class requires two kind of parameter, {@code baseQueueLimit} and {@code weights}.
  * The {@code baseQueueLimit} is a byte length to limit the flush size of {@code DeficitRoundRobinWriteQueue}'s
@@ -21,7 +21,7 @@ public class DeficitRoundRobinWriteQueueFactory implements WriteQueueFactory {
     private static final int DEFAULT_BASE_ROUND_LIMIT = 4096;
 
     /**
-     * Creates the factory of {@link net.ihiroky.niotty.nio.DeficitRoundRobinWriteQueue}.
+     * Creates the factory of {@link DeficitRoundRobinWriteQueue}.
      *
      * @param weights flush size weights of the queues other than the base queue
      */
@@ -30,7 +30,7 @@ public class DeficitRoundRobinWriteQueueFactory implements WriteQueueFactory {
     }
 
     /**
-     * Creates the factory of {@link net.ihiroky.niotty.nio.DeficitRoundRobinWriteQueue}.
+     * Creates the factory of {@link DeficitRoundRobinWriteQueue}.
      *
      * @param initialBaseQuantum an initial value of the smoothed flush size for the base queue
      * @param weights flush size weights of the queues other than the base queue

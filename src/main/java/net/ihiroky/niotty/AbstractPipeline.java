@@ -326,8 +326,8 @@ public abstract class AbstractPipeline<S, L extends TaskLoop> implements Pipelin
     }
 
     /**
-     * Returns type parameters of a specified {@code type} if the {@code type} is {@link net.ihiroky.niotty.LoadStage}
-     * or {@link net.ihiroky.niotty.StoreStage}. Otherwise, returns null.
+     * Returns type parameters of a specified {@code type} if the {@code type} is {@link LoadStage}
+     * or {@link StoreStage}. Otherwise, returns null.
      *
      * @param type a type of the stage generic interface
      * @return type parameters or null

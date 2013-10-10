@@ -1,8 +1,8 @@
 package net.ihiroky.niotty.nio;
 
 /**
- * Implementation of {@link net.ihiroky.niotty.nio.WriteQueueFactory}
- * to create {@link net.ihiroky.niotty.nio.SimpleWriteQueue}.
+ * Implementation of {@link WriteQueueFactory}
+ * to create {@link SimpleWriteQueue}.
  * @author Hiroki Itoh
  */
 public class SimpleWriteQueueFactory implements WriteQueueFactory {

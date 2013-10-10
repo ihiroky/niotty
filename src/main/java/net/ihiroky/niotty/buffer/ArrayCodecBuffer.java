@@ -13,7 +13,7 @@ import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CoderResult;
 
 /**
- * Implementation of {@link net.ihiroky.niotty.buffer.CodecBuffer} using {@code byte[]}.
+ * Implementation of {@link CodecBuffer} using {@code byte[]}.
  *
  * @author Hiroki Itoh
  */

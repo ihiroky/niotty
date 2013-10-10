@@ -11,7 +11,7 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
- * Implementation of {@link net.ihiroky.niotty.nio.WriteQueue} using single queue.
+ * Implementation of {@link WriteQueue} using single queue.
  *
  * @author Hiroki Itoh
  */

@@ -30,7 +30,7 @@ import java.util.concurrent.TimeUnit;
  * zero, the task is inserted to the task queue to processed again immediately.
  * </p>
  * <p>
- * This class holds a set of {@link net.ihiroky.niotty.TaskSelection}. The selection shows
+ * This class holds a set of {@link TaskSelection}. The selection shows
  * a object which is associated with this task loop. The number of selections can be used
  * to control the balancing of the association.
  * </p>
@@ -150,7 +150,7 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
     }
 
     /**
-     * Executes the loop especially on a thread provided by {@link net.ihiroky.niotty.TaskLoopGroup}.
+     * Executes the loop especially on a thread provided by {@link TaskLoopGroup}.
      */
     public void run() {
         Deque<Task> taskBuffer = new ArrayDeque<Task>(INITIAL_TASK_BUFFER_SIZE);

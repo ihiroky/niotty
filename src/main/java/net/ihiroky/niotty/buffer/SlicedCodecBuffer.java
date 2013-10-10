@@ -12,7 +12,7 @@ import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CoderResult;
 
 /**
- * A {@link net.ihiroky.niotty.buffer.CodecBuffer} whose content is a shared subsequence of the specified
+ * A {@link CodecBuffer} whose content is a shared subsequence of the specified
  * {@code base}'s content.
  * <p></p>
  * The content of this object will start at this {@code base}'s current beginning. Changes to the content

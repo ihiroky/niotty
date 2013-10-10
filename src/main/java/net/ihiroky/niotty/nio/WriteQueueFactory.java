@@ -1,12 +1,11 @@
 package net.ihiroky.niotty.nio;
 
 /**
- * Factory class to create {@link net.ihiroky.niotty.nio.WriteQueue}.
- * @author Hiroki Itoh
+ * Factory class to create {@link WriteQueue}.
  */
 public interface WriteQueueFactory {
     /**
-     * Instantiates a new {@link net.ihiroky.niotty.nio.WriteQueue}.
+     * Instantiates a new {@link WriteQueue}.
      * @return the new {@code WriteQueue}
      */
     WriteQueue newWriteQueue();

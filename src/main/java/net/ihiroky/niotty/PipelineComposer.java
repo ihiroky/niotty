@@ -6,10 +6,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * <p>Composes a pipeline which is managed by an implementation of {@link net.ihiroky.niotty.Transport}.</p>
+ * <p>Composes a pipeline which is managed by an implementation of {@link Transport}.</p>
  *
  * <p>{@link #compose(LoadPipeline, StorePipeline)} composes load and store pipelines by adding
- * {@link net.ihiroky.niotty.LoadStage} and {@link net.ihiroky.niotty.StoreStage} respectively.
+ * {@link LoadStage} and {@link StoreStage} respectively.
  *
  * <h3>Set up and close for support objects.</h3>
  * <p>This class has life cycle methods {@link #setUp()} and {@link #close()},
@@ -101,7 +101,8 @@ public abstract class PipelineComposer {
      *
      * <p>The default implementation of this method calls {@code} methods for the support objects
      * added by {@link #addClosable(net.ihiroky.niotty.util.Closable)}. So this method should not be
-     * overridden or should be called by sub class if {@link #addClosable(net.ihiroky.niotty.util.Closable)} is used.</p>
+     * overridden or should be called by sub class if {@link #addClosable(net.ihiroky.niotty.util.Closable)}
+     * is used.</p>
      */
     public void close() {
         synchronized (closeableList_) {
@@ -118,7 +119,7 @@ public abstract class PipelineComposer {
 
     /**
      * <p>composes load and store pipelines by adding, removing and replacing
-     * {@link net.ihiroky.niotty.LoadStage} and {@link net.ihiroky.niotty.StoreStage}
+     * {@link LoadStage} and {@link StoreStage}
      * respectively.</p>
      *
      * @param loadPipeline the pipeline for load (inbound) messages and transport events.

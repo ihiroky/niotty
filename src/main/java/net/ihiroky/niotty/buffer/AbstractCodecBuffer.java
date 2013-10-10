@@ -1,7 +1,7 @@
 package net.ihiroky.niotty.buffer;
 
 /**
- * A skeletal implementation of {@link net.ihiroky.niotty.buffer.CodecBuffer}.
+ * A skeletal implementation of {@link CodecBuffer}.
  * @author Hiroki Itoh
  */
 public abstract class AbstractCodecBuffer implements CodecBuffer {

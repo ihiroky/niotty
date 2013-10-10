@@ -353,7 +353,7 @@ public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector
      * by {@link #connect(java.net.SocketAddress)}, an invocation of this method is failed.</p>
      *
      * @param message The message to be sent.
-     * @param priority A priority which is used in {@link net.ihiroky.niotty.nio.WriteQueue}
+     * @param priority A priority which is used in {@link WriteQueue}
      * @param target The target to which the message is sent.
      */
     public void write(Object message, int priority, SocketAddress target) {

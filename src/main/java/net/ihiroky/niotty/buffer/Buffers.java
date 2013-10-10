@@ -15,8 +15,8 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 
 /**
- * Provides factory methods of {@link net.ihiroky.niotty.buffer.CodecBuffer},
- * {@link net.ihiroky.niotty.buffer.BufferSink} and utility method for this package.
+ * Provides factory methods of {@link CodecBuffer},
+ * {@link BufferSink} and utility method for this package.
  *
  * @author Hiroki Itoh
  */
@@ -158,7 +158,7 @@ public final class Buffers {
      *
      * @param byteBuffer the backed {@code ByteBuffer}
      * @param cleanOnDispose true if {@code java.nio.DirectBuffer#clean()} is called
-     *                       when {@link net.ihiroky.niotty.buffer.CodecBuffer#dispose()} is called;
+     *                       when {@link CodecBuffer#dispose()} is called;
      *                       this has an effect when {@code byteBuffer} is direct buffer.
      * @return the new {@code CodecBuffer}
      */
