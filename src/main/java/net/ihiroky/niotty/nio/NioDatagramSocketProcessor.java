@@ -10,14 +10,14 @@ import net.ihiroky.niotty.util.Arguments;
  */
 public class NioDatagramSocketProcessor extends AbstractProcessor<NioDatagramSocketTransport> {
 
-    private UdpIOSelectorPool ioSelectorPool_;
+    private SelectLoopGroup ioSelectLoopGroup_;
     private int numberOfMessageIOThread_;
     private WriteQueueFactory writeQueueFactory_;
 
     private int readBufferSize_;
     private int writeBufferSize_;
     private boolean useDirectBuffer_;
-    private boolean duplicateReadBuffer_;
+    private boolean copyReadBuffer_;
 
     private static final int DEFAULT_NUMBER_OF_MESSAGE_IO_THREAD = 1;
 
@@ -27,28 +27,32 @@ public class NioDatagramSocketProcessor extends AbstractProcessor<NioDatagramSoc
         numberOfMessageIOThread_ = DEFAULT_NUMBER_OF_MESSAGE_IO_THREAD;
         writeQueueFactory_ = new SimpleWriteQueueFactory();
 
-        readBufferSize_ = UdpIOSelectorPool.DEFAULT_READ_BUFFER_SIZE;
-        writeBufferSize_ = UdpIOSelectorPool.DEFAULT_WRITE_BUFFER_SIZE;
-        useDirectBuffer_ = UdpIOSelectorPool.DEFAULT_USE_DIRECT_BUFFER;
-        duplicateReadBuffer_ = UdpIOSelectorPool.DEFAULT_DUPLICATE_READ_BUFFER;
+        readBufferSize_ = SelectLoopGroup.DEFAULT_READ_BUFFER_SIZE;
+        writeBufferSize_ = SelectLoopGroup.DEFAULT_WRITE_BUFFER_SIZE;
+        useDirectBuffer_ = SelectLoopGroup.DEFAULT_USE_DIRECT_BUFFER;
+        copyReadBuffer_ = SelectLoopGroup.DEFAULT_COPY_READ_BUFFER;
         setName(DEFAULT_NAME);
     }
 
     @Override
     protected void onStart() {
-        ioSelectorPool_ = new UdpIOSelectorPool(new NameCountThreadFactory(name().concat("-IO")),
-                numberOfMessageIOThread_, readBufferSize_, writeBufferSize_, useDirectBuffer_, duplicateReadBuffer_);
+        ioSelectLoopGroup_ = new SelectLoopGroup(
+                new NameCountThreadFactory(name().concat("-IO")), numberOfMessageIOThread_)
+                .setReadBufferSize(readBufferSize_)
+                .setWriteBufferSize(writeBufferSize_)
+                .setUseDirectBuffer(useDirectBuffer_)
+                .setCopyReadBuffer(copyReadBuffer_);
     }
 
     @Override
     protected void onStop() {
-        ioSelectorPool_.close();
+        ioSelectLoopGroup_.close();
     }
 
     @Override
     public NioDatagramSocketTransport createTransport() {
         return new NioDatagramSocketTransport(
-                null, pipelineComposer(), name(), ioSelectorPool_, writeQueueFactory_);
+                name(), pipelineComposer(), ioSelectLoopGroup_, writeQueueFactory_, (InternetProtocolFamily) null);
     }
 
     /**
@@ -62,7 +66,7 @@ public class NioDatagramSocketProcessor extends AbstractProcessor<NioDatagramSoc
      */
     public NioDatagramSocketTransport createTransport(InternetProtocolFamily family) {
         return new NioDatagramSocketTransport(
-                family, pipelineComposer(), name(), ioSelectorPool_, writeQueueFactory_);
+                name(), pipelineComposer(), ioSelectLoopGroup_, writeQueueFactory_, family);
     }
 
     @Override
@@ -109,16 +113,16 @@ public class NioDatagramSocketProcessor extends AbstractProcessor<NioDatagramSoc
         return this;
     }
 
-    public boolean isUseDirectBuffer() {
+    public boolean useDirectBuffer() {
         return useDirectBuffer_;
     }
 
-    public boolean duplicateReceiveBuffer() {
-        return ioSelectorPool_.duplicateBuffer();
+    public boolean copyReadBuffer() {
+        return copyReadBuffer_;
     }
 
-    public NioDatagramSocketProcessor setDuplicateReadeBuffer(boolean duplicateReadBuffer) {
-        duplicateReadBuffer_ = duplicateReadBuffer;
+    public NioDatagramSocketProcessor setCopyReadBuffer(boolean copyReadBuffer) {
+        copyReadBuffer_ = copyReadBuffer;
         return this;
     }
 

@@ -1,38 +1,40 @@
 package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.DefaultTransportFuture;
+import net.ihiroky.niotty.DefaultTransportStateEvent;
+import net.ihiroky.niotty.LoadPipeline;
 import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.Transport;
 import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.TransportOption;
+import net.ihiroky.niotty.TransportState;
 import net.ihiroky.niotty.buffer.BufferSink;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.SocketChannel;
 import java.util.Collections;
 import java.util.Set;
 
 /**
  * @author Hiroki Itoh
  */
-public class ConnectionWaitTransport extends NioSocketTransport<ConnectSelector> {
+public class ConnectionWaitTransport extends NioSocketTransport<SelectLoop> {
 
-    private NioClientSocketTransport transport_;
+    private final NioClientSocketTransport transport_;
     private final DefaultTransportFuture future_;
 
-    ConnectionWaitTransport(ConnectSelectorPool pool, NioClientSocketTransport transport, DefaultTransportFuture future) {
-        super("ConnectionPending", PipelineComposer.empty(), pool);
+    private static Logger logger_ = LoggerFactory.getLogger(ConnectionWaitTransport.class);
+
+    ConnectionWaitTransport(SelectLoopGroup group, NioClientSocketTransport transport, DefaultTransportFuture future) {
+        super("ConnectionPending", PipelineComposer.empty(), group);
         transport_ = transport;
         future_ = future;
-    }
-
-    NioClientSocketTransport transport() {
-        return transport_;
-    }
-
-    DefaultTransportFuture getFuture() {
-        return future_;
     }
 
     @Override
@@ -88,6 +90,28 @@ public class ConnectionWaitTransport extends NioSocketTransport<ConnectSelector>
     @Override
     void flush(ByteBuffer writeBuffer) throws IOException {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    void onSelected(SelectionKey key, SelectLoop selectLoop) {
+        SocketChannel channel = (SocketChannel) key.channel();
+        try {
+            if (channel.finishConnect()) {
+                logger_.info("new channel {} is connected.", channel);
+                clearInterestOp(SelectionKey.OP_CONNECT);
+
+                InetSocketAddress remoteAddress = transport_.remoteAddress();
+                LoadPipeline targetPipeline = transport_.loadPipeline();
+                targetPipeline.execute(new DefaultTransportStateEvent(TransportState.CONNECTED, remoteAddress));
+                transport_.register(channel, SelectionKey.OP_READ, targetPipeline);
+
+                // The done() must be called after register() to ensure that the SelectionKey of IO selector is fixed.
+                future_.done();
+            }
+        } catch (IOException ioe) {
+            future_.setThrowable(ioe);
+            transport_.closeSelectableChannel();
+        }
     }
 
     @Override

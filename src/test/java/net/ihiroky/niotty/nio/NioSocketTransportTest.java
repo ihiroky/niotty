@@ -33,14 +33,14 @@ import static org.mockito.Mockito.*;
  */
 public class NioSocketTransportTest {
 
-    private NioSocketTransport<AbstractSelector> sut_;
-    private AbstractSelector selector_;
+    private NioSocketTransport<SelectLoop> sut_;
+    private SelectLoop selector_;
 
     @Before
     public void setUp() throws Exception {
-        selector_ = mock(AbstractSelector.class);
+        selector_ = mock(SelectLoop.class);
         @SuppressWarnings("unchecked")
-        TaskLoopGroup<AbstractSelector> taskLoopGroup = mock(TaskLoopGroup.class);
+        TaskLoopGroup<SelectLoop> taskLoopGroup = mock(TaskLoopGroup.class);
         when(taskLoopGroup.assign(Mockito.<TaskSelection>any())).thenReturn(selector_);
         sut_ = new Impl("NioSocketTransportTest", PipelineComposer.empty(), taskLoopGroup);
     }
@@ -83,10 +83,14 @@ public class NioSocketTransportTest {
         assertThat(eventCaptor.getValue().value(), is((Object) SelectionKey.OP_ACCEPT));
     }
 
-    private static class Impl extends NioSocketTransport<AbstractSelector> {
+    private static class Impl extends NioSocketTransport<SelectLoop> {
 
-        Impl(String name, PipelineComposer pipelineComposer, TaskLoopGroup<AbstractSelector> taskLoopGroup) {
+        Impl(String name, PipelineComposer pipelineComposer, TaskLoopGroup<SelectLoop> taskLoopGroup) {
             super(name, pipelineComposer, taskLoopGroup);
+        }
+
+        @Override
+        void onSelected(SelectionKey key, SelectLoop selectLoop) {
         }
 
         @Override

@@ -119,7 +119,7 @@ public class TcpTest {
     @Test//(timeout = 3000)
     public void testBlockingConnect() throws Exception {
         NioClientSocketProcessor p = new NioClientSocketProcessor();
-        p.setNumberOfConnectThread(0);
+        p.setUseNonBlockingConnection(false);
         try {
             p.start();
             NioClientSocketTransport clientSut = p.createTransport();

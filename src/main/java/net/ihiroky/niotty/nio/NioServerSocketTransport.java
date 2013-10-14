@@ -39,19 +39,24 @@ import java.util.concurrent.TimeUnit;
 /**
  * An implementation of {@link net.ihiroky.niotty.Transport} for NIO {@code ServerSocketChannel}.
  */
-public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector> {
+public class NioServerSocketTransport extends NioSocketTransport<SelectLoop> {
 
     private ServerSocketChannel serverChannel_;
-    private NioServerSocketProcessor processor_;
+    private final String name_;
+    private final SelectLoopGroup ioSelectLoopGroup_;
+    private final PipelineComposer childPipelineComposer_;
+    private final WriteQueueFactory writeQueueFactory_;
     private final Map<TransportOption<Object>, Object> acceptedSocketOptionMap_;
     private Logger logger_ = LoggerFactory.getLogger(NioServerSocketTransport.class);
 
-    private static Set<TransportOption<?>> SUPPORTED_OPTIONS = Collections.unmodifiableSet(
+    private static final Set<TransportOption<?>> SUPPORTED_OPTIONS = Collections.unmodifiableSet(
             new HashSet<TransportOption<?>>(Arrays.<TransportOption<?>>asList(
                     TransportOptions.SO_RCVBUF, TransportOptions.SO_REUSEADDR)));
 
-    public NioServerSocketTransport(NioServerSocketProcessor processor) {
-        super(processor.name(), PipelineComposer.empty(), processor.acceptSelectorPool());
+    public NioServerSocketTransport(String name, PipelineComposer childPipelineComposer,
+            SelectLoopGroup acceptSelectLoopGroup, SelectLoopGroup ioSelectLoopGroup,
+            WriteQueueFactory writeQueueFactory) {
+        super(name, PipelineComposer.empty(), acceptSelectLoopGroup);
 
         ServerSocketChannel serverChannel = null;
         try {
@@ -59,7 +64,10 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
             serverChannel.configureBlocking(false);
 
             serverChannel_ = serverChannel;
-            processor_ = processor;
+            name_ = name;
+            ioSelectLoopGroup_ = ioSelectLoopGroup;
+            childPipelineComposer_ = childPipelineComposer;
+            writeQueueFactory_ = writeQueueFactory;
             acceptedSocketOptionMap_ = new HashMap<TransportOption<Object>, Object>();
         } catch (IOException ioe) {
             if (serverChannel != null) {
@@ -73,11 +81,16 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
         }
     }
 
-    public NioServerSocketTransport(NioServerSocketProcessor processor, ServerSocketChannel channel) {
-        super(processor.name(), PipelineComposer.empty(), processor.acceptSelectorPool());
+    public NioServerSocketTransport(String name, PipelineComposer childPipelineComposer,
+            SelectLoopGroup acceptSelectLoopGroup, SelectLoopGroup ioSelectLoopGroup,
+            WriteQueueFactory writeQueueFactory, ServerSocketChannel channel) {
+        super(name, PipelineComposer.empty(), acceptSelectLoopGroup);
 
         serverChannel_ = channel;
-        processor_ = processor;
+        name_ = name;
+        ioSelectLoopGroup_ = ioSelectLoopGroup;
+        childPipelineComposer_ = childPipelineComposer;
+        writeQueueFactory_ = writeQueueFactory;
         acceptedSocketOptionMap_ = new HashMap<TransportOption<Object>, Object>();
     }
 
@@ -249,34 +262,45 @@ public class NioServerSocketTransport extends NioSocketTransport<AcceptSelector>
         return future;
     }
 
-    void registerReadLater(SelectableChannel channel) throws IOException {
+    @Override
+    void flush(ByteBuffer writeBuffer) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    void onSelected(SelectionKey key, SelectLoop selectLoop) {
+        ServerSocketChannel channel = (ServerSocketChannel) key.channel();
+        try {
+            SocketChannel acceptedChannel = channel.accept();
+            logger_.info("new channel {} is accepted.", acceptedChannel);
+            acceptedChannel.configureBlocking(false);
+            register(acceptedChannel);
+        } catch (IOException ioe) {
+            logger_.error("[onSelected] failed to accept channel.", ioe);
+        }
+    }
+
+    void register(SelectableChannel channel) throws IOException {
         // SocketChannel#getRemoteAddress() may throw IOException, so get remoteAddress first.
         SocketChannel socketChannel = (SocketChannel) channel;
         InetSocketAddress remoteAddress = Platform.javaVersion().ge(JavaVersion.JAVA7)
                 ? (InetSocketAddress) socketChannel.getRemoteAddress()
                 : (InetSocketAddress) socketChannel.socket().getRemoteSocketAddress();
 
-        TcpIOSelectorPool ioSelectorPool = processor_.ioSelectorPool();
-        NioClientSocketTransport child = new NioClientSocketTransport(
-                processor_.pipelineComposer(), processor_.name(),
-                ioSelectorPool, processor_.writeQueueFactory(), socketChannel);
+        NioClientSocketTransport acceptedChannel = new NioClientSocketTransport(
+                name_, childPipelineComposer_, ioSelectLoopGroup_, writeQueueFactory_, socketChannel);
         synchronized (acceptedSocketOptionMap_) {
             for (Map.Entry<TransportOption<Object>, Object> option : acceptedSocketOptionMap_.entrySet()) {
-                child.setOption(option.getKey(), option.getValue());
+                acceptedChannel.setOption(option.getKey(), option.getValue());
             }
         }
-        for (TransportOption<?> name : child.supportedOptions()) {
-            logger_.debug("[registerReadLater] accepted socket's {} = {}", name, child.option(name));
+        for (TransportOption<?> name : acceptedChannel.supportedOptions()) {
+            logger_.debug("[register] accepted socket's {} = {}", name, acceptedChannel.option(name));
         }
 
-        LoadPipeline targetPipeline = child.loadPipeline();
+        LoadPipeline targetPipeline = acceptedChannel.loadPipeline();
         targetPipeline.execute(new DefaultTransportStateEvent(TransportState.CONNECTED, remoteAddress));
-        child.register(channel, SelectionKey.OP_READ, targetPipeline);
-    }
-
-    @Override
-    void flush(ByteBuffer writeBuffer) throws IOException {
-        throw new UnsupportedOperationException();
+        acceptedChannel.register(channel, SelectionKey.OP_READ, targetPipeline);
     }
 
     @Override

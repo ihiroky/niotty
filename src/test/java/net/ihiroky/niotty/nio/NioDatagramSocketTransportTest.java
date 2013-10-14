@@ -1,14 +1,20 @@
 package net.ihiroky.niotty.nio;
 
+import net.ihiroky.niotty.LoadPipeline;
 import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.StorePipeline;
 import net.ihiroky.niotty.Task;
 import net.ihiroky.niotty.TaskSelection;
 import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.TransportOptions;
+import net.ihiroky.niotty.TransportParameter;
 import net.ihiroky.niotty.TransportStateEvent;
+import net.ihiroky.niotty.buffer.ArrayCodecBuffer;
+import net.ihiroky.niotty.buffer.ByteBufferCodecBuffer;
+import net.ihiroky.niotty.buffer.CodecBuffer;
 import net.ihiroky.niotty.util.JavaVersion;
 import net.ihiroky.niotty.util.Platform;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -25,12 +31,17 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
+import java.net.SocketAddress;
 import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.MembershipKey;
+import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
+import java.nio.channels.spi.AbstractSelectionKey;
 import java.util.List;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import static net.ihiroky.niotty.util.JavaVersionMatchers.*;
@@ -54,17 +65,17 @@ public class NioDatagramSocketTransportTest {
 
         @Before
         public void setUp() throws Exception {
-            UdpIOSelector selector = mock(UdpIOSelector.class);
-            UdpIOSelectorPool ioPool = mock(UdpIOSelectorPool.class);
+            SelectLoop selector = mock(SelectLoop.class);
+            SelectLoopGroup ioPool = mock(SelectLoopGroup.class);
             when(ioPool.assign(Mockito.<TaskSelection>any())).thenReturn(selector);
             writeQueue_ = mock(WriteQueue.class);
             WriteQueueFactory writeQueueFactory = mock(WriteQueueFactory.class);
             when(writeQueueFactory.newWriteQueue()).thenReturn(writeQueue_);
             SelectionKey selectionKey = mock(SelectionKey.class);
-            UdpIOSelector taskLoop = mock(UdpIOSelector.class);
+            SelectLoop taskLoop = mock(SelectLoop.class);
 
             sut_ = spy(new NioDatagramSocketTransport(
-                    null, PipelineComposer.empty(), "TEST", ioPool, writeQueueFactory));
+                    "TEST", PipelineComposer.empty(), ioPool, writeQueueFactory, (InternetProtocolFamily) null));
             when(sut_.taskLoop()).thenReturn(taskLoop);
             sut_.setSelectionKey(selectionKey);
         }
@@ -131,6 +142,182 @@ public class NioDatagramSocketTransportTest {
         }
     }
 
+    public static class OnSelectedTest {
+
+        private SelectLoopGroup selectLoopGroup_;
+        private WriteQueueFactory writeQueueFactory_;
+
+        @Before
+        public void setUp() throws Exception {
+            writeQueueFactory_ = mock(WriteQueueFactory.class);
+        }
+
+        @After
+        public void tearDown() throws Exception {
+            if (selectLoopGroup_ != null) {
+                selectLoopGroup_.close();
+            }
+        }
+
+        @Test
+        public void testReadBufferIsNotCopiedWhenConnected() throws Exception {
+            selectLoopGroup_ = new SelectLoopGroup(Executors.defaultThreadFactory(), 1).setCopyReadBuffer(false);
+            NioDatagramSocketTransport sut = spy(new NioDatagramSocketTransport("TEST", PipelineComposer.empty(),
+                    selectLoopGroup_, writeQueueFactory_, (InternetProtocolFamily) null));
+
+            DatagramChannel channel = mock(DatagramChannel.class);
+            when(channel.isConnected()).thenReturn(true);
+            when(channel.read(Mockito.any(ByteBuffer.class))).thenAnswer(new Answer<Integer>() {
+                @Override
+                public Integer answer(InvocationOnMock invocation) throws Throwable {
+                    ByteBuffer bb = (ByteBuffer) invocation.getArguments()[0];
+                    bb.position(10);
+                    return 10;
+                }
+            });
+
+            LoadPipeline pipeline = mock(LoadPipeline.class);
+            SelectionKey key = spy(new SelectionKeyMock());
+            when(key.channel()).thenReturn(channel);
+            when(key.readyOps()).thenReturn(SelectionKey.OP_READ);
+            when(sut.loadPipeline()).thenReturn(pipeline);
+            key.attach(sut);
+            sut.setSelectionKey(key);
+
+            sut.onSelected(key, sut.taskLoop());
+
+            ArgumentCaptor<CodecBuffer> captor = ArgumentCaptor.forClass(CodecBuffer.class);
+            verify(sut.loadPipeline()).execute(captor.capture());
+            CodecBuffer cb = captor.getValue();
+            assertThat(cb, is(instanceOf(ByteBufferCodecBuffer.class)));
+        }
+
+        @Test
+        public void testReadBufferIsCopiedWhenConnected() throws Exception {
+            selectLoopGroup_ = new SelectLoopGroup(Executors.defaultThreadFactory(), 1).setCopyReadBuffer(true);
+            NioDatagramSocketTransport sut = spy(new NioDatagramSocketTransport("TEST", PipelineComposer.empty(),
+                    selectLoopGroup_, writeQueueFactory_, (InternetProtocolFamily) null));
+
+            DatagramChannel channel = mock(DatagramChannel.class);
+            when(channel.isConnected()).thenReturn(true);
+            when(channel.read(Mockito.any(ByteBuffer.class))).thenAnswer(new Answer<Integer>() {
+                @Override
+                public Integer answer(InvocationOnMock invocation) throws Throwable {
+                    ByteBuffer bb = (ByteBuffer) invocation.getArguments()[0];
+                    bb.position(10);
+                    return 10;
+                }
+            });
+            LoadPipeline pipeline = mock(LoadPipeline.class);
+            SelectionKey key = spy(new SelectionKeyMock());
+            when(key.channel()).thenReturn(channel);
+            when(key.readyOps()).thenReturn(SelectionKey.OP_READ);
+            when(sut.loadPipeline()).thenReturn(pipeline);
+            key.attach(sut);
+            sut.setSelectionKey(key);
+
+            sut.onSelected(key, sut.taskLoop());
+
+            ArgumentCaptor<CodecBuffer> captor = ArgumentCaptor.forClass(CodecBuffer.class);
+            verify(sut.loadPipeline()).execute(captor.capture());
+            CodecBuffer cb = captor.getValue();
+            assertThat(cb, is(instanceOf(ArrayCodecBuffer.class)));
+            assertThat(cb.remainingBytes(), is(10));
+        }
+
+        @Test
+        public void testReadBufferIsNotCopiedWhenNotConnected() throws Exception {
+            selectLoopGroup_ = new SelectLoopGroup(Executors.defaultThreadFactory(), 1).setCopyReadBuffer(false);
+            NioDatagramSocketTransport sut = spy(new NioDatagramSocketTransport("TEST", PipelineComposer.empty(),
+                    selectLoopGroup_, writeQueueFactory_, (InternetProtocolFamily) null));
+
+            DatagramChannel channel = mock(DatagramChannel.class);
+            when(channel.isConnected()).thenReturn(false);
+            when(channel.receive(Mockito.any(ByteBuffer.class))).thenAnswer(new Answer<SocketAddress>() {
+                @Override
+                public SocketAddress answer(InvocationOnMock invocation) throws Throwable {
+                    ByteBuffer bb = (ByteBuffer) invocation.getArguments()[0];
+                    bb.position(10);
+                    return new InetSocketAddress(12345);
+                }
+            });
+            LoadPipeline pipeline = mock(LoadPipeline.class);
+            SelectionKey key = spy(new SelectionKeyMock());
+            when(key.channel()).thenReturn(channel);
+            when(key.readyOps()).thenReturn(SelectionKey.OP_READ);
+            when(sut.loadPipeline()).thenReturn(pipeline);
+            key.attach(sut);
+            sut.setSelectionKey(key);
+
+            sut.onSelected(key, sut.taskLoop());
+
+            ArgumentCaptor<CodecBuffer> captor = ArgumentCaptor.forClass(CodecBuffer.class);
+            verify(sut.loadPipeline()).execute(captor.capture(), Mockito.any(TransportParameter.class));
+            CodecBuffer cb = captor.getValue();
+            assertThat(cb, is(instanceOf(ByteBufferCodecBuffer.class)));
+        }
+
+        @Test
+        public void testReadBufferIsCopiedWhenNotConnected() throws Exception {
+            selectLoopGroup_ = new SelectLoopGroup(Executors.defaultThreadFactory(), 1).setCopyReadBuffer(true);
+            NioDatagramSocketTransport sut = spy(new NioDatagramSocketTransport("TEST", PipelineComposer.empty(),
+                    selectLoopGroup_, writeQueueFactory_, (InternetProtocolFamily) null));
+
+            DatagramChannel channel = mock(DatagramChannel.class);
+            when(channel.isConnected()).thenReturn(false);
+            when(channel.receive(Mockito.any(ByteBuffer.class))).thenAnswer(new Answer<SocketAddress>() {
+                @Override
+                public SocketAddress answer(InvocationOnMock invocation) throws Throwable {
+                    ByteBuffer bb = (ByteBuffer) invocation.getArguments()[0];
+                    bb.position(10);
+                    return new InetSocketAddress(12345);
+                }
+            });
+            LoadPipeline pipeline = mock(LoadPipeline.class);
+            SelectionKey key = spy(new SelectionKeyMock());
+            when(key.channel()).thenReturn(channel);
+            when(key.readyOps()).thenReturn(SelectionKey.OP_READ);
+            when(sut.loadPipeline()).thenReturn(pipeline);
+            key.attach(sut);
+            sut.setSelectionKey(key);
+
+            sut.onSelected(key, sut.taskLoop());
+
+            ArgumentCaptor<CodecBuffer> captor = ArgumentCaptor.forClass(CodecBuffer.class);
+            verify(sut.loadPipeline()).execute(captor.capture(), Mockito.any(TransportParameter.class));
+            CodecBuffer cb = captor.getValue();
+            assertThat(cb, is(instanceOf(ArrayCodecBuffer.class)));
+            assertThat(cb.remainingBytes(), is(10));
+        }
+
+        private static class SelectionKeyMock extends AbstractSelectionKey {
+            @Override
+            public SelectableChannel channel() {
+                return null;
+            }
+
+            @Override
+            public Selector selector() {
+                return null;
+            }
+
+            @Override
+            public int interestOps() {
+                return 0;
+            }
+
+            @Override
+            public SelectionKey interestOps(int ops) {
+                return null;
+            }
+
+            @Override
+            public int readyOps() {
+                return 0;
+            }
+        }
+    }
+
     public static class Java7Test {
 
         private NioDatagramSocketTransport sut_;
@@ -143,8 +330,8 @@ public class NioDatagramSocketTransportTest {
         public void setUp() throws Exception {
             assumeThat(Platform.javaVersion(), is(greaterOrEqual(JavaVersion.JAVA7)));
 
-            UdpIOSelector selector = mock(UdpIOSelector.class);
-            UdpIOSelectorPool ioPool = mock(UdpIOSelectorPool.class);
+            SelectLoop selector = mock(SelectLoop.class);
+            SelectLoopGroup ioPool = mock(SelectLoopGroup.class);
             when(ioPool.assign(Mockito.<TaskSelection>any())).thenReturn(selector);
             DatagramSocket socket = mock(DatagramSocket.class);
             channel_ = mock(DatagramChannel.class);
@@ -152,7 +339,7 @@ public class NioDatagramSocketTransportTest {
             WriteQueueFactory writeQueueFactory = mock(WriteQueueFactory.class);
 
             sut_ = new NioDatagramSocketTransport(
-                    PipelineComposer.empty(), "TEST", ioPool, writeQueueFactory, channel_);
+                    "TEST", PipelineComposer.empty(), ioPool, writeQueueFactory, channel_);
         }
 
         @Test
@@ -333,7 +520,7 @@ public class NioDatagramSocketTransportTest {
                     return null;
                 }
             }).when(storePipeline).execute(Mockito.<TransportStateEvent>any());
-            UdpIOSelector selector = mock(UdpIOSelector.class);
+            SelectLoop selector = mock(SelectLoop.class);
             when(selector.isInLoopThread()).thenReturn(true);
             NioDatagramSocketTransport sut = spy(sut_);
             when(sut.storePipeline()).thenReturn(storePipeline);
@@ -440,8 +627,8 @@ public class NioDatagramSocketTransportTest {
         public void setUp() throws Exception {
             assumeThat(Platform.javaVersion(), is(equal(JavaVersion.JAVA6)));
 
-            UdpIOSelector selector = mock(UdpIOSelector.class);
-            UdpIOSelectorPool ioPool = mock(UdpIOSelectorPool.class);
+            SelectLoop selector = mock(SelectLoop.class);
+            SelectLoopGroup ioPool = mock(SelectLoopGroup.class);
             when(ioPool.assign(Mockito.<TaskSelection>any())).thenReturn(selector);
             socket_ = mock(DatagramSocket.class);
             DatagramChannel channel = mock(DatagramChannel.class);
@@ -449,7 +636,7 @@ public class NioDatagramSocketTransportTest {
             WriteQueueFactory writeQueueFactory = mock(WriteQueueFactory.class);
 
             sut_ = new NioDatagramSocketTransport(
-                    PipelineComposer.empty(), "TEST", ioPool, writeQueueFactory, channel);
+                    "TEST", PipelineComposer.empty(), ioPool, writeQueueFactory, channel);
 
         }
 
@@ -619,7 +806,7 @@ public class NioDatagramSocketTransportTest {
                     return null;
                 }
             }).when(storePipeline).execute(Mockito.<TransportStateEvent>any());
-            UdpIOSelector selector = mock(UdpIOSelector.class);
+            SelectLoop selector = mock(SelectLoop.class);
             when(selector.isInLoopThread()).thenReturn(true);
             NioDatagramSocketTransport sut = spy(sut_);
             when(sut.storePipeline()).thenReturn(storePipeline);

@@ -1,5 +1,6 @@
 package net.ihiroky.niotty.nio;
 
+import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.StorePipeline;
 import net.ihiroky.niotty.TransportOptions;
 import net.ihiroky.niotty.TransportStateEvent;
@@ -21,6 +22,7 @@ import java.net.Socket;
 import java.net.StandardSocketOptions;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import static net.ihiroky.niotty.util.JavaVersionMatchers.*;
@@ -38,21 +40,27 @@ public class NioServerSocketTransportTest {
 
         private NioServerSocketTransport sut_;
         private ServerSocketChannel channel_;
-        private NioServerSocketProcessor processor_;
+        private SelectLoopGroup acceptGroup_;
+        private SelectLoopGroup ioGroup_;
 
         @Before
         public void setUp() {
             assumeThat(Platform.javaVersion(), is(greaterOrEqual(JavaVersion.JAVA7)));
             channel_ = mock(ServerSocketChannel.class);
-            processor_ = new NioServerSocketProcessor();
-            processor_.start();
-            sut_ = new NioServerSocketTransport(processor_, channel_);
+            acceptGroup_ = new SelectLoopGroup(Executors.defaultThreadFactory(), 1);
+            ioGroup_ = new SelectLoopGroup(Executors.defaultThreadFactory(), 1);
+            WriteQueueFactory writeQueueFactory = mock(WriteQueueFactory.class);
+            sut_ = new NioServerSocketTransport("TEST", PipelineComposer.empty(),
+                    acceptGroup_, ioGroup_, writeQueueFactory, channel_);
         }
 
         @After
         public void tearDown() throws Exception {
-            if (processor_ != null) {
-                processor_.stop();
+            if (acceptGroup_ != null) {
+                acceptGroup_.close();
+            }
+            if (ioGroup_ != null) {
+                ioGroup_.close();
             }
         }
 
@@ -107,12 +115,13 @@ public class NioServerSocketTransportTest {
         @Test
         public void testSetAcceptedTransportOption() throws Exception {
             sut_.setAcceptedTransportOption(TransportOptions.SO_LINGER, 10);
-            SocketChannel channel = mock(SocketChannel.class);
 
-            sut_.registerReadLater(channel);
+            SocketChannel acceptedChannel = mock(SocketChannel.class);
+
+            sut_.register(acceptedChannel);
 
             ArgumentCaptor<Integer> valueCaptor = ArgumentCaptor.forClass(Integer.class);
-            verify(channel).setOption(eq(StandardSocketOptions.SO_LINGER), valueCaptor.capture());
+            verify(acceptedChannel).setOption(eq(StandardSocketOptions.SO_LINGER), valueCaptor.capture());
             assertThat(valueCaptor.getValue(), is(10));
         }
 
@@ -128,11 +137,11 @@ public class NioServerSocketTransportTest {
                     return null;
                 }
             }).when(storePipeline).execute(Mockito.<TransportStateEvent>any());
-            AcceptSelector selector = mock(AcceptSelector.class);
-            when(selector.isInLoopThread()).thenReturn(true);
+            SelectLoop selectLoop = mock(SelectLoop.class);
+            when(selectLoop.isInLoopThread()).thenReturn(true);
             NioServerSocketTransport sut = spy(sut_);
             when(sut.storePipeline()).thenReturn(storePipeline);
-            when(sut.taskLoop()).thenReturn(selector);
+            when(sut.taskLoop()).thenReturn(selectLoop);
 
             sut.bind(address);
 
@@ -158,7 +167,8 @@ public class NioServerSocketTransportTest {
 
         private NioServerSocketTransport sut_;
         private ServerSocket socket_;
-        private NioServerSocketProcessor processor_;
+        private SelectLoopGroup acceptGroup_;
+        private SelectLoopGroup ioGroup_;
 
         @Before
         public void setUp() {
@@ -167,16 +177,21 @@ public class NioServerSocketTransportTest {
             socket_ = mock(ServerSocket.class);
             ServerSocketChannel channel = mock(ServerSocketChannel.class);
             when(channel.socket()).thenReturn(socket_);
-            processor_ = new NioServerSocketProcessor();
-            processor_.start();
-            sut_ = new NioServerSocketTransport(processor_, channel);
+            acceptGroup_ = new SelectLoopGroup(Executors.defaultThreadFactory(), 1);
+            ioGroup_ = new SelectLoopGroup(Executors.defaultThreadFactory(), 1);
+            WriteQueueFactory writeQueueFactory = mock(WriteQueueFactory.class);
+            sut_ = new NioServerSocketTransport("TEST", PipelineComposer.empty(), acceptGroup_, ioGroup_,
+                    writeQueueFactory, channel);
 
         }
 
         @After
         public void tearDown() throws Exception {
-            if (processor_ != null) {
-                processor_.stop();
+            if (acceptGroup_ != null) {
+                acceptGroup_.close();
+            }
+            if (ioGroup_ != null) {
+                ioGroup_.close();
             }
         }
 
@@ -232,10 +247,10 @@ public class NioServerSocketTransportTest {
         public void testSetAcceptedTransportOption() throws Exception {
             sut_.setAcceptedTransportOption(TransportOptions.SO_LINGER, 10);
             Socket socket = mock(Socket.class);
-            SocketChannel channel = mock(SocketChannel.class);
-            when(channel.socket()).thenReturn(socket);
+            SocketChannel acceptedChannel = mock(SocketChannel.class);
+            when(acceptedChannel.socket()).thenReturn(socket);
 
-            sut_.registerReadLater(channel);
+            sut_.register(acceptedChannel);
 
             ArgumentCaptor<Integer> valueCaptor = ArgumentCaptor.forClass(Integer.class);
             verify(socket).setSoLinger(eq(true), valueCaptor.capture());
@@ -254,11 +269,11 @@ public class NioServerSocketTransportTest {
                     return null;
                 }
             }).when(storePipeline).execute(Mockito.<TransportStateEvent>any());
-            AcceptSelector selector = mock(AcceptSelector.class);
-            when(selector.isInLoopThread()).thenReturn(true);
+            SelectLoop selectLoop = mock(SelectLoop.class);
+            when(selectLoop.isInLoopThread()).thenReturn(true);
             NioServerSocketTransport sut = spy(sut_);
             when(sut.storePipeline()).thenReturn(storePipeline);
-            when(sut.taskLoop()).thenReturn(selector);
+            when(sut.taskLoop()).thenReturn(selectLoop);
 
             sut.bind(address);
 

@@ -59,9 +59,12 @@ public class EchoMain {
         NioClientSocketTransport clientTransport = client.createTransport();
 
         try {
-            serverTransport.bind(new InetSocketAddress(port));
+            serverTransport.bind(new InetSocketAddress(port))
+                    .waitForCompletion().throwExceptionIfFailed();
 
-            clientTransport.connect(new InetSocketAddress("localhost", port)).waitForCompletion();
+            clientTransport.connect(new InetSocketAddress("localhost", port))
+                    .waitForCompletion().throwExceptionIfFailed();
+
             System.out.println("connection wait gets done.");
             clientTransport.write("Hello World.");
 

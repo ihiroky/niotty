@@ -9,9 +9,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -19,18 +21,33 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * An implementation of {@link net.ihiroky.niotty.TaskLoop} to handle {@link java.nio.channels.SelectableChannel}.
  */
-public abstract class AbstractSelector extends TaskLoop implements StoreStage<BufferSink, Void> {
+public class SelectLoop extends TaskLoop implements StoreStage<BufferSink, Void> {
 
     private Selector selector_;
-    private AtomicBoolean wakenUp_;
+    private final AtomicBoolean wakenUp_;
+    final ByteBuffer readBuffer_;
+    final ByteBuffer writeBuffer_;
+    final boolean copyReadBuffer;
 
-    private Logger logger_ = LoggerFactory.getLogger(AbstractSelector.class);
+    private static Logger logger_ = LoggerFactory.getLogger(SelectLoop.class);
+
+    private static final ByteBuffer EMPTY_BUFFER = ByteBuffer.allocate(0).asReadOnlyBuffer();
 
     /**
      * Creates a new instance.
      */
-    protected AbstractSelector() {
+    protected SelectLoop() {
         wakenUp_ = new AtomicBoolean();
+        readBuffer_ = EMPTY_BUFFER;
+        writeBuffer_ = EMPTY_BUFFER;
+        copyReadBuffer = false;
+    }
+
+    protected SelectLoop(int readBufferSize, int writeBufferSize, boolean direct, boolean copyInput) {
+        wakenUp_ = new AtomicBoolean();
+        readBuffer_ = direct ? ByteBuffer.allocateDirect(readBufferSize) : ByteBuffer.allocate(readBufferSize);
+        writeBuffer_ = direct ? ByteBuffer.allocateDirect(writeBufferSize) : ByteBuffer.allocate(writeBufferSize);
+        copyReadBuffer = copyInput;
     }
 
     @Override
@@ -57,7 +74,13 @@ public abstract class AbstractSelector extends TaskLoop implements StoreStage<Bu
                 : selector_.select(Math.max(timeUnit.toMillis(timeout), 1));
         wakenUp_.set(false);
         if (selected > 0) {
-            processSelectedKeys(selector_.selectedKeys());
+            for (Iterator<SelectionKey> iterator = selector_.selectedKeys().iterator(); iterator.hasNext();) {
+                SelectionKey key = iterator.next();
+                iterator.remove();
+
+                NioSocketTransport<?> transport = (NioSocketTransport<?>) key.attachment();
+                transport.onSelected(key, this);
+            }
         }
     }
 
@@ -67,8 +90,6 @@ public abstract class AbstractSelector extends TaskLoop implements StoreStage<Bu
             selector_.wakeup();
         }
     }
-
-    protected abstract void processSelectedKeys(Set<SelectionKey> selectedKeys) throws Exception;
 
     @Override
     protected void onClose() {
@@ -108,6 +129,18 @@ public abstract class AbstractSelector extends TaskLoop implements StoreStage<Bu
 
     boolean isOpen() {
         return (selector_ != null) && selector_.isOpen();
+    }
+
+    @Override
+    public void store(StageContext<Void> context, BufferSink input) {
+        final NioSocketTransport<?> transport = (NioSocketTransport<?>) context.transport();
+        transport.readyToWrite(new AttachedMessage<BufferSink>(input, context.transportParameter()));
+        try {
+            transport.flush(writeBuffer_);
+        } catch (IOException ioe) {
+            logger_.warn("[store] Flush failed.", ioe);
+            transport.doCloseSelectableChannel(true);
+        }
     }
 
     @Override

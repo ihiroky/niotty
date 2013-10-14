@@ -13,6 +13,8 @@ import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.TransportState;
 import net.ihiroky.niotty.TransportStateEvent;
 import net.ihiroky.niotty.buffer.BufferSink;
+import net.ihiroky.niotty.buffer.Buffers;
+import net.ihiroky.niotty.buffer.CodecBuffer;
 import net.ihiroky.niotty.util.Arguments;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,7 +30,7 @@ import java.util.concurrent.TimeUnit;
  * A skeletal implementation of {@link net.ihiroky.niotty.Transport} for NIO.
  * @param <S> a type of selector
  */
-public abstract class NioSocketTransport<S extends AbstractSelector> extends AbstractTransport<S> {
+public abstract class NioSocketTransport<S extends SelectLoop> extends AbstractTransport<S> {
 
     private SelectionKey key_;
     private static Logger logger_ = LoggerFactory.getLogger(NioSocketTransport.class);
@@ -73,7 +75,7 @@ public abstract class NioSocketTransport<S extends AbstractSelector> extends Abs
      * Closes the channel.
      *
      * The key is cancelled and the channel is closed if the key is non null and valid.
-     * The load pipeline and store pipeline (optional) is called
+     * The load pipeline and onStore pipeline (optional) is called
      * after the channel is closed. This method calls {@code #onCloseSelectableChannel} and
      * {@link #closePipelines()} after the channel close operation.
      * @return succeeded future
@@ -182,7 +184,14 @@ public abstract class NioSocketTransport<S extends AbstractSelector> extends Abs
         }
     }
 
-    abstract void readyToWrite(AttachedMessage<BufferSink> message);
+    protected static CodecBuffer deepCopy(ByteBuffer bb) {
+        int length = bb.limit();
+        byte[] data = new byte[length];
+        bb.get(data, 0, length);
+        return Buffers.wrap(data, 0, length);
+    }
 
+    abstract void onSelected(SelectionKey key, SelectLoop selectLoop);
+    abstract void readyToWrite(AttachedMessage<BufferSink> message);
     abstract void flush(ByteBuffer writeBuffer) throws IOException;
 }

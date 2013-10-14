@@ -13,15 +13,21 @@ import net.ihiroky.niotty.TransportOptions;
 import net.ihiroky.niotty.TransportState;
 import net.ihiroky.niotty.TransportStateEvent;
 import net.ihiroky.niotty.buffer.BufferSink;
+import net.ihiroky.niotty.buffer.Buffers;
+import net.ihiroky.niotty.buffer.CodecBuffer;
 import net.ihiroky.niotty.util.Arguments;
 import net.ihiroky.niotty.util.JavaVersion;
 import net.ihiroky.niotty.util.Platform;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedByInterruptException;
+import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.Arrays;
@@ -33,37 +39,30 @@ import java.util.concurrent.TimeUnit;
 /**
  * An implementation of {@link net.ihiroky.niotty.Transport} for NIO {@code SocketChannel}.
  */
-public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> {
+public class NioClientSocketTransport extends NioSocketTransport<SelectLoop> {
 
     private final SocketChannel channel_;
-    private final Pools pools_;
+    private final SelectLoopGroup connectSelectGroup_;
     private final WriteQueue writeQueue_;
     private WriteQueue.FlushStatus flushStatus_;
+
+    private static Logger logger_ = LoggerFactory.getLogger(NioClientSocketTransport.class);
 
     private static final Set<TransportOption<?>> SUPPORTED_OPTIONS = Collections.unmodifiableSet(
             new HashSet<TransportOption<?>>(Arrays.<TransportOption<?>>asList(
                     TransportOptions.SO_RCVBUF, TransportOptions.SO_SNDBUF, TransportOptions.SO_REUSEADDR,
                     TransportOptions.SO_KEEPALIVE, TransportOptions.SO_LINGER, TransportOptions.TCP_NODELAY)));
 
-    private static class Pools {
-        final ConnectSelectorPool connectorPool_;
-        final TcpIOSelectorPool ioPool_;
-
-        Pools(ConnectSelectorPool connectorPool, TcpIOSelectorPool ioPool) {
-            connectorPool_ = connectorPool;
-            ioPool_ = ioPool;
-        }
-
-        boolean isConnectorPoolAvailable() {
-            return connectorPool_ != null && connectorPool_.isOpen();
-        }
+    public NioClientSocketTransport(String name, PipelineComposer composer,
+            SelectLoopGroup ioSelectPool, WriteQueueFactory writeQueueFactory) {
+        this(name, composer, null, ioSelectPool, writeQueueFactory);
     }
 
-    public NioClientSocketTransport(PipelineComposer composer, String name,
-            ConnectSelectorPool connectorPool, TcpIOSelectorPool ioPool, WriteQueueFactory writeQueueFactory) {
-        super(name, composer, ioPool);
+    public NioClientSocketTransport(String name, PipelineComposer composer,
+            SelectLoopGroup connectSelectGroup, SelectLoopGroup ioSelectPool, WriteQueueFactory writeQueueFactory) {
+        super(name, composer, ioSelectPool);
 
-        Arguments.requireNonNull(ioPool, "ioPool");
+        Arguments.requireNonNull(ioSelectPool, "ioPool");
         Arguments.requireNonNull(writeQueueFactory, "writeQueueFactory");
 
         try {
@@ -71,22 +70,22 @@ public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> 
             clientChannel.configureBlocking(false);
 
             channel_ = clientChannel;
-            pools_ = new Pools(connectorPool, ioPool);
+            connectSelectGroup_ = connectSelectGroup;
             writeQueue_ = writeQueueFactory.newWriteQueue();
         } catch (Exception e) {
             throw new RuntimeException("failed to open client socket channel.", e);
         }
     }
 
-    public NioClientSocketTransport(PipelineComposer composer, String name,
-            TcpIOSelectorPool ioPool, WriteQueueFactory writeQueueFactory, SocketChannel child) {
-        super(name, composer, ioPool);
+    public NioClientSocketTransport(String name, PipelineComposer composer,
+            SelectLoopGroup ioSelectGroup, WriteQueueFactory writeQueueFactory, SocketChannel child) {
+        super(name, composer, ioSelectGroup);
 
         Arguments.requireNonNull(writeQueueFactory, "writeQueueFactory");
         Arguments.requireNonNull(child, "child");
 
         channel_ = child;
-        pools_ = null;
+        connectSelectGroup_ = null;
         writeQueue_ = writeQueueFactory.newWriteQueue();
     }
 
@@ -266,19 +265,14 @@ public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> 
             return new CancelledTransportFuture(this);
         }
 
-        Pools pools = pools_;
-        if (pools == null) {
-            throw new IllegalStateException("No ConnectSelectorPool is found.");
-        }
-
-        if (pools.isConnectorPoolAvailable()) {
+        if (connectSelectGroup_ != null && connectSelectGroup_.isOpen()) {
             // Try non blocking connection
             try {
                 if (channel_.connect(remote)) {
                     return new SuccessfulTransportFuture(this);
                 }
                 DefaultTransportFuture future = new DefaultTransportFuture(this);
-                ConnectionWaitTransport cwt = new ConnectionWaitTransport(pools.connectorPool_, this, future);
+                ConnectionWaitTransport cwt = new ConnectionWaitTransport(connectSelectGroup_, this, future);
                 cwt.register(channel_, SelectionKey.OP_CONNECT, loadPipeline()); // call pipeline of this, not cwt.
             } catch (IOException ioe) {
                 return new FailedTransportFuture(this, ioe);
@@ -309,8 +303,8 @@ public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> 
     }
 
     public TransportFuture shutdownOutput() {
-        TcpIOSelector selector = taskLoop();
-        if (selector == null) {
+        SelectLoop select = taskLoop();
+        if (select == null) {
             return new SuccessfulTransportFuture(this);
         }
         final DefaultTransportFuture future = new DefaultTransportFuture(this);
@@ -338,8 +332,8 @@ public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> 
     }
 
     public TransportFuture shutdownInput() {
-        TcpIOSelector selector = taskLoop();
-        if (selector == null) {
+        SelectLoop select = taskLoop();
+        if (select == null) {
             return new SuccessfulTransportFuture(this);
         }
         final DefaultTransportFuture future = new DefaultTransportFuture(this);
@@ -367,10 +361,6 @@ public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> 
 
     }
 
-    TcpIOSelectorPool ioSelectorPool() {
-        return pools_.ioPool_;
-    }
-
     @Override
     void readyToWrite(AttachedMessage<BufferSink> message) {
         writeQueue_.offer(message);
@@ -379,6 +369,44 @@ public class NioClientSocketTransport extends NioSocketTransport<TcpIOSelector> 
     @Override
     void onCloseSelectableChannel() {
         writeQueue_.clear();
+    }
+
+    @Override
+    void onSelected(SelectionKey key, SelectLoop selectLoop) {
+        assert key == key();
+
+        ReadableByteChannel channel = (ReadableByteChannel) key.channel();
+        try {
+            if (key.isReadable()) {
+                ByteBuffer readBuffer = selectLoop.readBuffer_;
+                int read = channel.read(readBuffer);
+                if (read == -1) {
+                    if (logger_.isDebugEnabled()) {
+                        logger_.debug("transport reaches the end of its stream:" + this);
+                    }
+                    // TODO Discuss to call loadEvent(TransportEvent) and change ops to achieve have close
+                    doCloseSelectableChannel(true);
+                    readBuffer.clear();
+                    return;
+                }
+
+                readBuffer.flip();
+                CodecBuffer cb = selectLoop.copyReadBuffer ? deepCopy(readBuffer) : Buffers.wrap(readBuffer, false);
+                loadPipeline().execute(cb);
+                readBuffer.clear();
+                // TODO There is any need to check if content is remaining?
+            } else if (key.isWritable()) {
+                flush(null);
+            }
+        } catch (ClosedByInterruptException ie) {
+            if (logger_.isDebugEnabled()) {
+                logger_.debug("failed to read from transport by interruption:" + this, ie);
+            }
+            doCloseSelectableChannel(true);
+        } catch (IOException ioe) {
+            logger_.error("failed to read from transport:" + this, ioe);
+            doCloseSelectableChannel(true);
+        }
     }
 
     @Override

@@ -12,9 +12,14 @@ import net.ihiroky.niotty.TransportOptions;
 import net.ihiroky.niotty.TransportState;
 import net.ihiroky.niotty.TransportStateEvent;
 import net.ihiroky.niotty.buffer.BufferSink;
+import net.ihiroky.niotty.buffer.Buffers;
+import net.ihiroky.niotty.buffer.CodecBuffer;
 import net.ihiroky.niotty.util.Arguments;
 import net.ihiroky.niotty.util.JavaVersion;
 import net.ihiroky.niotty.util.Platform;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -23,6 +28,7 @@ import java.net.NetworkInterface;
 import java.net.SocketAddress;
 import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.MembershipKey;
 import java.nio.channels.SelectionKey;
@@ -37,12 +43,14 @@ import java.util.concurrent.TimeUnit;
 /**
  * An implementation of {@link net.ihiroky.niotty.Transport} for NIO {@code DatagramChannel}.
  */
-public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector> {
+public class NioDatagramSocketTransport extends NioSocketTransport<SelectLoop> {
 
     private DatagramChannel channel_;
     private WriteQueue writeQueue_;
     private WriteQueue.FlushStatus flushStatus_;
     private final Map<GroupKey, MembershipKey> membershipKeyMap_;
+
+    private static Logger logger_ = LoggerFactory.getLogger(NioDatagramSocketTransport.class);
 
     private static final Set<TransportOption<?>> SUPPORTED_OPTIONS = Collections.unmodifiableSet(
             new HashSet<TransportOption<?>>(Arrays.<TransportOption<?>>asList(
@@ -51,9 +59,10 @@ public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector
                     TransportOptions.IP_MULTICAST_IF, TransportOptions.IP_MULTICAST_LOOP,
                     TransportOptions.IP_MULTICAST_TTL, TransportOptions.IP_TOS)));
 
-    public NioDatagramSocketTransport(InternetProtocolFamily family, PipelineComposer composer,
-            String name, UdpIOSelectorPool selectorPool, WriteQueueFactory writeQueueFactory) {
-        super(name, composer, selectorPool);
+    public NioDatagramSocketTransport(String name, PipelineComposer composer,
+            SelectLoopGroup ioSelectLoopGroup, WriteQueueFactory writeQueueFactory,
+            InternetProtocolFamily family) {
+        super(name, composer, ioSelectLoopGroup);
 
         Arguments.requireNonNull(writeQueueFactory, "writeQueueFactory");
 
@@ -82,9 +91,10 @@ public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector
         // TODO set read buffer size to 64k.
     }
 
-    public NioDatagramSocketTransport(PipelineComposer composer,
-            String name, UdpIOSelectorPool selectorPool, WriteQueueFactory writeQueueFactory, DatagramChannel channel) {
-        super(name, composer, selectorPool);
+    public NioDatagramSocketTransport(String name, PipelineComposer composer,
+            SelectLoopGroup ioSelectLoopGroup, WriteQueueFactory writeQueueFactory,
+            DatagramChannel channel) {
+        super(name, composer, ioSelectLoopGroup);
 
         Arguments.requireNonNull(writeQueueFactory, "writeQueueFactory");
 
@@ -376,6 +386,51 @@ public class NioDatagramSocketTransport extends NioSocketTransport<UdpIOSelector
     @Override
     void onCloseSelectableChannel() {
         writeQueue_.clear();
+    }
+
+    @Override
+    void onSelected(SelectionKey key, SelectLoop selectLoop) {
+        assert key == key();
+
+        DatagramChannel channel = (DatagramChannel) key.channel();
+        try {
+            if (key.isReadable()) {
+                ByteBuffer readBuffer = selectLoop.readBuffer_;
+                if (channel.isConnected()) {
+                    int read = channel.read(readBuffer);
+                    if (read == -1) {
+                        if (logger_.isDebugEnabled()) {
+                            logger_.debug("transport reaches the end of its stream:" + this);
+                        }
+                        // TODO Discuss to call loadEvent(TransportEvent) and change ops to achieve have close
+                        doCloseSelectableChannel(true);
+                        readBuffer.clear();
+                        return;
+                    }
+                    readBuffer.flip();
+                    CodecBuffer buffer = selectLoop.copyReadBuffer
+                            ? deepCopy(readBuffer) : Buffers.wrap(readBuffer, false);
+                    loadPipeline().execute(buffer);
+                } else {
+                    SocketAddress source = channel.receive(readBuffer);
+                    readBuffer.flip();
+                    CodecBuffer buffer = selectLoop.copyReadBuffer
+                            ? deepCopy(readBuffer) : Buffers.wrap(readBuffer, false);
+                    loadPipeline().execute(buffer, new DefaultTransportParameter(source));
+                }
+                readBuffer.clear();
+            } else if (key.isWritable()) {
+                flush(selectLoop.writeBuffer_);
+            }
+        } catch (ClosedByInterruptException ie) {
+            if (logger_.isDebugEnabled()) {
+                logger_.debug("failed to read from transport by interruption:" + this, ie);
+            }
+            doCloseSelectableChannel(true);
+        } catch (IOException ioe) {
+            logger_.error("failed to read from transport:" + this, ioe);
+            doCloseSelectableChannel(true);
+        }
     }
 
     @Override
