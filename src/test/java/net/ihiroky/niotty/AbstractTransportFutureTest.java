@@ -35,7 +35,7 @@ public class AbstractTransportFutureTest {
 
     @Test
     public void testOneListenerIsCalledOnCompleteIfNotDoneAtAdded() throws Exception {
-        TransportFutureListener listener = mock(TransportFutureListener.class);
+        CompletionListener listener = mock(CompletionListener.class);
         when(transport_.taskLoop().isInLoopThread()).thenReturn(true);
 
         sut_.addListener(listener);
@@ -47,9 +47,9 @@ public class AbstractTransportFutureTest {
     @Test
     public void testListenersIsCalledOnCompleteIfNotDoneAtAdded() throws Exception {
         when(transport_.taskLoop().isInLoopThread()).thenReturn(true);
-        TransportFutureListener listener0 = mock(TransportFutureListener.class);
-        TransportFutureListener listener1 = mock(TransportFutureListener.class);
-        TransportFutureListener listener2 = mock(TransportFutureListener.class);
+        CompletionListener listener0 = mock(CompletionListener.class);
+        CompletionListener listener1 = mock(CompletionListener.class);
+        CompletionListener listener2 = mock(CompletionListener.class);
 
         sut_.addListener(listener0);
         sut_.addListener(listener1);
@@ -64,8 +64,9 @@ public class AbstractTransportFutureTest {
     @Test
     public void testOneListenerIsCalledOnAddListenerIfDone() throws Exception {
         when(transport_.taskLoop().isInLoopThread()).thenReturn(true);
-        TransportFutureListener listener = mock(TransportFutureListener.class);
+        CompletionListener listener = mock(CompletionListener.class);
 
+        sut_.executing();
         sut_.done();
         sut_.addListener(listener);
 
@@ -75,10 +76,11 @@ public class AbstractTransportFutureTest {
     @Test
     public void testListenersIsCalledOnAddListenerIfDone() throws Exception {
         when(transport_.taskLoop().isInLoopThread()).thenReturn(true);
-        TransportFutureListener listener0 = mock(TransportFutureListener.class);
-        TransportFutureListener listener1 = mock(TransportFutureListener.class);
-        TransportFutureListener listener2 = mock(TransportFutureListener.class);
+        CompletionListener listener0 = mock(CompletionListener.class);
+        CompletionListener listener1 = mock(CompletionListener.class);
+        CompletionListener listener2 = mock(CompletionListener.class);
 
+        sut_.executing();
         sut_.done();
         sut_.addListener(listener0);
         sut_.addListener(listener1);
@@ -92,7 +94,7 @@ public class AbstractTransportFutureTest {
     @Test
     public void testRemoveListener_InternalListenerGetsNullListener() throws Exception {
         when(transport_.taskLoop().isInLoopThread()).thenReturn(true);
-        TransportFutureListener listener = mock(TransportFutureListener.class);
+        CompletionListener listener = mock(CompletionListener.class);
 
         sut_.addListener(listener);
         sut_.removeListener(listener);
@@ -104,8 +106,8 @@ public class AbstractTransportFutureTest {
     @Test
     public void testRemoveListener_InternalListenerGetsNormalListener() throws Exception {
         when(transport_.taskLoop().isInLoopThread()).thenReturn(true);
-        TransportFutureListener listener0 = mock(TransportFutureListener.class);
-        TransportFutureListener listener1 = mock(TransportFutureListener.class);
+        CompletionListener listener0 = mock(CompletionListener.class);
+        CompletionListener listener1 = mock(CompletionListener.class);
 
         sut_.addListener(listener0);
         sut_.addListener(listener1);
@@ -119,9 +121,9 @@ public class AbstractTransportFutureTest {
     @Test
     public void testRemoveListener_InternalListenerGetsListenerList() throws Exception {
         when(transport_.taskLoop().isInLoopThread()).thenReturn(true);
-        TransportFutureListener listener0 = mock(TransportFutureListener.class);
-        TransportFutureListener listener1 = mock(TransportFutureListener.class);
-        TransportFutureListener listener2 = mock(TransportFutureListener.class);
+        CompletionListener listener0 = mock(CompletionListener.class);
+        CompletionListener listener1 = mock(CompletionListener.class);
+        CompletionListener listener2 = mock(CompletionListener.class);
 
         sut_.addListener(listener0);
         sut_.addListener(listener1);
@@ -146,7 +148,7 @@ public class AbstractTransportFutureTest {
                 return null;
             }
         }).when(taskLoop_).offer(Mockito.any(Task.class));
-        TransportFutureListener listener = mock(TransportFutureListener.class);
+        CompletionListener listener = mock(CompletionListener.class);
 
         sut_.addListener(listener);
         sut_.fireOnComplete();

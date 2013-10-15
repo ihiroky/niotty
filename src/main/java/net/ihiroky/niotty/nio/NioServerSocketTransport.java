@@ -231,16 +231,18 @@ public class NioServerSocketTransport extends NioSocketTransport<SelectLoop> {
         storePipeline().execute(new TransportStateEvent(TransportState.BOUND) {
             @Override
             public long execute(TimeUnit timeUnit) throws Exception {
-                try {
-                    register(serverChannel_, SelectionKey.OP_ACCEPT, loadPipeline());
-                    if (Platform.javaVersion().ge(JavaVersion.JAVA7)) {
-                        serverChannel_.bind(socketAddress, backlog);
-                    } else {
-                        serverChannel_.socket().bind(socketAddress, backlog);
+                if (future.executing()) {
+                    try {
+                        register(serverChannel_, SelectionKey.OP_ACCEPT, loadPipeline());
+                        if (Platform.javaVersion().ge(JavaVersion.JAVA7)) {
+                            serverChannel_.bind(socketAddress, backlog);
+                        } else {
+                            serverChannel_.socket().bind(socketAddress, backlog);
+                        }
+                        future.done();
+                    } catch (IOException ioe) {
+                        future.setThrowable(ioe);
                     }
-                    future.done();
-                } catch (IOException ioe) {
-                    future.setThrowable(ioe);
                 }
                 return DONE;
             }

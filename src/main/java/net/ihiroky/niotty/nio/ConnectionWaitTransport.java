@@ -94,6 +94,10 @@ public class ConnectionWaitTransport extends NioSocketTransport<SelectLoop> {
 
     @Override
     void onSelected(SelectionKey key, SelectLoop selectLoop) {
+        if (!future_.executing()) {
+            return;
+        }
+
         SocketChannel channel = (SocketChannel) key.channel();
         try {
             if (channel.finishConnect()) {
@@ -106,8 +110,8 @@ public class ConnectionWaitTransport extends NioSocketTransport<SelectLoop> {
                 transport_.register(channel, SelectionKey.OP_READ, targetPipeline);
 
                 // The done() must be called after register() to ensure that the SelectionKey of IO selector is fixed.
-                future_.done();
             }
+            future_.done();
         } catch (IOException ioe) {
             future_.setThrowable(ioe);
             transport_.closeSelectableChannel();

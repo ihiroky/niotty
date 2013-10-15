@@ -207,15 +207,17 @@ public class NioClientSocketTransport extends NioSocketTransport<SelectLoop> {
         storePipeline().execute(new TransportStateEvent(TransportState.BOUND) {
             @Override
             public long execute(TimeUnit timeUnit) throws Exception {
-                try {
-                    if (Platform.javaVersion().ge(JavaVersion.JAVA7)) {
-                        channel_.bind(local);
-                    } else {
-                        channel_.socket().bind(local);
+                if (future.executing()) {
+                    try {
+                        if (Platform.javaVersion().ge(JavaVersion.JAVA7)) {
+                            channel_.bind(local);
+                        } else {
+                            channel_.socket().bind(local);
+                        }
+                        future.done();
+                    } catch (IOException ioe) {
+                        future.setThrowable(ioe);
                     }
-                    future.done();
-                } catch (IOException ioe) {
-                    future.setThrowable(ioe);
                 }
                 return DONE;
             }
@@ -314,15 +316,17 @@ public class NioClientSocketTransport extends NioSocketTransport<SelectLoop> {
                 SelectionKey key = key();
                 if (key != null && key.isValid()) {
                     SocketChannel channel = (SocketChannel) key.channel();
-                    try {
-                        if (Platform.javaVersion().ge(JavaVersion.JAVA7)) {
-                            channel.shutdownOutput();
-                        } else {
-                            channel.socket().shutdownOutput();
+                    if (future.executing()) {
+                        try {
+                            if (Platform.javaVersion().ge(JavaVersion.JAVA7)) {
+                                channel.shutdownOutput();
+                            } else {
+                                channel.socket().shutdownOutput();
+                            }
+                            future.done();
+                        } catch (IOException ioe) {
+                            future.setThrowable(ioe);
                         }
-                        future.done();
-                    } catch (IOException ioe) {
-                        future.setThrowable(ioe);
                     }
                 }
                 return DONE;
@@ -343,15 +347,17 @@ public class NioClientSocketTransport extends NioSocketTransport<SelectLoop> {
                 SelectionKey key = key();
                 if (key != null && key.isValid()) {
                     SocketChannel channel = (SocketChannel) key.channel();
-                    try {
-                        if (Platform.javaVersion().ge(JavaVersion.JAVA7)) {
-                            channel.shutdownInput();
-                        } else {
-                            channel.socket().shutdownInput();
+                    if (future.executing()) {
+                        try {
+                            if (Platform.javaVersion().ge(JavaVersion.JAVA7)) {
+                                channel.shutdownInput();
+                            } else {
+                                channel.socket().shutdownInput();
+                            }
+                            future.done();
+                        } catch (IOException ioe) {
+                            future.setThrowable(ioe);
                         }
-                        future.done();
-                    } catch (IOException ioe) {
-                        future.setThrowable(ioe);
                     }
                 }
                 return DONE;

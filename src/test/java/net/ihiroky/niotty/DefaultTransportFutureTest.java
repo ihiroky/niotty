@@ -46,12 +46,14 @@ public class DefaultTransportFutureTest {
 
     @Test(expected = IndexOutOfBoundsException.class)
     public void testThrowRuntimeExceptionIfFailed_ThrowableIsIndexOutOfBoundException() throws Exception {
+        sut_.executing();
         sut_.setThrowable(new IndexOutOfBoundsException());
         sut_.throwRuntimeExceptionIfFailed();
     }
 
     @Test
     public void testThrowRuntimeExceptionIfFailed_ThrowableIsIOException() throws Exception {
+        sut_.executing();
         sut_.setThrowable(new IOException());
 
         try {
@@ -64,24 +66,28 @@ public class DefaultTransportFutureTest {
 
     @Test(expected = AssertionError.class)
     public void testThrowRuntimeExceptionIfFailed_ThrowableIsAssertionError() throws Exception {
+        sut_.executing();
         sut_.setThrowable(new AssertionError());
         sut_.throwRuntimeExceptionIfFailed();
     }
 
     @Test(expected = IndexOutOfBoundsException.class)
     public void testThrowExceptionIfFailed_ThrowableIsIndexOutOfBoundException() throws Exception {
+        sut_.executing();
         sut_.setThrowable(new IndexOutOfBoundsException());
         sut_.throwExceptionIfFailed();
     }
 
     @Test(expected = IOException.class)
     public void testThrowExceptionIfFailed_ThrowableIsIOException() throws Exception {
+        sut_.executing();
         sut_.setThrowable(new IOException());
         sut_.throwExceptionIfFailed();
     }
 
     @Test(expected = AssertionError.class)
     public void testThrowExceptionIfFailed_ThrowableIsAssertionError() throws Exception {
+        sut_.executing();
         sut_.setThrowable(new AssertionError());
         sut_.throwExceptionIfFailed();
     }
@@ -94,6 +100,7 @@ public class DefaultTransportFutureTest {
 
     @Test
     public void testIsCancelled_ReturnsFalseIfDone() throws Exception {
+        sut_.executing();
         sut_.done();
         assertThat(sut_.isCancelled(), is(false));
     }
@@ -104,19 +111,28 @@ public class DefaultTransportFutureTest {
     }
 
     @Test
+    public void testIsCancelled_ReturnsFalseIfExecuting() throws Exception {
+        sut_.executing();
+        assertThat(sut_.isCancelled(), is(false));
+    }
+
+    @Test
     public void testIsSuccessful_ReturnsTrueIfDoneAndNoThrowable() throws Exception {
+        sut_.executing();
+        sut_.done();
+        assertThat(sut_.isSuccessful(), is(true));
+    }
+
+    @Test
+    public void testIsSuccessful_ReturnsTrueIfNotExecutingBeforeDone() throws Exception {
         sut_.done();
         assertThat(sut_.isSuccessful(), is(true));
     }
 
     @Test
     public void testIsSuccessful_ReturnsFalseIfSetThrowable() throws Exception {
+        sut_.executing();
         sut_.setThrowable(new Exception());
-        assertThat(sut_.isSuccessful(), is(false));
-    }
-
-    @Test
-    public void testIsSuccessful_ReturnsTrueIfNotDone() throws Exception {
         assertThat(sut_.isSuccessful(), is(false));
     }
 
@@ -126,12 +142,18 @@ public class DefaultTransportFutureTest {
     }
 
     @Test
+    public void testIsSuccessful_ReturnsFalseIfExecuting() throws Exception {
+        sut_.executing();
+        assertThat(sut_.isSuccessful(), is(false));
+    }
+    @Test
     public void testIsDone_ReturnFalseByDefault() throws Exception {
         assertThat(sut_.isDone(), is(false));
     }
 
     @Test
     public void testIsDone_ReturnTrueIfDone() throws Exception {
+        sut_.executing();
         sut_.done();
         assertThat(sut_.isDone(), is(true));
     }
@@ -144,6 +166,14 @@ public class DefaultTransportFutureTest {
     @Test
     public void testThrowable_ReturnInstanceIfSetThrowable() throws Exception {
         Exception e = new Exception();
+        sut_.executing();
+        sut_.setThrowable(e);
+        assertThat(sut_.throwable(), is((Throwable) e));
+    }
+
+    @Test
+    public void testThrowable_ReturnsInstanceIfNotExecutingBeforeSet() throws Exception {
+        Exception e = new Exception();
         sut_.setThrowable(e);
         assertThat(sut_.throwable(), is((Throwable) e));
     }
@@ -154,10 +184,12 @@ public class DefaultTransportFutureTest {
         executor_.execute(new Runnable() {
             @Override
             public void run() {
+                sut_.executing();
                 try {
                     Thread.sleep(10);
                     sut_.done();
-                } catch (Exception ignored) {
+                } catch (Exception e) {
+                    sut_.setThrowable(e);
                 }
             }
         });
@@ -188,10 +220,12 @@ public class DefaultTransportFutureTest {
         executor_.execute(new Runnable() {
             @Override
             public void run() {
+                sut_.executing();
                 try {
                     Thread.sleep(10);
                     sut_.done();
-                } catch (Exception ignored) {
+                } catch (Exception e) {
+                    sut_.setThrowable(e);
                 }
             }
         });
@@ -206,11 +240,13 @@ public class DefaultTransportFutureTest {
         executor_.execute(new Runnable() {
             @Override
             public void run() {
+                sut_.executing();
                 try {
                     Thread.sleep(10);
                     thread.interrupt();
                     sut_.done();
-                } catch (Exception ignored) {
+                } catch (Exception e) {
+                    sut_.setThrowable(e);
                 }
             }
         });
@@ -224,10 +260,12 @@ public class DefaultTransportFutureTest {
         executor_.execute(new Runnable() {
             @Override
             public void run() {
+                sut_.executing();
                 try {
                     Thread.sleep(10);
                     sut_.done();
-                } catch (Exception ignored) {
+                } catch (Exception e) {
+                    sut_.setThrowable(e);
                 }
             }
         });
@@ -276,10 +314,12 @@ public class DefaultTransportFutureTest {
         executor_.execute(new Runnable() {
             @Override
             public void run() {
+                sut_.executing();
                 try {
                     Thread.sleep(10);
                     sut_.done();
-                } catch (Exception ignored) {
+                } catch (Exception e) {
+                    sut_.setThrowable(e);
                 }
             }
         });
@@ -312,6 +352,7 @@ public class DefaultTransportFutureTest {
         executor_.execute(new Runnable() {
             @Override
             public void run() {
+                sut_.executing();
                 try {
                     Thread.sleep(10);
                     thread.interrupt();

@@ -1,11 +1,11 @@
 package net.ihiroky.niotty.sample.sc;
 
+import net.ihiroky.niotty.CompletionListener;
 import net.ihiroky.niotty.LoadPipeline;
 import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.StageKeys;
 import net.ihiroky.niotty.StorePipeline;
 import net.ihiroky.niotty.TransportFuture;
-import net.ihiroky.niotty.TransportFutureListener;
 import net.ihiroky.niotty.codec.DelimiterDecoder;
 import net.ihiroky.niotty.codec.DelimiterEncoder;
 import net.ihiroky.niotty.codec.StringDecoder;
@@ -57,7 +57,7 @@ public class Client {
             e.printStackTrace();
         } finally {
             executor.shutdownNow();
-            transport.close().addListener(new TransportFutureListener() {
+            transport.close().addListener(new CompletionListener() {
                 @Override
                 public void onComplete(TransportFuture future) {
                     System.out.println("Cancel the scheduler.");

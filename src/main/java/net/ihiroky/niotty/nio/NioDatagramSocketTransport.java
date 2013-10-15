@@ -232,16 +232,18 @@ public class NioDatagramSocketTransport extends NioSocketTransport<SelectLoop> {
         storePipeline().execute(new TransportStateEvent(TransportState.BOUND) {
             @Override
             public long execute(TimeUnit timeUnit) throws Exception {
-                try {
-                    register(channel_, SelectionKey.OP_READ, loadPipeline());
-                    if (Platform.javaVersion().ge(JavaVersion.JAVA7)) {
-                        channel_.bind(local);
-                    } else {
-                        channel_.socket().bind(local);
+                if (future.executing()) {
+                    try {
+                        register(channel_, SelectionKey.OP_READ, loadPipeline());
+                        if (Platform.javaVersion().ge(JavaVersion.JAVA7)) {
+                            channel_.bind(local);
+                        } else {
+                            channel_.socket().bind(local);
+                        }
+                        future.done();
+                    } catch (IOException ioe) {
+                        future.setThrowable(ioe);
                     }
-                    future.done();
-                } catch (IOException ioe) {
-                    future.setThrowable(ioe);
                 }
                 return DONE;
             }
@@ -299,12 +301,14 @@ public class NioDatagramSocketTransport extends NioSocketTransport<SelectLoop> {
         storePipeline().execute(new TransportStateEvent(TransportState.CONNECTED) {
             @Override
             public long execute(TimeUnit timeUnit) throws Exception {
-                try {
-                    register(channel_, SelectionKey.OP_READ, loadPipeline());
-                    channel_.connect(remote);
-                    future.done();
-                } catch (IOException ioe) {
-                    future.setThrowable(ioe);
+                if (future.executing()) {
+                    try {
+                        register(channel_, SelectionKey.OP_READ, loadPipeline());
+                        channel_.connect(remote);
+                        future.done();
+                    } catch (IOException ioe) {
+                        future.setThrowable(ioe);
+                    }
                 }
                 return DONE;
             }
@@ -333,11 +337,13 @@ public class NioDatagramSocketTransport extends NioSocketTransport<SelectLoop> {
         storePipeline().execute(new TransportStateEvent(TransportState.DISCONNECT) {
             @Override
             public long execute(TimeUnit timeUnit) {
-                try {
-                    channel_.disconnect();
-                    future.done();
-                } catch (IOException ioe) {
-                    future.setThrowable(ioe);
+                if (future.executing()) {
+                    try {
+                        channel_.disconnect();
+                        future.done();
+                    } catch (IOException ioe) {
+                        future.setThrowable(ioe);
+                    }
                 }
                 return DONE;
             }

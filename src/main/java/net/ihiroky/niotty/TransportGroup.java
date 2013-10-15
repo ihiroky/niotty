@@ -8,7 +8,7 @@ import java.util.concurrent.ConcurrentMap;
 /**
  *
  */
-public class TransportGroup implements TransportFutureListener {
+public class TransportGroup implements CompletionListener {
 
     private final ConcurrentMap<Transport, Boolean> transportMap_;
     private final boolean removeOnClose_;

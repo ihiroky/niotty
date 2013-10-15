@@ -11,6 +11,7 @@ public class DefaultTransportFuture extends AbstractTransportFuture {
 
     private volatile Object result_;
 
+    private static final Object EXECUTING = new Object();
     private static final Object DONE = new Object();
     private static final Object CANCELLED = new Object();
 
@@ -24,8 +25,14 @@ public class DefaultTransportFuture extends AbstractTransportFuture {
     }
 
     @Override
+    public boolean isExecuting() {
+        return result_ == EXECUTING;
+    }
+
+    @Override
     public boolean isDone() {
-        return result_ != null;
+        Object result = result_;
+        return result == DONE || result == CANCELLED;
     }
 
     @Override
@@ -136,9 +143,21 @@ public class DefaultTransportFuture extends AbstractTransportFuture {
         return this;
     }
 
+    public boolean executing() {
+        boolean success;
+        synchronized (this) {
+            success = (result_ == null);
+            if (success) {
+                result_ = EXECUTING;
+                notifyAll();
+            }
+        }
+        return success;
+    }
+
     public void done() {
         synchronized (this) {
-            if (result_ == null) {
+            if (result_ == null || result_ == EXECUTING) {
                 result_ = DONE;
                 notifyAll();
             }
@@ -146,19 +165,23 @@ public class DefaultTransportFuture extends AbstractTransportFuture {
         fireOnComplete();
     }
 
-    public void cancel() {
+    @Override
+    public boolean cancel() {
+        boolean success;
         synchronized (this) {
-            if (result_ == null) {
+            success = (result_ == null);
+            if (success) {
                 result_ = CANCELLED;
                 notifyAll();
             }
         }
         fireOnComplete();
+        return success;
     }
 
     public void setThrowable(Throwable t) {
         synchronized (this) {
-            if (result_ == null) {
+            if (result_ == null || result_ == EXECUTING) {
                 result_ = t;
                 notifyAll();
             }

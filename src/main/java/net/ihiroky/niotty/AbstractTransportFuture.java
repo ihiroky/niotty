@@ -10,10 +10,10 @@ import java.util.concurrent.TimeUnit;
  */
 public abstract class AbstractTransportFuture implements TransportFuture {
 
-    private volatile TransportFutureListener listener_ = NULL_LISTENER;
+    private volatile CompletionListener listener_ = NULL_LISTENER;
     private final AbstractTransport<?> transport_;
 
-    private static final TransportFutureListener NULL_LISTENER = new NullListener();
+    private static final CompletionListener NULL_LISTENER = new NullListener();
 
     /**
      * Create a new instance.
@@ -30,13 +30,13 @@ public abstract class AbstractTransportFuture implements TransportFuture {
     }
 
     @Override
-    public final TransportFuture addListener(final TransportFutureListener listener) {
+    public final TransportFuture addListener(final CompletionListener listener) {
         Arguments.requireNonNull(listener, "listener");
 
         TaskLoop taskLoop = transport_.taskLoop();
         synchronized (this) {
             if (!isDone()) {
-                TransportFutureListener old = listener_;
+                CompletionListener old = listener_;
                 if (old == null) {
                     listener_ = listener;
                     return this;
@@ -71,7 +71,7 @@ public abstract class AbstractTransportFuture implements TransportFuture {
     }
 
     @Override
-    public final TransportFuture removeListener(TransportFutureListener listener) {
+    public final TransportFuture removeListener(CompletionListener listener) {
         Arguments.requireNonNull(listener, "listener");
 
         synchronized (this) {
@@ -91,7 +91,7 @@ public abstract class AbstractTransportFuture implements TransportFuture {
     }
 
     /**
-     * Executes {@code onComplete(this)} for added {@code TransportFutureListener}s.
+     * Executes {@code onComplete(this)} for added {@code CompletionListener}s.
      */
     protected final void fireOnComplete() {
         TaskLoop taskLoop = transport_.taskLoop();
@@ -108,7 +108,7 @@ public abstract class AbstractTransportFuture implements TransportFuture {
         }
     }
 
-    private static class NullListener implements TransportFutureListener {
+    private static class NullListener implements CompletionListener {
         @Override
         public void onComplete(TransportFuture future) {
         }
@@ -117,13 +117,13 @@ public abstract class AbstractTransportFuture implements TransportFuture {
     /**
      * An aggregator for TransportListener.
      */
-    private static class ListenerList implements TransportFutureListener {
+    private static class ListenerList implements CompletionListener {
 
-        CopyOnWriteArrayList<TransportFutureListener> list_ = new CopyOnWriteArrayList<TransportFutureListener>();
+        CopyOnWriteArrayList<CompletionListener> list_ = new CopyOnWriteArrayList<CompletionListener>();
 
         @Override
         public void onComplete(TransportFuture future) {
-            for (TransportFutureListener listener : list_) {
+            for (CompletionListener listener : list_) {
                 listener.onComplete(future);
             }
         }

@@ -82,11 +82,13 @@ public abstract class NioSocketTransport<S extends SelectLoop> extends AbstractT
      */
     final TransportFuture doCloseSelectableChannel(boolean executeStoreClosed) {
         DefaultTransportFuture closeFuture = closeFuture();
-        if (key_ != null && key_.isValid()) {
-            SocketAddress remote = remoteAddress(); // Obtain before closing the channel.
+        if (key_ != null && key_.isValid()
+                && closeFuture.executing()) {
 
+            SocketAddress remote = null;
             SelectableChannel channel = key_.channel();
             try {
+                remote = remoteAddress(); // Obtain before closing the channel.
                 unregister(); // decrement register count
                 channel.close();
                 closeFuture.done();
