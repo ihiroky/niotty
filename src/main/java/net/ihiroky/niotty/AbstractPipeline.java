@@ -431,6 +431,30 @@ public abstract class AbstractPipeline<S, L extends TaskLoop> implements Pipelin
         return transport_;
     }
 
+    /**
+     * <p>Returns a string representation of this pipeline.</p>
+     * <p>The string representation consists of a list of the key and its stages.</p>
+     * @return a string representation of this pipeline
+     */
+    public String toString() {
+        StringBuilder b = new StringBuilder();
+        final String separator = ", ";
+        b.append('[');
+        for (Iterator<PipelineElement<Object, Object>> iterator = iterator(); iterator.hasNext();) {
+            PipelineElement<Object, Object> e = iterator.next();
+            b.append('(');
+            b.append(e.key()).append('=').append(e.stage());
+            b.append(')');
+            b.append(separator);
+        }
+        int length = b.length();
+        if (length > 1) {
+            b.delete(length - separator.length(), length);
+        }
+        b.append(']');
+        return b.toString();
+    }
+
     protected Iterator<PipelineElement<Object, Object>> iterator() {
         return new PipelineElementIterator(head_);
     }

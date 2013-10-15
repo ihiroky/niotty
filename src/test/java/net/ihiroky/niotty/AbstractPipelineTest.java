@@ -666,13 +666,25 @@ public class AbstractPipelineTest {
         verify(context).fire(event);
     }
 
+    @Test
+    public void testToString_NoStageIsAdded() throws Exception {
+        assertThat(sut_.toString(), is("[(StringStageKey:LAST=LAST)]"));
+    }
+
+    @Test
+    public void testToString_ThreeStages() throws Exception {
+        sut_.add(StageKeys.of(1), "ONE");
+        sut_.add(StageKeys.of(2), "TWO");
+        assertThat(sut_.toString(), is("[(IntStageKey:1=ONE), (IntStageKey:2=TWO), (StringStageKey:LAST=LAST)]"));
+    }
+
     private static class PipelineImpl extends AbstractPipeline<Object, TaskLoop> {
 
         static final StageKey LAST = StageKeys.of("LAST");
 
         @SuppressWarnings("unchecked")
         protected PipelineImpl(AbstractTransport<TaskLoop> transport, TaskLoopGroup<TaskLoop> taskLoopGroup) {
-            super("test", transport, taskLoopGroup, LAST, new Object());
+            super("test", transport, taskLoopGroup, LAST, "LAST");
         }
 
         @Override
