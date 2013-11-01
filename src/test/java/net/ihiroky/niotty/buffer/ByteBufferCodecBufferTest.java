@@ -26,12 +26,12 @@ public class ByteBufferCodecBufferTest {
         @Test
         public void testSpaceBytes() throws Exception {
             CodecBuffer sut = new ByteBufferCodecBuffer();
-            assertThat(sut.spaceBytes(), is(512));
+            assertThat(sut.space(), is(512));
         }
         @Test
         public void testCapacityBytes() throws Exception {
             CodecBuffer sut = new ByteBufferCodecBuffer();
-            assertThat(sut.capacityBytes(), is(512));
+            assertThat(sut.capacity(), is(512));
         }
 
     }
@@ -53,11 +53,11 @@ public class ByteBufferCodecBufferTest {
             CodecBuffer sut = new ByteBufferCodecBuffer(directBuffer, true);
             sut.writeBytes(data, 0, data.length);
 
-            sut.beginning(3);
+            sut.startIndex(3);
             sut.compact();
 
-            assertThat(sut.beginning(), is(0));
-            assertThat(sut.end(), is(13));
+            assertThat(sut.startIndex(), is(0));
+            assertThat(sut.endIndex(), is(13));
             byte[] expected = new byte[13];
             sut.readBytes(expected, 0, expected.length);
             assertThat(expected[0], is((byte) 3));
@@ -130,10 +130,10 @@ public class ByteBufferCodecBufferTest {
         public void testExpand() throws Exception {
             byte[] data = new byte[3];
 
-            int beforeCapacity = sut_.capacityBytes();
+            int beforeCapacity = sut_.capacity();
             int beforeReferenceCount = sut_.chunk().referenceCount();
             sut_.writeBytes(data, 0, data.length);
-            int afterCapacity = sut_.capacityBytes();
+            int afterCapacity = sut_.capacity();
             int afterReferenceCount = sut_.chunk().referenceCount();
             sut_.dispose();
             int lastReferenceCount = sut_.chunk().referenceCount();

@@ -25,17 +25,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class FileBufferSink implements BufferSink {
 
     private final FileChannel channel_;
-    private long beginning_;
+    private long start_;
     private final long end_;
     private CodecBuffer header_;
     private CodecBuffer footer_;
     private final AtomicInteger referenceCount_;
 
-    FileBufferSink(FileChannel channel, long beginning, long length) {
-        this(channel, beginning, length, null);
+    FileBufferSink(FileChannel channel, long start, long length) {
+        this(channel, start, length, null);
     }
 
-    private FileBufferSink(FileChannel channel, long beginning, long length, AtomicInteger referenceCount) {
+    private FileBufferSink(FileChannel channel, long start, long length, AtomicInteger referenceCount) {
         if (referenceCount != null) {
             if (referenceCount.getAndIncrement() == 0) {
                 throw new IllegalStateException("reference count is already 0.");
@@ -45,8 +45,8 @@ public class FileBufferSink implements BufferSink {
         }
 
         channel_ = Arguments.requireNonNull(channel, "channel");
-        beginning_ = Arguments.requirePositiveOrZero(beginning, "beginning");
-        end_ = beginning + Arguments.requirePositiveOrZero(length, "length");
+        start_ = Arguments.requirePositiveOrZero(start, "start");
+        end_ = start + Arguments.requirePositiveOrZero(length, "length");
         referenceCount_ = referenceCount;
 
         header_ = Buffers.newCodecBuffer(0);
@@ -80,11 +80,11 @@ public class FileBufferSink implements BufferSink {
             header_.copyTo(buffer);
 
             int space = buffer.remaining();
-            int remaining = (int) (end_ - beginning_);
+            int remaining = (int) (end_ - start_);
             if (space >= remaining) {
                 int limit = buffer.limit();
                 buffer.limit(buffer.position() + remaining);
-                channel_.read(buffer, beginning_);
+                channel_.read(buffer, start_);
                 buffer.limit(limit);
             } else {
                 throw new BufferOverflowException();
@@ -98,14 +98,14 @@ public class FileBufferSink implements BufferSink {
     }
 
     private boolean transferFile(GatheringByteChannel channel) throws IOException {
-        if (beginning_ == end_) {
+        if (start_ == end_) {
             return true;
         }
 
         try {
-            long remaining = end_ - beginning_;
-            long transferred = channel_.transferTo(beginning_, remaining, channel);
-            beginning_ += transferred;
+            long remaining = end_ - start_;
+            long transferred = channel_.transferTo(start_, remaining, channel);
+            start_ += transferred;
             if (transferred < remaining) {
                 return false;
             }
@@ -118,11 +118,11 @@ public class FileBufferSink implements BufferSink {
 
     @Override
     public FileBufferSink addFirst(CodecBuffer buffer) {
-        if (header_.remainingBytes() > 0) {
+        if (header_.remaining() > 0) {
             header_.addFirst(buffer);
         } else {
             Arguments.requireNonNull(buffer, "buffer");
-            if (buffer.remainingBytes() > 0) {
+            if (buffer.remaining() > 0) {
                 header_ = new CodecBufferList(buffer); // wrap and allow header to be added
             }
         }
@@ -131,11 +131,11 @@ public class FileBufferSink implements BufferSink {
 
     @Override
     public FileBufferSink addLast(CodecBuffer buffer) {
-        if (footer_.remainingBytes() > 0) {
+        if (footer_.remaining() > 0) {
             footer_.addLast(buffer);
         } else {
             Arguments.requireNonNull(buffer, "buffer");
-            if (buffer.remainingBytes() > 0) {
+            if (buffer.remaining() > 0) {
                 footer_ = new CodecBufferList(buffer); // wrap and allow footer to be added
             }
         }
@@ -143,16 +143,16 @@ public class FileBufferSink implements BufferSink {
     }
 
     @Override
-    public int remainingBytes() {
-        return toNonNegativeInt(remainingBytesLong());
+    public int remaining() {
+        return toNonNegativeInt(remainingLong());
     }
 
     /**
      * The byte size of remaining data with long type in this instance.
      * @return the byte size of remaining data in this instance.
      */
-    public long remainingBytesLong() {
-        return header_.remainingBytes() + (end_ - beginning_) + footer_.remainingBytes();
+    public long remainingLong() {
+        return header_.remaining() + (end_ - start_) + footer_.remaining();
     }
 
     @Override
@@ -170,10 +170,10 @@ public class FileBufferSink implements BufferSink {
 
     /**
      * Creates new {@code FileBufferSink} that shares this buffer's base content.
-     * The beginning of the new {@code FileBufferSink} is the one of the this buffer.
-     * The end of the new {@code FileBufferSink} is the {@code beginning + bytes}.
-     * The two {@code FileBufferSink}'s beginning and end are independent.
-     * After this method is called, the beginning of this buffer increases {@code bytes}.
+     * The startIndex of the new {@code FileBufferSink} is the one of the this buffer.
+     * The endIndex of the new {@code FileBufferSink} is the {@code startIndex + bytes}.
+     * The two {@code FileBufferSink}'s startIndex and endIndex are independent.
+     * After this method is called, the startIndex of this buffer increases {@code bytes}.
      * The result of this method is auto closeable if and only if .
      *
      * @param bytes size of content to slice
@@ -181,9 +181,9 @@ public class FileBufferSink implements BufferSink {
      * @return the new {@code DecodeBuffer}
      */
     public BufferSink slice(int bytes) {
-        int headerRemaining = header_.remainingBytes();
-        long contentRemaining = end_ - beginning_;
-        int footerRemaining = footer_.remainingBytes();
+        int headerRemaining = header_.remaining();
+        long contentRemaining = end_ - start_;
+        int footerRemaining = footer_.remaining();
         if (bytes < 0 || bytes > (headerRemaining + contentRemaining + footerRemaining)) {
             closeAndThrow(new IllegalArgumentException("Invalid input " + bytes + ". "
                     + (headerRemaining + contentRemaining + footerRemaining) + " byte remains."));
@@ -203,16 +203,16 @@ public class FileBufferSink implements BufferSink {
 
         BufferSink contentSliced = null;
         if (contentRemaining > 0) {
-            long b = beginning_;
+            long b = start_;
             if (bytes <= contentRemaining) {
-                beginning_ += bytes;
+                start_ += bytes;
                 contentSliced = new FileBufferSink(channel_, b, bytes, referenceCount_);
                 return (headerSliced == null)
                         ? contentSliced : Buffers.wrap(headerSliced, contentSliced);
             }
             contentSliced = new FileBufferSink(channel_, b, end_, referenceCount_);
             bytes -= contentRemaining;
-            beginning_ = end_;
+            start_ = end_;
             if (bytes == 0) {
                 return (headerSliced == null)
                         ? contentSliced : Buffers.wrap(headerSliced, contentSliced);
@@ -230,7 +230,7 @@ public class FileBufferSink implements BufferSink {
 
     @Override
     public BufferSink duplicate() {
-        return new FileBufferSink(channel_, beginning_, end_, referenceCount_)
+        return new FileBufferSink(channel_, start_, end_, referenceCount_)
                 .addFirst(header_.duplicate()).addLast(footer_.duplicate());
     }
 
@@ -241,7 +241,7 @@ public class FileBufferSink implements BufferSink {
 
     @Override
     public byte[] array() {
-        int remaining = remainingBytes();
+        int remaining = remaining();
         ByteBuffer bb = ByteBuffer.allocate(remaining);
         copyTo(bb);
         return bb.array();
@@ -289,7 +289,7 @@ public class FileBufferSink implements BufferSink {
      */
     @Override
     public String toString() {
-        return "(beginning:" + beginning_ + ", end:" + end_
+        return "(startIndex:" + start_ + ", endIndex:" + end_
                 + ", channel:" + channel_ + ", referenceCount" + referenceCount_.get()
                 + ')';
     }

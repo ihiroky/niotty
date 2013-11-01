@@ -63,12 +63,12 @@ public class JZlibInflaterDecoder implements LoadStage<CodecBuffer, CodecBuffer>
         byte[] buffer;
         int offset;
         int length;
-        while (input.remainingBytes() > 0) {
+        while (input.remaining() > 0) {
             if (input.hasArray()) {
                 buffer = input.array();
-                offset = input.arrayOffset() + input.beginning();
-                length = input.remainingBytes();
-                input.skipBytes(length);
+                offset = input.arrayOffset() + input.startIndex();
+                length = input.remaining();
+                input.skipStartIndex(length);
             } else {
                 buffer = buffer_;
                 offset = 0;
@@ -76,8 +76,8 @@ public class JZlibInflaterDecoder implements LoadStage<CodecBuffer, CodecBuffer>
             }
             try {
                 if (inflate(context, buffer, offset, length)) {
-                    // input.skipBytes(inflater_.getRemaining());
-                    input.skipBytes(inflater_.next_in_index);
+                    // input.skipStartIndex(inflater_.getRemaining());
+                    input.skipStartIndex(inflater_.next_in_index);
                     break;
                 }
             } catch (DataFormatException dfe) {

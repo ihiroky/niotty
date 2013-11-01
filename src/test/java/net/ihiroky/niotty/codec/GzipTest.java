@@ -57,7 +57,7 @@ public class GzipTest {
         decoder.load(context_, deflated);
 
         CodecBuffer inflated = context_.pollEvent();
-        assertThat(inflated.remainingBytes(), is(data.length));
+        assertThat(inflated.remaining(), is(data.length));
         assertThat(decoder.output(), is(nullValue()));
     }
 

@@ -90,15 +90,15 @@ public class JZlibDeflaterEncoder implements StoreStage<BufferSink, CodecBuffer>
     }
 
     private CodecBuffer compressRawArray(BufferSink input) {
-        CodecBuffer output = Buffers.newCodecBuffer((int) (input.remainingBytes() * 0.7f + 10));
+        CodecBuffer output = Buffers.newCodecBuffer((int) (input.remaining() * 0.7f + 10));
 
         byte[] inputBytes = input.array();
         int inputOffset = input.arrayOffset();
-        int inputLength = input.remainingBytes();
+        int inputLength = input.remaining();
 
         deflater_.setInput(inputBytes, inputOffset, inputLength, false);
         byte[] outputBytes = output.array();
-        int outputOffset = output.end();
+        int outputOffset = output.endIndex();
         int outputLength = outputBytes.length;
         for (;;) {
             deflater_.setOutput(outputBytes, outputOffset, outputLength - outputOffset);
@@ -107,7 +107,7 @@ public class JZlibDeflaterEncoder implements StoreStage<BufferSink, CodecBuffer>
             checkStatus(status, "Failed to compress data");
             outputOffset += deflater_.next_out_index - nextOutIndex;
             if (deflater_.avail_in <= 0) {
-                output.end(outputOffset);
+                output.endIndex(outputOffset);
                 return output;
             }
             if (outputOffset == outputLength) {
@@ -120,10 +120,10 @@ public class JZlibDeflaterEncoder implements StoreStage<BufferSink, CodecBuffer>
     }
 
     private CodecBuffer compressBufferSink(BufferSink input) {
-        CodecBuffer output = Buffers.newCodecBuffer((int) (input.remainingBytes() * 0.7f + 10));
+        CodecBuffer output = Buffers.newCodecBuffer((int) (input.remaining() * 0.7f + 10));
 
         try {
-            while (input.remainingBytes() > 0) {
+            while (input.remaining() > 0) {
                 buffer_.reset();
                 input.transferTo(buffer_);
                 byte[] inputBytes = buffer_.array();
@@ -131,7 +131,7 @@ public class JZlibDeflaterEncoder implements StoreStage<BufferSink, CodecBuffer>
 
                 deflater_.setInput(inputBytes, 0, inputLength, false);
                 byte[] outputBytes = output.array();
-                int outputOffset = output.end();
+                int outputOffset = output.endIndex();
                 int outputLength = outputBytes.length;
                 for (;;) {
                     deflater_.setOutput(outputBytes, outputOffset, outputLength - outputOffset);
@@ -140,7 +140,7 @@ public class JZlibDeflaterEncoder implements StoreStage<BufferSink, CodecBuffer>
                     checkStatus(status, "Failed to compress data");
                     outputOffset += deflater_.next_in_index - nextOutputIndex;
                     if (deflater_.avail_in <= 0) {
-                        output.end(outputOffset);
+                        output.endIndex(outputOffset);
                         return output;
                     }
                     if (outputOffset == outputLength) {
@@ -175,7 +175,7 @@ public class JZlibDeflaterEncoder implements StoreStage<BufferSink, CodecBuffer>
                 output.writeBytes(buffer, 0, n);
             }
             deflater_.end();
-            if (output.remainingBytes() > 0) {
+            if (output.remaining() > 0) {
                 context.proceed(output);
             }
         }

@@ -53,7 +53,7 @@ public class JZlibTest {
         decoder.load(context_, inflaterInput);
 
         CodecBuffer inflated = context_.pollEvent();
-        assertThat(inflated.remainingBytes(), is(data.length));
+        assertThat(inflated.remaining(), is(data.length));
         assertThat(decoder.output(), is(nullValue()));
         assertThat(((ArrayCodecBuffer) deflaterInput).referenceCount(), is(0));
         assertThat(((ArrayCodecBuffer) inflaterInput).referenceCount(), is(0));
@@ -214,7 +214,7 @@ public class JZlibTest {
         decoder.load(context_, deflated);
 
         CodecBuffer inflated = context_.pollEvent();
-        assertThat(inflated.remainingBytes(), is(data.length));
+        assertThat(inflated.remaining(), is(data.length));
         assertThat(decoder.output(), is(nullValue()));
     }
 

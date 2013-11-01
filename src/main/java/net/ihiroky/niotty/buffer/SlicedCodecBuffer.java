@@ -15,11 +15,11 @@ import java.nio.charset.CoderResult;
  * A {@link CodecBuffer} whose content is a shared subsequence of the specified
  * {@code base}'s content.
  * <p></p>
- * The content of this object will start at this {@code base}'s current beginning. Changes to the content
- * of the {@code base} will be visible in the object, and vice versa; the two object's beginning and end
+ * The content of this object will start at this {@code base}'s current startIndex. Changes to the content
+ * of the {@code base} will be visible in the object, and vice versa; the two object's startIndex and endIndex
  * will be independent.
  * <p></p>
- * The new {@code SlicedCodecBuffer}'s beginning will be zero, its end and capacity will be the number of bytes
+ * The new {@code SlicedCodecBuffer}'s startIndex will be zero, its endIndex and capacity will be the number of bytes
  * remaining in the {@code base} buffer. The new one is not expandable.
  * @author Hiroki Itoh
  */
@@ -28,7 +28,7 @@ public class SlicedCodecBuffer extends AbstractCodecBuffer {
     /** the base {@code CodecBuffer}. */
     final CodecBuffer base_;
 
-    /** a offset value for the base's beginning. */
+    /** a offset value for the base's startIndex. */
     final int offset_;
 
     final int capacity_; // fix capacity to avoid region over wrap.
@@ -40,25 +40,25 @@ public class SlicedCodecBuffer extends AbstractCodecBuffer {
      */
     SlicedCodecBuffer(CodecBuffer base) {
         base_ = base;
-        offset_ = base.beginning();
-        capacity_ = base.end();
+        offset_ = base.startIndex();
+        capacity_ = base.endIndex();
     }
 
     /**
-     * Creates a new instance. The end of the {@code base} changes to {@code base.beginning() + bytes}.
+     * Creates a new instance. The endIndex of the {@code base} changes to {@code base.startIndex() + bytes}.
      *
      * @param base the base {@code CodecBuffer}.
      * @param bytes the data size by the bytes to be sliced.
      * @throws IllegalArgumentException if the {@code bytes} is greater the remaining of the {@code base}.
      */
     SlicedCodecBuffer(CodecBuffer base, int bytes) {
-        int beginning = base.beginning();
+        int beginning = base.startIndex();
         int capacity = beginning + bytes;
-        if (capacity > base.end()) {
-            throw new IllegalArgumentException("capacity must be less than or equal base.end().");
+        if (capacity > base.endIndex()) {
+            throw new IllegalArgumentException("capacity must be less than or equal base.endIndex().");
         }
 
-        base.end(capacity);
+        base.endIndex(capacity);
         base_ = base;
         offset_ = beginning;
         capacity_ = capacity;
@@ -71,8 +71,8 @@ public class SlicedCodecBuffer extends AbstractCodecBuffer {
     }
 
     void checkSpace(int bytes) {
-        if (base_.end() + bytes > capacity_) {
-            throw new IndexOutOfBoundsException("no space is left. required: " + bytes + ", space: " + spaceBytes());
+        if (base_.endIndex() + bytes > capacity_) {
+            throw new IndexOutOfBoundsException("no space is left. required: " + bytes + ", space: " + space());
         }
     }
 
@@ -146,7 +146,7 @@ public class SlicedCodecBuffer extends AbstractCodecBuffer {
             if (cr.isUnderflow()) {
                 cr = encoder.flush(output);
                 if (cr.isUnderflow()) {
-                    base_.end(output.position());
+                    base_.endIndex(output.position());
                     encoder.reset();
                     break;
                 }
@@ -227,18 +227,29 @@ public class SlicedCodecBuffer extends AbstractCodecBuffer {
     }
 
     @Override
-    public int skipBytes(int bytes) {
-        int pos = base_.beginning();
-        int n = base_.end() - pos; // remaining
+    public int skipStartIndex(int bytes) {
+        int pos = base_.startIndex();
+        int n = base_.endIndex() - pos; // remaining
         if (bytes < n) {
             n = (bytes < -(pos - offset_)) ? -(pos - offset_) : bytes;
         }
-        return base_.skipBytes(n);
+        return base_.skipStartIndex(n);
     }
 
     @Override
-    public int remainingBytes() {
-        return base_.remainingBytes();
+    public int skipEndIndex(int n) {
+        int pos = base_.endIndex();
+        int s = capacity_ - pos; // space
+        if (n < s) {
+            int r = pos - base_.startIndex(); // remaining
+            s = (n < -r) ? -r : n;
+        }
+        return base_.skipEndIndex(s);
+    }
+
+    @Override
+    public int remaining() {
+        return base_.remaining();
     }
 
     @Override
@@ -247,40 +258,40 @@ public class SlicedCodecBuffer extends AbstractCodecBuffer {
     }
 
     @Override
-    public int spaceBytes() {
-        return capacity_ - base_.end();
+    public int space() {
+        return capacity_ - base_.endIndex();
     }
 
     @Override
-    public int capacityBytes() {
+    public int capacity() {
         return capacity_ - offset_;
     }
 
     @Override
-    public int beginning() {
-        return base_.beginning() - offset_;
+    public int startIndex() {
+        return base_.startIndex() - offset_;
     }
 
     @Override
-    public CodecBuffer beginning(int beginning) {
-        base_.beginning(beginning + offset_);
+    public CodecBuffer startIndex(int beginning) {
+        base_.startIndex(beginning + offset_);
         return this;
     }
 
     @Override
-    public int end() {
-        return base_.end() - offset_;
+    public int endIndex() {
+        return base_.endIndex() - offset_;
     }
 
     @Override
-    public CodecBuffer end(int end) {
-        base_.end(end + offset_);
+    public CodecBuffer endIndex(int end) {
+        base_.endIndex(end + offset_);
         return this;
     }
 
     @Override
     public int drainFrom(CodecBuffer buffer) {
-        checkSpace(buffer.remainingBytes());
+        checkSpace(buffer.remaining());
         return base_.drainFrom(buffer);
     }
 
@@ -302,8 +313,8 @@ public class SlicedCodecBuffer extends AbstractCodecBuffer {
 
     @Override
     public BufferSink addFirst(CodecBuffer buffer) {
-        int required = buffer.remainingBytes();
-        int frontSpace = base_.beginning() - offset_; // ignore space at tail.
+        int required = buffer.remaining();
+        int frontSpace = base_.startIndex() - offset_; // ignore space at tail.
         if (required > frontSpace) {
             throw new IndexOutOfBoundsException(
                     "no space is left. required: " + required + ", front space: " + frontSpace);
@@ -314,8 +325,8 @@ public class SlicedCodecBuffer extends AbstractCodecBuffer {
 
     @Override
     public BufferSink addLast(CodecBuffer buffer) {
-        int required = buffer.remainingBytes();
-        int backSpace = capacity_ - base_.end(); // ignore space at head.
+        int required = buffer.remaining();
+        int backSpace = capacity_ - base_.endIndex(); // ignore space at head.
         if (required > backSpace) {
             throw new IndexOutOfBoundsException(
                     "no space is left. required: " + required + ", back space: " + backSpace);
@@ -341,7 +352,7 @@ public class SlicedCodecBuffer extends AbstractCodecBuffer {
 
     @Override
     public CodecBuffer compact() {
-        int frontSpace = base_.beginning() - offset_;
+        int frontSpace = base_.startIndex() - offset_;
         if (frontSpace == 0) {
             return this;
         }
@@ -349,24 +360,24 @@ public class SlicedCodecBuffer extends AbstractCodecBuffer {
         if (base_.hasArray()) {
             byte[] b = base_.array();
             int os = base_.arrayOffset() + offset_;
-            System.arraycopy(b, os + frontSpace, b, os, base_.remainingBytes());
-            base_.beginning(offset_);
-            base_.end(base_.end() - frontSpace);
+            System.arraycopy(b, os + frontSpace, b, os, base_.remaining());
+            base_.startIndex(offset_);
+            base_.endIndex(base_.endIndex() - frontSpace);
         } else {
             ByteBuffer bb = base_.byteBuffer();
             bb.position(offset_).limit(capacity_);
             ByteBuffer s = bb.slice();
             s.position(frontSpace);
             s.compact();
-            base_.beginning(offset_).end(base_.end() - frontSpace);
+            base_.startIndex(offset_).endIndex(base_.endIndex() - frontSpace);
         }
         return this;
     }
 
     @Override
     public CodecBuffer clear() {
-        base_.beginning(offset_);
-        base_.end(offset_);
+        base_.startIndex(offset_);
+        base_.endIndex(offset_);
         return this;
     }
 
@@ -422,7 +433,7 @@ public class SlicedCodecBuffer extends AbstractCodecBuffer {
     @Override
     public String toString() {
         return SlicedCodecBuffer.class.getName()
-                + "(beginning:" + beginning() + ", end:" + end() + ", capacity:" + capacityBytes()
+                + "(startIndex:" + startIndex() + ", endIndex:" + endIndex() + ", capacity:" + capacity()
                 + ", offset:" + offset_ + ')';
     }
 }

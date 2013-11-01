@@ -45,7 +45,7 @@ public class SimpleWriteQueue implements WriteQueue {
             }
 
             BufferSink buffer = message.message();
-            int beforeTransfer = buffer.remainingBytes();
+            int beforeTransfer = buffer.remaining();
             limitBytes -= beforeTransfer;
             if (limitBytes < 0) {
                 lastFlushedBytes_ = flushedBytes;
@@ -60,7 +60,7 @@ public class SimpleWriteQueue implements WriteQueue {
                     return queue_.isEmpty() ? FlushStatus.FLUSHED : FlushStatus.SKIPPED;
                 }
             } else {
-                lastFlushedBytes_ = flushedBytes + (beforeTransfer - buffer.remainingBytes());
+                lastFlushedBytes_ = flushedBytes + (beforeTransfer - buffer.remaining());
                 return FlushStatus.FLUSHING;
             }
         }

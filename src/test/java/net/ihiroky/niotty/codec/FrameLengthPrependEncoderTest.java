@@ -32,7 +32,7 @@ public class FrameLengthPrependEncoderTest {
         sut_.store(context_, input);
 
         BufferSink actual = context_.pollEvent();
-        assertThat(actual.remainingBytes(), is(7));
+        assertThat(actual.remaining(), is(7));
     }
 
     @Test
@@ -43,7 +43,7 @@ public class FrameLengthPrependEncoderTest {
         sut_.store(context_, input);
 
         BufferSink actual = context_.pollEvent();
-        assertThat(actual.remainingBytes(), is(Short.MAX_VALUE + 2));
+        assertThat(actual.remaining(), is(Short.MAX_VALUE + 2));
     }
 
     @Test
@@ -54,6 +54,6 @@ public class FrameLengthPrependEncoderTest {
         sut_.store(context_, input);
 
         BufferSink actual = context_.pollEvent();
-        assertThat(actual.remainingBytes(), is((Short.MAX_VALUE + 1) + 4));
+        assertThat(actual.remaining(), is((Short.MAX_VALUE + 1) + 4));
     }
 }

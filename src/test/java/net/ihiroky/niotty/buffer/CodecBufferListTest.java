@@ -54,8 +54,8 @@ public class CodecBufferListTest {
 
             assertThat(actualRead, is(6));
             assertThat(actualData, is(new byte[] {'0', '0', '0', '1', '1', '1'}));
-            assertThat(sut.remainingBytes(), is(0));
-            assertThat(sut.beginningBufferIndex(), is(1));
+            assertThat(sut.remaining(), is(0));
+            assertThat(sut.startBufferIndex(), is(1));
             assertThat(sut.endBufferIndex(), is(1));
             assertThat(sut.sizeOfBuffers(), is(2));
         }
@@ -73,8 +73,8 @@ public class CodecBufferListTest {
 
             assertThat(actualRead, is(6));
             assertThat(actualData, is(new byte[] {'0', '0', '0', '1', '1', '1'}));
-            assertThat(sut.remainingBytes(), is(0));
-            assertThat(sut.beginningBufferIndex(), is(1));
+            assertThat(sut.remaining(), is(0));
+            assertThat(sut.startBufferIndex(), is(1));
             assertThat(sut.endBufferIndex(), is(1));
             assertThat(sut.sizeOfBuffers(), is(2));
         }
@@ -90,8 +90,8 @@ public class CodecBufferListTest {
             char actual = sut.readChar();
 
             assertThat(actual, is(c));
-            assertThat(sut.remainingBytes(), is(0));
-            assertThat(sut.beginningBufferIndex(), is(1));
+            assertThat(sut.remaining(), is(0));
+            assertThat(sut.startBufferIndex(), is(1));
             assertThat(sut.endBufferIndex(), is(1));
             assertThat(sut.sizeOfBuffers(), is(2));
         }
@@ -107,8 +107,8 @@ public class CodecBufferListTest {
             short actual = sut.readShort();
 
             assertThat(actual, is(s));
-            assertThat(sut.remainingBytes(), is(0));
-            assertThat(sut.beginningBufferIndex(), is(1));
+            assertThat(sut.remaining(), is(0));
+            assertThat(sut.startBufferIndex(), is(1));
             assertThat(sut.endBufferIndex(), is(1));
             assertThat(sut.sizeOfBuffers(), is(2));
         }
@@ -124,8 +124,8 @@ public class CodecBufferListTest {
             int actual = sut.readInt();
 
             assertThat(actual, is(i));
-            assertThat(sut.remainingBytes(), is(0));
-            assertThat(sut.beginningBufferIndex(), is(1));
+            assertThat(sut.remaining(), is(0));
+            assertThat(sut.startBufferIndex(), is(1));
             assertThat(sut.endBufferIndex(), is(1));
             assertThat(sut.sizeOfBuffers(), is(2));
         }
@@ -144,8 +144,8 @@ public class CodecBufferListTest {
             long actual = sut.readLong();
 
             assertThat(actual, is(v));
-            assertThat(sut.remainingBytes(), is(0));
-            assertThat(sut.beginningBufferIndex(), is(1));
+            assertThat(sut.remaining(), is(0));
+            assertThat(sut.startBufferIndex(), is(1));
             assertThat(sut.endBufferIndex(), is(1));
             assertThat(sut.sizeOfBuffers(), is(2));
         }
@@ -162,54 +162,10 @@ public class CodecBufferListTest {
             String actual = sut.readString(CHARSET.newDecoder(), data.length);
 
             assertThat(actual, is(s));
-            assertThat(sut.remainingBytes(), is(0));
-            assertThat(sut.beginningBufferIndex(), is(2));
+            assertThat(sut.remaining(), is(0));
+            assertThat(sut.startBufferIndex(), is(2));
             assertThat(sut.endBufferIndex(), is(2));
             assertThat(sut.sizeOfBuffers(), is(3));
-        }
-
-        @Test
-        public void testSkipBytes_BetweenBuffers() throws Exception {
-            byte[] data0 = new byte[5];
-            Arrays.fill(data0, (byte) 1);
-            byte[] data1 = new byte[5];
-            Arrays.fill(data1, (byte) 2);
-            CodecBufferList sut = new CodecBufferList(
-                    Buffers.wrap(data0, 0, 5),
-                    Buffers.wrap(data1, 0, 5));
-
-            int first = sut.skipBytes(8);
-            int firstBeginning = sut.beginning();
-            int firstBeginningIndex = sut.beginningBufferIndex();
-
-            int second = sut.skipBytes(-4);
-            int secondBeginning = sut.beginning();
-            int secondBeginningIndex = sut.beginningBufferIndex();
-
-            int third = sut.skipBytes(7); // over skip to positive side
-            int thirdBeginning = sut.beginning();
-            int thirdBeginningIndex = sut.beginningBufferIndex();
-
-            int forth = sut.skipBytes(-11); // over skip to negative side
-            int forthBeginning = sut.beginning();
-            int forthBeginningIndex = sut.beginningBufferIndex();
-
-            // at second buffer
-            assertThat(first, is(8));
-            assertThat(firstBeginning, is(8));
-            assertThat(firstBeginningIndex, is(1));
-            // at first buffer
-            assertThat(second, is(-4));
-            assertThat(secondBeginning, is(4));
-            assertThat(secondBeginningIndex, is(0));
-            // at end of second buffer
-            assertThat(third, is(6));
-            assertThat(thirdBeginning, is(10));
-            assertThat(thirdBeginningIndex, is(1));
-            // at beginning of the first buffer
-            assertThat(forth, is(-10));
-            assertThat(forthBeginning, is(0));
-            assertThat(forthBeginningIndex, is(0));
         }
 
         @Test
@@ -227,11 +183,11 @@ public class CodecBufferListTest {
 
             CodecBuffer actual = sut.slice(8);
 
-            assertThat(actual.remainingBytes(), is(8));
-            assertThat(sut.remainingBytes(), is(1));
-            assertThat(sut.beginningBufferIndex(), is(2));
+            assertThat(actual.remaining(), is(8));
+            assertThat(sut.remaining(), is(1));
+            assertThat(sut.startBufferIndex(), is(2));
             assertThat(sut.endBufferIndex(), is(2));
-            byte[] actualBytes = new byte[actual.remainingBytes()];
+            byte[] actualBytes = new byte[actual.remaining()];
             actual.readBytes(actualBytes, 0, actualBytes.length);
             assertThat(actualBytes, is(new byte[]{1, 1, 1, 2, 2, 2, 3, 3}));
         }
@@ -248,11 +204,11 @@ public class CodecBufferListTest {
 
             CodecBuffer actual = sut.slice(2);
 
-            assertThat(actual.remainingBytes(), is(2));
-            assertThat(sut.remainingBytes(), is(4));
-            assertThat(sut.beginningBufferIndex(), is(0));
+            assertThat(actual.remaining(), is(2));
+            assertThat(sut.remaining(), is(4));
+            assertThat(sut.startBufferIndex(), is(0));
             assertThat(sut.endBufferIndex(), is(1));
-            byte[] actualBytes = new byte[actual.remainingBytes()];
+            byte[] actualBytes = new byte[actual.remaining()];
             actual.readBytes(actualBytes, 0, actualBytes.length);
             assertThat(actualBytes, is(new byte[]{1, 1}));
         }
@@ -265,14 +221,85 @@ public class CodecBufferListTest {
 
             sut.clear();
 
-            assertThat(sut.remainingBytes(), is(0));
-            assertThat(sut.beginning(), is(0));
-            assertThat(sut.end(), is(0));
-            assertThat(sut.capacityBytes(), is(1 + 1));
-            assertThat(sut.beginningBufferIndex(), is(0));
+            assertThat(sut.remaining(), is(0));
+            assertThat(sut.startIndex(), is(0));
+            assertThat(sut.endIndex(), is(0));
+            assertThat(sut.capacity(), is(1 + 1));
+            assertThat(sut.startBufferIndex(), is(0));
             assertThat(sut.endBufferIndex(), is(0));
-            assertThat(b0.remainingBytes(), is(0)); // effected
-            assertThat(b1.remainingBytes(), is(0)); // effected
+            assertThat(b0.remaining(), is(0)); // effected
+            assertThat(b1.remaining(), is(0)); // effected
+        }
+
+        @Test
+        public void testSkipStartIndex_InBuffer() throws Exception {
+            byte[] data0 = new byte[5];
+            Arrays.fill(data0, (byte) 1);
+            byte[] data1 = new byte[5];
+            Arrays.fill(data1, (byte) 2);
+            CodecBufferList sut = new CodecBufferList(
+                    Buffers.wrap(data0, 0, 5),
+                    Buffers.wrap(data1, 0, 5));
+
+            sut.skipStartIndex(2);
+            assertThat(sut.startBufferIndex(), is(0));
+            assertThat(sut.endBufferIndex(), is(1));
+        }
+
+        @Test
+        public void testSkipStartIndex_BetweenBuffers() throws Exception {
+            byte[] data0 = new byte[5];
+            Arrays.fill(data0, (byte) 1);
+            byte[] data1 = new byte[5];
+            Arrays.fill(data1, (byte) 2);
+            CodecBufferList sut = new CodecBufferList(
+                    Buffers.wrap(data0, 0, 5),
+                    Buffers.wrap(data1, 0, 5));
+
+            int first = sut.skipStartIndex(5);
+            int firstStart = sut.startIndex();
+            int firstStartBuffer = sut.startBufferIndex();
+
+            int second = sut.skipStartIndex(-1);
+            int secondStart = sut.startIndex();
+            int secondStartBuffer = sut.startBufferIndex();
+
+            // in second buffer
+            assertThat(first, is(5));
+            assertThat(firstStart, is(5));
+            assertThat(firstStartBuffer, is(1));
+            // in first buffer
+            assertThat(second, is(-1));
+            assertThat(secondStart, is(4));
+            assertThat(secondStartBuffer, is(0));
+        }
+
+        @Test
+        public void testSkipStartIndex_OverSkip() throws Exception {
+            byte[] data0 = new byte[5];
+            Arrays.fill(data0, (byte) 1);
+            byte[] data1 = new byte[5];
+            Arrays.fill(data1, (byte) 2);
+            CodecBufferList sut = new CodecBufferList(
+                    Buffers.wrap(data0, 0, 5),
+                    Buffers.wrap(data1, 0, 5));
+
+            int third = sut.skipStartIndex(11); // over skip to positive side
+            int firstStart = sut.startIndex();
+            int firstStartBuffer = sut.startBufferIndex();
+
+            int forth = sut.skipStartIndex(-11); // over skip to negative side
+            int secondStart = sut.startIndex();
+            int secondStartBuffer = sut.startBufferIndex();
+
+            // at the end of second buffer
+            assertThat(third, is(10));
+            assertThat(firstStart, is(10));
+            assertThat(firstStartBuffer, is(1));
+            // at the start of second buffer
+            assertThat(forth, is(-10));
+            assertThat(secondStart, is(0));
+            assertThat(secondStartBuffer, is(0));
         }
     }
 
@@ -305,9 +332,9 @@ public class CodecBufferListTest {
             sut.writeBytes(data1, 0, data1.length); // add new buffer. capacity gets 4 + 8
             sut.writeBytes(data2, 0, data2.length); // add new buffer. capacity gets 4 + 8 + 16
 
-            assertThat(sut.remainingBytes(), is(4 + 6 + 4));
-            assertThat(sut.capacityBytes(), is(4 + 8 + 16));
-            assertThat(sut.beginningBufferIndex(), is(0));
+            assertThat(sut.remaining(), is(4 + 6 + 4));
+            assertThat(sut.capacity(), is(4 + 8 + 16));
+            assertThat(sut.startBufferIndex(), is(0));
             assertThat(sut.endBufferIndex(), is(2));
             assertThat(sut.sizeOfBuffers(), is(3));
             assertData(sut, data0);
@@ -329,9 +356,9 @@ public class CodecBufferListTest {
             sut.writeBytes(data1, 0, data1.length); // capacity: 4 + 8
             sut.writeBytes(data2, 0, data2.length); // no expansion
 
-            assertThat(sut.remainingBytes(), is(4 + 2 + 6));
-            assertThat(sut.capacityBytes(), is(4 + 8));
-            assertThat(sut.beginningBufferIndex(), is(0));
+            assertThat(sut.remaining(), is(4 + 2 + 6));
+            assertThat(sut.capacity(), is(4 + 8));
+            assertThat(sut.startBufferIndex(), is(0));
             assertThat(sut.endBufferIndex(), is(1));
             assertData(sut, data0);
             assertData(sut, data1);
@@ -351,9 +378,9 @@ public class CodecBufferListTest {
             sut.writeBytes(ByteBuffer.wrap(data1, 0, data1.length)); // add new buffer. capacity gets 4 + 8
             sut.writeBytes(ByteBuffer.wrap(data2, 0, data2.length)); // add new buffer. capacity gets 4 + 8 + 16
 
-            assertThat(sut.remainingBytes(), is(4 + 6 + 4));
-            assertThat(sut.capacityBytes(), is(4 + 8 + 16));
-            assertThat(sut.beginningBufferIndex(), is(0));
+            assertThat(sut.remaining(), is(4 + 6 + 4));
+            assertThat(sut.capacity(), is(4 + 8 + 16));
+            assertThat(sut.startBufferIndex(), is(0));
             assertThat(sut.endBufferIndex(), is(2));
             assertThat(sut.sizeOfBuffers(), is(3));
             byte[] actual0 = new byte[4];
@@ -381,9 +408,9 @@ public class CodecBufferListTest {
             sut.writeBytes(ByteBuffer.wrap(data1, 0, data1.length)); // capacity: 4 + 8
             sut.writeBytes(ByteBuffer.wrap(data2, 0, data2.length)); // no expansion
 
-            assertThat(sut.remainingBytes(), is(4 + 2 + 6));
-            assertThat(sut.capacityBytes(), is(4 + 8));
-            assertThat(sut.beginningBufferIndex(), is(0));
+            assertThat(sut.remaining(), is(4 + 2 + 6));
+            assertThat(sut.capacity(), is(4 + 8));
+            assertThat(sut.startBufferIndex(), is(0));
             assertThat(sut.endBufferIndex(), is(1));
             assertData(sut, data0);
             assertData(sut, data1);
@@ -400,9 +427,9 @@ public class CodecBufferListTest {
             sut.writeByte(2); // capacity gets 1 + 2
             sut.writeShort((short) -1); // new buffer allocated if one byte space exists
 
-            assertThat(sut.remainingBytes(), is(1 + 1 + 2));
-            assertThat(sut.capacityBytes(), is(1 + 2 + 4));
-            assertThat(sut.beginningBufferIndex(), is(0));
+            assertThat(sut.remaining(), is(1 + 1 + 2));
+            assertThat(sut.capacity(), is(1 + 2 + 4));
+            assertThat(sut.startBufferIndex(), is(0));
             assertThat(sut.endBufferIndex(), is(2));
             assertThat(sut.sizeOfBuffers(), is(3));
             assertData(sut, data0);
@@ -420,9 +447,9 @@ public class CodecBufferListTest {
             sut.writeByte(2); // capacity gets 2 + 4
             sut.writeShort((short) -1);
 
-            assertThat(sut.remainingBytes(), is(2 + 1 + 2));
-            assertThat(sut.capacityBytes(), is(2 + 4));
-            assertThat(sut.beginningBufferIndex(), is(0));
+            assertThat(sut.remaining(), is(2 + 1 + 2));
+            assertThat(sut.capacity(), is(2 + 4));
+            assertThat(sut.startBufferIndex(), is(0));
             assertThat(sut.endBufferIndex(), is(1));
             assertThat(sut.sizeOfBuffers(), is(2));
             assertData(sut, data0);
@@ -440,9 +467,9 @@ public class CodecBufferListTest {
             sut.writeByte(2); // capacity gets 1 + 2
             sut.writeChar(Character.MAX_VALUE); // new buffer allocated if one byte space exists
 
-            assertThat(sut.remainingBytes(), is(1 + 1 + 2));
-            assertThat(sut.capacityBytes(), is(1 + 2 + 4));
-            assertThat(sut.beginningBufferIndex(), is(0));
+            assertThat(sut.remaining(), is(1 + 1 + 2));
+            assertThat(sut.capacity(), is(1 + 2 + 4));
+            assertThat(sut.startBufferIndex(), is(0));
             assertThat(sut.endBufferIndex(), is(2));
             assertThat(sut.sizeOfBuffers(), is(3));
             assertData(sut, data0);
@@ -460,9 +487,9 @@ public class CodecBufferListTest {
             sut.writeByte(2); // capacity gets 2 + 4
             sut.writeChar(Character.MAX_VALUE);
 
-            assertThat(sut.remainingBytes(), is(2 + 1 + 2));
-            assertThat(sut.capacityBytes(), is(2 + 4));
-            assertThat(sut.beginningBufferIndex(), is(0));
+            assertThat(sut.remaining(), is(2 + 1 + 2));
+            assertThat(sut.capacity(), is(2 + 4));
+            assertThat(sut.startBufferIndex(), is(0));
             assertThat(sut.endBufferIndex(), is(1));
             assertThat(sut.sizeOfBuffers(), is(2));
             assertData(sut, data0);
@@ -479,9 +506,9 @@ public class CodecBufferListTest {
 
             sut.writeInt(-1);
 
-            assertThat(sut.remainingBytes(), is(1 + 4));
-            assertThat(sut.capacityBytes(), is(1 + 2 + 4));
-            assertThat(sut.beginningBufferIndex(), is(0));
+            assertThat(sut.remaining(), is(1 + 4));
+            assertThat(sut.capacity(), is(1 + 2 + 4));
+            assertThat(sut.startBufferIndex(), is(0));
             assertThat(sut.endBufferIndex(), is(2));
             assertThat(sut.sizeOfBuffers(), is(3));
             assertData(sut, data0);
@@ -498,9 +525,9 @@ public class CodecBufferListTest {
             sut.writeByte(2); // capacity gets 3 + 6
             sut.writeInt(-1);
 
-            assertThat(sut.remainingBytes(), is(3 + 1 + 4));
-            assertThat(sut.capacityBytes(), is(3 + 6));
-            assertThat(sut.beginningBufferIndex(), is(0));
+            assertThat(sut.remaining(), is(3 + 1 + 4));
+            assertThat(sut.capacity(), is(3 + 6));
+            assertThat(sut.startBufferIndex(), is(0));
             assertThat(sut.endBufferIndex(), is(1));
             assertThat(sut.sizeOfBuffers(), is(2));
             assertData(sut, data0);
@@ -517,9 +544,9 @@ public class CodecBufferListTest {
 
             sut.writeLong(-1L);
 
-            assertThat(sut.remainingBytes(), is(1 + 8));
-            assertThat(sut.capacityBytes(), is(1 + 2 + 4 + 8));
-            assertThat(sut.beginningBufferIndex(), is(0));
+            assertThat(sut.remaining(), is(1 + 8));
+            assertThat(sut.capacity(), is(1 + 2 + 4 + 8));
+            assertThat(sut.startBufferIndex(), is(0));
             assertThat(sut.endBufferIndex(), is(3));
             assertThat(sut.sizeOfBuffers(), is(4));
             assertData(sut, data0);
@@ -536,9 +563,9 @@ public class CodecBufferListTest {
             sut.writeByte(2); // capacity gets 5 + 10
             sut.writeLong(-1L);
 
-            assertThat(sut.remainingBytes(), is(5 + 1 + 8));
-            assertThat(sut.capacityBytes(), is(5 + 10));
-            assertThat(sut.beginningBufferIndex(), is(0));
+            assertThat(sut.remaining(), is(5 + 1 + 8));
+            assertThat(sut.capacity(), is(5 + 10));
+            assertThat(sut.startBufferIndex(), is(0));
             assertThat(sut.endBufferIndex(), is(1));
             assertThat(sut.sizeOfBuffers(), is(2));
             assertData(sut, data0);
@@ -554,13 +581,86 @@ public class CodecBufferListTest {
 
             sut.writeString(s, CHARSET.newEncoder());
 
-            assertThat(sut.remainingBytes(), is(10));
-            assertThat(sut.beginningBufferIndex(), is(0));
+            assertThat(sut.remaining(), is(10));
+            assertThat(sut.startBufferIndex(), is(0));
             assertThat(sut.endBufferIndex(), is(1));
             assertThat(sut.sizeOfBuffers(), is(2));
-            byte[] actual = new byte[sut.remainingBytes()];
+            byte[] actual = new byte[sut.remaining()];
             sut.readBytes(actual, 0, actual.length);
             assertThat(actual, is(s.getBytes()));
+        }
+
+        @Test
+        public void testSkipEndIndex_InBuffer() throws Exception {
+            byte[] data0 = new byte[5];
+            Arrays.fill(data0, (byte) 1);
+            byte[] data1 = new byte[5];
+            Arrays.fill(data1, (byte) 2);
+            CodecBufferList sut = new CodecBufferList(
+                    Buffers.wrap(data0, 0, 5),
+                    Buffers.wrap(data1, 0, 5));
+
+            sut.skipEndIndex(-4);
+            sut.skipEndIndex(3);
+            assertThat(sut.startBufferIndex(), is(0));
+            assertThat(sut.endBufferIndex(), is(1));
+            assertThat(sut.endIndex(), is(9));
+        }
+
+        @Test
+        public void testSkipEndIndex_BetweenBuffers() throws Exception {
+            byte[] data0 = new byte[5];
+            Arrays.fill(data0, (byte) 1);
+            byte[] data1 = new byte[5];
+            Arrays.fill(data1, (byte) 2);
+            CodecBufferList sut = new CodecBufferList(
+                    Buffers.wrap(data0, 0, 5),
+                    Buffers.wrap(data1, 0, 5));
+
+            int first = sut.skipEndIndex(-6);
+            int firstEnd = sut.endIndex();
+            int firstBufferEnd = sut.endBufferIndex();
+
+            int second = sut.skipEndIndex(1);
+            int secondEnd = sut.endIndex();
+            int secondEndBuffer = sut.endBufferIndex();
+
+            // in second buffer
+            assertThat(first, is(-6));
+            assertThat(firstEnd, is(4));
+            assertThat(firstBufferEnd, is(0));
+            // in first buffer
+            assertThat(second, is(1));
+            assertThat(secondEnd, is(5));
+            assertThat(secondEndBuffer, is(1));
+        }
+
+        @Test
+        public void testSkipEndIndex_OverSkip() throws Exception {
+            byte[] data0 = new byte[5];
+            Arrays.fill(data0, (byte) 1);
+            byte[] data1 = new byte[5];
+            Arrays.fill(data1, (byte) 2);
+            CodecBufferList sut = new CodecBufferList(
+                    Buffers.wrap(data0, 0, 5),
+                    Buffers.wrap(data1, 0, 5));
+
+            int first = sut.skipEndIndex(-11);
+            int firstEnd = sut.endIndex();
+            int firstEndBuffer = sut.endBufferIndex();
+
+            int second = sut.skipEndIndex(11);
+            int secondIndex = sut.endIndex();
+            int secondBufferIndex = sut.endBufferIndex();
+
+            // at the end of second buffer
+            assertThat(first, is(-10));
+            assertThat(firstEnd, is(0));
+            assertThat(firstEndBuffer, is(0));
+            // at the start of second buffer
+            assertThat(second, is(10));
+            assertThat(secondIndex, is(10));
+            assertThat(secondBufferIndex, is(1));
         }
     }
 
@@ -590,12 +690,12 @@ public class CodecBufferListTest {
                 }
             });
 
-            assertThat(sut_.remainingBytes(), is(dataLength_));
+            assertThat(sut_.remaining(), is(dataLength_));
 
             boolean result = sut_.transferTo(channel);
 
             assertThat(result, is(true));
-            assertThat(sut_.remainingBytes(), is(0));
+            assertThat(sut_.remaining(), is(0));
             verify(channel, times(1)).write(Mockito.any(ByteBuffer[].class), anyInt(), anyInt());
         }
 
@@ -612,12 +712,12 @@ public class CodecBufferListTest {
                 }
             });
 
-            assertThat(sut_.remainingBytes(), is(dataLength_));
+            assertThat(sut_.remaining(), is(dataLength_));
 
             boolean result = sut_.transferTo(channel);
 
             assertThat(result, is(false));
-            assertThat(sut_.remainingBytes(), is(1));
+            assertThat(sut_.remaining(), is(1));
             verify(channel, times(1)).write(Mockito.any(ByteBuffer[].class), anyInt(), anyInt());
         }
 
@@ -632,17 +732,17 @@ public class CodecBufferListTest {
 
         @Test
         public void testCopyTo_ByteBufferAll() throws Exception {
-            ByteBuffer buffer = ByteBuffer.allocate(sut_.remainingBytes());
+            ByteBuffer buffer = ByteBuffer.allocate(sut_.remaining());
 
             sut_.copyTo(buffer);
 
-            assertThat(sut_.remainingBytes(), is(32)); // remaining all
+            assertThat(sut_.remaining(), is(32)); // remaining all
             assertThat(buffer.array(), is(sut_.array()));
         }
 
         @Test(expected = BufferOverflowException.class)
         public void testCopyTo_ByteBufferPart() throws Exception {
-            ByteBuffer buffer = ByteBuffer.allocate(sut_.remainingBytes() - 1);
+            ByteBuffer buffer = ByteBuffer.allocate(sut_.remaining() - 1);
             sut_.copyTo(buffer);
         }
 
@@ -657,8 +757,8 @@ public class CodecBufferListTest {
             int actualBytes = sut.drainFrom(drained);
 
             assertThat(actualBytes, is(10));
-            assertThat(drained.remainingBytes(), is(0));
-            assertThat(sut.beginningBufferIndex(), is(0));
+            assertThat(drained.remaining(), is(0));
+            assertThat(sut.startBufferIndex(), is(0));
             assertThat(sut.endBufferIndex(), is(2));
             assertThat(sut.sizeOfBuffers(), is(3));
         }
@@ -674,9 +774,9 @@ public class CodecBufferListTest {
             int actualBytes = sut.drainFrom(drained, 6);
 
             assertThat(actualBytes, is(6));
-            assertThat(drained.remainingBytes(), is(4));
-            assertThat(sut.remainingBytes(), is(3 + 6));
-            assertThat(sut.beginningBufferIndex(), is(0));
+            assertThat(drained.remaining(), is(4));
+            assertThat(sut.remaining(), is(3 + 6));
+            assertThat(sut.startBufferIndex(), is(0));
             assertThat(sut.endBufferIndex(), is(1));
             assertThat(sut.sizeOfBuffers(), is(2));
         }
@@ -712,10 +812,10 @@ public class CodecBufferListTest {
 
             sut.writeBytes(new byte[1], 0, 1);
 
-            assertThat(sut.remainingBytes(), is(4));
-            assertThat(sut.capacityBytes(), is(3 + 6));
-            assertThat(sut.beginning(), is(0));
-            assertThat(sut.end(), is(4));
+            assertThat(sut.remaining(), is(4));
+            assertThat(sut.capacity(), is(3 + 6));
+            assertThat(sut.startIndex(), is(0));
+            assertThat(sut.endIndex(), is(4));
         }
 
         @Test
@@ -724,10 +824,10 @@ public class CodecBufferListTest {
 
             sut.writeBytes(new byte[21], 0, 21);
 
-            assertThat(sut.remainingBytes(), is(3 + 21));
-            assertThat(sut.capacityBytes(), is(3 + 21));
-            assertThat(sut.beginning(), is(0));
-            assertThat(sut.end(), is(24));
+            assertThat(sut.remaining(), is(3 + 21));
+            assertThat(sut.capacity(), is(3 + 21));
+            assertThat(sut.startIndex(), is(0));
+            assertThat(sut.endIndex(), is(24));
         }
 
         @Test
@@ -743,8 +843,8 @@ public class CodecBufferListTest {
 
             sut.addFirst(added);
 
-            assertThat(sut.remainingBytes(), is(16));
-            assertThat(sut.beginningBufferIndex(), is(0));
+            assertThat(sut.remaining(), is(16));
+            assertThat(sut.startBufferIndex(), is(0));
             assertThat(sut.endBufferIndex(), is(1));
             byte[] b = new byte[8];
             sut.readBytes(b, 0, 8);
@@ -766,8 +866,8 @@ public class CodecBufferListTest {
 
             sut.addFirst(added);
 
-            assertThat(sut.remainingBytes(), is(8 + 8));
-            assertThat(sut.beginningBufferIndex(), is(1));
+            assertThat(sut.remaining(), is(8 + 8));
+            assertThat(sut.startBufferIndex(), is(1));
             assertThat(sut.endBufferIndex(), is(2));
             byte[] b = new byte[8];
             sut.readBytes(b, 0, 8);
@@ -783,8 +883,8 @@ public class CodecBufferListTest {
 
             sut.addFirst(added);
 
-            assertThat(sut.remainingBytes(), is(added.remainingBytes()));
-            assertThat(sut.beginningBufferIndex(), is(1));
+            assertThat(sut.remaining(), is(added.remaining()));
+            assertThat(sut.startBufferIndex(), is(1));
             assertThat(sut.endBufferIndex(), is(1));
         }
 
@@ -801,8 +901,8 @@ public class CodecBufferListTest {
 
             sut.addLast(added);
 
-            assertThat(sut.remainingBytes(), is(15));
-            assertThat(sut.beginningBufferIndex(), is(0));
+            assertThat(sut.remaining(), is(15));
+            assertThat(sut.startBufferIndex(), is(0));
             assertThat(sut.endBufferIndex(), is(1));
             byte[] b7 = new byte[7];
             sut.readBytes(b7, 0, b7.length);
@@ -828,8 +928,8 @@ public class CodecBufferListTest {
 
             sut.addLast(added);
 
-            assertThat(sut.remainingBytes(), is(15));
-            assertThat(sut.beginningBufferIndex(), is(1));
+            assertThat(sut.remaining(), is(15));
+            assertThat(sut.startBufferIndex(), is(1));
             assertThat(sut.endBufferIndex(), is(2));
             byte[] b7 = new byte[7];
             sut.readBytes(b7, 0, b7.length);
@@ -846,8 +946,8 @@ public class CodecBufferListTest {
 
             sut.addLast(added);
 
-            assertThat(sut.remainingBytes(), is(added.remainingBytes()));
-            assertThat(sut.beginningBufferIndex(), is(0)); // first empty buffer is still visible
+            assertThat(sut.remaining(), is(added.remaining()));
+            assertThat(sut.startBufferIndex(), is(0)); // first empty buffer is still visible
             assertThat(sut.endBufferIndex(), is(1));
         }
     }

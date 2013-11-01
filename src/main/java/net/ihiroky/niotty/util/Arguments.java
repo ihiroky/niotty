@@ -95,14 +95,14 @@ public final class Arguments {
      *
      * @param value the value to check
      * @param name the name of the variable
-     * @param begin the beginning of the range
+     * @param start the start of the range
      * @param end the end of he range
      * @return the value
      */
-    public static int requireInRange(int value, String name, int begin, int end) {
-        if (value < begin || value > end) {
+    public static int requireInRange(int value, String name, int start, int end) {
+        if (value < start || value > end) {
             throw (name != null)
-                    ? new IllegalArgumentException("The " + name + " must be in [" + begin + ", " + end + "].")
+                    ? new IllegalArgumentException("The " + name + " must be in [" + start + ", " + end + "].")
                     : new IllegalArgumentException();
         }
         return value;
@@ -113,14 +113,14 @@ public final class Arguments {
      *
      * @param value the value to check
      * @param name the name of the variable
-     * @param begin the beginning of the range
-     * @param end the end of he range
+     * @param start the start of the range
+     * @param end the endIndex of he range
      * @return the value
      */
-    public static long requireInRange(long value, String name, long begin, long end) {
-        if (value < begin || value > end) {
+    public static long requireInRange(long value, String name, long start, long end) {
+        if (value < start || value > end) {
             throw (name != null)
-                    ? new IllegalArgumentException("The " + name + " must be in [" + begin + ", " + end + "].")
+                    ? new IllegalArgumentException("The " + name + " must be in [" + start + ", " + end + "].")
                     : new IllegalArgumentException();
         }
         return value;

@@ -36,14 +36,14 @@ public class DelimiterDecoder implements LoadStage<CodecBuffer, CodecBuffer> {
             end = b.indexOf(delimiter_, 0);
             if (end == -1) {
                 if (buffer_ != null) {
-                    if (buffer_.remainingBytes() > 0) {
+                    if (buffer_.remaining() > 0) {
                         buffer_.compact(); // The remaining is processed later.
                     } else {
                         buffer_ = null;
                     }
                     return;
                 }
-                int remaining = input.remainingBytes();
+                int remaining = input.remaining();
                 if (remaining > 0) {
                     buffer_ = Buffers.newCodecBuffer(remaining);
                     buffer_.drainFrom(input);
@@ -55,7 +55,7 @@ public class DelimiterDecoder implements LoadStage<CodecBuffer, CodecBuffer> {
             int frameLength = removeDelimiter_ ? end : end + delimiter_.length;
             CodecBuffer output = (b == input) ? b.slice(frameLength) : Buffers.newCodecBuffer(b, frameLength);
             if (removeDelimiter_) {
-                b.skipBytes(delimiter_.length);
+                b.skipStartIndex(delimiter_.length);
             }
             context.proceed(output);
         }

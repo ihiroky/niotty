@@ -85,14 +85,14 @@ public final class Buffers {
      * Creates a new {@code CodecBuffer} which is backed by a specified byte array.
      *
      * If some data is written into the {@code CodecBuffer}, then the backed byte array is also modified.
-     * The new {@code CodecBuffer}'s beginning is {@code 0} and end is {@code buffer.length}.
+     * The new {@code CodecBuffer}'s startIndex is {@code 0} and endIndex is {@code buffer.length}.
      *
      * An invocation of this method behaves in exactly the same way as the invocation
      * {@code wrap(buffer, 0, buffer.length)}.
      *
      * @param buffer the backed byte array
      * @throws NullPointerException if {@code buffer} is null.
-     * @throws IllegalArgumentException if {@code beginning} or {@code length} is invalid.
+     * @throws IllegalArgumentException if {@code startIndex} or {@code length} is invalid.
      * @return the new {@code DecodeBuffer}
      */
     public static CodecBuffer wrap(byte[] buffer) {
@@ -103,16 +103,16 @@ public final class Buffers {
      * Creates a new {@code CodecBuffer} which is backed by a specified byte array.
      *
      * If some data is written into the {@code CodecBuffer}, then the backed byte array is also modified.
-     * The new {@code CodecBuffer}'s beginning is {@code offset} and end is {@code offset + length}.
+     * The new {@code CodecBuffer}'s startIndex is {@code offset} and endIndex is {@code offset + length}.
      *
      * An invocation of this method behaves in exactly the same way as the invocation
-     * {@code wrap(buffer, beginning, length, DefaultTransportParameter.NO_PARAMETER)}.
+     * {@code wrap(buffer, startIndex, length, DefaultTransportParameter.NO_PARAMETER)}.
      *
      * @param buffer the backed byte array
      * @param offset the offset of content in {@code buffer}
      * @param length the length of content in {@code buffer} from {@code offset}
      * @throws NullPointerException if {@code buffer} is null.
-     * @throws IllegalArgumentException if {@code beginning} or {@code length} is invalid.
+     * @throws IllegalArgumentException if {@code startIndex} or {@code length} is invalid.
      * @return the new {@code DecodeBuffer}
      */
     public static CodecBuffer wrap(byte[] buffer, int offset, int length) {
@@ -138,7 +138,7 @@ public final class Buffers {
      * Creates a new {@code CodecBuffer} which is backed by a specified byte buffer.
      *
      * <p>If some data is written into the {@code CodecBuffer}, then the backed {@code ByteBuffer} is also modified.
-     * The new {@code CodecBuffer}'s beginning is buffer' position and end is buffer's limit.</p>
+     * The new {@code CodecBuffer}'s startIndex is buffer' position and endIndex is buffer's limit.</p>
      *
      * An invocation of this method behaves in exactly the same way as the invocation
      * {@code wrap(byteBuffer, false)}.
@@ -154,7 +154,7 @@ public final class Buffers {
      * Creates a new {@code CodecBuffer} which is backed by a specified byte buffer.
      *
      * <p>If some data is written into the {@code CodecBuffer}, then the backed {@code ByteBuffer} is also modified.
-     * The new {@code CodecBuffer}'s beginning is buffer' position and end is buffer's limit.</p>
+     * The new {@code CodecBuffer}'s startIndex is buffer' position and endIndex is buffer's limit.</p>
      *
      * @param byteBuffer the backed {@code ByteBuffer}
      * @param cleanOnDispose true if {@code java.nio.DirectBuffer#clean()} is called
@@ -170,7 +170,7 @@ public final class Buffers {
      * Creates a new {@code CodecBuffer} which is backed by a specified byte buffer.
      *
      * <p>If some data is written into the {@code DecodeBuffer}, then the backed {@code ByteBuffer} is also modified.
-     * The new {@code DecodeBuffer}'s beginning is buffer' position and end is buffer's limit.</p>
+     * The new {@code DecodeBuffer}'s startIndex is buffer' position and endIndex is buffer's limit.</p>
      *
      * <p>An allocation of the new buffer's content is controlled by a specified {@code chunkPool}.</p>
      *
@@ -186,7 +186,7 @@ public final class Buffers {
      * Creates a new {@code BufferSink} which presents a file specified with a {@code path} and its range.
      *
      * @param path the path to points the file
-     * @param beginning beginning byte of the range, from the head of the file
+     * @param beginning startIndex byte of the range, from the head of the file
      * @param length byte length of the range
      * @return a new {@code BufferSink} which presents the file
      * @throws IOException if failed to open the file
@@ -200,7 +200,7 @@ public final class Buffers {
      * Creates a new {@code BufferSink} which presents a file specified with a {@code file} and its range.
      *
      * @param file the file to points the file
-     * @param beginning beginning byte of the range, from the head of the file
+     * @param beginning startIndex byte of the range, from the head of the file
      * @param length byte length of the range
      * @return a new {@code BufferSink} which presents the file
      * @throws IOException if failed to open the file
@@ -266,7 +266,7 @@ public final class Buffers {
 
     /**
      * Creates a new {@code CodecBuffer} which content is drained from the specified buffer
-     * with specified length. The beginning of the drained buffer increases by the length.
+     * with specified length. The startIndex of the drained buffer increases by the length.
      *
      * @param buffer the buffer to be drained to the new buffer
      * @param length the length to be drained from the buffer

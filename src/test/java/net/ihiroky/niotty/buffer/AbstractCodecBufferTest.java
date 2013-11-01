@@ -28,35 +28,35 @@ public class AbstractCodecBufferTest {
     public void testWriteVariableByteNull() throws Exception {
         sut_.writeVariableByteNull();
         assertThat(sut_.array()[0], is((byte) 0xc0));
-        assertThat(sut_.remainingBytes(), is(1));
+        assertThat(sut_.remaining(), is(1));
     }
 
     @Test
     public void testWriteVariableByteInteger0() throws Exception {
         sut_.writeVariableByteInteger(0);
         assertThat(sut_.array()[0], is((byte) 0x80));
-        assertThat(sut_.remainingBytes(), is(1));
+        assertThat(sut_.remaining(), is(1));
     }
 
     @Test
     public void testWriteVariableByteLong0() throws Exception {
         sut_.writeVariableByteLong(0);
         assertThat(sut_.array()[0], is((byte) 0x80));
-        assertThat(sut_.remainingBytes(), is(1));
+        assertThat(sut_.remaining(), is(1));
     }
 
     @Test
     public void testWriteVariableByte1() throws Exception {
         sut_.writeVariableByteInteger(1);
         assertThat(sut_.array()[0], is((byte) 0x81));
-        assertThat(sut_.remainingBytes(), is(1));
+        assertThat(sut_.remaining(), is(1));
     }
 
     @Test
     public void testWriteVariableByteLong1() throws Exception {
         sut_.writeVariableByteLong(1);
         assertThat(sut_.array()[0], is((byte) 0x81));
-        assertThat(sut_.remainingBytes(), is(1));
+        assertThat(sut_.remaining(), is(1));
     }
 
     @Test
@@ -65,7 +65,7 @@ public class AbstractCodecBufferTest {
         assertThat(Arrays.copyOf(sut_.array(), 5), is(new byte[] {
                 0x40, 0x00, 0x00, 0x00, (byte) 0x90,
         }));
-        assertThat(sut_.remainingBytes(), is(5));
+        assertThat(sut_.remaining(), is(5));
     }
 
     @Test
@@ -74,35 +74,35 @@ public class AbstractCodecBufferTest {
         assertThat(Arrays.copyOf(sut_.array(), 10), is(new byte[] {
                 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, (byte) 0x82,
         }));
-        assertThat(sut_.remainingBytes(), is(10));
+        assertThat(sut_.remaining(), is(10));
     }
 
     @Test
     public void testWriteVariableByteInteger229() throws Exception {
         sut_.writeVariableByteInteger(229);
         assertThat(Arrays.copyOf(sut_.array(), 2), is(new byte[]{0x25, (byte) 0x83}));
-        assertThat(sut_.remainingBytes(), is(2));
+        assertThat(sut_.remaining(), is(2));
     }
 
     @Test
     public void testWriteVariableByteLong229() throws Exception {
         sut_.writeVariableByteLong(229);
         assertThat(Arrays.copyOf(sut_.array(), 2), is(new byte[]{0x25, (byte) 0x83}));
-        assertThat(sut_.remainingBytes(), is(2));
+        assertThat(sut_.remaining(), is(2));
     }
 
     @Test
     public void testWriteVariableByteIntegerMinus229() throws Exception {
         sut_.writeVariableByteInteger(-229);
         assertThat(Arrays.copyOf(sut_.array(), 2), is(new byte[]{0x65, (byte) 0x83}));
-        assertThat(sut_.remainingBytes(), is(2));
+        assertThat(sut_.remaining(), is(2));
     }
 
     @Test
     public void testWriteVariableByteLongMinus229() throws Exception {
         sut_.writeVariableByteLong(-229);
         assertThat(Arrays.copyOf(sut_.array(), 2), is(new byte[]{0x65, (byte) 0x83}));
-        assertThat(sut_.remainingBytes(), is(2));
+        assertThat(sut_.remaining(), is(2));
     }
 
     @Test
@@ -110,35 +110,35 @@ public class AbstractCodecBufferTest {
         sut_.writeVariableByteLong(Long.MAX_VALUE);
         assertThat(Arrays.copyOf(sut_.array(), 10),
                 is(new byte[]{0x3F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, (byte) 0x81}));
-        assertThat(sut_.remainingBytes(), is(10));
+        assertThat(sut_.remaining(), is(10));
     }
 
     @Test
     public void testWriteVariableByteIntegerObj() throws Exception {
         sut_.writeVariableByteInteger(Integer.valueOf(1));
         assertThat(sut_.array()[0], is((byte) 0x81));
-        assertThat(sut_.remainingBytes(), is(1));
+        assertThat(sut_.remaining(), is(1));
     }
 
     @Test
     public void testWriteVariableByteIntegerNull() throws Exception {
         sut_.writeVariableByteInteger(null);
         assertThat(sut_.array()[0], is((byte) 0xc0));
-        assertThat(sut_.remainingBytes(), is(1));
+        assertThat(sut_.remaining(), is(1));
     }
 
     @Test
     public void testWriteVariableByteLongObj() throws Exception {
         sut_.writeVariableByteLong(Long.valueOf(1L));
         assertThat(sut_.array()[0], is((byte) 0x81));
-        assertThat(sut_.remainingBytes(), is(1));
+        assertThat(sut_.remaining(), is(1));
     }
 
     @Test
     public void testWriteVariableByteLongNull() throws Exception {
         sut_.writeVariableByteLong(null);
         assertThat(sut_.array()[0], is((byte) 0xc0));
-        assertThat(sut_.remainingBytes(), is(1));
+        assertThat(sut_.remaining(), is(1));
     }
 
     @Test

@@ -26,8 +26,8 @@ public class InputSupport {
      */
     CodecBuffer readFully(CodecBuffer input, int requiredLength, boolean noCopyIfEnough) {
         if (buffer_ != null) {
-            buffer_.drainFrom(input, requiredLength - buffer_.remainingBytes());
-            if (buffer_.remainingBytes() == requiredLength) {
+            buffer_.drainFrom(input, requiredLength - buffer_.remaining());
+            if (buffer_.remaining() == requiredLength) {
                 CodecBuffer fulfilled = buffer_;
                 buffer_ = null;
                 return fulfilled;
@@ -35,7 +35,7 @@ public class InputSupport {
             return null;
         }
 
-        int remainingBytes = input.remainingBytes();
+        int remainingBytes = input.remaining();
         if (remainingBytes >= requiredLength) {
             return noCopyIfEnough ? input : copy(input, requiredLength);
         }

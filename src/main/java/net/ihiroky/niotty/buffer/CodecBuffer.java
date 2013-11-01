@@ -5,15 +5,15 @@ import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CharsetEncoder;
 
 /**
- * A buffer class for encoding and decoding byte array. Implementations of this class has beginning, end and capacity
- * for internal storage. The beginning shows a start index of the content in the storage.
+ * A buffer class for encoding and decoding byte array. Implementations of this class has start, end and capacity
+ * for internal storage. The start shows a start index of the content in the storage.
  * The end is the end index of the contents in the storage; the end is not a part of the content, next to the last
  * index of content. The capacity is the length of the storage capacity.
  * <p></p>
- * The beginning and end is 0 when new {@code CodecBuffer} is instantiated. Some data is written into the
+ * The start and end is 0 when new {@code CodecBuffer} is instantiated. Some data is written into the
  * {@code CodecBuffer}, then end increase at the written data size. By contrast, Some data is read from the
- * {@code CodecBuffer}, then beginning increase at the read data size. So remaining (readable) data size is calculated
- * by a difference between the beginning and the end, and space (writable) data size is calculated by the a difference
+ * {@code CodecBuffer}, then start increase at the read data size. So remaining (readable) data size is calculated
+ * by a difference between the start and the end, and space (writable) data size is calculated by the a difference
  * between the end and the capacity.
  * <p></p>
  * {@code CodecBuffer} supports primitive and string write and read operations. And supports a signed integer
@@ -38,7 +38,7 @@ import java.nio.charset.CharsetEncoder;
 public interface CodecBuffer extends BufferSink {
 
     /**
-     * Writes a {@code value} as byte.
+     * Writes a {@code value} as byte to the end index.
      * Upper three bytes of the value is ignored.
      *
      * @param value the value
@@ -47,7 +47,7 @@ public interface CodecBuffer extends BufferSink {
     CodecBuffer writeByte(int value);
 
     /**
-     * Writes a specified byte array.
+     * Writes a specified byte array from the end index.
      *
      * @param bytes the byte array to be written
      * @param offset first position in the {@code byte} to be written from;
@@ -58,7 +58,7 @@ public interface CodecBuffer extends BufferSink {
     CodecBuffer writeBytes(byte[] bytes, int offset, int length);
 
     /**
-     * Writes a specified {@code java.nio.ByteBuffer}.
+     * Writes a specified {@code java.nio.ByteBuffer} from the end index.
      *
      * @param byteBuffer the byte buffer to be written
      * @return this object
@@ -66,7 +66,7 @@ public interface CodecBuffer extends BufferSink {
     CodecBuffer writeBytes(ByteBuffer byteBuffer);
 
     /**
-     * Writes a value as short.
+     * Writes a value as short from the end index.
      * Upper two bytes of the value is ignored.
      *
      * @param value the value
@@ -75,7 +75,7 @@ public interface CodecBuffer extends BufferSink {
     CodecBuffer writeShort(int value);
 
     /**
-     * Writes a specified char {@code value}.
+     * Writes a char {@code value} from the end index.
      *
      * @param value the value
      * @return this object
@@ -83,7 +83,7 @@ public interface CodecBuffer extends BufferSink {
     CodecBuffer writeChar(char value);
 
     /**
-     * Writes a value as three bytes int.
+     * Writes a value as three bytes int from the end index.
      * Upper one bytes of the value is ignored.
      *
      * @param value the value
@@ -92,7 +92,7 @@ public interface CodecBuffer extends BufferSink {
     CodecBuffer writeMedium(int value);
 
     /**
-     * Writes a value as int.
+     * Writes a value as int from the end index.
      *
      * @param value the number of int type
      * @return this object
@@ -100,7 +100,7 @@ public interface CodecBuffer extends BufferSink {
     CodecBuffer writeInt(int value);
 
     /**
-     * Writes a value as long.
+     * Writes a value as long from the end index.
      *
      * @param value the number of long type
      * @return this object
@@ -108,7 +108,7 @@ public interface CodecBuffer extends BufferSink {
     CodecBuffer writeLong(long value);
 
     /**
-     * Writes a specified float {@code value}.
+     * Writes a specified float {@code value} from the end index.
      *
      * @param value the number of float type
      * @return this object
@@ -116,7 +116,7 @@ public interface CodecBuffer extends BufferSink {
     CodecBuffer writeFloat(float value);
 
     /**
-     * Writes a specified double {@code value}.
+     * Writes a specified double {@code value} from the end index.
      *
      * @param value the number of double type
      * @return this object
@@ -124,7 +124,7 @@ public interface CodecBuffer extends BufferSink {
     CodecBuffer writeDouble(double value);
 
     /**
-     * Writes a specified long {@code value} with signed VBC.
+     * Writes a specified long {@code value} with signed VBC from the end index.
      *
      * @param value the number of long type
      * @return this object
@@ -132,7 +132,7 @@ public interface CodecBuffer extends BufferSink {
     CodecBuffer writeVariableByteLong(long value);
 
     /**
-     * Writes a specified int {@code value} with signed VBC.
+     * Writes a specified int {@code value} with signed VBC from the end index.
      *
      * @param value the number of int type
      * @return this object
@@ -140,14 +140,14 @@ public interface CodecBuffer extends BufferSink {
     CodecBuffer writeVariableByteInteger(int value);
 
     /**
-     * Writes null value with signed VBC.
+     * Writes null value with signed VBC from the end index.
      *
      * @return this object
      */
     CodecBuffer writeVariableByteNull();
 
     /**
-     * Writes a specified {@code Integer value} with signed VBC.
+     * Writes a specified {@code Integer value} with signed VBC from the end index.
      *
      * @param value the number of {@code Integer}
      * @return this object
@@ -155,13 +155,13 @@ public interface CodecBuffer extends BufferSink {
     CodecBuffer writeVariableByteInteger(Integer value);
 
     /**
-     * Writes a specified {@code Long value} with signed VBC.
+     * Writes a specified {@code Long value} with signed VBC from the end index.
      * @param value the number of {@code Long}
      */
     CodecBuffer writeVariableByteLong(Long value);
 
     /**
-     * Writes a specified string as bytes with a specified {@code encoder}.
+     * Writes a specified string as bytes with a specified {@code encoder} from the end index.
      *
      * @param s string to be written
      * @param encoder encoder to convert the string {@code s} to bytes written into this buffer
@@ -170,23 +170,23 @@ public interface CodecBuffer extends BufferSink {
     CodecBuffer writeString(String s, CharsetEncoder encoder);
 
     /**
-     * Reads a byte from the buffer at a specified {@code position}.
+     * Reads a byte from the start index.
      *
      * @return the byte
-     * @throws java.lang.RuntimeException if the beginning exceeds the end
+     * @throws java.lang.RuntimeException if the start exceeds the end index
      */
     byte readByte();
 
     /**
-     * Reads a unsigned byte from the buffer at a specified {@code position}.
+     * Reads a unsigned byte from the start index.
      *
      * @return the value
-     * @throws java.lang.RuntimeException if the beginning exceeds the end
+     * @throws java.lang.RuntimeException if the start exceeds the end index
      */
     int readUnsignedByte();
 
     /**
-     * Reads bytes from the buffer into the specified {@code array}.
+     * Reads bytes from the index into the specified {@code bytes}.
      *
      * @param bytes a byte array into which is data is written
      * @param offset first index in {@code bytes} which is written from;
@@ -198,7 +198,8 @@ public interface CodecBuffer extends BufferSink {
     int readBytes(byte[] bytes, int offset, int length);
 
     /**
-     * Reads bytes from the buffer.
+     * Reads bytes from the start index into the specified {@code byteBuffer}.
+     *
      * If the {@code byteBuffer} has enough space to read the whole buffer data, the {@code byteBuffer} gets
      * all. If not, the {@code byteBuffer} is filled with the part of this buffer data.
      *
@@ -208,7 +209,7 @@ public interface CodecBuffer extends BufferSink {
     int readBytes(ByteBuffer byteBuffer);
 
     /**
-     * Reads char value from the buffer.
+     * Reads char value from the start index.
      *
      * @return the value read from the buffer
      * @throws java.lang.RuntimeException if the remaining data in the buffer is less than the size of char
@@ -216,7 +217,7 @@ public interface CodecBuffer extends BufferSink {
     char readChar();
 
     /**
-     * Reads short value from the buffer.
+     * Reads short value from the start index.
      *
      * @return the value read from the buffer
      * @throws java.lang.RuntimeException if the remaining data in the buffer is less than the size of short
@@ -224,7 +225,7 @@ public interface CodecBuffer extends BufferSink {
     short readShort();
 
     /**
-     * Reads unsigned short value from the buffer.
+     * Reads unsigned short value from the start index.
      *
      * @return the value read from the buffer
      * @throws java.lang.RuntimeException if the remaining data in the buffer is less than the size of short
@@ -232,7 +233,7 @@ public interface CodecBuffer extends BufferSink {
     int readUnsignedShort();
 
     /**
-     * Reads three bytes int value from the buffer.
+     * Reads three bytes int value from the start index.
      *
      * @return int value read from the buffer
      * @throws java.lang.RuntimeException if the remaining data in the buffer is less than the size of int
@@ -240,7 +241,7 @@ public interface CodecBuffer extends BufferSink {
     int readMedium();
 
     /**
-     * Reads unsigned three bytes int value from the buffer.
+     * Reads unsigned three bytes int value from the start index.
      *
      * @return the value read from the buffer
      * @throws java.lang.RuntimeException if the remaining data in the buffer is less than the size of int
@@ -248,7 +249,7 @@ public interface CodecBuffer extends BufferSink {
     int readUnsignedMedium();
 
     /**
-     * Reads int value from the buffer.
+     * Reads int value from the start index.
      *
      * @return the value read from the buffer
      * @throws java.lang.RuntimeException if the remaining data in the buffer is less than the size of int
@@ -256,7 +257,7 @@ public interface CodecBuffer extends BufferSink {
     int readInt();
 
     /**
-     * Reads unsigned int value from the buffer.
+     * Reads unsigned int value from the start index.
      *
      * @return the value read from the buffer
      * @throws java.lang.RuntimeException if the remaining data in the buffer is less than the size of int
@@ -264,7 +265,7 @@ public interface CodecBuffer extends BufferSink {
     long readUnsignedInt();
 
     /**
-     * Reads long value from the buffer.
+     * Reads long value from the start index.
      *
      * @return the value read from the buffer
      * @throws java.lang.RuntimeException if the remaining data in the buffer is less than the size of long
@@ -272,7 +273,7 @@ public interface CodecBuffer extends BufferSink {
     long readLong();
 
     /**
-     * Reads float value from the buffer.
+     * Reads float value from the start index.
      *
      * @return float value read from the buffer
      * @throws java.lang.RuntimeException if the remaining data in the buffer is less than the size of float
@@ -280,7 +281,7 @@ public interface CodecBuffer extends BufferSink {
     float readFloat();
 
     /**
-     * Reads double value from the buffer.
+     * Reads double value from the start index.
      *
      * @return double value read from the buffer
      * @throws java.lang.RuntimeException if the remaining data in the buffer is less than the size of double
@@ -288,25 +289,27 @@ public interface CodecBuffer extends BufferSink {
     double readDouble();
 
     /**
-     * Reads {@code Integer or Long} value in signed VBC form from the buffer. The result may be null.
+     * Reads {@code Integer or Long} value in signed VBC form from the start index. The result may be null.
      * @return {@code Integer or Long} value read from the buffer
      */
     Number readVariableByteNumber();
 
     /**
-     * Reads {@code long} value in signed VBC form from the buffer. The null value is returned as (negative) zero.
+     * Reads {@code long} value in signed VBC form from the start index.
+     * The null value is returned as (negative) zero.
      * @return {@code long} value read from the buffer
      */
     long readVariableByteLong();
 
     /**
-     * Reads {@code int} value in signed VBC form from the buffer. The null value is returned as (negative) zero.
+     * Reads {@code int} value in signed VBC form from the start index.
+     * The null value is returned as (negative) zero.
      * @return {@code int} value read from the buffer
      */
     int readVariableByteInteger();
 
     /**
-     * Reads a string from the buffer using a specified {@code decoder} to convert bytes into the string.
+     * Reads a string from the start index using a specified {@code decoder} to convert bytes into the string.
      * The string length of encoded byte format is given as {@code bytes}. If some
      * {@code java.nio.charset.CharacterCodingException} happens, this method throws
      * {@code java.lang.RuntimeException} which has {@code CharacterCodingException} as its cause.
@@ -318,63 +321,75 @@ public interface CodecBuffer extends BufferSink {
     String readString(CharsetDecoder decoder, int bytes);
 
     /**
-     * Skips read bytes by specified size of byte of this buffer.
+     * Add {@code n} to the start index.
+     * <p/>
+     * If the start index is out of [0, end]), the actual number of bytes to be skipped is adjusted
+     * to be fit into the range.
      *
-     * The actual number of {@code n} of bytes to be skipped is the smaller of {@code bytes} and
-     * {@link #remainingBytes()}, and {@code n - remainingBytes() >= 0}. The value {@code n} is added to the position
-     * and then {@code n} is returned.
-     *
-     * @param bytes the number of bytes to be skipped
+     * @param n the number of bytes to be skipped
      * @return the actual number of bytes skipped
      */
-    int skipBytes(int bytes);
+    int skipStartIndex(int n);
+
+    /**
+     * Add {@code n} to the end index.
+     * <p/>
+     * If the end index is out of [start, {@link #capacity()}]), the actual number of bytes to be skipped is adjusted
+     * to be fit into the range.
+     *
+     * @param n the number of bytes to be skipped
+     * @return the actual number of bytes skipped
+     */
+    int skipEndIndex(int n);
 
     /**
      * Returns the size of remaining data by the byte.
-     * This is equals to difference between the beginning and the end.
+     * <p/>
+     * This is equals to difference between the start and the end index.
      * @return the size of remaining data by the byte
      */
-    int remainingBytes();
+    int remaining();
 
     /**
      * Returns the size of space to be written data by the byte.
+     * <p/>
      * @return the size of space to be written data by the byte
      */
-    int spaceBytes();
+    int space();
 
     /**
      * Returns the capacity of this buffer by the byte.
      * @return the capacity of this buffer by the byte
      */
-    int capacityBytes();
+    int capacity();
 
     /**
-     * Returns the value of the beginning.
-     * @return the value of the beginning
+     * Returns the value of the start index.
+     * @return the value of the start index
      */
-    int beginning();
+    int startIndex();
 
     /**
-     * Sets the value of the beginning.
-     * @param beginning the value to be set
+     * Sets the value of the start index.
+     * @param start the value to be set
      * @return this {@code CodecBuffer}
-     * @throws java.lang.IndexOutOfBoundsException if {@code beginning} is out of range
+     * @throws java.lang.IndexOutOfBoundsException if {@code start} is out of range
      */
-    CodecBuffer beginning(int beginning);
+    CodecBuffer startIndex(int start);
 
     /**
-     * Returns the value of the end.
-     * @return the value of the end
+     * Returns the value of the end index.
+     * @return the value of the end index
      */
-    int end();
+    int endIndex();
 
     /**
-     * Sets the value of the end.
+     * Sets the value of the end index.
      * @param end the value to be set
      * @return this {@code CodecBuffer}
      * @throws java.lang.IndexOutOfBoundsException if {@code end} is out of range
      */
-    CodecBuffer end(int end);
+    CodecBuffer endIndex(int end);
 
     /**
      * Drains from a specified {@code buffer}'s contents to this instance. The {@code decodeBuffer} is read
@@ -399,10 +414,10 @@ public interface CodecBuffer extends BufferSink {
 
     /**
      * Creates a new buffer whose content is a shared subsequence of this buffer's content.
-     * The content of the new buffer will start at this buffer's current beginning.
-     * Changes to this buffer's content will be visible in the new buffer, and vice versa; the two buffers' beginning
-     * and end will be independent. The new buffer's beginning will be zero, its capacity and its end will be
-     * the number of bytes remaining in this buffer.
+     * The content of the new buffer will start at this buffer's current start index.
+     * Changes to this buffer's content will be visible in the new buffer, and vice versa;
+     * the two buffers' start index and end index will be independent. The new buffer's start index
+     * will be zero, its capacity and its end index will be the number of bytes remaining in this buffer.
      *
      * @return the new buffer
      */
@@ -411,8 +426,8 @@ public interface CodecBuffer extends BufferSink {
     /**
      * Creates a new buffer that shares this buffer's content.
      * The content of the new buffer will be that of this buffer. Changes to this buffer's content will be visible
-     * in the new buffer, and vice versa; the two buffers' beginning and end values will be independent.
-     * The new buffer's capacity, beginning and end values will be identical to those of this buffer.
+     * in the new buffer, and vice versa; the two buffers' start index and end index values will be independent.
+     * The new buffer's capacity, start index and end index values will be identical to those of this buffer.
      *
      * @return the new buffer
      */
@@ -421,17 +436,17 @@ public interface CodecBuffer extends BufferSink {
     /**
      * <p>Compacts this buffer.</p>
      *
-     * <p>The bytes between the buffer's current beginning and end are copied to the head of
-     * the region in this buffer. The byte at index {@code beginning} is copied to index zero,
-     * the byte at index {@code beginning + 1} is copied to index one, and so forth until the byte
-     * at index {@code end - 1} is copied to index {@code end - beginning}. The beginning is then
-     * set to {@code 0} and the end is set to {@code end - beginning}.</p>
+     * <p>The bytes between the buffer's current start index {@code s} and end index {@code e}
+     * are copied to the head of the region in this buffer. The byte at {@code s} is copied to index zero,
+     * the byte at index {@code s + 1} is copied to index one, and so forth until the byte
+     * at index {@code e - 1} is copied to index {@code e - s - 1}. The {@code s} is then
+     * set to {@code 0} and the {@code e} is set to {@code e - s}.</p>
      * @return this {@code CodecBuffer}
      */
     CodecBuffer compact();
 
     /**
-     * Clears this buffer. The the beginning and the end is set to 0.
+     * Clears this buffer. The the start index and the end index is set to 0.
      * @return this {@code CodecBuffer}
      */
     CodecBuffer clear();
@@ -469,7 +484,7 @@ public interface CodecBuffer extends BufferSink {
 
     /**
      * Returns the index within this buffer of the first occurrence of specified bytes,
-     * starting the search at a specified index and to the ascending direction. The index of the beginning is 0.
+     * starting the search at a specified index and to the ascending direction. The index of the start index is 0.
      * There is no restriction on the value of fromIndex. If it is negative, it has the same effect
      * as if it were zero: this entire buffer may be searched. If it is greater than the remaining of this buffer,
      * it has the same effect as if it were equal to the length of this buffer: -1 is returned.
@@ -483,7 +498,7 @@ public interface CodecBuffer extends BufferSink {
 
     /**
      * Returns the index within this buffer of the first occurrence of a specified byte,
-     * starting the search at a specified index and to the descending direction. The index of the beginning is 0.
+     * starting the search at a specified index and to the descending direction. The index of the start index is 0.
      * There is no restriction on the value of fromIndex. If it is greater than or equal to the remaining
      * of this buffer, it has the same effect as if it were equal to one less than the remaining of this buffer:
      * this entire buffer may be searched. If it is negative, it has the same effect as if it were -1: -1 is returned.
@@ -497,7 +512,7 @@ public interface CodecBuffer extends BufferSink {
 
     /**
      * Returns the index within this buffer of the first occurrence of specified bytes,
-     * starting the search at a specified index and to the descending direction. The index of the beginning is 0.
+     * starting the search at a specified index and to the descending direction. The index of the start index is 0.
      * There is no restriction on the value of fromIndex. If it is greater than or equal to the remaining
      * of this buffer, it has the same effect as if it were equal to one less than the remaining of this buffer:
      * this entire buffer may be searched. If it is negative, it has the same effect as if it were -1: -1 is returned.

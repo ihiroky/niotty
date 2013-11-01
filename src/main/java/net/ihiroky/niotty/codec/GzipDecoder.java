@@ -108,7 +108,7 @@ public class GzipDecoder extends InflaterDecoder {
          */
         int parse(final CodecBuffer input, final CRC32 crc) throws DataFormatException {
             CodecBuffer b;
-            int beginning = input.beginning();
+            int beginning = input.startIndex();
             switch (state_) {
                 case MAGIC:
                     b = inputSupport_.readFully(input, state_.length_, true);
@@ -183,7 +183,7 @@ public class GzipDecoder extends InflaterDecoder {
                     if ((flag_ & FNAME)  == FNAME) {
                         int nameEndIndex = input.indexOf(0, 0);
                         if (nameEndIndex == -1) {
-                            int remaining = input.remainingBytes();
+                            int remaining = input.remaining();
                             for (int i = 0; i <= remaining; i++) {
                                 readUnsignedByte(input, crc);
                             }
@@ -201,7 +201,7 @@ public class GzipDecoder extends InflaterDecoder {
                     if ((flag_ & FCOMMENT) == FCOMMENT) {
                         int commentEndIndex = input.indexOf(0, 0);
                         if (commentEndIndex == -1) {
-                            int remaining = input.remainingBytes();
+                            int remaining = input.remaining();
                             for (int i = 0; i <= remaining; i++) {
                                 readUnsignedByte(input, crc);
                             }
@@ -233,7 +233,7 @@ public class GzipDecoder extends InflaterDecoder {
                     // fall through
                 default:
             }
-            return input.beginning() - beginning;
+            return input.startIndex() - beginning;
         }
 
         /*

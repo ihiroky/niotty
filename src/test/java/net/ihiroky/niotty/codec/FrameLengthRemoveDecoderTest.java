@@ -30,7 +30,7 @@ public class FrameLengthRemoveDecoderTest {
         encodeBuffer.writeInt(2);
         encodeBuffer.writeInt(3);
         data_ = encodeBuffer.array();
-        dataLength_ = encodeBuffer.remainingBytes();
+        dataLength_ = encodeBuffer.remaining();
     }
 
     private void setUpAgainAsIntLength() {
@@ -42,7 +42,7 @@ public class FrameLengthRemoveDecoderTest {
         encodeBuffer.writeInt(2);
         encodeBuffer.writeInt(3);
         data_ = encodeBuffer.array();
-        dataLength_ = encodeBuffer.remainingBytes();
+        dataLength_ = encodeBuffer.remaining();
     }
 
     @Test
@@ -85,9 +85,9 @@ public class FrameLengthRemoveDecoderTest {
         CodecBuffer b = Buffers.wrap(data_, 0, 1);
         sut_.load(context_, b);
         assertThat(context_.eventCount(), is(0));
-        assertThat(sut_.getPooling().remainingBytes(), is(1));
+        assertThat(sut_.getPooling().remaining(), is(1));
         assertThat(sut_.getPoolingFrameBytes(), is(0));
-        assertThat(b.remainingBytes(), is(0));
+        assertThat(b.remaining(), is(0));
         assertThat(((ArrayCodecBuffer) b).referenceCount(), is(0));
 
         // prepend length field is read
@@ -120,9 +120,9 @@ public class FrameLengthRemoveDecoderTest {
         CodecBuffer b = Buffers.wrap(data_, 0, 1);
         sut_.load(context_, b);
         assertThat(context_.eventCount(), is(0));
-        assertThat(sut_.getPooling().remainingBytes(), is(1));
+        assertThat(sut_.getPooling().remaining(), is(1));
         assertThat(sut_.getPoolingFrameBytes(), is(0));
-        assertThat(b.remainingBytes(), is(0));
+        assertThat(b.remaining(), is(0));
         assertThat(b, hasReferenceCount(0));
 
         // read second byte
@@ -131,16 +131,16 @@ public class FrameLengthRemoveDecoderTest {
         assertThat(context_.eventCount(), is(0));
         assertThat(sut_.getPooling(), is(nullValue()));
         assertThat(sut_.getPoolingFrameBytes(), is(0x80000000));
-        assertThat(b.remainingBytes(), is(0));
+        assertThat(b.remaining(), is(0));
         assertThat(b, hasReferenceCount(0));
 
         // read third byte
         b = Buffers.wrap(data_, 2, 1);
         sut_.load(context_, b);
         assertThat(context_.eventCount(), is(0));
-        assertThat(sut_.getPooling().remainingBytes(), is(1));
+        assertThat(sut_.getPooling().remaining(), is(1));
         assertThat(sut_.getPoolingFrameBytes(), is(0x80000000));
-        assertThat(b.remainingBytes(), is(0));
+        assertThat(b.remaining(), is(0));
         assertThat(b, hasReferenceCount(0));
 
         // prepend length field is read
@@ -179,7 +179,7 @@ public class FrameLengthRemoveDecoderTest {
         encodeBuffer.writeShort((short) 12);
         encodeBuffer.writeBytes(new byte[3], 0, 3);
         data_ = encodeBuffer.array();
-        dataLength_ = encodeBuffer.remainingBytes();
+        dataLength_ = encodeBuffer.remaining();
         CodecBuffer input = Buffers.wrap(data_, 0, dataLength_);
 
         sut_.load(context_, input);
@@ -191,8 +191,8 @@ public class FrameLengthRemoveDecoderTest {
             assertThat(output.readInt(), is(3));
         }
         assertThat(context_.eventCount(), is(0));
-        assertThat(input.remainingBytes(), is(0));
-        assertThat(sut_.getPooling().remainingBytes(), is(3));
+        assertThat(input.remaining(), is(0));
+        assertThat(sut_.getPooling().remaining(), is(3));
         assertThat(sut_.getPoolingFrameBytes(), is(12));
         assertThat(input, hasReferenceCount(completePacket)); // remaining is drained to the internal buffer
     }
@@ -209,7 +209,7 @@ public class FrameLengthRemoveDecoderTest {
         }
         // just 3 packets
         data_ = encodeBuffer.array();
-        dataLength_ = encodeBuffer.remainingBytes();
+        dataLength_ = encodeBuffer.remaining();
         CodecBuffer input = Buffers.wrap(data_, 0, dataLength_);
 
         sut_.load(context_, input);
@@ -221,7 +221,7 @@ public class FrameLengthRemoveDecoderTest {
             assertThat(output.readInt(), is(3));
         }
         assertThat(context_.eventCount(), is(0));
-        assertThat(input.remainingBytes(), is(0));
+        assertThat(input.remaining(), is(0));
         assertThat(sut_.getPooling(), is(nullValue()));
         assertThat(sut_.getPoolingFrameBytes(), is(0));
         assertThat(input, hasReferenceCount(completePacket));
@@ -240,10 +240,10 @@ public class FrameLengthRemoveDecoderTest {
             wholeInput.drainFrom(buffer);
         }
 
-        while (wholeInput.remainingBytes() > 0) {
+        while (wholeInput.remaining() > 0) {
             CodecBuffer input = Buffers.newCodecBuffer(8192);
             input.drainFrom(wholeInput, 8192);
-            boolean is8192 = input.remainingBytes() == 8192;
+            boolean is8192 = input.remaining() == 8192;
             sut.load(context_, input);
             if (is8192) {
                 assertThat(input, hasReferenceCount(7));
@@ -275,7 +275,7 @@ public class FrameLengthRemoveDecoderTest {
         sut_.load(context_, input2);
 
         CodecBuffer proceeded = context_.pollEvent();
-        assertThat(proceeded.remainingBytes(), is(10));
+        assertThat(proceeded.remaining(), is(10));
         assertThat(proceeded, hasReferenceCount(1));
         assertThat(input0, hasReferenceCount(0));
         assertThat(input1, hasReferenceCount(0));

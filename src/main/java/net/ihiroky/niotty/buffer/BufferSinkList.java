@@ -50,8 +50,8 @@ public class BufferSinkList implements BufferSink {
 
     @Override
     public BufferSink slice(int bytes) {
-        int carRemaining = car_.remainingBytes();
-        int cdrRemaining = cdr_.remainingBytes();
+        int carRemaining = car_.remaining();
+        int cdrRemaining = cdr_.remaining();
         if (bytes < 0 || bytes > carRemaining + cdrRemaining) {
             throw new IllegalArgumentException("Invalid input " + bytes + ". "
                     + (carRemaining + cdrRemaining) + " byte remains.");
@@ -85,7 +85,7 @@ public class BufferSinkList implements BufferSink {
 
     @Override
     public byte[] array() {
-        int remaining = remainingBytes();
+        int remaining = remaining();
         ByteBuffer bb = ByteBuffer.allocate(remaining);
         copyTo(bb);
         return bb.array();
@@ -100,8 +100,8 @@ public class BufferSinkList implements BufferSink {
      * {@inheritDoc}
      */
     @Override
-    public int remainingBytes() {
-        long sum = car_.remainingBytes() + cdr_.remainingBytes();
+    public int remaining() {
+        long sum = car_.remaining() + cdr_.remaining();
         return (sum <= Integer.MAX_VALUE) ? (int) sum : Integer.MAX_VALUE;
     }
 

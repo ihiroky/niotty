@@ -28,7 +28,7 @@ public class StringDecoder implements LoadStage<CodecBuffer, String> {
 
     @Override
     public void load(StageContext<String> context, CodecBuffer input) {
-        String s = input.readString(charset_.newDecoder(), input.remainingBytes());
+        String s = input.readString(charset_.newDecoder(), input.remaining());
         input.dispose();
         context.proceed(s);
     }

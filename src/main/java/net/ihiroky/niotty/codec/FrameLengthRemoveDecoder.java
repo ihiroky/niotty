@@ -16,7 +16,7 @@ public class FrameLengthRemoveDecoder implements LoadStage<CodecBuffer, CodecBuf
 
     @Override
     public void load(StageContext<CodecBuffer> context, CodecBuffer input) {
-        while (input.remainingBytes() > 0) {
+        while (input.remaining() > 0) {
             int frameBytes = poolingFrameBytes_;
 
             // load frame length
@@ -82,8 +82,8 @@ public class FrameLengthRemoveDecoder implements LoadStage<CodecBuffer, CodecBuf
      */
     CodecBuffer readFully(CodecBuffer input, int requiredLength) {
         if (buffer_ != null) {
-            buffer_.drainFrom(input, requiredLength - buffer_.remainingBytes());
-            if (buffer_.remainingBytes() == requiredLength) {
+            buffer_.drainFrom(input, requiredLength - buffer_.remaining());
+            if (buffer_.remaining() == requiredLength) {
                 CodecBuffer fulfilled = buffer_;
                 buffer_ = null;
                 return fulfilled;
@@ -91,7 +91,7 @@ public class FrameLengthRemoveDecoder implements LoadStage<CodecBuffer, CodecBuf
             return null;
         }
 
-        int remainingBytes = input.remainingBytes();
+        int remainingBytes = input.remaining();
         if (remainingBytes >= requiredLength) {
             return input;
         }

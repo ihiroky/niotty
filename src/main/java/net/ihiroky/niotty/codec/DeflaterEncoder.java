@@ -50,23 +50,23 @@ public class DeflaterEncoder implements StoreStage<BufferSink, CodecBuffer> {
     }
 
     private CodecBuffer compressRawArray(BufferSink input) {
-        CodecBuffer output = Buffers.newCodecBuffer((int) (input.remainingBytes() * 0.7f + 10));
+        CodecBuffer output = Buffers.newCodecBuffer((int) (input.remaining() * 0.7f + 10));
 
         byte[] inputBytes = input.array();
         int inputOffset = input.arrayOffset();
-        int inputLength = input.remainingBytes();
+        int inputLength = input.remaining();
 
         onBeforeEncode(inputBytes, inputOffset, inputLength, output);
 
         deflater_.setInput(inputBytes, inputOffset, inputLength);
         byte[] outputBytes = output.array();
-        int outputOffset = output.end();
+        int outputOffset = output.endIndex();
         int outputLength = outputBytes.length;
         for (;;) {
             int n = deflater_.deflate(outputBytes, outputOffset, outputLength - outputOffset, Deflater.SYNC_FLUSH);
             outputOffset += n;
             if (deflater_.needsInput()) {
-                output.end(outputOffset);
+                output.endIndex(outputOffset);
                 return output;
             }
             if (outputOffset == outputLength) {
@@ -79,10 +79,10 @@ public class DeflaterEncoder implements StoreStage<BufferSink, CodecBuffer> {
     }
 
     private CodecBuffer compressBufferSink(BufferSink input) {
-        CodecBuffer output = Buffers.newCodecBuffer((int) (input.remainingBytes() * 0.7f + 10));
+        CodecBuffer output = Buffers.newCodecBuffer((int) (input.remaining() * 0.7f + 10));
 
         try {
-            while (input.remainingBytes() > 0) {
+            while (input.remaining() > 0) {
                 buffer_.reset();
                 input.transferTo(buffer_);
                 byte[] inputBytes = buffer_.array();
@@ -91,14 +91,14 @@ public class DeflaterEncoder implements StoreStage<BufferSink, CodecBuffer> {
 
                 deflater_.setInput(inputBytes, 0, inputLength);
                 byte[] outputBytes = output.array();
-                int outputOffset = output.end();
+                int outputOffset = output.endIndex();
                 int outputLength = outputBytes.length;
                 for (;;) {
                     int n = deflater_.deflate(outputBytes,
                             outputOffset, outputLength - outputOffset, Deflater.SYNC_FLUSH);
                     outputOffset += n;
                     if (deflater_.needsInput()) {
-                        output.end(outputOffset);
+                        output.endIndex(outputOffset);
                         return output;
                     }
                     if (outputOffset == outputLength) {
@@ -130,7 +130,7 @@ public class DeflaterEncoder implements StoreStage<BufferSink, CodecBuffer> {
             onAfterFinished(output, deflater_);
 
             deflater_.end();
-            if (output.remainingBytes() > 0) {
+            if (output.remaining() > 0) {
                 context.proceed(output);
             }
         }

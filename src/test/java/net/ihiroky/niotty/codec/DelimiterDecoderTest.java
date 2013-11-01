@@ -21,7 +21,7 @@ public class DelimiterDecoderTest {
     private static final Charset CHARSET = Charsets.UTF_8;
 
     private void assertContent(CodecBuffer buffer, Matcher<byte[]> matcher) {
-        byte[] b = new byte[buffer.remainingBytes()];
+        byte[] b = new byte[buffer.remaining()];
         buffer.readBytes(b, 0, b.length);
         assertThat(b, matcher);
     }
@@ -82,7 +82,7 @@ public class DelimiterDecoderTest {
 
         assertContent(context.pollEvent(), is("input0\r\n".getBytes(CHARSET)));
         assertThat(context.hasNoEvent(), is(true));
-        assertThat(sut.buffer().beginning(), is(0));
+        assertThat(sut.buffer().startIndex(), is(0));
         assertContent(sut.buffer(), is("input1".getBytes(CHARSET)));
         assertThat(((ArrayCodecBuffer) input).referenceCount(), is(1)); // for input0
     }
@@ -101,7 +101,7 @@ public class DelimiterDecoderTest {
 
         assertContent(context.pollEvent(), is("input0\r\n".getBytes(CHARSET)));
         assertThat(context.hasNoEvent(), is(true));
-        assertThat(sut.buffer().beginning(), is(0));
+        assertThat(sut.buffer().startIndex(), is(0));
         assertContent(sut.buffer(), is("input1".getBytes(CHARSET)));
         assertThat(((ArrayCodecBuffer) input0).referenceCount(), is(0));
         assertThat(((ArrayCodecBuffer) input1).referenceCount(), is(0));
@@ -122,7 +122,7 @@ public class DelimiterDecoderTest {
         assertContent(context.pollEvent(), is("input0\r\n".getBytes(CHARSET)));
         assertContent(context.pollEvent(), is("input1\r\n".getBytes(CHARSET)));
         assertThat(context.hasNoEvent(), is(true));
-        assertThat(sut.buffer().beginning(), is(0));
+        assertThat(sut.buffer().startIndex(), is(0));
         assertContent(sut.buffer(), is("input2\r".getBytes(CHARSET)));
         assertThat(((ArrayCodecBuffer) input0).referenceCount(), is(1)); // for input0
         assertThat(((ArrayCodecBuffer) input1).referenceCount(), is(0));

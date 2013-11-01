@@ -118,7 +118,7 @@ public class NioClientSocketTransportTest {
             verify(sut.loadPipeline()).execute(captor.capture());
             CodecBuffer cb = captor.getValue();
             assertThat(cb, is(instanceOf(ArrayCodecBuffer.class)));
-            assertThat(cb.remainingBytes(), is(10));
+            assertThat(cb.remaining(), is(10));
         }
 
         static class SelectionKeyMock extends AbstractSelectionKey {

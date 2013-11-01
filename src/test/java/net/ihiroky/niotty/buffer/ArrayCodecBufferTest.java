@@ -25,12 +25,12 @@ public class ArrayCodecBufferTest {
         @Test
         public void testSpaceBytes() throws Exception {
             CodecBuffer sut = new ArrayCodecBuffer();
-            assertThat(sut.spaceBytes(), is(512));
+            assertThat(sut.space(), is(512));
         }
         @Test
         public void testCapacityBytes() throws Exception {
             CodecBuffer sut = new ArrayCodecBuffer();
-            assertThat(sut.capacityBytes(), is(512));
+            assertThat(sut.capacity(), is(512));
         }
     }
 
@@ -90,10 +90,10 @@ public class ArrayCodecBufferTest {
         public void testExpand() throws Exception {
             byte[] data = new byte[3];
 
-            int beforeCapacity = sut_.capacityBytes();
+            int beforeCapacity = sut_.capacity();
             int beforeReferenceCount = sut_.chunk().referenceCount();
             sut_.writeBytes(data, 0, data.length);
-            int afterCapacity = sut_.capacityBytes();
+            int afterCapacity = sut_.capacity();
             int afterReferenceCount = sut_.chunk().referenceCount();
             sut_.dispose();
             int lastReferenceCount = sut_.chunk().referenceCount();

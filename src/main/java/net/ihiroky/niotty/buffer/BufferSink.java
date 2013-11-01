@@ -7,9 +7,9 @@ import java.nio.channels.GatheringByteChannel;
 /**
  * Writes data into a given {@code java.nio.channel.WritableByteChannel} or {@code java.nio.ByteBuffer}.
  *
- * <p>This class has two member; beginning and end.
- * The beginning shows the start index (included) of data to be written.
- * The end shows the end index (excluded) of data to be written.</p>
+ * <p>This class has two member; startIndex and endIndex.
+ * The startIndex shows the start index (included) of data to be written.
+ * The endIndex shows the endIndex index (excluded) of data to be written.</p>
  *
  * <p>Add interface if new Transport is added and new data type is required.</p>
  *
@@ -17,8 +17,8 @@ import java.nio.channels.GatheringByteChannel;
  */
 public interface BufferSink {
     /**
-     * Writes data between the beginning and the end to the given {@code channel}.
-     * The beginning is increased by size of data which is written into the channel.
+     * Writes data between the startIndex and the endIndex to the given {@code channel}.
+     * The startIndex is increased by size of data which is written into the channel.
      *
      * @param channel the {@code WritableByteChannel} to be written into
      * @return true if all data in this instance is written into the {@code channel}
@@ -27,11 +27,11 @@ public interface BufferSink {
     boolean transferTo(GatheringByteChannel channel) throws IOException;
 
     /**
-     * Copies data between the beginning and the end to the given {@code buffer}.
-     * The beginning and end of this object is not changed.
+     * Copies data between the startIndex and the endIndex to the given {@code buffer}.
+     * The startIndex and endIndex of this object is not changed.
      *
      * @param buffer the buffer to be written into
-     * @throws java.nio.BufferOverflowException if {@link #remainingBytes()} is larger than the buffer's remaining.
+     * @throws java.nio.BufferOverflowException if {@link #remaining()} is larger than the buffer's remaining.
      */
     void copyTo(ByteBuffer buffer);
 
@@ -52,10 +52,10 @@ public interface BufferSink {
 
     /**
      * Creates a new {@code BufferSink} that shares the base content.
-     * The beginning of the new {@code BufferSink} is the one of the this instance.
-     * The end of the new {@code BufferSink} is {@code beginning + bytes}.
-     * The two {@code BufferSink}'s beginning and end are independent.
-     * After this method is called, the beginning of this instance increases {@code bytes}.
+     * The startIndex of the new {@code BufferSink} is the one of the this instance.
+     * The endIndex of the new {@code BufferSink} is {@code startIndex + bytes}.
+     * The two {@code BufferSink}'s startIndex and endIndex are independent.
+     * After this method is called, the startIndex of this instance increases {@code bytes}.
      *
      * @param bytes size of content to slice
      * @throws IllegalArgumentException if {@code bytes} exceeds this buffer's remaining.
@@ -66,8 +66,8 @@ public interface BufferSink {
     /**
      * Creates a new {@code BufferSink} that shares the base content.
      * The content of the new buffer will be that of this buffer. Changes to this buffer's content will be visible
-     * in the new buffer, and vice versa; the two {@code BufferSink}s' beginning and end values will be independent.
-     * The new buffer's beginning and end values will be identical to those of this buffer.
+     * in the new buffer, and vice versa; the two {@code BufferSink}s' startIndex and endIndex values will be independent.
+     * The new buffer's startIndex and endIndex values will be identical to those of this buffer.
      *
      * @return the new {@code BufferSink}
      */
@@ -100,7 +100,7 @@ public interface BufferSink {
      * The byte size of remaining data in this instance.
      * @return the byte size of remaining data in this instance.
      */
-    int remainingBytes();
+    int remaining();
 
     /**
      * Disposes resources managed in this class if exists.

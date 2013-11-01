@@ -155,7 +155,7 @@ public class FileBufferSinkTest {
         boolean openAfterDisposed = channel_.isOpen();
 
         assertThat(actual, is(true));
-        assertThat(sut.remainingBytes(), is(0));
+        assertThat(sut.remaining(), is(0));
         assertThat(openAfterTransferTo, is(true));
         assertThat(openAfterDisposed, is(false));
     }
@@ -170,7 +170,7 @@ public class FileBufferSinkTest {
         boolean actual = sut.transferTo(outputChannel);
 
         assertThat(actual, is(false));
-        assertThat(sut.remainingBytes(), is(5));
+        assertThat(sut.remaining(), is(5));
         assertThat(channel_.isOpen(), is(true));
     }
 
@@ -186,7 +186,7 @@ public class FileBufferSinkTest {
         } catch (IOException ioe) {
         }
 
-        assertThat(sut.remainingBytes(), is(15));
+        assertThat(sut.remaining(), is(15));
         assertThat(channel_.isOpen(), is(false));
     }
 
@@ -196,14 +196,14 @@ public class FileBufferSinkTest {
         CodecBuffer footer = Buffers.wrap(new byte[8], 0, 8);
         GatheringByteChannel outputChannel = mock(GatheringByteChannel.class);
         when(outputChannel.write(Mockito.any(ByteBuffer[].class), anyInt(), anyInt()))
-                .thenAnswer(new TransferPartForGathering(header.remainingBytes() - 1));
+                .thenAnswer(new TransferPartForGathering(header.remaining() - 1));
         FileBufferSink sut = new FileBufferSink(channel_, 0, 32);
         sut.addFirst(header).addLast(footer);
 
         boolean result = sut.transferTo(outputChannel);
 
         assertThat(result, is(false));
-        assertThat(sut.remainingBytes(), is(1 + 32 + 8));
+        assertThat(sut.remaining(), is(1 + 32 + 8));
         verify(outputChannel, times(1)).write(Mockito.any(ByteBuffer[].class), anyInt(), anyInt());
     }
 
@@ -224,7 +224,7 @@ public class FileBufferSinkTest {
         boolean result = sut.transferTo(outputChannel);
 
         assertThat(result, is(false));
-        assertThat(sut.remainingBytes(), is(0 + 0 + 1));
+        assertThat(sut.remaining(), is(0 + 0 + 1));
         verify(outputChannel, times(1)).write(Mockito.any(ByteBuffer.class));
         verify(outputChannel, times(2)).write(Mockito.any(ByteBuffer[].class), anyInt(), anyInt());
     }
@@ -232,11 +232,11 @@ public class FileBufferSinkTest {
     @Test
     public void testCopyTo_ByteBufferAll() throws Exception {
         FileBufferSink sut = new FileBufferSink(channel_, 0, 32);
-        ByteBuffer buffer = ByteBuffer.allocate(sut.remainingBytes());
+        ByteBuffer buffer = ByteBuffer.allocate(sut.remaining());
 
         sut.copyTo(buffer);
 
-        assertThat(sut.remainingBytes(), is(32)); // remaining all
+        assertThat(sut.remaining(), is(32)); // remaining all
         assertThat(channel_.position(), is(0L));
         assertThat(buffer.array(), is(originalData_));
     }
@@ -244,7 +244,7 @@ public class FileBufferSinkTest {
     @Test(expected = BufferOverflowException.class)
     public void testCopyTo_ByteBufferPart() throws Exception {
         FileBufferSink sut = new FileBufferSink(channel_, 0, 32);
-        ByteBuffer buffer = ByteBuffer.allocate(sut.remainingBytes() - 1);
+        ByteBuffer buffer = ByteBuffer.allocate(sut.remaining() - 1);
 
         sut.copyTo(buffer);
     }
@@ -281,15 +281,15 @@ public class FileBufferSinkTest {
 
         assertThat(open0, is(true));
         assertContent(all9.written_, new byte[]{0, 1, 2, 3, 4, 5, 6, 7, 8});
-        assertThat(sliced0.remainingBytes(), is(0));
+        assertThat(sliced0.remaining(), is(0));
 
         assertThat(open1, is(true));
         assertContent(all10.written_, new byte[]{9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
-        assertThat(sliced1.remainingBytes(), is(0));
+        assertThat(sliced1.remaining(), is(0));
 
         assertThat(openLeft, is(true));
         assertContent(allLeft.written_, new byte[]{20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31});
-        assertThat(sut.remainingBytes(), is(0));
+        assertThat(sut.remaining(), is(0));
 
         assertThat(openDisposed0, is(true));
         assertThat(openDisposed1, is(true));
@@ -322,7 +322,7 @@ public class FileBufferSinkTest {
 
         BufferSink sliced = sut.slice(0);
 
-        assertThat(sliced.remainingBytes(), is(0));
+        assertThat(sliced.remaining(), is(0));
     }
 
     @Test
@@ -337,10 +337,10 @@ public class FileBufferSinkTest {
 
         BufferSink sliced = sut.slice(header.length);
 
-        assertThat(sliced.remainingBytes(), is(header.length));
-        assertThat(sut.remainingBytes(), is(32 + footer.length));
-        assertThat(sut.header().remainingBytes(), is(0));
-        assertThat(sut.footer().remainingBytes(), is(footer.length));
+        assertThat(sliced.remaining(), is(header.length));
+        assertThat(sut.remaining(), is(32 + footer.length));
+        assertThat(sut.header().remaining(), is(0));
+        assertThat(sut.footer().remaining(), is(footer.length));
     }
 
     @Test
@@ -355,10 +355,10 @@ public class FileBufferSinkTest {
 
         BufferSink sliced = sut.slice(header.length + 32);
 
-        assertThat(sliced.remainingBytes(), is(header.length + 32));
-        assertThat(sut.remainingBytes(), is(footer.length));
-        assertThat(sut.header().remainingBytes(), is(0));
-        assertThat(sut.footer().remainingBytes(), is(footer.length));
+        assertThat(sliced.remaining(), is(header.length + 32));
+        assertThat(sut.remaining(), is(footer.length));
+        assertThat(sut.header().remaining(), is(0));
+        assertThat(sut.footer().remaining(), is(footer.length));
     }
 
     @Test
@@ -373,10 +373,10 @@ public class FileBufferSinkTest {
 
         BufferSink sliced = sut.slice(header.length + 32 + footer.length);
 
-        assertThat(sliced.remainingBytes(), is(header.length + 32 + footer.length));
-        assertThat(sut.remainingBytes(), is(0));
-        assertThat(sut.header().remainingBytes(), is(0));
-        assertThat(sut.footer().remainingBytes(), is(0));
+        assertThat(sliced.remaining(), is(header.length + 32 + footer.length));
+        assertThat(sut.remaining(), is(0));
+        assertThat(sut.header().remaining(), is(0));
+        assertThat(sut.footer().remaining(), is(0));
     }
 
     static void assertContent(ByteBuffer actual, byte[] expected) {
@@ -404,11 +404,11 @@ public class FileBufferSinkTest {
 
         sut.addFirst(added);
 
-        byte[] headerContent = new byte[sut.header().remainingBytes()];
+        byte[] headerContent = new byte[sut.header().remaining()];
         sut.header().readBytes(headerContent, 0, headerContent.length);
         assertThat(headerContent, is(data));
-        assertThat(sut.header().remainingBytes(), is(0));
-        assertThat(sut.footer().remainingBytes(), is(0));
+        assertThat(sut.header().remaining(), is(0));
+        assertThat(sut.footer().remaining(), is(0));
     }
 
     @Test
@@ -424,10 +424,10 @@ public class FileBufferSinkTest {
         sut.addFirst(added0);
         sut.addFirst(added1);
 
-        byte[] headerContent = new byte[sut.header().remainingBytes()];
+        byte[] headerContent = new byte[sut.header().remaining()];
         sut.header().readBytes(headerContent, 0, headerContent.length);
         assertThat(headerContent, is(new byte[]{-1, -1, 1, 1}));
-        assertThat(sut.footer().remainingBytes(), is(0));
+        assertThat(sut.footer().remaining(), is(0));
     }
 
     @Test
@@ -439,13 +439,13 @@ public class FileBufferSinkTest {
 
         sut.addLast(added);
 
-        assertThat(sut.header().remainingBytes(), is(0));
+        assertThat(sut.header().remaining(), is(0));
 
         CodecBuffer footer = sut.footer();
         byte[] footerContent = new byte[4];
         footer.readBytes(footerContent, 0, footerContent.length);
         assertThat(footerContent, is(data));
-        assertThat(sut.footer().remainingBytes(), is(0));
+        assertThat(sut.footer().remaining(), is(0));
     }
 
     @Test
@@ -461,11 +461,11 @@ public class FileBufferSinkTest {
         sut.addLast(added0);
         sut.addLast(added1);
 
-        assertThat(sut.header().remainingBytes(), is(0));
+        assertThat(sut.header().remaining(), is(0));
         byte[] footerContent = new byte[4];
         sut.footer().readBytes(footerContent, 0, footerContent.length);
         assertThat(footerContent, is(new byte[]{1, 1, -1, -1}));
-        assertThat(sut.footer().remainingBytes(), is(0));
+        assertThat(sut.footer().remaining(), is(0));
     }
 
     @Test

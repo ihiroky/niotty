@@ -222,7 +222,7 @@ public class NioDatagramSocketTransportTest {
             verify(sut.loadPipeline()).execute(captor.capture());
             CodecBuffer cb = captor.getValue();
             assertThat(cb, is(instanceOf(ArrayCodecBuffer.class)));
-            assertThat(cb.remainingBytes(), is(10));
+            assertThat(cb.remaining(), is(10));
         }
 
         @Test
@@ -287,7 +287,7 @@ public class NioDatagramSocketTransportTest {
             verify(sut.loadPipeline()).execute(captor.capture(), Mockito.any(TransportParameter.class));
             CodecBuffer cb = captor.getValue();
             assertThat(cb, is(instanceOf(ArrayCodecBuffer.class)));
-            assertThat(cb.remainingBytes(), is(10));
+            assertThat(cb.remaining(), is(10));
         }
 
         private static class SelectionKeyMock extends AbstractSelectionKey {

@@ -98,8 +98,8 @@ public class BufferSinkListTest {
         buffer.flip();
 
         assertThat(buffer, is(ByteBuffer.wrap(new byte[]{0, 1, 2})));
-        assertThat(car.remainingBytes(), is(1));
-        assertThat(cdr.remainingBytes(), is(2));
+        assertThat(car.remaining(), is(1));
+        assertThat(cdr.remaining(), is(2));
     }
 
     @Test
@@ -113,12 +113,12 @@ public class BufferSinkListTest {
         BufferSinkList sut = new BufferSinkList(car, cdr);
         sut.addFirst(added);
 
-        assertThat(sut.remainingBytes(), is(2));
-        assertThat(sut.car().remainingBytes(), is(2));
+        assertThat(sut.remaining(), is(2));
+        assertThat(sut.car().remaining(), is(2));
         byte[] read = new byte[2];
         car.readBytes(read, 0, 2);
         assertThat(read, is(new byte[]{'1', '0'}));
-        assertThat(sut.cdr().remainingBytes(), is(0));
+        assertThat(sut.cdr().remaining(), is(0));
     }
 
     @Test
@@ -132,9 +132,9 @@ public class BufferSinkListTest {
         BufferSinkList sut = new BufferSinkList(car, cdr);
         sut.addLast(added);
 
-        assertThat(sut.remainingBytes(), is(2));
-        assertThat(sut.car().remainingBytes(), is(0));
-        assertThat(sut.cdr().remainingBytes(), is(2));
+        assertThat(sut.remaining(), is(2));
+        assertThat(sut.car().remaining(), is(0));
+        assertThat(sut.cdr().remaining(), is(2));
         byte[] read = new byte[2];
         cdr.readBytes(read, 0, 2);
         assertThat(read, is(new byte[]{'0', '1'}));
@@ -170,7 +170,7 @@ public class BufferSinkListTest {
         BufferSink sut = Buffers.wrap(car, cdr);
         BufferSink sliced = sut.slice(0);
 
-        assertThat(sliced.remainingBytes(), is(0));
+        assertThat(sliced.remaining(), is(0));
     }
 
     @Test
@@ -181,9 +181,9 @@ public class BufferSinkListTest {
         BufferSink sut = Buffers.wrap(car, cdr);
         BufferSink sliced = sut.slice(2);
 
-        assertThat(sliced.remainingBytes(), is(2));
-        assertThat(car.remainingBytes(), is(0));
-        assertThat(cdr.remainingBytes(), is(3));
+        assertThat(sliced.remaining(), is(2));
+        assertThat(car.remaining(), is(0));
+        assertThat(cdr.remaining(), is(3));
     }
 
     @Test
@@ -194,9 +194,9 @@ public class BufferSinkListTest {
         BufferSink sut = Buffers.wrap(car, cdr);
         BufferSink sliced = sut.slice(3);
 
-        assertThat(sliced.remainingBytes(), is(3));
-        assertThat(car.remainingBytes(), is(0));
-        assertThat(cdr.remainingBytes(), is(2));
+        assertThat(sliced.remaining(), is(3));
+        assertThat(car.remaining(), is(0));
+        assertThat(cdr.remaining(), is(2));
     }
 
     @Test
@@ -222,8 +222,8 @@ public class BufferSinkListTest {
         BufferSinkList duplicated = sut.duplicate();
         sut.transferTo(channel);
 
-        assertThat(duplicated.remainingBytes(), is(2 + 3));
-        assertThat(sut.remainingBytes(), is(0));
+        assertThat(duplicated.remaining(), is(2 + 3));
+        assertThat(sut.remaining(), is(0));
         assertThat(duplicated.car(), is(not(sameInstance(sut.car()))));
         assertThat(duplicated.cdr(), is(not(sameInstance(sut.cdr()))));
     }
