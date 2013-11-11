@@ -1,14 +1,13 @@
 package net.ihiroky.niotty.nio;
 
-import net.ihiroky.niotty.LoadPipeline;
 import net.ihiroky.niotty.PipelineComposer;
+import net.ihiroky.niotty.Stage;
 import net.ihiroky.niotty.Task;
 import net.ihiroky.niotty.TaskLoopGroup;
 import net.ihiroky.niotty.TaskSelection;
 import net.ihiroky.niotty.Transport;
 import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.TransportOption;
-import net.ihiroky.niotty.TransportState;
 import net.ihiroky.niotty.TransportStateEvent;
 import net.ihiroky.niotty.buffer.BufferSink;
 import org.junit.Before;
@@ -24,8 +23,6 @@ import java.nio.channels.SelectionKey;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import static org.hamcrest.CoreMatchers.*;
-import static org.hamcrest.MatcherAssert.*;
 import static org.mockito.Mockito.*;
 
 /**
@@ -39,6 +36,7 @@ public class NioSocketTransportTest {
     @Before
     public void setUp() throws Exception {
         selector_ = mock(SelectLoop.class);
+        when(selector_.ioStage()).thenReturn(mock(Stage.class));
         @SuppressWarnings("unchecked")
         TaskLoopGroup<SelectLoop> taskLoopGroup = mock(TaskLoopGroup.class);
         when(taskLoopGroup.assign(Mockito.<TaskSelection>any())).thenReturn(selector_);
@@ -48,29 +46,21 @@ public class NioSocketTransportTest {
     @Test
     public void testRegister_DirectlyIfInLoopThread() throws Exception {
         SelectableChannel channel = mock(SelectableChannel.class);
-        LoadPipeline loadPipeline = mock(LoadPipeline.class);
         when(selector_.isInLoopThread()).thenReturn(true);
 
-        sut_.register(channel, SelectionKey.OP_ACCEPT, loadPipeline);
+        sut_.register(channel, SelectionKey.OP_ACCEPT);
 
         verify(selector_).register(channel, SelectionKey.OP_ACCEPT, sut_);
-
-        ArgumentCaptor<TransportStateEvent> eventCaptor = ArgumentCaptor.forClass(TransportStateEvent.class);
-        verify(loadPipeline).execute(eventCaptor.capture());
-        assertThat(eventCaptor.getValue().state(), is(TransportState.INTEREST_OPS));
-        assertThat(eventCaptor.getValue().value(), is((Object) SelectionKey.OP_ACCEPT));
     }
 
     @Test
     public void testRegister_IndirectlyIfNotInLoopThread() throws Exception {
         SelectableChannel channel = mock(SelectableChannel.class);
-        LoadPipeline loadPipeline = mock(LoadPipeline.class);
         when(selector_.isInLoopThread()).thenReturn(false);
 
-        sut_.register(channel, SelectionKey.OP_ACCEPT, loadPipeline);
+        sut_.register(channel, SelectionKey.OP_ACCEPT);
 
         verify(selector_, never()).register(channel, SelectionKey.OP_ACCEPT, sut_);
-        verify(loadPipeline, never()).execute(Mockito.<TransportStateEvent>any());
 
         ArgumentCaptor<Task> taskCaptor = ArgumentCaptor.forClass(Task.class);
         verify(selector_).offer(taskCaptor.capture());
@@ -78,9 +68,6 @@ public class NioSocketTransportTest {
 
         ArgumentCaptor<TransportStateEvent> eventCaptor = ArgumentCaptor.forClass(TransportStateEvent.class);
         verify(selector_).register(channel, SelectionKey.OP_ACCEPT, sut_);
-        verify(loadPipeline).execute(eventCaptor.capture());
-        assertThat(eventCaptor.getValue().state(), is(TransportState.INTEREST_OPS));
-        assertThat(eventCaptor.getValue().value(), is((Object) SelectionKey.OP_ACCEPT));
     }
 
     private static class Impl extends NioSocketTransport<SelectLoop> {

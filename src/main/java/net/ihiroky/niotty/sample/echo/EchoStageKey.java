@@ -6,9 +6,9 @@ import net.ihiroky.niotty.StageKey;
 * @author Hiroki Itoh
 */
 enum EchoStageKey implements StageKey {
-    LOAD_FRAMING,
-    LOAD_DECODE,
-    LOAD_APPLICATION,
+    FRAMING,
+    STRING,
+    APPLICATION,
     STORE_ENCODE,
     STORE_FRAMING,
 }

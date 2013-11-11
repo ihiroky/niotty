@@ -1,18 +1,13 @@
 package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.DefaultTransportFuture;
-import net.ihiroky.niotty.DefaultTransportParameter;
-import net.ihiroky.niotty.DefaultTransportStateEvent;
-import net.ihiroky.niotty.LoadPipeline;
 import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.SuccessfulTransportFuture;
+import net.ihiroky.niotty.Task;
 import net.ihiroky.niotty.TransportException;
 import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.TransportOption;
 import net.ihiroky.niotty.TransportOptions;
-import net.ihiroky.niotty.TransportParameter;
-import net.ihiroky.niotty.TransportState;
-import net.ihiroky.niotty.TransportStateEvent;
 import net.ihiroky.niotty.buffer.BufferSink;
 import net.ihiroky.niotty.util.JavaVersion;
 import net.ihiroky.niotty.util.Platform;
@@ -179,12 +174,8 @@ public class NioServerSocketTransport extends NioSocketTransport<SelectLoop> {
     }
 
     @Override
-    public void write(Object message, TransportParameter parameter) {
+    public void write(Object message, Object parameter) {
         throw new UnsupportedOperationException();
-    }
-
-    public void write(Object message, int priority) {
-        write(message, new DefaultTransportParameter(priority));
     }
 
     @Override
@@ -227,13 +218,12 @@ public class NioServerSocketTransport extends NioSocketTransport<SelectLoop> {
      */
     public TransportFuture bind(final SocketAddress socketAddress, final int backlog) {
         final DefaultTransportFuture future = new DefaultTransportFuture(this);
-        // should be called from taskLoop().
-        storePipeline().execute(new TransportStateEvent(TransportState.BOUND) {
+        taskLoop().execute(new Task() {
             @Override
             public long execute(TimeUnit timeUnit) throws Exception {
                 if (future.executing()) {
                     try {
-                        register(serverChannel_, SelectionKey.OP_ACCEPT, loadPipeline());
+                        register(serverChannel_, SelectionKey.OP_ACCEPT);
                         if (Platform.javaVersion().ge(JavaVersion.JAVA7)) {
                             serverChannel_.bind(socketAddress, backlog);
                         } else {
@@ -285,10 +275,6 @@ public class NioServerSocketTransport extends NioSocketTransport<SelectLoop> {
     void register(SelectableChannel channel) throws IOException {
         // SocketChannel#getRemoteAddress() may throw IOException, so get remoteAddress first.
         SocketChannel socketChannel = (SocketChannel) channel;
-        InetSocketAddress remoteAddress = Platform.javaVersion().ge(JavaVersion.JAVA7)
-                ? (InetSocketAddress) socketChannel.getRemoteAddress()
-                : (InetSocketAddress) socketChannel.socket().getRemoteSocketAddress();
-
         NioClientSocketTransport acceptedChannel = new NioClientSocketTransport(
                 name_, childPipelineComposer_, ioSelectLoopGroup_, writeQueueFactory_, socketChannel);
         synchronized (acceptedSocketOptionMap_) {
@@ -300,9 +286,7 @@ public class NioServerSocketTransport extends NioSocketTransport<SelectLoop> {
             logger_.debug("[register] accepted socket's {} = {}", name, acceptedChannel.option(name));
         }
 
-        LoadPipeline targetPipeline = acceptedChannel.loadPipeline();
-        targetPipeline.execute(new DefaultTransportStateEvent(TransportState.CONNECTED, remoteAddress));
-        acceptedChannel.register(channel, SelectionKey.OP_READ, targetPipeline);
+        acceptedChannel.register(channel, SelectionKey.OP_READ);
     }
 
     @Override

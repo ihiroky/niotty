@@ -2,7 +2,6 @@ package net.ihiroky.niotty.codec;
 
 import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.StoreStage;
-import net.ihiroky.niotty.TransportStateEvent;
 import net.ihiroky.niotty.buffer.BufferSink;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.CodecBuffer;
@@ -11,9 +10,9 @@ import net.ihiroky.niotty.util.Arguments;
 import java.util.Arrays;
 
 /**
- * @author Hiroki Itoh
+ *
  */
-public class DelimiterEncoder implements StoreStage<BufferSink, BufferSink> {
+public class DelimiterEncoder extends StoreStage {
 
     private byte[] delimiter_;
 
@@ -25,14 +24,16 @@ public class DelimiterEncoder implements StoreStage<BufferSink, BufferSink> {
 
         delimiter_ = Arrays.copyOf(delimiter, delimiter.length);
     }
+
     @Override
-    public void store(StageContext<BufferSink> context, BufferSink input) {
+    public void stored(StageContext context, Object message) {
+        BufferSink input = (BufferSink) message;
         CodecBuffer b = Buffers.wrap(delimiter_, 0, delimiter_.length);
         input.addLast(b);
         context.proceed(input);
     }
 
     @Override
-    public void store(StageContext<BufferSink> context, TransportStateEvent event) {
+    public void exceptionCaught(StageContext context, Exception exception) {
     }
 }

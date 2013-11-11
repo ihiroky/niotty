@@ -3,7 +3,6 @@ package net.ihiroky.niotty.codec.websocket;
 import net.ihiroky.niotty.LoadStage;
 import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.Transport;
-import net.ihiroky.niotty.TransportStateEvent;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.CodecBuffer;
 import net.ihiroky.niotty.util.Charsets;
@@ -12,9 +11,9 @@ import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 
 /**
- * @author Hiroki Itoh
+ *
  */
-public class HandshakeDecoder implements LoadStage<CodecBuffer, Void> {
+public class HandshakeDecoder extends LoadStage {
 
     private CodecBuffer buffer_;
     private RequestLine requestLine_;
@@ -25,7 +24,8 @@ public class HandshakeDecoder implements LoadStage<CodecBuffer, Void> {
     private static final int INITIAL_STRING_BUFFER_LENGTH = 64;
     private static final Charset CHARSET = Charsets.US_ASCII;
 
-    public void load(StageContext<Void> context, CodecBuffer input) {
+    public void loaded(StageContext context, Object message) {
+        CodecBuffer input = (CodecBuffer) message;
         int end;
         String line = null;
         CodecBuffer b = bufferOfInput(input);
@@ -68,7 +68,8 @@ public class HandshakeDecoder implements LoadStage<CodecBuffer, Void> {
     }
 
     @Override
-    public void load(StageContext<Void> context, TransportStateEvent event) {
+    public void exceptionCaught(StageContext context, Exception exception) {
+        //To change body of implemented methods use File | Settings | File Templates.
     }
 
     private CodecBuffer bufferOfInput(CodecBuffer input) {

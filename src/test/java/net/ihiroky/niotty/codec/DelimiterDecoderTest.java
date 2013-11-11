@@ -33,7 +33,7 @@ public class DelimiterDecoderTest {
 
         byte[] data = "input\r\n".getBytes(CHARSET);
         CodecBuffer input = Buffers.wrap(data, 0, data.length);
-        sut.load(context, input);
+        sut.loaded(context, input);
 
         assertContent(context.pollEvent(), is(data));
         assertThat(context.hasNoEvent(), is(true));
@@ -48,7 +48,7 @@ public class DelimiterDecoderTest {
 
         byte[] data = "input0\r\ninput1\r\n".getBytes(CHARSET);
         CodecBuffer input = Buffers.wrap(data, 0, data.length);
-        sut.load(context, input);
+        sut.loaded(context, input);
 
         assertContent(context.pollEvent(), is("input0\r\n".getBytes(CHARSET)));
         assertContent(context.pollEvent(), is("input1\r\n".getBytes(CHARSET)));
@@ -64,7 +64,7 @@ public class DelimiterDecoderTest {
 
         byte[] data = "input0\r".getBytes(CHARSET);
         CodecBuffer input = Buffers.wrap(data, 0, data.length);
-        sut.load(context, input);
+        sut.loaded(context, input);
 
         assertThat(context.hasNoEvent(), is(true));
         assertContent(sut.buffer(), is(data));
@@ -78,7 +78,7 @@ public class DelimiterDecoderTest {
 
         byte[] data = "input0\r\ninput1".getBytes(CHARSET);
         CodecBuffer input = Buffers.wrap(data, 0, data.length);
-        sut.load(context, input);
+        sut.loaded(context, input);
 
         assertContent(context.pollEvent(), is("input0\r\n".getBytes(CHARSET)));
         assertThat(context.hasNoEvent(), is(true));
@@ -96,8 +96,8 @@ public class DelimiterDecoderTest {
         byte[] data1 = "\ninput1".getBytes(CHARSET);
         CodecBuffer input0 = Buffers.wrap(data0, 0, data0.length);
         CodecBuffer input1 = Buffers.wrap(data1, 0, data1.length);
-        sut.load(context, input0);
-        sut.load(context, input1);
+        sut.loaded(context, input0);
+        sut.loaded(context, input1);
 
         assertContent(context.pollEvent(), is("input0\r\n".getBytes(CHARSET)));
         assertThat(context.hasNoEvent(), is(true));
@@ -116,8 +116,8 @@ public class DelimiterDecoderTest {
         byte[] data1 = "\ninput2\r".getBytes(CHARSET);
         CodecBuffer input0 = Buffers.wrap(data0, 0, data0.length);
         CodecBuffer input1 = Buffers.wrap(data1, 0, data1.length);
-        sut.load(context, input0);
-        sut.load(context, input1);
+        sut.loaded(context, input0);
+        sut.loaded(context, input1);
 
         assertContent(context.pollEvent(), is("input0\r\n".getBytes(CHARSET)));
         assertContent(context.pollEvent(), is("input1\r\n".getBytes(CHARSET)));
@@ -137,8 +137,8 @@ public class DelimiterDecoderTest {
         byte[] data1 = "\ninput2\r\n".getBytes(CHARSET);
         CodecBuffer input0 = Buffers.wrap(data0, 0, data0.length);
         CodecBuffer input1 = Buffers.wrap(data1, 0, data1.length);
-        sut.load(context, input0);
-        sut.load(context, input1);
+        sut.loaded(context, input0);
+        sut.loaded(context, input1);
 
         assertContent(context.pollEvent(), is("input0\r\n".getBytes(CHARSET)));
         assertContent(context.pollEvent(), is("input1\r\n".getBytes(CHARSET)));
@@ -158,8 +158,8 @@ public class DelimiterDecoderTest {
         byte[] data1 = "\ninput2\r\n".getBytes(CHARSET);
         CodecBuffer input0 = Buffers.wrap(data0, 0, data0.length);
         CodecBuffer input1 = Buffers.wrap(data1, 0, data1.length);
-        sut.load(context, input0);
-        sut.load(context, input1);
+        sut.loaded(context, input0);
+        sut.loaded(context, input1);
 
         assertContent(context.pollEvent(), is("input0".getBytes(CHARSET)));
         assertContent(context.pollEvent(), is("input1".getBytes(CHARSET)));

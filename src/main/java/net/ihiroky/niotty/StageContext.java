@@ -5,10 +5,10 @@ import java.util.concurrent.TimeUnit;
 /**
  *
  */
-public interface StageContext<O> {
+public interface StageContext {
     StageKey key();
     Transport transport();
-    TransportParameter transportParameter();
-    void proceed(O output);
+    Object parameter();
+    void proceed(Object message);
     TaskFuture schedule(Task task, long timeout, TimeUnit timeUnit);
 }

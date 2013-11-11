@@ -1,14 +1,10 @@
 package net.ihiroky.niotty.sample.file;
 
-import net.ihiroky.niotty.LoadPipeline;
+import net.ihiroky.niotty.Pipeline;
 import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.StageKey;
-import net.ihiroky.niotty.StorePipeline;
 import net.ihiroky.niotty.TransportFuture;
-import net.ihiroky.niotty.codec.FrameLengthPrependEncoder;
-import net.ihiroky.niotty.codec.FrameLengthRemoveDecoder;
-import net.ihiroky.niotty.codec.StringDecoder;
-import net.ihiroky.niotty.codec.StringEncoder;
+import net.ihiroky.niotty.codec.FramingCodec;
 import net.ihiroky.niotty.nio.NioClientSocketProcessor;
 import net.ihiroky.niotty.nio.NioClientSocketTransport;
 import net.ihiroky.niotty.nio.NioServerSocketProcessor;
@@ -17,7 +13,7 @@ import net.ihiroky.niotty.nio.NioServerSocketTransport;
 import java.net.InetSocketAddress;
 
 /**
- * @author Hiroki Itoh
+ * File transmission sample. The system property user.dir must be the directory in which "build.gradle" exists
  */
 public class FileMain {
 
@@ -27,8 +23,6 @@ public class FileMain {
 
     private enum Key implements StageKey {
         LOAD_FILE,
-        STRING_DECODER,
-        STRING_ENCODER,
         FRAMING,
         DUMP_FILE,
     }
@@ -40,21 +34,17 @@ public class FileMain {
         NioServerSocketProcessor serverProcessor = new NioServerSocketProcessor();
         serverProcessor.setPipelineComposer(new PipelineComposer() {
             @Override
-            public void compose(LoadPipeline loadPipeline, StorePipeline storePipeline) {
-                loadPipeline.add(Key.FRAMING, new FrameLengthRemoveDecoder())
-                        .add(Key.STRING_DECODER, new StringDecoder())
-                        .add(Key.LOAD_FILE, new FileLoadStage());
-                storePipeline.add(Key.FRAMING, new FrameLengthPrependEncoder());
+            public void compose(Pipeline pipeline) {
+                pipeline.add(Key.LOAD_FILE, new FileLoadStage())
+                        .add(Key.FRAMING, new FramingCodec());
             }
         });
         NioClientSocketProcessor clientProcessor = new NioClientSocketProcessor();
         clientProcessor.setPipelineComposer(new PipelineComposer() {
             @Override
-            public void compose(LoadPipeline loadPipeline, StorePipeline storePipeline) {
-                loadPipeline.add(Key.FRAMING, new FrameLengthRemoveDecoder())
-                        .add(Key.DUMP_FILE, new FileDumpStage(waiter));
-                storePipeline.add(Key.STRING_ENCODER, new StringEncoder())
-                        .add(Key.FRAMING, new FrameLengthPrependEncoder());
+            public void compose(Pipeline pipeline) {
+                pipeline.add(Key.DUMP_FILE, new FileDumpStage(waiter))
+                        .add(Key.FRAMING, new FramingCodec());
             }
         });
         serverProcessor.start();
@@ -63,12 +53,10 @@ public class FileMain {
         NioServerSocketTransport serverTransport = serverProcessor.createTransport();
         NioClientSocketTransport clientTransport = clientProcessor.createTransport();
         try {
-            serverTransport.bind(new InetSocketAddress(serverPort));
+            serverTransport.bind(new InetSocketAddress(serverPort)).waitForCompletion();
             TransportFuture connectFuture = clientTransport.connect(new InetSocketAddress("localhost", serverPort));
-            connectFuture.waitForCompletion();
+            connectFuture.waitForCompletion().throwExceptionIfFailed();
 
-            String path = "build.gradle";
-            clientTransport.write(path);
             waiter.waitUntilFinished();
         } catch (Exception e) {
             e.printStackTrace();

@@ -8,25 +8,20 @@ import java.util.List;
 /**
  * <p>Composes a pipeline which is managed by an implementation of {@link Transport}.</p>
  *
- * <p>{@link #compose(LoadPipeline, StorePipeline)} composes load and store pipelines by adding
- * {@link LoadStage} and {@link StoreStage} respectively.
+ * <p>{@link #compose(Pipeline)} composes load and store pipelines by adding {@link Stage}s.</p>
  *
  * <h3>Set up and close for support objects.</h3>
  * <p>This class has life cycle methods {@link #setUp()} and {@link #close()},
  * and a subsidiary method {@link #addClosable(Closable)} . If it is necessary
- * to set up support objects like {@link DefaultTaskLoopGroup} to execute {@link LoadStage}
- * and {@link StoreStage}, and {@link net.ihiroky.niotty.buffer.ChunkPool}, which are used
+ * to set up support objects like {@link DefaultTaskLoopGroup} to execute {@link Stage},
+ * and {@link net.ihiroky.niotty.buffer.ChunkPool}, which are used
  * over the composing plural sets of load and store pipelines, {@link #setUp()} is overridden
  * and the objects is initialized in it. If tear down, {@link #close()} is overridden.
- * If the objects implements {@code java.lang.AutoCloseable},
- * {@link #addClosable(Closable)} can be used to tear down the objects.
- * The default implementation of {@code close()} calls these
+ * If the objects implements {@link net.ihiroky.niotty.util.Closable},
+ * it can be used to tear down the objects. The default implementation of {@link #close()} calls these
  * {@link net.ihiroky.niotty.util.Closable#close()}. So {@link #close()} should not be
  * overridden or should be called by sub class if {@link #addClosable(Closable)}
  * is used.</p>
- *
- * TODO setUp() and close() are called in a skeletal implementation of Processor.
- * @author Hiroki Itoh
  */
 public abstract class PipelineComposer {
 
@@ -40,7 +35,7 @@ public abstract class PipelineComposer {
             throw new UnsupportedOperationException();
         }
         @Override
-        public void compose(LoadPipeline loadPipeline, StorePipeline storePipeline) {
+        public void compose(Pipeline pipeline) {
         }
     };
 
@@ -118,12 +113,9 @@ public abstract class PipelineComposer {
     }
 
     /**
-     * <p>composes load and store pipelines by adding, removing and replacing
-     * {@link LoadStage} and {@link StoreStage}
-     * respectively.</p>
+     * <p>composes the pipeline by adding, removing and replacing stages.</p>
      *
-     * @param loadPipeline the pipeline for load (inbound) messages and transport events.
-     * @param storePipeline the pipeline for store (outbound) message and transport events.
+     * @param pipeline the pipeline.
      */
-    public abstract void compose(LoadPipeline loadPipeline, StorePipeline storePipeline);
+    public abstract void compose(Pipeline pipeline);
 }

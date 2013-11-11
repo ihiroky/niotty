@@ -1,19 +1,15 @@
 package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.DefaultTransportFuture;
-import net.ihiroky.niotty.DefaultTransportStateEvent;
-import net.ihiroky.niotty.LoadPipeline;
 import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.Transport;
 import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.TransportOption;
-import net.ihiroky.niotty.TransportState;
 import net.ihiroky.niotty.buffer.BufferSink;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
@@ -103,11 +99,7 @@ public class ConnectionWaitTransport extends NioSocketTransport<SelectLoop> {
             if (channel.finishConnect()) {
                 logger_.info("new channel {} is connected.", channel);
                 clearInterestOp(SelectionKey.OP_CONNECT);
-
-                InetSocketAddress remoteAddress = transport_.remoteAddress();
-                LoadPipeline targetPipeline = transport_.loadPipeline();
-                targetPipeline.execute(new DefaultTransportStateEvent(TransportState.CONNECTED, remoteAddress));
-                transport_.register(channel, SelectionKey.OP_READ, targetPipeline);
+                transport_.register(channel, SelectionKey.OP_READ);
 
                 // The done() must be called after register() to ensure that the SelectionKey of IO selector is fixed.
             }

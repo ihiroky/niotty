@@ -1,19 +1,39 @@
 package net.ihiroky.niotty.sample.sc;
 
 import net.ihiroky.niotty.LoadStage;
+import net.ihiroky.niotty.Pipeline;
 import net.ihiroky.niotty.StageContext;
-import net.ihiroky.niotty.TransportStateEvent;
 
 /**
-* @author Hiroki Itoh
-*/
-class Dump implements LoadStage<String, Void> {
-    @Override
-    public void load(StageContext<Void> context, String input) {
-        System.out.println("remote: " + context.transport().remoteAddress() + " - " + input);
+ *
+ */
+class Dump extends LoadStage {
+
+    private boolean echo_;
+
+    public Dump() {
+        echo_ = false;
+    }
+
+    public Dump(boolean echo) {
+        echo_ = echo;
     }
 
     @Override
-    public void load(StageContext<Void> context, TransportStateEvent event) {
+    public void loaded(StageContext context, Object message) {
+        System.out.println("remote: " + context.transport().remoteAddress() + " - " + message);
+        if (echo_) {
+            context.transport().write(message);
+        }
+    }
+
+    @Override
+    public void exceptionCaught(StageContext context, Exception exception) {
+        exception.printStackTrace();
+    }
+
+    @Override
+    public void deactivated(StageContext context, Pipeline.DeactivateState state) {
+        context.transport().close();
     }
 }

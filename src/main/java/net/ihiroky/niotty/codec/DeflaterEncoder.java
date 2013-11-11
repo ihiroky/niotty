@@ -1,9 +1,8 @@
 package net.ihiroky.niotty.codec;
 
+import net.ihiroky.niotty.Pipeline;
 import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.StoreStage;
-import net.ihiroky.niotty.TransportState;
-import net.ihiroky.niotty.TransportStateEvent;
 import net.ihiroky.niotty.buffer.BufferSink;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.CodecBuffer;
@@ -16,7 +15,7 @@ import java.util.zip.Deflater;
 /**
  * @author Hiroki Itoh
  */
-public class DeflaterEncoder implements StoreStage<BufferSink, CodecBuffer> {
+public class DeflaterEncoder extends StoreStage {
 
     private final Deflater deflater_;
     private final BufferChannel buffer_;
@@ -43,10 +42,15 @@ public class DeflaterEncoder implements StoreStage<BufferSink, CodecBuffer> {
     }
 
     @Override
-    public void store(StageContext<CodecBuffer> context, BufferSink input) {
+    public void stored(StageContext context, Object message) {
+        BufferSink input = (BufferSink) message;
         CodecBuffer output = input.hasArray() ? compressRawArray(input) : compressBufferSink(input);
         input.dispose();
         context.proceed(output);
+    }
+
+    @Override
+    public void exceptionCaught(StageContext context, Exception exception) {
     }
 
     private CodecBuffer compressRawArray(BufferSink input) {
@@ -116,8 +120,9 @@ public class DeflaterEncoder implements StoreStage<BufferSink, CodecBuffer> {
     }
 
     @Override
-    public void store(StageContext<CodecBuffer> context, TransportStateEvent event) {
-        if (event.state() == TransportState.CLOSED) {
+    public void deactivated(StageContext context, Pipeline.DeactivateState state) {
+        if (!deflater_.finished()
+                && (state == Pipeline.DeactivateState.STORE || state == Pipeline.DeactivateState.WHOLE)) {
             CodecBuffer output = Buffers.newCodecBuffer(16);
             deflater_.finish();
             while (!deflater_.finished()) {

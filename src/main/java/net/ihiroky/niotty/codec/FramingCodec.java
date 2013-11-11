@@ -1,27 +1,50 @@
 package net.ihiroky.niotty.codec;
 
-import net.ihiroky.niotty.LoadStage;
+import net.ihiroky.niotty.Pipeline;
+import net.ihiroky.niotty.Stage;
 import net.ihiroky.niotty.StageContext;
-import net.ihiroky.niotty.TransportStateEvent;
+import net.ihiroky.niotty.buffer.BufferSink;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.CodecBuffer;
 
 /**
  * @author Hiroki Itoh
  */
-public class FrameLengthRemoveDecoder implements LoadStage<CodecBuffer, CodecBuffer> {
+public class FramingCodec implements Stage {
 
     private int poolingFrameBytes_;
     private CodecBuffer buffer_;
 
+    static final int SHORT_BYTES = 2;
+    static final int INT_FLAG = 0x80000000;
+    static final int SHIFT_TWO_BYTES = 16;
+    static final int MASK_TWO_BYTES = 0xFFFF;
+
     @Override
-    public void load(StageContext<CodecBuffer> context, CodecBuffer input) {
+    public void stored(StageContext context, Object message) {
+        BufferSink input = (BufferSink) message;
+        int contentsLength = input.remaining();
+        CodecBuffer headerBuffer;
+        if (contentsLength <= Short.MAX_VALUE) {
+            headerBuffer = Buffers.newCodecBuffer(SHORT_BYTES);
+            headerBuffer.writeShort((short) contentsLength);
+        } else {
+            headerBuffer = Buffers.newCodecBuffer(SHORT_BYTES + SHORT_BYTES);
+            headerBuffer.writeInt(INT_FLAG | contentsLength);
+        }
+        input.addFirst(headerBuffer);
+        context.proceed(input);
+    }
+
+    @Override
+    public void loaded(StageContext context, Object message) {
+        CodecBuffer input = (CodecBuffer) message;
         while (input.remaining() > 0) {
             int frameBytes = poolingFrameBytes_;
 
             // load frame length
             if (frameBytes == 0) {
-                CodecBuffer b = readFully(input, FrameLengthPrependEncoder.SHORT_BYTES);
+                CodecBuffer b = readFully(input, SHORT_BYTES);
                 if (b == null) {
                     break;
                 }
@@ -29,24 +52,24 @@ public class FrameLengthRemoveDecoder implements LoadStage<CodecBuffer, CodecBuf
                 if (length >= 0) { // it's also satisfies length <= Short.MAX_VALUE
                     frameBytes = length;
                 } else {
-                    length <<= FrameLengthPrependEncoder.SHIFT_TWO_BYTES;
-                    b = readFully(input, FrameLengthPrependEncoder.SHORT_BYTES);
+                    length <<= SHIFT_TWO_BYTES;
+                    b = readFully(input, SHORT_BYTES);
                     if (b == null) {
                         poolingFrameBytes_ = length; // negative
                         break;
                     }
-                    int upper = length & ~FrameLengthPrependEncoder.INT_FLAG;
-                    int lower = b.readShort() & FrameLengthPrependEncoder.MASK_TWO_BYTES;
+                    int upper = length & ~INT_FLAG;
+                    int lower = b.readShort() & MASK_TWO_BYTES;
                     frameBytes = upper | lower;
                 }
             } else if (frameBytes < 0) {
-                CodecBuffer b = readFully(input, FrameLengthPrependEncoder.SHORT_BYTES);
+                CodecBuffer b = readFully(input, SHORT_BYTES);
                 if (b == null) {
                     break;
                 }
-                int upper = frameBytes & ~FrameLengthPrependEncoder.INT_FLAG;
-                int lower = b.readShort() & FrameLengthPrependEncoder.MASK_TWO_BYTES;
-                frameBytes = (upper << FrameLengthPrependEncoder.SHIFT_TWO_BYTES) | lower;
+                int upper = frameBytes & ~INT_FLAG;
+                int lower = b.readShort() & MASK_TWO_BYTES;
+                frameBytes = (upper << SHIFT_TWO_BYTES) | lower;
             }
 
             // load frame
@@ -66,7 +89,15 @@ public class FrameLengthRemoveDecoder implements LoadStage<CodecBuffer, CodecBuf
     }
 
     @Override
-    public void load(StageContext<CodecBuffer> context, TransportStateEvent event) {
+    public void exceptionCaught(StageContext context, Exception exception) {
+    }
+
+    @Override
+    public void activated(StageContext context) {
+    }
+
+    @Override
+    public void deactivated(StageContext context, Pipeline.DeactivateState state) {
     }
 
     /**

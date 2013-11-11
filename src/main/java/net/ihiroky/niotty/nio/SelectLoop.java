@@ -1,9 +1,9 @@
 package net.ihiroky.niotty.nio;
 
+import net.ihiroky.niotty.Stage;
 import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.StoreStage;
 import net.ihiroky.niotty.TaskLoop;
-import net.ihiroky.niotty.TransportStateEvent;
 import net.ihiroky.niotty.buffer.BufferSink;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,13 +21,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * An implementation of {@link net.ihiroky.niotty.TaskLoop} to handle {@link java.nio.channels.SelectableChannel}.
  */
-public class SelectLoop extends TaskLoop implements StoreStage<BufferSink, Void> {
+public class SelectLoop extends TaskLoop {
 
     private Selector selector_;
     private final AtomicBoolean wakenUp_;
     final ByteBuffer readBuffer_;
     final ByteBuffer writeBuffer_;
-    final boolean copyReadBuffer;
+    final boolean copyReadBuffer_;
+    private final Stage ioStage_;
 
     private static Logger logger_ = LoggerFactory.getLogger(SelectLoop.class);
 
@@ -40,14 +41,20 @@ public class SelectLoop extends TaskLoop implements StoreStage<BufferSink, Void>
         wakenUp_ = new AtomicBoolean();
         readBuffer_ = EMPTY_BUFFER;
         writeBuffer_ = EMPTY_BUFFER;
-        copyReadBuffer = false;
+        copyReadBuffer_ = false;
+        ioStage_ = new IOStage(EMPTY_BUFFER);
     }
 
     protected SelectLoop(int readBufferSize, int writeBufferSize, boolean direct, boolean copyInput) {
         wakenUp_ = new AtomicBoolean();
         readBuffer_ = direct ? ByteBuffer.allocateDirect(readBufferSize) : ByteBuffer.allocate(readBufferSize);
         writeBuffer_ = direct ? ByteBuffer.allocateDirect(writeBufferSize) : ByteBuffer.allocate(writeBufferSize);
-        copyReadBuffer = copyInput;
+        copyReadBuffer_ = copyInput;
+        ioStage_ = new IOStage(writeBuffer_);
+    }
+
+    Stage ioStage() {
+        return ioStage_;
     }
 
     @Override
@@ -131,20 +138,28 @@ public class SelectLoop extends TaskLoop implements StoreStage<BufferSink, Void>
         return (selector_ != null) && selector_.isOpen();
     }
 
-    @Override
-    public void store(StageContext<Void> context, BufferSink input) {
-        final NioSocketTransport<?> transport = (NioSocketTransport<?>) context.transport();
-        transport.readyToWrite(new AttachedMessage<BufferSink>(input, context.transportParameter()));
-        try {
-            transport.flush(writeBuffer_);
-        } catch (IOException ioe) {
-            logger_.warn("[store] Flush failed.", ioe);
-            transport.doCloseSelectableChannel(true);
-        }
-    }
+    private static class IOStage extends StoreStage {
 
-    @Override
-    public void store(StageContext<Void> context, final TransportStateEvent event) {
-        execute(event);
+        private final ByteBuffer writeBuffer_;
+
+        IOStage(ByteBuffer writeBuffer) {
+            writeBuffer_ = writeBuffer;
+        }
+
+        @Override
+        public void stored(StageContext context, Object message) {
+            final NioSocketTransport<?> transport = (NioSocketTransport<?>) context.transport();
+            transport.readyToWrite(new AttachedMessage<BufferSink>((BufferSink) message, context.parameter()));
+            try {
+                transport.flush(writeBuffer_);
+            } catch (IOException ioe) {
+                logger_.warn("[stored] Flush failed.", ioe);
+                transport.doCloseSelectableChannel();
+            }
+        }
+
+        @Override
+        public void exceptionCaught(StageContext context, Exception exception) {
+        }
     }
 }

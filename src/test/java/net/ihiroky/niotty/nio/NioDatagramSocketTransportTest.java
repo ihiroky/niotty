@@ -1,14 +1,12 @@
 package net.ihiroky.niotty.nio;
 
-import net.ihiroky.niotty.LoadPipeline;
+import net.ihiroky.niotty.Pipeline;
 import net.ihiroky.niotty.PipelineComposer;
-import net.ihiroky.niotty.StorePipeline;
+import net.ihiroky.niotty.Stage;
 import net.ihiroky.niotty.Task;
 import net.ihiroky.niotty.TaskSelection;
 import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.TransportOptions;
-import net.ihiroky.niotty.TransportParameter;
-import net.ihiroky.niotty.TransportStateEvent;
 import net.ihiroky.niotty.buffer.ArrayCodecBuffer;
 import net.ihiroky.niotty.buffer.ByteBufferCodecBuffer;
 import net.ihiroky.niotty.buffer.CodecBuffer;
@@ -65,7 +63,9 @@ public class NioDatagramSocketTransportTest {
 
         @Before
         public void setUp() throws Exception {
+            Stage ioStage = mock(Stage.class);
             SelectLoop selector = mock(SelectLoop.class);
+            when(selector.ioStage()).thenReturn(ioStage);
             SelectLoopGroup ioPool = mock(SelectLoopGroup.class);
             when(ioPool.assign(Mockito.<TaskSelection>any())).thenReturn(selector);
             writeQueue_ = mock(WriteQueue.class);
@@ -176,18 +176,18 @@ public class NioDatagramSocketTransportTest {
                 }
             });
 
-            LoadPipeline pipeline = mock(LoadPipeline.class);
+            Pipeline pipeline = mock(Pipeline.class);
             SelectionKey key = spy(new SelectionKeyMock());
             when(key.channel()).thenReturn(channel);
             when(key.readyOps()).thenReturn(SelectionKey.OP_READ);
-            when(sut.loadPipeline()).thenReturn(pipeline);
+            when(sut.pipeline()).thenReturn(pipeline);
             key.attach(sut);
             sut.setSelectionKey(key);
 
             sut.onSelected(key, sut.taskLoop());
 
             ArgumentCaptor<CodecBuffer> captor = ArgumentCaptor.forClass(CodecBuffer.class);
-            verify(sut.loadPipeline()).execute(captor.capture());
+            verify(sut.pipeline()).load(captor.capture());
             CodecBuffer cb = captor.getValue();
             assertThat(cb, is(instanceOf(ByteBufferCodecBuffer.class)));
         }
@@ -208,18 +208,18 @@ public class NioDatagramSocketTransportTest {
                     return 10;
                 }
             });
-            LoadPipeline pipeline = mock(LoadPipeline.class);
+            Pipeline pipeline = mock(Pipeline.class);
             SelectionKey key = spy(new SelectionKeyMock());
             when(key.channel()).thenReturn(channel);
             when(key.readyOps()).thenReturn(SelectionKey.OP_READ);
-            when(sut.loadPipeline()).thenReturn(pipeline);
+            when(sut.pipeline()).thenReturn(pipeline);
             key.attach(sut);
             sut.setSelectionKey(key);
 
             sut.onSelected(key, sut.taskLoop());
 
             ArgumentCaptor<CodecBuffer> captor = ArgumentCaptor.forClass(CodecBuffer.class);
-            verify(sut.loadPipeline()).execute(captor.capture());
+            verify(sut.pipeline()).load(captor.capture());
             CodecBuffer cb = captor.getValue();
             assertThat(cb, is(instanceOf(ArrayCodecBuffer.class)));
             assertThat(cb.remaining(), is(10));
@@ -241,18 +241,18 @@ public class NioDatagramSocketTransportTest {
                     return new InetSocketAddress(12345);
                 }
             });
-            LoadPipeline pipeline = mock(LoadPipeline.class);
+            Pipeline pipeline = mock(Pipeline.class);
             SelectionKey key = spy(new SelectionKeyMock());
             when(key.channel()).thenReturn(channel);
             when(key.readyOps()).thenReturn(SelectionKey.OP_READ);
-            when(sut.loadPipeline()).thenReturn(pipeline);
+            when(sut.pipeline()).thenReturn(pipeline);
             key.attach(sut);
             sut.setSelectionKey(key);
 
             sut.onSelected(key, sut.taskLoop());
 
             ArgumentCaptor<CodecBuffer> captor = ArgumentCaptor.forClass(CodecBuffer.class);
-            verify(sut.loadPipeline()).execute(captor.capture(), Mockito.any(TransportParameter.class));
+            verify(pipeline).load(captor.capture(), Mockito.any(Object.class));
             CodecBuffer cb = captor.getValue();
             assertThat(cb, is(instanceOf(ByteBufferCodecBuffer.class)));
         }
@@ -273,18 +273,18 @@ public class NioDatagramSocketTransportTest {
                     return new InetSocketAddress(12345);
                 }
             });
-            LoadPipeline pipeline = mock(LoadPipeline.class);
+            Pipeline pipeline = mock(Pipeline.class);
             SelectionKey key = spy(new SelectionKeyMock());
             when(key.channel()).thenReturn(channel);
             when(key.readyOps()).thenReturn(SelectionKey.OP_READ);
-            when(sut.loadPipeline()).thenReturn(pipeline);
+            when(sut.pipeline()).thenReturn(pipeline);
             key.attach(sut);
             sut.setSelectionKey(key);
 
             sut.onSelected(key, sut.taskLoop());
 
             ArgumentCaptor<CodecBuffer> captor = ArgumentCaptor.forClass(CodecBuffer.class);
-            verify(sut.loadPipeline()).execute(captor.capture(), Mockito.any(TransportParameter.class));
+            verify(sut.pipeline()).load(captor.capture(), Mockito.any(Object.class));
             CodecBuffer cb = captor.getValue();
             assertThat(cb, is(instanceOf(ArrayCodecBuffer.class)));
             assertThat(cb.remaining(), is(10));
@@ -330,7 +330,9 @@ public class NioDatagramSocketTransportTest {
         public void setUp() throws Exception {
             assumeThat(Platform.javaVersion(), is(greaterOrEqual(JavaVersion.JAVA7)));
 
+            Stage ioStage = mock(Stage.class);
             SelectLoop selector = mock(SelectLoop.class);
+            when(selector.ioStage()).thenReturn(ioStage);
             SelectLoopGroup ioPool = mock(SelectLoopGroup.class);
             when(ioPool.assign(Mockito.<TaskSelection>any())).thenReturn(selector);
             DatagramSocket socket = mock(DatagramSocket.class);
@@ -511,19 +513,18 @@ public class NioDatagramSocketTransportTest {
         @Test
         public void testBind() throws Exception {
             InetSocketAddress endpoint = new InetSocketAddress(InetAddress.getByName("127.0.0.1"), 12345);
-            StorePipeline storePipeline = spy(sut_.storePipeline());
+            SelectLoop selector = mock(SelectLoop.class);
+            when(selector.isInLoopThread()).thenReturn(true);
             doAnswer(new Answer<Void>() {
                 @Override
                 public Void answer(InvocationOnMock invocation) throws Throwable {
-                    TransportStateEvent event = (TransportStateEvent) invocation.getArguments()[0];
+                    Task event = (Task) invocation.getArguments()[0];
                     event.execute(TimeUnit.NANOSECONDS);
                     return null;
                 }
-            }).when(storePipeline).execute(Mockito.<TransportStateEvent>any());
-            SelectLoop selector = mock(SelectLoop.class);
-            when(selector.isInLoopThread()).thenReturn(true);
+            }).when(selector).execute(Mockito.<Task>any());
             NioDatagramSocketTransport sut = spy(sut_);
-            when(sut.storePipeline()).thenReturn(storePipeline);
+            when(sut.taskLoop()).thenReturn(selector);
 
             sut.bind(endpoint);
 
@@ -627,7 +628,9 @@ public class NioDatagramSocketTransportTest {
         public void setUp() throws Exception {
             assumeThat(Platform.javaVersion(), is(equal(JavaVersion.JAVA6)));
 
+            Stage ioStage = mock(Stage.class);
             SelectLoop selector = mock(SelectLoop.class);
+            when(selector.ioStage()).thenReturn(ioStage);
             SelectLoopGroup ioPool = mock(SelectLoopGroup.class);
             when(ioPool.assign(Mockito.<TaskSelection>any())).thenReturn(selector);
             socket_ = mock(DatagramSocket.class);
@@ -797,19 +800,18 @@ public class NioDatagramSocketTransportTest {
         @Test
         public void testBind() throws Exception {
             InetSocketAddress endpoint = new InetSocketAddress(InetAddress.getByName("127.0.0.1"), 12345);
-            StorePipeline storePipeline = spy(sut_.storePipeline());
+            SelectLoop selector = mock(SelectLoop.class);
             doAnswer(new Answer<Void>() {
                 @Override
                 public Void answer(InvocationOnMock invocation) throws Throwable {
-                    TransportStateEvent event = (TransportStateEvent) invocation.getArguments()[0];
+                    Task event = (Task) invocation.getArguments()[0];
                     event.execute(TimeUnit.NANOSECONDS);
                     return null;
                 }
-            }).when(storePipeline).execute(Mockito.<TransportStateEvent>any());
-            SelectLoop selector = mock(SelectLoop.class);
+            }).when(selector).execute(Mockito.<Task>any());
             when(selector.isInLoopThread()).thenReturn(true);
             NioDatagramSocketTransport sut = spy(sut_);
-            when(sut.storePipeline()).thenReturn(storePipeline);
+            when(sut.taskLoop()).thenReturn(selector);
 
             sut.bind(endpoint);
 

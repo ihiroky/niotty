@@ -13,18 +13,17 @@ import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.MatcherAssert.*;
 
 /**
- * @author Hiroki Itoh
  */
 public class DelimiterEncoderTest {
 
     @Test
     public void testStore() throws Exception {
         DelimiterEncoder sut = new DelimiterEncoder(new byte[]{'\r', '\n'});
-        StageContext<BufferSink> context = new StageContextMock<BufferSink>();
+        StageContext context = new StageContextMock<BufferSink>();
 
         byte[] data = "input".getBytes(Charsets.UTF_8);
         BufferSink b = Buffers.wrap(data, 0, data.length);
-        sut.store(context, b);
+        sut.stored(context, b);
 
         ByteBuffer buffer = ByteBuffer.allocate(16);
         b.copyTo(buffer);

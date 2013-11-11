@@ -1,12 +1,19 @@
 package net.ihiroky.niotty;
 
 /**
- * Created on 13/01/09, 17:23
  *
- * @author Hiroki Itoh
  */
-public interface StoreStage<I, O> {
+public abstract class StoreStage implements Stage {
+    @Override
+    public void loaded(StageContext context, Object message) {
+        context.proceed(message);
+    }
 
-    void store(StageContext<O> context, I input);
-    void store(StageContext<O> context, TransportStateEvent event);
+    @Override
+    public void activated(StageContext context) {
+    }
+
+    @Override
+    public void deactivated(StageContext context, Pipeline.DeactivateState state) {
+    }
 }

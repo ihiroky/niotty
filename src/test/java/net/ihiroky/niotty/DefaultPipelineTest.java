@@ -4,12 +4,10 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
-import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
@@ -18,9 +16,9 @@ import static org.mockito.Mockito.*;
 /**
  *
  */
-public class AbstractPipelineTest {
+public class DefaultPipelineTest {
 
-    private AbstractPipeline<Object, TaskLoop> sut_;
+    private DefaultPipeline<TaskLoop> sut_;
     private AbstractTransport<TaskLoop> transport_;
     private TaskLoopGroup<TaskLoop> taskLoopGroup_;
     private TaskLoop taskLoop_;
@@ -41,15 +39,15 @@ public class AbstractPipelineTest {
     @Test
     public void testAdd() throws Exception {
         StageKey key0 = StageKeys.of(0);
-        Object stage0 = new Object();
+        Stage stage0 = PipelineElement.newNullStage();
         StageKey key1 = StageKeys.of(1);
-        Object stage1 = new Object();
+        Stage stage1 = PipelineElement.newNullStage();
 
         sut_.add(key0, stage0);
         sut_.add(key1, stage1);
 
-        Iterator<PipelineElement<Object, Object>> i = sut_.iterator();
-        PipelineElement<Object, Object> context = i.next();
+        Iterator<PipelineElement> i = sut_.iterator();
+        PipelineElement context = i.next();
         assertThat(context.key(), is(key0));
         assertThat(context.stage(), is(stage0));
         context = i.next();
@@ -63,21 +61,20 @@ public class AbstractPipelineTest {
     @Test
     public void testAdd_NullTaskLoopGroupReplacesToDefault() throws Exception {
         StageKey key0 = StageKeys.of(0);
-        Object stage0 = new Object();
+        Stage stage0 = PipelineElement.newNullStage();
 
         sut_.add(key0, stage0, null);
 
-        @SuppressWarnings("unchecked")
-        PipelineElement<Object, Object> pe = (PipelineElement<Object, Object>) sut_.searchContext(key0);
-        assertThat(pe.taskLoop(), is(sameInstance(taskLoop_)));
+        PipelineElement pe = (PipelineElement) sut_.searchElement(key0);
+        assertThat(pe.taskLoop_, is(sameInstance(taskLoop_)));
     }
 
     @Test
     public void testAdd_KeyAlreadyExists() throws Exception {
         StageKey key0 = StageKeys.of(0);
-        Object stage0 = new Object();
+        Stage stage0 = PipelineElement.newNullStage();
         StageKey key1 = StageKeys.of(1);
-        Object stage1 = new Object();
+        Stage stage1 = PipelineElement.newNullStage();
         exceptionRule_.expect(IllegalArgumentException.class);
         exceptionRule_.expectMessage("key IntStageKey:1 already exists.");
 
@@ -91,24 +88,24 @@ public class AbstractPipelineTest {
         exceptionRule_.expect(IllegalArgumentException.class);
         exceptionRule_.expectMessage("StringStageKey:IO_STAGE_KEY must not be added.");
 
-        sut_.add(StageKeys.of("IO_STAGE_KEY"), new Object());
+        sut_.add(StageKeys.of("IO_STAGE_KEY"), PipelineElement.newNullStage());
     }
 
     @Test
     public void testAddBefore() throws Exception {
         StageKey key0 = StageKeys.of(0);
-        Object stage0 = new Object();
+        Stage stage0 = PipelineElement.newNullStage();
         StageKey key1 = StageKeys.of(1);
-        Object stage1 = new Object();
+        Stage stage1 = PipelineElement.newNullStage();
         StageKey key2 = StageKeys.of(2);
-        Object stage2 = new Object();
+        Stage stage2 = PipelineElement.newNullStage();
 
         sut_.add(key0, stage0);
         sut_.addBefore(key0, key1, stage1);
         sut_.addBefore(key0, key2, stage2);
 
-        Iterator<PipelineElement<Object, Object>> i = sut_.iterator();
-        PipelineElement<Object, Object> context = i.next();
+        Iterator<PipelineElement> i = sut_.iterator();
+        PipelineElement context = i.next();
         assertThat(context.key(), is(key1));
         assertThat(context.stage(), is(stage1));
         context = i.next();
@@ -125,26 +122,25 @@ public class AbstractPipelineTest {
     @Test
     public void testAddBefore_NullTaskLoopGroupReplacesToDefault() throws Exception {
         StageKey key0 = StageKeys.of(0);
-        Object stage0 = new Object();
+        Stage stage0 = PipelineElement.newNullStage();
         StageKey key1 = StageKeys.of(1);
-        Object stage1 = new Object();
+        Stage stage1 = PipelineElement.newNullStage();
 
         sut_.add(key0, stage0);
         sut_.addBefore(key0, key1, stage1, null);
 
-        @SuppressWarnings("unchecked")
-        PipelineElement<Object, Object> pe = (PipelineElement<Object, Object>) sut_.searchContext(key1);
-        assertThat(pe.taskLoop(), is(sameInstance(taskLoop_)));
+        PipelineElement pe = (PipelineElement) sut_.searchElement(key1);
+        assertThat(pe.taskLoop_, is(sameInstance(taskLoop_)));
     }
 
     @Test
     public void testAddBefore_KeyAlreadyExists() throws Exception {
         StageKey key0 = StageKeys.of(0);
-        Object stage0 = new Object();
+        Stage stage0 = PipelineElement.newNullStage();
         StageKey key1 = StageKeys.of(1);
-        Object stage1 = new Object();
+        Stage stage1 = PipelineElement.newNullStage();
         StageKey key2 = StageKeys.of(2);
-        Object stage2 = new Object();
+        Stage stage2 = PipelineElement.newNullStage();
         exceptionRule_.expect(IllegalArgumentException.class);
         exceptionRule_.expectMessage("key IntStageKey:0 already exists.");
 
@@ -157,11 +153,11 @@ public class AbstractPipelineTest {
     @Test
     public void testAddBefore_NoBaseKeyFound() throws Exception {
         StageKey key0 = StageKeys.of(0);
-        Object stage0 = new Object();
+        Stage stage0 = PipelineElement.newNullStage();
         StageKey key1 = StageKeys.of(1);
-        Object stage1 = new Object();
+        Stage stage1 = PipelineElement.newNullStage();
         StageKey key2 = StageKeys.of(2);
-        Object stage2 = new Object();
+        Stage stage2 = PipelineElement.newNullStage();
         StageKey key3 = StageKeys.of(3);
         exceptionRule_.expect(NoSuchElementException.class);
         exceptionRule_.expectMessage("baseKey IntStageKey:3 is not found.");
@@ -174,29 +170,29 @@ public class AbstractPipelineTest {
     @Test
     public void testAddBefore_IOStageIsRejected() throws Exception {
         StageKey key = StageKeys.of(0);
-        sut_.add(key, new Object());
+        sut_.add(key, PipelineElement.newNullStage());
 
         exceptionRule_.expect(IllegalArgumentException.class);
         exceptionRule_.expectMessage("StringStageKey:IO_STAGE_KEY must not be added.");
 
-        sut_.addBefore(key, StageKeys.of("IO_STAGE_KEY"), new Object());
+        sut_.addBefore(key, StageKeys.of("IO_STAGE_KEY"), PipelineElement.newNullStage());
     }
 
     @Test
     public void testAddAfter() throws Exception {
         StageKey key0 = StageKeys.of(0);
-        Object stage0 = new Object();
+        Stage stage0 = PipelineElement.newNullStage();
         StageKey key1 = StageKeys.of(1);
-        Object stage1 = new Object();
+        Stage stage1 = PipelineElement.newNullStage();
         StageKey key2 = StageKeys.of(2);
-        Object stage2 = new Object();
+        Stage stage2 = PipelineElement.newNullStage();
 
         sut_.add(key0, stage0);
         sut_.addAfter(key0, key1, stage1);
         sut_.addAfter(key0, key2, stage2);
 
-        Iterator<PipelineElement<Object, Object>> i = sut_.iterator();
-        PipelineElement<Object, Object> context = i.next();
+        Iterator<PipelineElement> i = sut_.iterator();
+        PipelineElement context = i.next();
         assertThat(context.key(), is(key0));
         assertThat(context.stage(), is(stage0));
         context = i.next();
@@ -213,26 +209,25 @@ public class AbstractPipelineTest {
     @Test
     public void testAddAfter_NullTaskLoopGroupReplacesToDefault() throws Exception {
         StageKey key0 = StageKeys.of(0);
-        Object stage0 = new Object();
+        Stage stage0 = PipelineElement.newNullStage();
         StageKey key1 = StageKeys.of(1);
-        Object stage1 = new Object();
+        Stage stage1 = PipelineElement.newNullStage();
 
         sut_.add(key0, stage0);
         sut_.addAfter(key0, key1, stage1, null);
 
-        @SuppressWarnings("unchecked")
-        PipelineElement<Object, Object> pe = (PipelineElement<Object, Object>) sut_.searchContext(key1);
-        assertThat(pe.taskLoop(), is(sameInstance(taskLoop_)));
+        PipelineElement pe = (PipelineElement) sut_.searchElement(key1);
+        assertThat(pe.taskLoop_, is(sameInstance(taskLoop_)));
     }
 
     @Test
     public void testAddAfter_KeyAlreadyExists() throws Exception {
         StageKey key0 = StageKeys.of(0);
-        Object stage0 = new Object();
+        Stage stage0 = PipelineElement.newNullStage();
         StageKey key1 = StageKeys.of(1);
-        Object stage1 = new Object();
+        Stage stage1 = PipelineElement.newNullStage();
         StageKey key2 = StageKeys.of(2);
-        Object stage2 = new Object();
+        Stage stage2 = PipelineElement.newNullStage();
         exceptionRule_.expect(IllegalArgumentException.class);
         exceptionRule_.expectMessage("key IntStageKey:0 already exists.");
 
@@ -245,11 +240,11 @@ public class AbstractPipelineTest {
     @Test
     public void testAddAfter_NoBaseKeyFound() throws Exception {
         StageKey key0 = StageKeys.of(0);
-        Object stage0 = new Object();
+        Stage stage0 = PipelineElement.newNullStage();
         StageKey key1 = StageKeys.of(1);
-        Object stage1 = new Object();
+        Stage stage1 = PipelineElement.newNullStage();
         StageKey key2 = StageKeys.of(2);
-        Object stage2 = new Object();
+        Stage stage2 = PipelineElement.newNullStage();
         StageKey key3 = StageKeys.of(3);
         exceptionRule_.expect(NoSuchElementException.class);
         exceptionRule_.expectMessage("baseKey IntStageKey:3 is not found.");
@@ -262,56 +257,56 @@ public class AbstractPipelineTest {
     @Test
     public void testAddAfter_IOStageIsRejected() throws Exception {
         StageKey key = StageKeys.of(0);
-        sut_.add(key, new Object());
+        sut_.add(key, PipelineElement.newNullStage());
 
         exceptionRule_.expect(IllegalArgumentException.class);
         exceptionRule_.expectMessage("StringStageKey:IO_STAGE_KEY must not be added.");
 
-        sut_.addAfter(key, StageKeys.of("IO_STAGE_KEY"), new Object());
+        sut_.addAfter(key, StageKeys.of("IO_STAGE_KEY"), PipelineElement.newNullStage());
     }
 
     @Test
     public void testAddAfter_BaseKeyMustNotBeIOStage() throws Exception {
         StageKey key = StageKeys.of(0);
-        sut_.add(key, new Object());
+        sut_.add(key, PipelineElement.newNullStage());
 
         exceptionRule_.expect(IllegalArgumentException.class);
         exceptionRule_.expectMessage("StringStageKey:IO_STAGE_KEY must be the tail of this pipeline.");
 
-        sut_.addAfter(StageKeys.of("IO_STAGE_KEY"), key, new Object());
+        sut_.addAfter(StageKeys.of("IO_STAGE_KEY"), key, PipelineElement.newNullStage());
     }
 
     @Test
     public void testReplace_NullTaskLoopGroupReplacesToDefault() throws Exception {
         StageKey key0 = StageKeys.of(0);
-        Object stage0 = new Object();
+        Stage stage0 = PipelineElement.newNullStage();
         StageKey key1 = StageKeys.of(1);
-        Object stage1 = new Object();
+        Stage stage1 = PipelineElement.newNullStage();
 
         sut_.add(key0, stage0);
         sut_.replace(key0, key1, stage1, null);
 
         @SuppressWarnings("unchecked")
-        PipelineElement<Object, Object> pe = (PipelineElement<Object, Object>) sut_.searchContext(key1);
-        assertThat(pe.taskLoop(), is(sameInstance(taskLoop_)));
+        PipelineElement pe = (PipelineElement) sut_.searchElement(key1);
+        assertThat(pe.taskLoop_, is(sameInstance(taskLoop_)));
     }
 
     @Test
     public void testRemove_First() throws Exception {
         StageKey key0 = StageKeys.of(0);
-        Object stage0 = new Object();
+        Stage stage0 = PipelineElement.newNullStage();
         StageKey key1 = StageKeys.of(1);
-        Object stage1 = new Object();
+        Stage stage1 = PipelineElement.newNullStage();
         StageKey key2 = StageKeys.of(2);
-        Object stage2 = new Object();
+        Stage stage2 = PipelineElement.newNullStage();
 
         sut_.add(key0, stage0);
         sut_.add(key1, stage1);
         sut_.add(key2, stage2);
         sut_.remove(key0);
 
-        Iterator<PipelineElement<Object, Object>> i = sut_.iterator();
-        PipelineElement<Object, Object> context = i.next();
+        Iterator<PipelineElement> i = sut_.iterator();
+        PipelineElement context = i.next();
         assertThat(context.key(), is(key1));
         assertThat(context.stage(), is(stage1));
         context = i.next();
@@ -325,19 +320,19 @@ public class AbstractPipelineTest {
     @Test
     public void testRemove_Middle() throws Exception {
         StageKey key0 = StageKeys.of(0);
-        Object stage0 = new Object();
+        Stage stage0 = PipelineElement.newNullStage();
         StageKey key1 = StageKeys.of(1);
-        Object stage1 = new Object();
+        Stage stage1 = PipelineElement.newNullStage();
         StageKey key2 = StageKeys.of(2);
-        Object stage2 = new Object();
+        Stage stage2 = PipelineElement.newNullStage();
 
         sut_.add(key0, stage0);
         sut_.add(key1, stage1);
         sut_.add(key2, stage2);
         sut_.remove(key1);
 
-        Iterator<PipelineElement<Object, Object>> i = sut_.iterator();
-        PipelineElement<Object, Object> context = i.next();
+        Iterator<PipelineElement> i = sut_.iterator();
+        PipelineElement context = i.next();
         assertThat(context.key(), is(key0));
         assertThat(context.stage(), is(stage0));
         context = i.next();
@@ -351,19 +346,19 @@ public class AbstractPipelineTest {
     @Test
     public void testRemove_Last() throws Exception {
         StageKey key0 = StageKeys.of(0);
-        Object stage0 = new Object();
+        Stage stage0 = PipelineElement.newNullStage();
         StageKey key1 = StageKeys.of(1);
-        Object stage1 = new Object();
+        Stage stage1 = PipelineElement.newNullStage();
         StageKey key2 = StageKeys.of(2);
-        Object stage2 = new Object();
+        Stage stage2 = PipelineElement.newNullStage();
 
         sut_.add(key0, stage0);
         sut_.add(key1, stage1);
         sut_.add(key2, stage2);
         sut_.remove(key2);
 
-        Iterator<PipelineElement<Object, Object>> i = sut_.iterator();
-        PipelineElement<Object, Object> context = i.next();
+        Iterator<PipelineElement> i = sut_.iterator();
+        PipelineElement context = i.next();
         assertThat(context.key(), is(key0));
         assertThat(context.stage(), is(stage0));
         context = i.next();
@@ -377,9 +372,9 @@ public class AbstractPipelineTest {
     @Test
     public void testRemove_NoKeyIsFound() throws Exception {
         StageKey key0 = StageKeys.of(0);
-        Object stage0 = new Object();
+        Stage stage0 = PipelineElement.newNullStage();
         StageKey key1 = StageKeys.of(1);
-        Object stage1 = new Object();
+        Stage stage1 = PipelineElement.newNullStage();
         StageKey key2 = StageKeys.of(2);
         exceptionRule_.expect(NoSuchElementException.class);
         exceptionRule_.expectMessage("key IntStageKey:2 is not found.");
@@ -400,21 +395,21 @@ public class AbstractPipelineTest {
     @Test
     public void testReplace_First() throws Exception {
         StageKey key0 = StageKeys.of(0);
-        Object stage0 = new Object();
+        Stage stage0 = PipelineElement.newNullStage();
         StageKey key1 = StageKeys.of(1);
-        Object stage1 = new Object();
+        Stage stage1 = PipelineElement.newNullStage();
         StageKey key2 = StageKeys.of(2);
-        Object stage2 = new Object();
+        Stage stage2 = PipelineElement.newNullStage();
         StageKey key3 = StageKeys.of(3);
-        Object stage3 = new Object();
+        Stage stage3 = PipelineElement.newNullStage();
 
         sut_.add(key0, stage0);
         sut_.add(key1, stage1);
         sut_.add(key2, stage2);
         sut_.replace(key0, key3, stage3);
 
-        Iterator<PipelineElement<Object, Object>> i = sut_.iterator();
-        PipelineElement<Object, Object> context = i.next();
+        Iterator<PipelineElement> i = sut_.iterator();
+        PipelineElement context = i.next();
         assertThat(context.key(), is(key3));
         assertThat(context.stage(), is(stage3));
         context = i.next();
@@ -431,21 +426,21 @@ public class AbstractPipelineTest {
     @Test
     public void testReplace_Middle() throws Exception {
         StageKey key0 = StageKeys.of(0);
-        Object stage0 = new Object();
+        Stage stage0 = PipelineElement.newNullStage();
         StageKey key1 = StageKeys.of(1);
-        Object stage1 = new Object();
+        Stage stage1 = PipelineElement.newNullStage();
         StageKey key2 = StageKeys.of(2);
-        Object stage2 = new Object();
+        Stage stage2 = PipelineElement.newNullStage();
         StageKey key3 = StageKeys.of(3);
-        Object stage3 = new Object();
+        Stage stage3 = PipelineElement.newNullStage();
 
         sut_.add(key0, stage0);
         sut_.add(key1, stage1);
         sut_.add(key2, stage2);
         sut_.replace(key1, key3, stage3);
 
-        Iterator<PipelineElement<Object, Object>> i = sut_.iterator();
-        PipelineElement<Object, Object> context = i.next();
+        Iterator<PipelineElement> i = sut_.iterator();
+        PipelineElement context = i.next();
         assertThat(context.key(), is(key0));
         assertThat(context.stage(), is(stage0));
         context = i.next();
@@ -462,21 +457,21 @@ public class AbstractPipelineTest {
     @Test
     public void testReplace_Last() throws Exception {
         StageKey key0 = StageKeys.of(0);
-        Object stage0 = new Object();
+        Stage stage0 = PipelineElement.newNullStage();
         StageKey key1 = StageKeys.of(1);
-        Object stage1 = new Object();
+        Stage stage1 = PipelineElement.newNullStage();
         StageKey key2 = StageKeys.of(2);
-        Object stage2 = new Object();
+        Stage stage2 = PipelineElement.newNullStage();
         StageKey key3 = StageKeys.of(3);
-        Object stage3 = new Object();
+        Stage stage3 = PipelineElement.newNullStage();
 
         sut_.add(key0, stage0);
         sut_.add(key1, stage1);
         sut_.add(key2, stage2);
         sut_.replace(key2, key3, stage3);
 
-        Iterator<PipelineElement<Object, Object>> i = sut_.iterator();
-        PipelineElement<Object, Object> context = i.next();
+        Iterator<PipelineElement> i = sut_.iterator();
+        PipelineElement context = i.next();
         assertThat(context.key(), is(key0));
         assertThat(context.stage(), is(stage0));
         context = i.next();
@@ -493,13 +488,13 @@ public class AbstractPipelineTest {
     @Test
     public void testReplace_OldKeyIsNotFound() throws Exception {
         StageKey key0 = StageKeys.of(0);
-        Object stage0 = new Object();
+        Stage stage0 = PipelineElement.newNullStage();
         StageKey key1 = StageKeys.of(1);
-        Object stage1 = new Object();
+        Stage stage1 = PipelineElement.newNullStage();
         StageKey key2 = StageKeys.of(2);
-        Object stage2 = new Object();
+        Stage stage2 = PipelineElement.newNullStage();
         StageKey key3 = StageKeys.of(3);
-        Object stage3 = new Object();
+        Stage stage3 = PipelineElement.newNullStage();
         exceptionRule_.expect(NoSuchElementException.class);
         exceptionRule_.expectMessage("oldKey IntStageKey:3 is not found.");
 
@@ -512,11 +507,11 @@ public class AbstractPipelineTest {
     @Test
     public void testReplace_NewKeyAlreadyExists() throws Exception {
         StageKey key0 = StageKeys.of(0);
-        Object stage0 = new Object();
+        Stage stage0 = PipelineElement.newNullStage();
         StageKey key1 = StageKeys.of(1);
-        Object stage1 = new Object();
+        Stage stage1 = PipelineElement.newNullStage();
         StageKey key2 = StageKeys.of(2);
-        Object stage2 = new Object();
+        Stage stage2 = PipelineElement.newNullStage();
         StageKey key3 = StageKeys.of(3);
         exceptionRule_.expect(IllegalArgumentException.class);
         exceptionRule_.expectMessage("newKey IntStageKey:2 already exists.");
@@ -530,38 +525,38 @@ public class AbstractPipelineTest {
     @Test
     public void testReplace_NewIOStageIsRejected() throws Exception {
         StageKey key = StageKeys.of(0);
-        sut_.add(key, new Object());
+        sut_.add(key, PipelineElement.newNullStage());
 
         exceptionRule_.expect(IllegalArgumentException.class);
         exceptionRule_.expectMessage("StringStageKey:IO_STAGE_KEY must not be added.");
 
-        sut_.replace(key, StageKeys.of("IO_STAGE_KEY"), new Object());
+        sut_.replace(key, StageKeys.of("IO_STAGE_KEY"), PipelineElement.newNullStage());
     }
 
     @Test
     public void testReplace_OldIOStageIsRejected() throws Exception {
         StageKey key = StageKeys.of(0);
-        sut_.add(key, new Object());
+        sut_.add(key, PipelineElement.newNullStage());
 
         exceptionRule_.expect(IllegalArgumentException.class);
         exceptionRule_.expectMessage("StringStageKey:IO_STAGE_KEY must not be removed.");
 
-        sut_.replace(StageKeys.of("IO_STAGE_KEY"), key, new Object());
+        sut_.replace(StageKeys.of("IO_STAGE_KEY"), key, PipelineElement.newNullStage());
     }
 
     @Test
     public void testSearchContext() throws Exception {
         StageKey key0 = StageKeys.of(0);
-        Object stage0 = new Object();
+        Stage stage0 = PipelineElement.newNullStage();
         StageKey key1 = StageKeys.of(1);
-        Object stage1 = new Object();
+        Stage stage1 = PipelineElement.newNullStage();
 
         sut_.add(key0, stage0);
         sut_.add(key1, stage1);
 
-        StageContext<Object> context0 = sut_.searchContext(key0);
-        StageContext<Object> context1 = sut_.searchContext(key1);
-        StageContext<Object> context2 = sut_.searchContext(PipelineImpl.LAST);
+        PipelineElement context0 = sut_.searchElement(key0);
+        PipelineElement context1 = sut_.searchElement(key1);
+        PipelineElement context2 = sut_.searchElement(PipelineImpl.LAST);
         assertThat(context0.key(), is(key0));
         assertThat(context1.key(), is(key1));
         assertThat(context2.key(), is(PipelineImpl.LAST));
@@ -569,147 +564,80 @@ public class AbstractPipelineTest {
     }
 
     @Test
-    public void testExecuteMessage_DirectlyIfInLoopThread() throws Exception {
+    public void testActivate() throws Exception {
+        Stage s0 = spy(PipelineElement.newNullStage());
+        Stage s1 = spy(PipelineElement.newNullStage());
+        sut_.add(StageKeys.of(0), s0);
+        sut_.add(StageKeys.of(1), s1);
         when(taskLoop_.isInLoopThread()).thenReturn(true);
-        sut_.add(StageKeys.of(0), new Object());
-        Object message = new Object();
 
-        sut_.execute(message);
+        sut_.activate();
 
-        @SuppressWarnings("unchecked")
-        PipelineElement<Object, Object> context = (PipelineElement<Object, Object>) sut_.searchContext(StageKeys.of(0));
-        verify(context).fire(message);
-        verify(taskLoop_, never()).offer(Mockito.<Task>any());
+        verify(s0).activated(Mockito.<StageContext>any());
+        verify(s1).activated(Mockito.<StageContext>any());
     }
 
     @Test
-    public void testExecuteMessage_IndirectlyIfNotInLoopThread() throws Exception {
-        when(taskLoop_.isInLoopThread()).thenReturn(false);
-        sut_.add(StageKeys.of(0), new Object());
-        Object message = new Object();
-
-        sut_.execute(message);
-
-        @SuppressWarnings("unchecked")
-        PipelineElement<Object, Object> context = (PipelineElement<Object, Object>) sut_.searchContext(StageKeys.of(0));
-        verify(context, never()).fire(message);
-
-        ArgumentCaptor<Task> taskCaptor = ArgumentCaptor.forClass(Task.class);
-        verify(taskLoop_).offer(taskCaptor.capture());
-        taskCaptor.getValue().execute(TimeUnit.MILLISECONDS);
-        verify(context).fire(message);
-    }
-
-    @Test
-    public void testExecuteMessageAndParameter_DirectlyIfInLoopThread() throws Exception {
+    public void testDeactivate() throws Exception {
+        Stage s0 = spy(PipelineElement.newNullStage());
+        Stage s1 = spy(PipelineElement.newNullStage());
+        sut_.add(StageKeys.of(0), s0);
+        sut_.add(StageKeys.of(1), s1);
         when(taskLoop_.isInLoopThread()).thenReturn(true);
-        sut_.add(StageKeys.of(0), new Object());
-        Object message = new Object();
-        TransportParameter parameter = new DefaultTransportParameter(0);
 
-        sut_.execute(message, parameter);
+        sut_.deactivate(Pipeline.DeactivateState.WHOLE);
 
-        @SuppressWarnings("unchecked")
-        PipelineElement<Object, Object> context = (PipelineElement<Object, Object>) sut_.searchContext(StageKeys.of(0));
-        verify(context).fire(message, parameter);
-        verify(taskLoop_, never()).offer(Mockito.<Task>any());
+        verify(s0).deactivated(Mockito.<StageContext>any(), eq(Pipeline.DeactivateState.WHOLE));
+        verify(s1).deactivated(Mockito.<StageContext>any(), eq(Pipeline.DeactivateState.WHOLE));
     }
 
     @Test
-    public void testExecuteMessageAndParameter_IndirectlyIfNotInLoopThread() throws Exception {
-        when(taskLoop_.isInLoopThread()).thenReturn(false);
-        sut_.add(StageKeys.of(0), new Object());
-        Object message = new Object();
-        TransportParameter parameter = new DefaultTransportParameter(0);
-
-        sut_.execute(message, parameter);
-
-        @SuppressWarnings("unchecked")
-        PipelineElement<Object, Object> context = (PipelineElement<Object, Object>) sut_.searchContext(StageKeys.of(0));
-        verify(context, never()).fire(message, parameter);
-
-        ArgumentCaptor<Task> taskCaptor = ArgumentCaptor.forClass(Task.class);
-        verify(taskLoop_).offer(taskCaptor.capture());
-        taskCaptor.getValue().execute(TimeUnit.MILLISECONDS);
-        verify(context).fire(message, parameter);
-    }
-
-    @Test
-    public void testExecuteTransportStateEvent_DirectlyIfInLoopThread() throws Exception {
+    public void testCatchException() throws Exception {
+        Exception e = new Exception();
+        Stage s0 = mock(Stage.class);
+        Stage s1 = mock(Stage.class);
+        sut_.add(StageKeys.of(0), s0);
+        sut_.add(StageKeys.of(1), s1);
         when(taskLoop_.isInLoopThread()).thenReturn(true);
-        sut_.add(StageKeys.of(0), new Object());
-        TransportStateEvent event = new DefaultTransportStateEvent(TransportState.BOUND, new Object());
 
-        sut_.execute(event);
+        sut_.catchException(e);
 
-        @SuppressWarnings("unchecked")
-        PipelineElement<Object, Object> context = (PipelineElement<Object, Object>) sut_.searchContext(StageKeys.of(0));
-        verify(context).fire(event);
-        verify(taskLoop_, never()).offer(Mockito.<Task>any());
-    }
-
-    @Test
-    public void testExecuteTransportStateEvent_IndirectlyIfNotInLoopThread() throws Exception {
-        when(taskLoop_.isInLoopThread()).thenReturn(false);
-        sut_.add(StageKeys.of(0), new Object());
-        TransportStateEvent event = new DefaultTransportStateEvent(TransportState.BOUND, new Object());
-
-        sut_.execute(event);
-
-        @SuppressWarnings("unchecked")
-        PipelineElement<Object, Object> context = (PipelineElement<Object, Object>) sut_.searchContext(StageKeys.of(0));
-        verify(context, never()).fire(event);
-
-        ArgumentCaptor<Task> taskCaptor = ArgumentCaptor.forClass(Task.class);
-        verify(taskLoop_).offer(taskCaptor.capture());
-        taskCaptor.getValue().execute(TimeUnit.MILLISECONDS);
-        verify(context).fire(event);
+        verify(s0).exceptionCaught(Mockito.<StageContext>any(), eq(e));
+        verify(s1).exceptionCaught(Mockito.<StageContext>any(), eq(e));
     }
 
     @Test
     public void testToString_NoStageIsAdded() throws Exception {
-        assertThat(sut_.toString(), is("[(StringStageKey:LAST=LAST)]"));
+        assertThat(sut_.toString(), is("[(StringStageKey:LAST=" + PipelineImpl.LAST_STAGE + ")]"));
     }
 
     @Test
     public void testToString_ThreeStages() throws Exception {
-        sut_.add(StageKeys.of(1), "ONE");
-        sut_.add(StageKeys.of(2), "TWO");
-        assertThat(sut_.toString(), is("[(IntStageKey:1=ONE), (IntStageKey:2=TWO), (StringStageKey:LAST=LAST)]"));
+        Stage one = PipelineElement.newNullStage();
+        Stage two = PipelineElement.newNullStage();
+        sut_.add(StageKeys.of(1), one);
+        sut_.add(StageKeys.of(2), two);
+        assertThat(sut_.toString(), is("[(IntStageKey:1=" + one
+                + "), (IntStageKey:2=" + two
+                + "), (StringStageKey:LAST=" + PipelineImpl.LAST_STAGE
+                + ")]"));
     }
 
-    private static class PipelineImpl extends AbstractPipeline<Object, TaskLoop> {
+    private static class PipelineImpl extends DefaultPipeline<TaskLoop> {
 
         static final StageKey LAST = StageKeys.of("LAST");
+        static final Stage LAST_STAGE = PipelineElement.newNullStage();
 
         @SuppressWarnings("unchecked")
         protected PipelineImpl(AbstractTransport<TaskLoop> transport, TaskLoopGroup<TaskLoop> taskLoopGroup) {
-            super("test", transport, taskLoopGroup, LAST, "LAST");
+            super("test", transport, taskLoopGroup, LAST, LAST_STAGE);
         }
 
         @Override
-        protected PipelineElement<Object, Object> createContext(
-                StageKey key, final Object stage, TaskLoopGroup<? extends TaskLoop> pool) {
-            PipelineElement<Object, Object> context = new PipelineElement<Object, Object>(this, key, pool) {
-                @Override
-                protected Object stage() {
-                    return stage;
-                }
-                @Override
-                protected void fire(Object input) {
-                }
-                @Override
-                protected void fire(Object input, TransportParameter parameter) {
-                }
-                @Override
-                protected void fire(TransportStateEvent event) {
-                }
-                @Override
-                public TransportParameter transportParameter() {
-                    return DefaultTransportParameter.NO_PARAMETER;
-                }
-            };
-            return spy(context);
+        PipelineElement createContext(
+                StageKey key, final Stage stage, TaskLoopGroup<? extends TaskLoop> pool) {
+            // return spy(new PipelineElement(this, key, stage, pool));
+            return new PipelineElement(this, key, stage, pool);
         }
     }
 }

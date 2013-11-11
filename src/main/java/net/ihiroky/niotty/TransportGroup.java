@@ -30,7 +30,7 @@ public class TransportGroup implements CompletionListener {
         }
     }
 
-    public void write(Object message, TransportParameter parameter) {
+    public void write(Object message, Object parameter) {
         for (Transport transport : transportMap_.keySet()) {
             transport.write(message, parameter);
         }

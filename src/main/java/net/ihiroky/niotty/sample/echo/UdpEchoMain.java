@@ -1,11 +1,8 @@
 package net.ihiroky.niotty.sample.echo;
 
-import net.ihiroky.niotty.DefaultTransportParameter;
-import net.ihiroky.niotty.LoadPipeline;
+import net.ihiroky.niotty.Pipeline;
 import net.ihiroky.niotty.PipelineComposer;
-import net.ihiroky.niotty.StorePipeline;
-import net.ihiroky.niotty.codec.StringDecoder;
-import net.ihiroky.niotty.codec.StringEncoder;
+import net.ihiroky.niotty.codec.StringCodec;
 import net.ihiroky.niotty.nio.NioDatagramSocketProcessor;
 import net.ihiroky.niotty.nio.NioDatagramSocketTransport;
 
@@ -25,10 +22,9 @@ public class UdpEchoMain {
         NioDatagramSocketProcessor server = new NioDatagramSocketProcessor();
         server.setPipelineComposer(new PipelineComposer() {
             @Override
-            public void compose(LoadPipeline loadPipeline, StorePipeline storePipeline) {
-                loadPipeline.add(EchoStageKey.LOAD_DECODE, new StringDecoder())
-                        .add(EchoStageKey.LOAD_APPLICATION, new EchoStage());
-                storePipeline.add(EchoStageKey.STORE_ENCODE, new StringEncoder());
+            public void compose(Pipeline pipeline) {
+                pipeline.add(EchoStageKey.APPLICATION, new EchoStage())
+                        .add(EchoStageKey.STRING, new StringCodec());
             }
         });
         server.start();
@@ -37,10 +33,9 @@ public class UdpEchoMain {
         NioDatagramSocketProcessor client = new NioDatagramSocketProcessor();
         client.setPipelineComposer(new PipelineComposer() {
             @Override
-            public void compose(LoadPipeline loadPipeline, StorePipeline storePipeline) {
-                loadPipeline.add(EchoStageKey.LOAD_DECODE, new StringDecoder())
-                        .add(EchoStageKey.LOAD_APPLICATION, new HelloWorldStage());
-                storePipeline.add(EchoStageKey.STORE_ENCODE, new StringEncoder());
+            public void compose(Pipeline pipeline) {
+                pipeline.add(EchoStageKey.APPLICATION, new HelloWorldStage())
+                        .add(EchoStageKey.STRING, new StringCodec());
             }
         });
         client.start();
@@ -58,7 +53,7 @@ public class UdpEchoMain {
             Thread.sleep(lastWaitMillis);
 
             clientTransport.disconnect();
-            clientTransport.write("Hello after disconnected.", new DefaultTransportParameter(serverEndpoint));
+            clientTransport.write("Hello after disconnected.", serverEndpoint);
 
             Thread.sleep(lastWaitMillis);
 

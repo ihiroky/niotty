@@ -3,9 +3,6 @@ package net.ihiroky.niotty;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Created on 13/01/11, 15:31
- *
- * @author Hiroki Itoh
  */
 public interface TransportFuture {
 

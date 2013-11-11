@@ -6,11 +6,9 @@ import java.util.Set;
 /**
  * <p>A nexus for network I/O operations.</p>
  *
- * <p>This class has a load (inbound) and store (outbound) pipeline, an attachment reference and an event listener.
+ * <p>This class has a pipeline, an attachment reference and an event listener.
  * The pipelines handles I/O request associated with this transport. The load pipeline handles user request
  * for a transport implementation. The store pipeline handles events which come up in an I/O thread.</p>
- *
- * @author Hiroki Itoh
  */
 public interface Transport extends TaskSelection {
 
@@ -53,7 +51,7 @@ public interface Transport extends TaskSelection {
      * @param message the message
      * @param parameter the parameter
      */
-    void write(Object message, TransportParameter parameter);
+    void write(Object message, Object parameter);
 
     /**
      * Returns the future which represents an asynchronous close operation.
@@ -117,14 +115,8 @@ public interface Transport extends TaskSelection {
     Object attachment();
 
     /**
-     * Returns the load pipeline.
-     * @return the load pipeline
+     * Returns the pipeline.
+     * @return the pipeline
      */
-    LoadPipeline loadPipeline();
-
-    /**
-     * Returns the store pipeline.
-     * @return the store pipeline
-     */
-    StorePipeline storePipeline();
+    Pipeline pipeline();
 }

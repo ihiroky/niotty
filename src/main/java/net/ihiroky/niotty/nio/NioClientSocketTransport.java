@@ -2,10 +2,11 @@ package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.CancelledTransportFuture;
 import net.ihiroky.niotty.DefaultTransportFuture;
-import net.ihiroky.niotty.DefaultTransportStateEvent;
 import net.ihiroky.niotty.FailedTransportFuture;
+import net.ihiroky.niotty.Pipeline;
 import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.SuccessfulTransportFuture;
+import net.ihiroky.niotty.Task;
 import net.ihiroky.niotty.TransportException;
 import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.TransportOption;
@@ -204,7 +205,7 @@ public class NioClientSocketTransport extends NioSocketTransport<SelectLoop> {
     @Override
     public TransportFuture bind(final SocketAddress local) {
         final DefaultTransportFuture future = new DefaultTransportFuture(this);
-        storePipeline().execute(new TransportStateEvent(TransportState.BOUND) {
+        taskLoop().execute(new TransportStateEvent(TransportState.BOUND) {
             @Override
             public long execute(TimeUnit timeUnit) throws Exception {
                 if (future.executing()) {
@@ -275,7 +276,7 @@ public class NioClientSocketTransport extends NioSocketTransport<SelectLoop> {
                 }
                 DefaultTransportFuture future = new DefaultTransportFuture(this);
                 ConnectionWaitTransport cwt = new ConnectionWaitTransport(connectSelectGroup_, this, future);
-                cwt.register(channel_, SelectionKey.OP_CONNECT, loadPipeline()); // call pipeline of this, not cwt.
+                cwt.register(channel_, SelectionKey.OP_CONNECT); // call pipeline of this, not cwt.
             } catch (IOException ioe) {
                 return new FailedTransportFuture(this, ioe);
             }
@@ -287,15 +288,9 @@ public class NioClientSocketTransport extends NioSocketTransport<SelectLoop> {
             channel_.configureBlocking(true);
             channel_.connect(remote);
             channel_.configureBlocking(false);
-            loadPipeline().execute(new DefaultTransportStateEvent(TransportState.CONNECTED, remote));
-            register(channel_, SelectionKey.OP_READ, loadPipeline());
+            register(channel_, SelectionKey.OP_READ);
             return new SuccessfulTransportFuture(this);
         } catch (IOException ioe) {
-            try {
-                channel_.configureBlocking(false);
-            } catch (IOException ioe0) {
-                ioe0.printStackTrace();
-            }
             return new FailedTransportFuture(this, ioe);
         }
     }
@@ -310,7 +305,7 @@ public class NioClientSocketTransport extends NioSocketTransport<SelectLoop> {
             return new SuccessfulTransportFuture(this);
         }
         final DefaultTransportFuture future = new DefaultTransportFuture(this);
-        storePipeline().execute(new TransportStateEvent(TransportState.SHUTDOWN_OUTPUT) {
+        taskLoop().execute(new Task() {
             @Override
             public long execute(TimeUnit timeUnit) {
                 SelectionKey key = key();
@@ -323,6 +318,7 @@ public class NioClientSocketTransport extends NioSocketTransport<SelectLoop> {
                             } else {
                                 channel.socket().shutdownOutput();
                             }
+                            pipeline().deactivate(Pipeline.DeactivateState.STORE);
                             future.done();
                         } catch (IOException ioe) {
                             future.setThrowable(ioe);
@@ -341,7 +337,7 @@ public class NioClientSocketTransport extends NioSocketTransport<SelectLoop> {
             return new SuccessfulTransportFuture(this);
         }
         final DefaultTransportFuture future = new DefaultTransportFuture(this);
-        storePipeline().execute(new TransportStateEvent(TransportState.SHUTDOWN_INPUT) {
+        taskLoop().execute(new Task() {
             @Override
             public long execute(TimeUnit timeUnit) {
                 SelectionKey key = key();
@@ -354,6 +350,7 @@ public class NioClientSocketTransport extends NioSocketTransport<SelectLoop> {
                             } else {
                                 channel.socket().shutdownInput();
                             }
+                            pipeline().deactivate(Pipeline.DeactivateState.LOAD);
                             future.done();
                         } catch (IOException ioe) {
                             future.setThrowable(ioe);
@@ -388,17 +385,16 @@ public class NioClientSocketTransport extends NioSocketTransport<SelectLoop> {
                 int read = channel.read(readBuffer);
                 if (read == -1) {
                     if (logger_.isDebugEnabled()) {
-                        logger_.debug("transport reaches the end of its stream:" + this);
+                        logger_.debug("[onSelected] transport reaches the end of its stream:" + this);
                     }
-                    // TODO Discuss to call loadEvent(TransportEvent) and change ops to achieve have close
-                    doCloseSelectableChannel(true);
+                    pipeline().deactivate(Pipeline.DeactivateState.LOAD);
                     readBuffer.clear();
                     return;
                 }
 
                 readBuffer.flip();
-                CodecBuffer cb = selectLoop.copyReadBuffer ? deepCopy(readBuffer) : Buffers.wrap(readBuffer, false);
-                loadPipeline().execute(cb);
+                CodecBuffer cb = selectLoop.copyReadBuffer_ ? deepCopy(readBuffer) : Buffers.wrap(readBuffer, false);
+                pipeline().load(cb);
                 readBuffer.clear();
                 // TODO There is any need to check if content is remaining?
             } else if (key.isWritable()) {
@@ -408,10 +404,10 @@ public class NioClientSocketTransport extends NioSocketTransport<SelectLoop> {
             if (logger_.isDebugEnabled()) {
                 logger_.debug("failed to read from transport by interruption:" + this, ie);
             }
-            doCloseSelectableChannel(true);
+            doCloseSelectableChannel();
         } catch (IOException ioe) {
             logger_.error("failed to read from transport:" + this, ioe);
-            doCloseSelectableChannel(true);
+            doCloseSelectableChannel();
         }
     }
 

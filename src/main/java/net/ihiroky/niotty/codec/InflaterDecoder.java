@@ -1,9 +1,8 @@
 package net.ihiroky.niotty.codec;
 
 import net.ihiroky.niotty.LoadStage;
+import net.ihiroky.niotty.Pipeline;
 import net.ihiroky.niotty.StageContext;
-import net.ihiroky.niotty.TransportState;
-import net.ihiroky.niotty.TransportStateEvent;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.CodecBuffer;
 import net.ihiroky.niotty.util.JavaVersion;
@@ -15,12 +14,13 @@ import java.util.zip.Inflater;
 /**
  * @author Hiroki Itoh
  */
-public class InflaterDecoder implements LoadStage<CodecBuffer, CodecBuffer> {
+public class InflaterDecoder extends LoadStage {
 
     private Inflater inflater_;
     private byte[] buffer_;
     private byte[] dictionary_;
     private byte[] output_;
+    private boolean deactivated_;
 
     protected static final int DEFAULT_BUFFER_SIZE = 8192;
     private static final int MAX_OUTPUT_BUFFER_SIZE = 8192;
@@ -53,7 +53,8 @@ public class InflaterDecoder implements LoadStage<CodecBuffer, CodecBuffer> {
     }
 
     @Override
-    public void load(StageContext<CodecBuffer> context, CodecBuffer input) {
+    public void loaded(StageContext context, Object message) {
+        CodecBuffer input = (CodecBuffer) message;
         byte[] buffer;
         int offset;
         int length;
@@ -81,7 +82,7 @@ public class InflaterDecoder implements LoadStage<CodecBuffer, CodecBuffer> {
         input.dispose();
     }
 
-    private boolean inflate(StageContext<CodecBuffer> context,  byte[] buffer, int offset, int length)
+    private boolean inflate(StageContext context,  byte[] buffer, int offset, int length)
             throws DataFormatException {
 
         Inflater inflater = inflater_;
@@ -123,10 +124,16 @@ public class InflaterDecoder implements LoadStage<CodecBuffer, CodecBuffer> {
     }
 
     @Override
-    public void load(StageContext<CodecBuffer> context, TransportStateEvent event) {
-        if (event.state() == TransportState.CLOSED) {
+    public void exceptionCaught(StageContext context, Exception exception) {
+    }
+
+    @Override
+    public void deactivated(StageContext context, Pipeline.DeactivateState state) {
+        if (!deactivated_
+                && (state == Pipeline.DeactivateState.LOAD || state == Pipeline.DeactivateState.WHOLE)) {
             inflater_.end();
             output_ = null;
+            deactivated_ = true;
         }
     }
 

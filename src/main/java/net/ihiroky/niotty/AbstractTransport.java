@@ -14,8 +14,7 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public abstract class AbstractTransport<T extends TaskLoop> implements Transport, TaskSelection {
 
-    private final DefaultLoadPipeline<T> loadPipeline_;
-    private final DefaultStorePipeline<T> storePipeline_;
+    private final DefaultPipeline<T> pipeline_;
     private final AtomicReference<Object> attachmentReference_;
     private final DefaultTransportFuture closeFuture_;
     private final T loop_;
@@ -36,38 +35,31 @@ public abstract class AbstractTransport<T extends TaskLoop> implements Transport
         closeFuture_ = new DefaultTransportFuture(this);
         loop_ = taskLoopGroup.assign(this);
 
-        DefaultLoadPipeline<T> loadPipeline = new DefaultLoadPipeline<T>(name, this, taskLoopGroup);
-        DefaultStorePipeline<T> storePipeline = new DefaultStorePipeline<T>(name, this, taskLoopGroup, ioStage());
-        pipelineComposer.compose(loadPipeline, storePipeline);
-
-        loadPipeline_ = loadPipeline;
-        storePipeline_ = storePipeline;
+        DefaultPipeline<T> pipeline =
+                new DefaultPipeline<T>(name, this, taskLoopGroup, Pipeline.IO_STAGE_KEY, ioStage());
+        pipelineComposer.compose(pipeline);
+        pipeline_ = pipeline;
     }
 
     /**
      * Creates a stage which handle I/O operation.
-     * The implementation class should define this method as final and safe.
-     * This method is called in the constructor.
+     * This method is called in the constructor, so the implementation class should define
+     * this method as final and safe.
+     *
      * @return the stage
      */
-    protected abstract StoreStage<?, ?> ioStage();
+    protected abstract Stage ioStage();
 
     @Override
-    public LoadPipeline loadPipeline() {
-        return loadPipeline_;
-    }
-
-    @Override
-    public StorePipeline storePipeline() {
-        return storePipeline_;
+    public Pipeline pipeline() {
+        return pipeline_;
     }
 
     /**
      * Closes pipelines.
      */
-    public void closePipelines() {
-        loadPipeline_.close();
-        storePipeline_.close();
+    public void closePipeline() {
+        pipeline_.close();
     }
 
     /**
@@ -85,25 +77,12 @@ public abstract class AbstractTransport<T extends TaskLoop> implements Transport
 
     @Override
     public void write(Object message) {
-        storePipeline_.execute(message);
+        pipeline_.store(message);
     }
 
     @Override
-    public void write(Object message, TransportParameter parameter) {
-        storePipeline_.execute(message, parameter);
-    }
-
-    /**
-     * <p>Writes a specified message to this transport with a specified priority.</p>
-     *
-     * <p>An invocation of this method behaves in exactly the same way as the invocation
-     * {@code write(message, new DefaultTransportParameter(priority))}.</p>
-     *
-     * @param message the message
-     * @param priority the priority
-     */
-    public void write(Object message, int priority) {
-        storePipeline_.execute(message, new DefaultTransportParameter(priority));
+    public void write(Object message, Object parameter) {
+        pipeline_.store(message, parameter);
     }
 
     @Override

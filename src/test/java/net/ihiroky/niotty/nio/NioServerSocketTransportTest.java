@@ -1,9 +1,8 @@
 package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.PipelineComposer;
-import net.ihiroky.niotty.StorePipeline;
+import net.ihiroky.niotty.Task;
 import net.ihiroky.niotty.TransportOptions;
-import net.ihiroky.niotty.TransportStateEvent;
 import net.ihiroky.niotty.util.JavaVersion;
 import net.ihiroky.niotty.util.Platform;
 import org.junit.After;
@@ -128,19 +127,17 @@ public class NioServerSocketTransportTest {
         @Test
         public void testBind() throws Exception {
             InetSocketAddress address = new InetSocketAddress("127.0.0.1", 12345);
-            StorePipeline storePipeline = spy(sut_.storePipeline());
+            SelectLoop selectLoop = mock(SelectLoop.class);
+            when(selectLoop.isInLoopThread()).thenReturn(true);
             doAnswer(new Answer<Void>() {
                 @Override
                 public Void answer(InvocationOnMock invocation) throws Throwable {
-                    TransportStateEvent event = (TransportStateEvent) invocation.getArguments()[0];
+                    Task event = (Task) invocation.getArguments()[0];
                     event.execute(TimeUnit.NANOSECONDS);
                     return null;
                 }
-            }).when(storePipeline).execute(Mockito.<TransportStateEvent>any());
-            SelectLoop selectLoop = mock(SelectLoop.class);
-            when(selectLoop.isInLoopThread()).thenReturn(true);
+            }).when(selectLoop).execute(Mockito.<Task>any());
             NioServerSocketTransport sut = spy(sut_);
-            when(sut.storePipeline()).thenReturn(storePipeline);
             when(sut.taskLoop()).thenReturn(selectLoop);
 
             sut.bind(address);
@@ -260,19 +257,17 @@ public class NioServerSocketTransportTest {
         @Test
         public void testBind() throws Exception {
             InetSocketAddress address = new InetSocketAddress("127.0.0.1", 12345);
-            StorePipeline storePipeline = spy(sut_.storePipeline());
+            SelectLoop selectLoop = mock(SelectLoop.class);
+            when(selectLoop.isInLoopThread()).thenReturn(true);
             doAnswer(new Answer<Void>() {
                 @Override
                 public Void answer(InvocationOnMock invocation) throws Throwable {
-                    TransportStateEvent event = (TransportStateEvent) invocation.getArguments()[0];
+                    Task event = (Task) invocation.getArguments()[0];
                     event.execute(TimeUnit.NANOSECONDS);
                     return null;
                 }
-            }).when(storePipeline).execute(Mockito.<TransportStateEvent>any());
-            SelectLoop selectLoop = mock(SelectLoop.class);
-            when(selectLoop.isInLoopThread()).thenReturn(true);
+            }).when(selectLoop).execute(Mockito.<Task>any());
             NioServerSocketTransport sut = spy(sut_);
-            when(sut.storePipeline()).thenReturn(storePipeline);
             when(sut.taskLoop()).thenReturn(selectLoop);
 
             sut.bind(address);

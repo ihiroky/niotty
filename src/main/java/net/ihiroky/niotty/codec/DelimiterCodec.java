@@ -1,7 +1,9 @@
 package net.ihiroky.niotty.codec;
 
-import net.ihiroky.niotty.LoadStage;
+import net.ihiroky.niotty.Pipeline;
+import net.ihiroky.niotty.Stage;
 import net.ihiroky.niotty.StageContext;
+import net.ihiroky.niotty.buffer.BufferSink;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.CodecBuffer;
 import net.ihiroky.niotty.util.Arguments;
@@ -11,13 +13,13 @@ import java.util.Arrays;
 /**
  *
  */
-public class DelimiterDecoder extends LoadStage {
+public class DelimiterCodec implements Stage {
 
     private final byte[] delimiter_;
     private final boolean removeDelimiter_;
     private CodecBuffer buffer_;
 
-    public DelimiterDecoder(byte[] delimiter, boolean removeDelimiter) {
+    public DelimiterCodec(byte[] delimiter, boolean removeDelimiter) {
         Arguments.requireNonNull(delimiter, "delimiter");
         if (delimiter.length == 0) {
             throw new IllegalArgumentException("The delimiter must not be empty.");
@@ -25,6 +27,14 @@ public class DelimiterDecoder extends LoadStage {
 
         delimiter_ = Arrays.copyOf(delimiter, delimiter.length);
         removeDelimiter_ = removeDelimiter;
+    }
+
+    @Override
+    public void stored(StageContext context, Object message) {
+        BufferSink input = (BufferSink) message;
+        CodecBuffer b = Buffers.wrap(delimiter_, 0, delimiter_.length);
+        input.addLast(b);
+        context.proceed(input);
     }
 
     @Override
@@ -63,6 +73,17 @@ public class DelimiterDecoder extends LoadStage {
 
     @Override
     public void exceptionCaught(StageContext context, Exception exception) {
+        //To change body of implemented methods use File | Settings | File Templates.
+    }
+
+    @Override
+    public void activated(StageContext context) {
+        //To change body of implemented methods use File | Settings | File Templates.
+    }
+
+    @Override
+    public void deactivated(StageContext context, Pipeline.DeactivateState state) {
+        //To change body of implemented methods use File | Settings | File Templates.
     }
 
     private CodecBuffer bufferOfInput(CodecBuffer input) {
@@ -71,10 +92,6 @@ public class DelimiterDecoder extends LoadStage {
         }
         buffer_.drainFrom(input);
         input.dispose();
-        return buffer_;
-    }
-
-    CodecBuffer buffer() {
         return buffer_;
     }
 }

@@ -3,7 +3,6 @@ package net.ihiroky.niotty;
 /**
  * Changes in state of {@code Transport} which asynchronously executed.
  *
- * @author Hiroki Itoh
  */
 public enum TransportState {
     /** The state to bind. */
@@ -21,6 +20,17 @@ public enum TransportState {
     /** The state to disconnect. */
     DISCONNECT,
 
+    /** The state to shutdown output. */
     SHUTDOWN_OUTPUT,
+
+    /** The state to shutdown output. */
     SHUTDOWN_INPUT,
+
+    JOIN,
+
+    LEAVE,
+
+    BLOCK,
+
+    UNBLOCK,
 }

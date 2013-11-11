@@ -1,7 +1,5 @@
 package net.ihiroky.niotty.buffer;
 
-import net.ihiroky.niotty.DefaultTransportParameter;
-import net.ihiroky.niotty.TransportParameter;
 import net.ihiroky.niotty.util.Closable;
 import org.junit.After;
 import org.junit.Before;
@@ -261,7 +259,6 @@ public class FileBufferSinkTest {
                 .thenAnswer(all9)
                 .thenAnswer(all10)
                 .thenAnswer(allLeft);
-        TransportParameter parameter = new DefaultTransportParameter(0);
         FileBufferSink sut = new FileBufferSink(channel_, 0, 32);
 
         BufferSink sliced0 = sut.slice(9);

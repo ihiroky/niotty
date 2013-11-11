@@ -1,12 +1,19 @@
 package net.ihiroky.niotty;
 
 /**
- * Created on 13/01/09, 17:23
  *
- * @author Hiroki Itoh
  */
-public interface LoadStage<I, O> {
+public abstract class LoadStage implements Stage {
+    @Override
+    public void stored(StageContext context, Object message) {
+        context.proceed(message);
+    }
 
-    void load(StageContext<O> context, I input);
-    void load(StageContext<O> context, TransportStateEvent event);
+    @Override
+    public void activated(StageContext context) {
+    }
+
+    @Override
+    public void deactivated(StageContext context, Pipeline.DeactivateState state) {
+    }
 }

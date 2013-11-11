@@ -1,6 +1,6 @@
 package net.ihiroky.niotty.nio;
 
-import net.ihiroky.niotty.DefaultTransportParameter;
+import net.ihiroky.niotty.Stage;
 import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.buffer.BufferSink;
 import net.ihiroky.niotty.buffer.Buffers;
@@ -23,14 +23,14 @@ public class SelectLoopTest {
     @SuppressWarnings({"unchecked", "rawtypes"})
     public void testStore() throws Exception {
         NioSocketTransport<?> transport = mock(NioSocketTransport.class);
-        SelectLoop sut = spy(new SelectLoop(256, 256, false, false));
-        when(sut.isInLoopThread()).thenReturn(true);
-        StageContext<Void> context = mock(StageContext.class);
+        SelectLoop selectLoop = spy(new SelectLoop(256, 256, false, false));
+        Stage sut = selectLoop.ioStage();
+        StageContext context = mock(StageContext.class);
         when(context.transport()).thenReturn(transport);
-        when(context.transportParameter()).thenReturn(new DefaultTransportParameter(0));
+        when(context.parameter()).thenReturn(new Object());
         BufferSink data = Buffers.newCodecBuffer(0);
 
-        sut.store(context, data);
+        sut.stored(context, data);
 
         ArgumentCaptor<AttachedMessage> captor = ArgumentCaptor.forClass(AttachedMessage.class);
         verify(transport).readyToWrite(captor.capture());

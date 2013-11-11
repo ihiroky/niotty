@@ -38,7 +38,7 @@ public class NioServerSocketProcessor extends AbstractProcessor<NioServerSocketT
     @Override
     protected void onStart() {
         ioSelectLoopGroup_ = new SelectLoopGroup(
-                new NameCountThreadFactory(name().concat("-MessageIO")), numberOfIoThread_)
+                new NameCountThreadFactory(name().concat("-IO")), numberOfIoThread_)
                 .setReadBufferSize(readBufferSize_)
                 .setWriteBufferSize(0)
                 .setUseDirectBuffer(useDirectBuffer_)

@@ -1,6 +1,5 @@
 package net.ihiroky.niotty.nio;
 
-import net.ihiroky.niotty.DefaultTransportParameter;
 import net.ihiroky.niotty.buffer.BufferSink;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.CodecBuffer;
@@ -96,7 +95,7 @@ public class SimpleWriteQueueTest {
             }
         });
 
-        sut_.offer(new AttachedMessage<BufferSink>(buffer, new DefaultTransportParameter(target)));
+        sut_.offer(new AttachedMessage<BufferSink>(buffer, target));
         WriteQueue.FlushStatus status = sut_.flushTo(channel, writeBuffer_);
 
         assertThat(status, is(WriteQueue.FlushStatus.FLUSHED));

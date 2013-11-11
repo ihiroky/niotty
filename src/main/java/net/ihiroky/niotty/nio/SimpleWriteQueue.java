@@ -86,7 +86,7 @@ public class SimpleWriteQueue implements WriteQueue {
             byteBuffer.clear();
             buffer.copyTo(byteBuffer);
             byteBuffer.flip();
-            SocketAddress target = (SocketAddress) message.parameter().argument();
+            SocketAddress target = (SocketAddress) message.parameter();
 
             // transfer all data or not.
             int transferred = (target != null) ? channel.send(byteBuffer, target) : channel.write(byteBuffer);

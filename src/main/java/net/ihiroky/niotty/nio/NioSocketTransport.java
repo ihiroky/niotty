@@ -2,16 +2,13 @@ package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.AbstractTransport;
 import net.ihiroky.niotty.DefaultTransportFuture;
-import net.ihiroky.niotty.DefaultTransportStateEvent;
-import net.ihiroky.niotty.LoadPipeline;
+import net.ihiroky.niotty.Pipeline;
 import net.ihiroky.niotty.PipelineComposer;
-import net.ihiroky.niotty.StoreStage;
+import net.ihiroky.niotty.Stage;
 import net.ihiroky.niotty.SuccessfulTransportFuture;
 import net.ihiroky.niotty.Task;
 import net.ihiroky.niotty.TaskLoopGroup;
 import net.ihiroky.niotty.TransportFuture;
-import net.ihiroky.niotty.TransportState;
-import net.ihiroky.niotty.TransportStateEvent;
 import net.ihiroky.niotty.buffer.BufferSink;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.CodecBuffer;
@@ -20,7 +17,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
@@ -41,8 +37,8 @@ public abstract class NioSocketTransport<S extends SelectLoop> extends AbstractT
     }
 
     @Override
-    protected StoreStage<?, ?> ioStage() {
-        return taskLoop();
+    protected Stage ioStage() {
+        return taskLoop().ioStage();
     }
 
     @Override
@@ -58,13 +54,13 @@ public abstract class NioSocketTransport<S extends SelectLoop> extends AbstractT
     final TransportFuture closeSelectableChannel() {
         S selector = taskLoop();
         if (selector == null) {
-            closePipelines();
+            closePipeline();
             return new SuccessfulTransportFuture(this);
         }
-        storePipeline().execute(new TransportStateEvent(TransportState.CLOSED) {
+        selector.offer(new Task() {
             @Override
             public long execute(TimeUnit timeUnit) {
-                NioSocketTransport.this.doCloseSelectableChannel(false);
+                NioSocketTransport.this.doCloseSelectableChannel();
                 return DONE;
             }
         });
@@ -77,18 +73,14 @@ public abstract class NioSocketTransport<S extends SelectLoop> extends AbstractT
      * The key is cancelled and the channel is closed if the key is non null and valid.
      * The load pipeline and onStore pipeline (optional) is called
      * after the channel is closed. This method calls {@code #onCloseSelectableChannel} and
-     * {@link #closePipelines()} after the channel close operation.
-     * @return succeeded future
+     * {@link #closePipeline()} after the channel close operation.
+     * @return close future
      */
-    final TransportFuture doCloseSelectableChannel(boolean executeStoreClosed) {
+    final TransportFuture doCloseSelectableChannel() {
         DefaultTransportFuture closeFuture = closeFuture();
-        if (key_ != null && key_.isValid()
-                && closeFuture.executing()) {
-
-            SocketAddress remote = null;
+        if (key_ != null && key_.isValid() && closeFuture.executing()) {
             SelectableChannel channel = key_.channel();
             try {
-                remote = remoteAddress(); // Obtain before closing the channel.
                 unregister(); // decrement register count
                 channel.close();
                 closeFuture.done();
@@ -96,13 +88,9 @@ public abstract class NioSocketTransport<S extends SelectLoop> extends AbstractT
                 closeFuture.setThrowable(e);
             }
 
-            TransportStateEvent event = new DefaultTransportStateEvent(TransportState.CLOSED, remote);
-            if (executeStoreClosed) {
-                storePipeline().execute(event);
-            }
-            loadPipeline().execute(event);
+            pipeline().deactivate(Pipeline.DeactivateState.WHOLE);
             onCloseSelectableChannel();
-            closePipelines();
+            closePipeline();
         }
         return closeFuture;
     }
@@ -128,23 +116,27 @@ public abstract class NioSocketTransport<S extends SelectLoop> extends AbstractT
         }
     }
 
-    void register(final SelectableChannel channel, final int ops, final LoadPipeline loadPipeline) throws IOException {
+    void register(final SelectableChannel channel, final int ops) throws IOException {
         if (key_ != null && key_.isValid()) {
             return;
         }
 
         final S loop = taskLoop();
         if (loop.isInLoopThread()) {
+            if (ops == SelectionKey.OP_READ) {
+                pipeline().activate();
+            }
             key_ = loop.register(channel, ops, NioSocketTransport.this);
-            loadPipeline.execute(new DefaultTransportStateEvent(TransportState.INTEREST_OPS, ops));
         } else {
             // case: ConnectorSelector <-> TcpIOSelector
             loop.offer(new Task() {
                 @Override
                 public long execute(TimeUnit timeUnit) {
                     try {
+                        if (ops == SelectionKey.OP_READ) {
+                            pipeline().activate();
+                        }
                         key_ = loop.register(channel, ops, NioSocketTransport.this);
-                        loadPipeline.execute(new DefaultTransportStateEvent(TransportState.INTEREST_OPS, ops));
                     } catch (IOException ioe) {
                         logger_.warn("[register] Failed to register a channel:" + this, ioe);
                     }
@@ -158,7 +150,6 @@ public abstract class NioSocketTransport<S extends SelectLoop> extends AbstractT
     // So there is no need to check the current thread.
     private void unregister() {
         key_.cancel();
-        loadPipeline().execute(new DefaultTransportStateEvent(TransportState.INTEREST_OPS, 0));
         taskLoop().reject(this);
         logger_.debug("[unregister] {} is unregistered from {}.", this, Thread.currentThread());
     }

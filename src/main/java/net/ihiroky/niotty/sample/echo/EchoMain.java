@@ -1,12 +1,9 @@
 package net.ihiroky.niotty.sample.echo;
 
-import net.ihiroky.niotty.LoadPipeline;
+import net.ihiroky.niotty.Pipeline;
 import net.ihiroky.niotty.PipelineComposer;
-import net.ihiroky.niotty.StorePipeline;
-import net.ihiroky.niotty.codec.FrameLengthPrependEncoder;
-import net.ihiroky.niotty.codec.FrameLengthRemoveDecoder;
-import net.ihiroky.niotty.codec.StringDecoder;
-import net.ihiroky.niotty.codec.StringEncoder;
+import net.ihiroky.niotty.codec.FramingCodec;
+import net.ihiroky.niotty.codec.StringCodec;
 import net.ihiroky.niotty.nio.NioClientSocketProcessor;
 import net.ihiroky.niotty.nio.NioClientSocketTransport;
 import net.ihiroky.niotty.nio.NioServerSocketProcessor;
@@ -32,23 +29,19 @@ public class EchoMain {
         NioServerSocketProcessor server = new NioServerSocketProcessor();
         server.setPipelineComposer(new PipelineComposer() {
             @Override
-            public void compose(LoadPipeline loadPipeline, StorePipeline storePipeline) {
-                loadPipeline.add(EchoStageKey.LOAD_FRAMING, new FrameLengthRemoveDecoder())
-                        .add(EchoStageKey.LOAD_DECODE, new StringDecoder())
-                        .add(EchoStageKey.LOAD_APPLICATION, new EchoStage());
-                storePipeline.add(EchoStageKey.STORE_ENCODE, new StringEncoder())
-                        .add(EchoStageKey.STORE_FRAMING, new FrameLengthPrependEncoder());
+            public void compose(Pipeline pipeline) {
+                pipeline.add(EchoStageKey.APPLICATION, new EchoStage())
+                        .add(EchoStageKey.STRING, new StringCodec())
+                        .add(EchoStageKey.FRAMING, new FramingCodec());
             }
         });
         NioClientSocketProcessor client = new NioClientSocketProcessor();
         client.setPipelineComposer(new PipelineComposer() {
             @Override
-            public void compose(LoadPipeline loadPipeline, StorePipeline storePipeline) {
-                loadPipeline.add(EchoStageKey.LOAD_FRAMING, new FrameLengthRemoveDecoder())
-                        .add(EchoStageKey.LOAD_DECODE, new StringDecoder())
-                        .add(EchoStageKey.LOAD_APPLICATION, new HelloWorldStage());
-                storePipeline.add(EchoStageKey.STORE_ENCODE, new StringEncoder())
-                        .add(EchoStageKey.STORE_FRAMING, new FrameLengthPrependEncoder());
+            public void compose(Pipeline pipeline) {
+                pipeline.add(EchoStageKey.APPLICATION, new HelloWorldStage())
+                        .add(EchoStageKey.STRING, new StringCodec())
+                        .add(EchoStageKey.FRAMING, new FramingCodec());
             }
         });
 

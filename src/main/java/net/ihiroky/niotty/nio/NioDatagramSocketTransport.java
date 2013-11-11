@@ -1,16 +1,15 @@
 package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.DefaultTransportFuture;
-import net.ihiroky.niotty.DefaultTransportParameter;
 import net.ihiroky.niotty.FailedTransportFuture;
+import net.ihiroky.niotty.Pipeline;
 import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.SuccessfulTransportFuture;
+import net.ihiroky.niotty.Task;
 import net.ihiroky.niotty.TransportException;
 import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.TransportOption;
 import net.ihiroky.niotty.TransportOptions;
-import net.ihiroky.niotty.TransportState;
-import net.ihiroky.niotty.TransportStateEvent;
 import net.ihiroky.niotty.buffer.BufferSink;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.CodecBuffer;
@@ -19,7 +18,6 @@ import net.ihiroky.niotty.util.JavaVersion;
 import net.ihiroky.niotty.util.Platform;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -229,12 +227,12 @@ public class NioDatagramSocketTransport extends NioSocketTransport<SelectLoop> {
     @Override
     public TransportFuture bind(final SocketAddress local) {
         final DefaultTransportFuture future = new DefaultTransportFuture(this);
-        storePipeline().execute(new TransportStateEvent(TransportState.BOUND) {
+        taskLoop().execute(new Task() {;
             @Override
             public long execute(TimeUnit timeUnit) throws Exception {
                 if (future.executing()) {
                     try {
-                        register(channel_, SelectionKey.OP_READ, loadPipeline());
+                        register(channel_, SelectionKey.OP_READ);
                         if (Platform.javaVersion().ge(JavaVersion.JAVA7)) {
                             channel_.bind(local);
                         } else {
@@ -298,12 +296,12 @@ public class NioDatagramSocketTransport extends NioSocketTransport<SelectLoop> {
     @Override
     public TransportFuture connect(final SocketAddress remote) {
         final DefaultTransportFuture future = new DefaultTransportFuture(this);
-        storePipeline().execute(new TransportStateEvent(TransportState.CONNECTED) {
+        taskLoop().execute(new Task() {
             @Override
             public long execute(TimeUnit timeUnit) throws Exception {
                 if (future.executing()) {
                     try {
-                        register(channel_, SelectionKey.OP_READ, loadPipeline());
+                        register(channel_, SelectionKey.OP_READ);
                         channel_.connect(remote);
                         future.done();
                     } catch (IOException ioe) {
@@ -334,7 +332,7 @@ public class NioDatagramSocketTransport extends NioSocketTransport<SelectLoop> {
      */
     public TransportFuture disconnect() {
         final DefaultTransportFuture future = new DefaultTransportFuture(this);
-        storePipeline().execute(new TransportStateEvent(TransportState.DISCONNECT) {
+        taskLoop().execute(new Task() {
             @Override
             public long execute(TimeUnit timeUnit) {
                 if (future.executing()) {
@@ -360,20 +358,7 @@ public class NioDatagramSocketTransport extends NioSocketTransport<SelectLoop> {
      * @param target The target to which the message is sent.
      */
     public void write(Object message, SocketAddress target) {
-        super.write(message, new DefaultTransportParameter(target));
-    }
-
-    /**
-     * <p>Writes the message to the {@code DatagramChannel} via a pipeline associated with this transport.
-     * The message is sent to the given target. If this transport is connected
-     * by {@link #connect(java.net.SocketAddress)}, an invocation of this method is failed.</p>
-     *
-     * @param message The message to be sent.
-     * @param priority A priority which is used in {@link WriteQueue}
-     * @param target The target to which the message is sent.
-     */
-    public void write(Object message, int priority, SocketAddress target) {
-        super.write(message, new DefaultTransportParameter(priority, target));
+        super.write(message, target);
     }
 
     /**
@@ -409,20 +394,20 @@ public class NioDatagramSocketTransport extends NioSocketTransport<SelectLoop> {
                             logger_.debug("transport reaches the end of its stream:" + this);
                         }
                         // TODO Discuss to call loadEvent(TransportEvent) and change ops to achieve have close
-                        doCloseSelectableChannel(true);
+                        pipeline().deactivate(Pipeline.DeactivateState.LOAD);
                         readBuffer.clear();
                         return;
                     }
                     readBuffer.flip();
-                    CodecBuffer buffer = selectLoop.copyReadBuffer
+                    CodecBuffer buffer = selectLoop.copyReadBuffer_
                             ? deepCopy(readBuffer) : Buffers.wrap(readBuffer, false);
-                    loadPipeline().execute(buffer);
+                    pipeline().load(buffer);
                 } else {
                     SocketAddress source = channel.receive(readBuffer);
                     readBuffer.flip();
-                    CodecBuffer buffer = selectLoop.copyReadBuffer
+                    CodecBuffer buffer = selectLoop.copyReadBuffer_
                             ? deepCopy(readBuffer) : Buffers.wrap(readBuffer, false);
-                    loadPipeline().execute(buffer, new DefaultTransportParameter(source));
+                    pipeline().load(buffer, source);
                 }
                 readBuffer.clear();
             } else if (key.isWritable()) {
@@ -432,10 +417,10 @@ public class NioDatagramSocketTransport extends NioSocketTransport<SelectLoop> {
             if (logger_.isDebugEnabled()) {
                 logger_.debug("failed to read from transport by interruption:" + this, ie);
             }
-            doCloseSelectableChannel(true);
+            doCloseSelectableChannel();
         } catch (IOException ioe) {
             logger_.error("failed to read from transport:" + this, ioe);
-            doCloseSelectableChannel(true);
+            doCloseSelectableChannel();
         }
     }
 

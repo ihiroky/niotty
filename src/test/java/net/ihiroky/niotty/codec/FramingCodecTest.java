@@ -1,6 +1,7 @@
 package net.ihiroky.niotty.codec;
 
 import net.ihiroky.niotty.buffer.ArrayCodecBuffer;
+import net.ihiroky.niotty.buffer.BufferSink;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.CodecBuffer;
 import org.junit.Before;
@@ -11,18 +12,17 @@ import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
 
 /**
- * @author Hiroki Itoh
  */
-public class FrameLengthRemoveDecoderTest {
+public class FramingCodecTest {
 
-    FrameLengthRemoveDecoder sut_;
+    FramingCodec sut_;
     StageContextMock<CodecBuffer> context_;
     byte[] data_;
     int dataLength_;
 
     @Before
     public void setUp() {
-        sut_ = new FrameLengthRemoveDecoder();
+        sut_ = new FramingCodec();
         context_ = new StageContextMock<CodecBuffer>();
         CodecBuffer encodeBuffer = Buffers.newCodecBuffer(32);
         encodeBuffer.writeShort((short) 12);
@@ -34,7 +34,7 @@ public class FrameLengthRemoveDecoderTest {
     }
 
     private void setUpAgainAsIntLength() {
-        sut_ = new FrameLengthRemoveDecoder();
+        sut_ = new FramingCodec();
         context_ = new StageContextMock<CodecBuffer>();
         CodecBuffer encodeBuffer = Buffers.newCodecBuffer(32);
         encodeBuffer.writeInt(12 | 0x80000000); // INT_FLAG
@@ -49,7 +49,7 @@ public class FrameLengthRemoveDecoderTest {
     public void testLoad_MessageShortOnce() throws Exception {
         CodecBuffer input = Buffers.wrap(data_, 0, dataLength_);
 
-        sut_.load(context_, input);
+        sut_.loaded(context_, input);
 
         CodecBuffer output = context_.pollEvent();
         assertThat(output.readInt(), is(1));
@@ -67,7 +67,7 @@ public class FrameLengthRemoveDecoderTest {
 
         CodecBuffer input = Buffers.wrap(data_, 0, dataLength_);
 
-        sut_.load(context_, input);
+        sut_.loaded(context_, input);
 
         CodecBuffer output = context_.pollEvent();
         assertThat(output.readInt(), is(1));
@@ -83,7 +83,7 @@ public class FrameLengthRemoveDecoderTest {
     public void testLoad_MessageManyIncompleteShortPacket() throws Exception {
         // read first 1 byte
         CodecBuffer b = Buffers.wrap(data_, 0, 1);
-        sut_.load(context_, b);
+        sut_.loaded(context_, b);
         assertThat(context_.eventCount(), is(0));
         assertThat(sut_.getPooling().remaining(), is(1));
         assertThat(sut_.getPoolingFrameBytes(), is(0));
@@ -92,7 +92,7 @@ public class FrameLengthRemoveDecoderTest {
 
         // prepend length field is read
         b = Buffers.wrap(data_, 1, 1);
-        sut_.load(context_, b);
+        sut_.loaded(context_, b);
         assertThat(context_.eventCount(), is(0));
         assertThat(sut_.getPooling(), is(nullValue()));
         assertThat(sut_.getPoolingFrameBytes(), is(12));
@@ -100,7 +100,7 @@ public class FrameLengthRemoveDecoderTest {
 
         // read remaining
         b = Buffers.wrap(data_, 2, 12);
-        sut_.load(context_, b);
+        sut_.loaded(context_, b);
 
         CodecBuffer output = context_.pollEvent();
         assertThat(output.readInt(), is(1));
@@ -118,7 +118,7 @@ public class FrameLengthRemoveDecoderTest {
 
         // read first byte
         CodecBuffer b = Buffers.wrap(data_, 0, 1);
-        sut_.load(context_, b);
+        sut_.loaded(context_, b);
         assertThat(context_.eventCount(), is(0));
         assertThat(sut_.getPooling().remaining(), is(1));
         assertThat(sut_.getPoolingFrameBytes(), is(0));
@@ -127,7 +127,7 @@ public class FrameLengthRemoveDecoderTest {
 
         // read second byte
         b = Buffers.wrap(data_, 1, 1);
-        sut_.load(context_, b);
+        sut_.loaded(context_, b);
         assertThat(context_.eventCount(), is(0));
         assertThat(sut_.getPooling(), is(nullValue()));
         assertThat(sut_.getPoolingFrameBytes(), is(0x80000000));
@@ -136,7 +136,7 @@ public class FrameLengthRemoveDecoderTest {
 
         // read third byte
         b = Buffers.wrap(data_, 2, 1);
-        sut_.load(context_, b);
+        sut_.loaded(context_, b);
         assertThat(context_.eventCount(), is(0));
         assertThat(sut_.getPooling().remaining(), is(1));
         assertThat(sut_.getPoolingFrameBytes(), is(0x80000000));
@@ -145,7 +145,7 @@ public class FrameLengthRemoveDecoderTest {
 
         // prepend length field is read
         b = Buffers.wrap(data_, 3, 1);
-        sut_.load(context_, b);
+        sut_.loaded(context_, b);
         assertThat(context_.eventCount(), is(0));
         assertThat(sut_.getPooling(), is(nullValue()));
         assertThat(sut_.getPoolingFrameBytes(), is(12));
@@ -153,7 +153,7 @@ public class FrameLengthRemoveDecoderTest {
 
         // read remaining
         b = Buffers.wrap(data_, 4, 12);
-        sut_.load(context_, b);
+        sut_.loaded(context_, b);
 
         CodecBuffer output = context_.pollEvent();
         assertThat(output.readInt(), is(1));
@@ -182,7 +182,7 @@ public class FrameLengthRemoveDecoderTest {
         dataLength_ = encodeBuffer.remaining();
         CodecBuffer input = Buffers.wrap(data_, 0, dataLength_);
 
-        sut_.load(context_, input);
+        sut_.loaded(context_, input);
 
         for (int i = 0; i < completePacket; i++) {
             CodecBuffer output = context_.pollEvent();
@@ -212,7 +212,7 @@ public class FrameLengthRemoveDecoderTest {
         dataLength_ = encodeBuffer.remaining();
         CodecBuffer input = Buffers.wrap(data_, 0, dataLength_);
 
-        sut_.load(context_, input);
+        sut_.loaded(context_, input);
 
         for (int i = 0; i < completePacket; i++) {
             CodecBuffer output = context_.pollEvent();
@@ -229,7 +229,7 @@ public class FrameLengthRemoveDecoderTest {
 
     @Test
     public void testLoad_MessageLargeInput() throws Exception {
-        FrameLengthRemoveDecoder sut = new FrameLengthRemoveDecoder();
+        FramingCodec sut = new FramingCodec();
         CodecBuffer wholeInput = Buffers.newCodecBuffer(8192);
         for (int i = 0; i < 30; i++) {
             CodecBuffer buffer = Buffers.newCodecBuffer(1024);
@@ -244,7 +244,7 @@ public class FrameLengthRemoveDecoderTest {
             CodecBuffer input = Buffers.newCodecBuffer(8192);
             input.drainFrom(wholeInput, 8192);
             boolean is8192 = input.remaining() == 8192;
-            sut.load(context_, input);
+            sut.loaded(context_, input);
             if (is8192) {
                 assertThat(input, hasReferenceCount(7));
             } else {
@@ -266,13 +266,13 @@ public class FrameLengthRemoveDecoderTest {
         CodecBuffer input0 = Buffers.newCodecBuffer();
         input0.writeShort((short) 10);
         input0.writeBytes(data, 0, 3);
-        sut_.load(context_, input0);
+        sut_.loaded(context_, input0);
         CodecBuffer input1 = Buffers.newCodecBuffer();
         input1.writeBytes(data, 0, 3);
-        sut_.load(context_, input1);
+        sut_.loaded(context_, input1);
         CodecBuffer input2 = Buffers.newCodecBuffer();
         input2.writeBytes(data, 0, 4);
-        sut_.load(context_, input2);
+        sut_.loaded(context_, input2);
 
         CodecBuffer proceeded = context_.pollEvent();
         assertThat(proceeded.remaining(), is(10));
@@ -280,5 +280,38 @@ public class FrameLengthRemoveDecoderTest {
         assertThat(input0, hasReferenceCount(0));
         assertThat(input1, hasReferenceCount(0));
         assertThat(input2, hasReferenceCount(0));
+    }
+
+    @Test
+    public void testStore_Message() throws Exception {
+        CodecBuffer input = Buffers.newCodecBuffer(10);
+        input.writeBytes(new byte[5], 0, 5);
+
+        sut_.stored(context_, input);
+
+        BufferSink actual = context_.pollEvent();
+        assertThat(actual.remaining(), is(7));
+    }
+
+    @Test
+    public void testStore_MessageLength32767() throws Exception {
+        CodecBuffer input = Buffers.newCodecBuffer(Short.MAX_VALUE);
+        input.writeBytes(new byte[Short.MAX_VALUE], 0, Short.MAX_VALUE);
+
+        sut_.stored(context_, input);
+
+        BufferSink actual = context_.pollEvent();
+        assertThat(actual.remaining(), is(Short.MAX_VALUE + 2));
+    }
+
+    @Test
+    public void testStore_MessageLength32768() throws Exception {
+        CodecBuffer input = Buffers.newCodecBuffer(Short.MAX_VALUE + 1);
+        input.writeBytes(new byte[Short.MAX_VALUE + 1], 0, Short.MAX_VALUE + 1);
+
+        sut_.stored(context_, input);
+
+        BufferSink actual = context_.pollEvent();
+        assertThat(actual.remaining(), is((Short.MAX_VALUE + 1) + 4));
     }
 }

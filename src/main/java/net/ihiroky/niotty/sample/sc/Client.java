@@ -1,15 +1,12 @@
 package net.ihiroky.niotty.sample.sc;
 
 import net.ihiroky.niotty.CompletionListener;
-import net.ihiroky.niotty.LoadPipeline;
+import net.ihiroky.niotty.Pipeline;
 import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.StageKeys;
-import net.ihiroky.niotty.StorePipeline;
 import net.ihiroky.niotty.TransportFuture;
-import net.ihiroky.niotty.codec.DelimiterDecoder;
-import net.ihiroky.niotty.codec.DelimiterEncoder;
-import net.ihiroky.niotty.codec.StringDecoder;
-import net.ihiroky.niotty.codec.StringEncoder;
+import net.ihiroky.niotty.codec.DelimiterCodec;
+import net.ihiroky.niotty.codec.StringCodec;
 import net.ihiroky.niotty.nio.NioClientSocketProcessor;
 import net.ihiroky.niotty.nio.NioClientSocketTransport;
 
@@ -31,12 +28,10 @@ public class Client {
         NioClientSocketProcessor processor = new NioClientSocketProcessor();
         processor.setPipelineComposer(new PipelineComposer() {
             @Override
-            public void compose(LoadPipeline loadPipeline, StorePipeline storePipeline) {
-                loadPipeline.add(StageKeys.of("load-frame"), new DelimiterDecoder(new byte[]{'\n'}, true))
-                        .add(StageKeys.of("load-string"), new StringDecoder())
-                        .add(StageKeys.of("load-app"), new Dump());
-                storePipeline.add(StageKeys.of("store-string"), new StringEncoder())
-                        .add(StageKeys.of("store-frame"), new DelimiterEncoder(new byte[]{'\n'}));
+            public void compose(Pipeline pipeline) {
+                pipeline.add(StageKeys.of("load-app"), new Dump())
+                        .add(StageKeys.of("load-string"), new StringCodec())
+                        .add(StageKeys.of("load-frame"), new DelimiterCodec(new byte[]{'\n'}, true));
             }
         });
         processor.start();

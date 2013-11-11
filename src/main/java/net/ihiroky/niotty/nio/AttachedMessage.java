@@ -1,34 +1,29 @@
 package net.ihiroky.niotty.nio;
 
-import net.ihiroky.niotty.DefaultTransportParameter;
-import net.ihiroky.niotty.TransportParameter;
-
 /**
  * An message that an object is attached to.
  *
  * @param <I> the type of the message.
- * @author Hiroki Itoh
  */
 public class AttachedMessage<I> {
 
     private final I message_;
-    private final TransportParameter parameter_;
+    private final Object parameter_;
 
     public AttachedMessage(I message) {
-        this(message, DefaultTransportParameter.NO_PARAMETER);
+        this(message, null);
     }
 
-    public AttachedMessage(I message, TransportParameter parameter) {
+    public AttachedMessage(I message, Object parameter) {
         message_ = message;
-        parameter_ = (parameter != null) ? parameter : DefaultTransportParameter.NO_PARAMETER;
+        parameter_ = parameter;
     }
 
     public I message() {
         return message_;
     }
 
-    // TODO check caller if handle correctly.
-    public TransportParameter parameter() {
+    public Object parameter() {
         return parameter_;
     }
 
