@@ -1,5 +1,6 @@
 package net.ihiroky.niotty.nio;
 
+import net.ihiroky.niotty.Pipeline;
 import net.ihiroky.niotty.Stage;
 import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.StoreStage;
@@ -160,6 +161,14 @@ public class SelectLoop extends TaskLoop {
 
         @Override
         public void exceptionCaught(StageContext context, Exception exception) {
+        }
+
+        @Override
+        public void activated(StageContext context) {
+        }
+
+        @Override
+        public void deactivated(StageContext context, Pipeline.DeactivateState state) {
         }
     }
 }

@@ -134,6 +134,10 @@ public class JZlibInflaterDecoder extends LoadStage {
     }
 
     @Override
+    public void activated(StageContext context) {
+    }
+
+    @Override
     public void deactivated(StageContext context, Pipeline.DeactivateState state) {
         if (!deactivated_
                 && (state == Pipeline.DeactivateState.LOAD || state == Pipeline.DeactivateState.WHOLE)) {

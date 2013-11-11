@@ -1,6 +1,7 @@
 package net.ihiroky.niotty.sample.file;
 
 import net.ihiroky.niotty.LoadStage;
+import net.ihiroky.niotty.Pipeline;
 import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.buffer.BufferSink;
 import net.ihiroky.niotty.buffer.Buffers;
@@ -34,5 +35,10 @@ public class FileLoadStage extends LoadStage {
         } catch (IOException ioe) {
             ioe.printStackTrace();
         }
+    }
+
+    @Override
+    public void deactivated(StageContext context, Pipeline.DeactivateState state) {
+        context.transport().close();
     }
 }

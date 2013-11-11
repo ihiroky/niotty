@@ -33,6 +33,10 @@ class Dump extends LoadStage {
     }
 
     @Override
+    public void activated(StageContext context) {
+    }
+
+    @Override
     public void deactivated(StageContext context, Pipeline.DeactivateState state) {
         context.transport().close();
     }

@@ -1,6 +1,7 @@
 package net.ihiroky.niotty.sample.file;
 
 import net.ihiroky.niotty.LoadStage;
+import net.ihiroky.niotty.Pipeline;
 import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.buffer.CodecBuffer;
 import net.ihiroky.niotty.util.Charsets;
@@ -54,5 +55,14 @@ public class FileDumpStage extends LoadStage {
     @Override
     public void exceptionCaught(StageContext context, Exception exception) {
         exception.printStackTrace();
+    }
+
+    @Override
+    public void activated(StageContext context) {
+    }
+
+    @Override
+    public void deactivated(StageContext context, Pipeline.DeactivateState state) {
+        context.transport().close();
     }
 }

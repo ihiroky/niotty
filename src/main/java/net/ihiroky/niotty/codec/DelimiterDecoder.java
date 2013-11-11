@@ -1,6 +1,7 @@
 package net.ihiroky.niotty.codec;
 
 import net.ihiroky.niotty.LoadStage;
+import net.ihiroky.niotty.Pipeline;
 import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.CodecBuffer;
@@ -63,6 +64,14 @@ public class DelimiterDecoder extends LoadStage {
 
     @Override
     public void exceptionCaught(StageContext context, Exception exception) {
+    }
+
+    @Override
+    public void activated(StageContext context) {
+    }
+
+    @Override
+    public void deactivated(StageContext context, Pipeline.DeactivateState state) {
     }
 
     private CodecBuffer bufferOfInput(CodecBuffer input) {

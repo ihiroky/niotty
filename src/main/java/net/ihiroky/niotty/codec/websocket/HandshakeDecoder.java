@@ -1,6 +1,7 @@
 package net.ihiroky.niotty.codec.websocket;
 
 import net.ihiroky.niotty.LoadStage;
+import net.ihiroky.niotty.Pipeline;
 import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.Transport;
 import net.ihiroky.niotty.buffer.Buffers;
@@ -69,6 +70,14 @@ public class HandshakeDecoder extends LoadStage {
 
     @Override
     public void exceptionCaught(StageContext context, Exception exception) {
+    }
+
+    @Override
+    public void activated(StageContext context) {
+    }
+
+    @Override
+    public void deactivated(StageContext context, Pipeline.DeactivateState state) {
         //To change body of implemented methods use File | Settings | File Templates.
     }
 

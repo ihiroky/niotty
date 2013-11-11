@@ -93,6 +93,10 @@ public class JZlibDeflaterEncoder extends StoreStage {
     public void exceptionCaught(StageContext context, Exception exception) {
     }
 
+    @Override
+    public void activated(StageContext context) {
+    }
+
     private CodecBuffer compressRawArray(BufferSink input) {
         CodecBuffer output = Buffers.newCodecBuffer((int) (input.remaining() * 0.7f + 10));
 

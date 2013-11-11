@@ -22,6 +22,10 @@ public class DeflaterEncoder extends StoreStage {
 
     protected static final int DEFAULT_BUFFER_SIZE = 8192;
 
+    @Override
+    public void activated(StageContext context) {
+    }
+
     public DeflaterEncoder() {
         this(Deflater.BEST_SPEED, DEFAULT_BUFFER_SIZE, null, false);
     }
