@@ -1,7 +1,7 @@
 package net.ihiroky.niotty.sample.echo;
 
+import net.ihiroky.niotty.DeactivateState;
 import net.ihiroky.niotty.LoadStage;
-import net.ihiroky.niotty.Pipeline;
 import net.ihiroky.niotty.StageContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +31,7 @@ public class HelloWorldStage extends LoadStage {
     }
 
     @Override
-    public void deactivated(StageContext context, Pipeline.DeactivateState state) {
+    public void deactivated(StageContext context, DeactivateState state) {
         logger_.info("[deactivate] state:{}", state);
     }
 }

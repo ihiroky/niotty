@@ -1,8 +1,8 @@
 package net.ihiroky.niotty.nio;
 
+import net.ihiroky.niotty.DeactivateState;
 import net.ihiroky.niotty.DefaultTransportFuture;
 import net.ihiroky.niotty.FailedTransportFuture;
-import net.ihiroky.niotty.Pipeline;
 import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.SuccessfulTransportFuture;
 import net.ihiroky.niotty.Task;
@@ -394,7 +394,7 @@ public class NioDatagramSocketTransport extends NioSocketTransport<SelectLoop> {
                             logger_.debug("transport reaches the end of its stream:" + this);
                         }
                         // TODO Discuss to call loadEvent(TransportEvent) and change ops to achieve have close
-                        pipeline().deactivate(Pipeline.DeactivateState.LOAD);
+                        pipeline().deactivate(DeactivateState.LOAD);
                         readBuffer.clear();
                         return;
                     }

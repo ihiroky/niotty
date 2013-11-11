@@ -1,6 +1,6 @@
 package net.ihiroky.niotty.codec;
 
-import net.ihiroky.niotty.Pipeline;
+import net.ihiroky.niotty.DeactivateState;
 import net.ihiroky.niotty.Stage;
 import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.buffer.BufferSink;
@@ -97,7 +97,7 @@ public class FramingCodec implements Stage {
     }
 
     @Override
-    public void deactivated(StageContext context, Pipeline.DeactivateState state) {
+    public void deactivated(StageContext context, DeactivateState state) {
     }
 
     /**

@@ -225,9 +225,9 @@ public class PipelineElementTest {
     public void testDeactivate_DirectlyIfInLoopThread() throws Exception {
         when(taskLoop_.isInLoopThread()).thenReturn(true);
 
-        sut_.callDeactivate(Pipeline.DeactivateState.LOAD);
+        sut_.callDeactivate(DeactivateState.LOAD);
 
-        verify(stage_).deactivated(sut_.stateContext_, Pipeline.DeactivateState.LOAD);
+        verify(stage_).deactivated(sut_.stateContext_, DeactivateState.LOAD);
         verify(taskLoop_, never()).offer(Mockito.<Task>any());
     }
 
@@ -235,14 +235,14 @@ public class PipelineElementTest {
     public void testDeactivate_IndirectlyIfNotInLoopThread() throws Exception {
         when(taskLoop_.isInLoopThread()).thenReturn(false);
 
-        sut_.callDeactivate(Pipeline.DeactivateState.LOAD);
+        sut_.callDeactivate(DeactivateState.LOAD);
 
-        verify(stage_, never()).deactivated(sut_.stateContext_, Pipeline.DeactivateState.LOAD);
+        verify(stage_, never()).deactivated(sut_.stateContext_, DeactivateState.LOAD);
 
         ArgumentCaptor<Task> taskCaptor = ArgumentCaptor.forClass(Task.class);
         verify(taskLoop_).offer(taskCaptor.capture());
         taskCaptor.getValue().execute(TimeUnit.MILLISECONDS);
-        verify(stage_).deactivated(sut_.stateContext_, Pipeline.DeactivateState.LOAD);
+        verify(stage_).deactivated(sut_.stateContext_, DeactivateState.LOAD);
     }
 
     @Test

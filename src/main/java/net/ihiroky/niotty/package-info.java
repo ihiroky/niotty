@@ -9,20 +9,23 @@
  * the {@code Transport}. The read and write are asynchronous.
  * The read operation is invoked in the dedicated I/O threads associated with
  * the {@code Transport}. The read message is processed by the
- * {@link net.ihiroky.niotty.LoadPipeline} which consists of {@link net.ihiroky.niotty.LoadStage}s.
- * User defined {@code LoadStage}s may be included to receive the message.
+ * {@link net.ihiroky.niotty.Pipeline} which consists of {@link net.ihiroky.niotty.Stage}s.
+ * User defined {@code Stage}s may be included to receive the message.
  * The write operation is invoked in user codes through the {@code Transport}.
- * The write message is processed by the {@link net.ihiroky.niotty.StorePipeline}
- * which consists of {@link net.ihiroky.niotty.StoreStage}s. At last, the message
+ * The write message is processed by the {@link net.ihiroky.niotty.Pipeline}
+ * which consists of {@link net.ihiroky.niotty.Stage}s. At last, the message
  * is passed into the I/O threads. The other operations may be asynchronous
  * depending on the {@code Transport} implementation.
  * <p></p>
- * The pipelines processes not only messages but also {@link net.ihiroky.niotty.TransportStateEvent}.
- * This has state change of the {@code Transport}. If the stage of the {@code Transport}
- * is changed in I/O thread, it invokes {@code LoadPipeline} processing to notify
- * the change to user code. If an user wants to change the {@code Transport} state
- * (ex. close operation) the {@code TransportStateEvent} is processed through
- * {@code StorePipeline} and passes into the I/O thread to change the state.
+ * The pipelines processes not only messages but also the transport state.
+ * If the state of the {@code Transport} is changed, listener methods
+ * in {@link net.ihiroky.niotty.Stage} is called in the I/O threads;
+ * {@link net.ihiroky.niotty.Stage#activated(net.ihiroky.niotty.StageContext)}
+ * (when the transport gets readable),
+ * {@link net.ihiroky.niotty.Stage#deactivated(net.ihiroky.niotty.StageContext, DeactivateState)}
+ * (when the transport gets closed),
+ * {@link net.ihiroky.niotty.Stage#exceptionCaught(net.ihiroky.niotty.StageContext, Exception)}
+ * (when an exception occurs on I/O operation).
  *
  * <h3>TaskLoop and TaskLoopGroup</h3>
  * {@link net.ihiroky.niotty.TaskLoop} consists of a queue to receive

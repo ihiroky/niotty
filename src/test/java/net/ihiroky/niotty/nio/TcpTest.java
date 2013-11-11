@@ -1,5 +1,6 @@
 package net.ihiroky.niotty.nio;
 
+import net.ihiroky.niotty.DeactivateState;
 import net.ihiroky.niotty.LoadStage;
 import net.ihiroky.niotty.Pipeline;
 import net.ihiroky.niotty.PipelineComposer;
@@ -53,7 +54,7 @@ public class TcpTest {
         }
 
         @Override
-        public void deactivated(StageContext context, Pipeline.DeactivateState state) {
+        public void deactivated(StageContext context, DeactivateState state) {
             switch (state) {
                 case LOAD:
                     synchronized (this) {

@@ -585,10 +585,10 @@ public class DefaultPipelineTest {
         sut_.add(StageKeys.of(1), s1);
         when(taskLoop_.isInLoopThread()).thenReturn(true);
 
-        sut_.deactivate(Pipeline.DeactivateState.WHOLE);
+        sut_.deactivate(DeactivateState.WHOLE);
 
-        verify(s0).deactivated(Mockito.<StageContext>any(), eq(Pipeline.DeactivateState.WHOLE));
-        verify(s1).deactivated(Mockito.<StageContext>any(), eq(Pipeline.DeactivateState.WHOLE));
+        verify(s0).deactivated(Mockito.<StageContext>any(), eq(DeactivateState.WHOLE));
+        verify(s1).deactivated(Mockito.<StageContext>any(), eq(DeactivateState.WHOLE));
     }
 
     @Test

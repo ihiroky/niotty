@@ -8,7 +8,6 @@ import net.ihiroky.niotty.TaskSelection;
 import net.ihiroky.niotty.Transport;
 import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.TransportOption;
-import net.ihiroky.niotty.TransportStateEvent;
 import net.ihiroky.niotty.buffer.BufferSink;
 import org.junit.Before;
 import org.junit.Test;
@@ -66,7 +65,6 @@ public class NioSocketTransportTest {
         verify(selector_).offer(taskCaptor.capture());
         taskCaptor.getValue().execute(TimeUnit.MILLISECONDS);
 
-        ArgumentCaptor<TransportStateEvent> eventCaptor = ArgumentCaptor.forClass(TransportStateEvent.class);
         verify(selector_).register(channel, SelectionKey.OP_ACCEPT, sut_);
     }
 

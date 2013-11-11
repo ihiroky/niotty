@@ -1,22 +1,30 @@
 package net.ihiroky.niotty;
 
 /**
- * <p>Provides a chain of {@link LoadStage} or {@link StoreStage} to process
- * transmission data and states of a {@link Transport} which has this pipeline.</p>
+ * <p>Provides a chain of {@link net.ihiroky.niotty.Stage}s to process
+ * transmission data and states of a {@link net.ihiroky.niotty.Transport}
+ * which has this pipeline.</p>
  *
- * <p>Each stage is associated with {@link StageKey}. The stage key must be unique
- * in a pipeline.</p>
+ * <p>Each stage is associated with {@link net.ihiroky.niotty.StageKey}. The stage
+ * key must be unique in a pipeline.</p>
  *
  * <p>The special stage key {@link #IO_STAGE_KEY} is reserved for Niotty to specify
  * I/O stage. An user must not use it, or throws {@code IllegalArgumentException}
  * by add remove and replace operation.</p>
  *
+ * <p>Pipeline notifies messages to be stored and loaded, transport state changes
+ * and exceptions which occurs in the I/O thread to stages in it. The stored messages
+ * is notified from the head of the stages. The loaded messages, transport state changes
+ * and exceptions are notified from the tail of the stages. The head and tail
+ * is determined by the {@link #add(net.ihiroky.niotty.StageKey, net.ihiroky.niotty.Stage)}
+ * and so on.</p>
+ *
  * <h4>Thread model</h4>
- * <p>Each stage is executed in the {@link TaskLoop} to which the transport belongs
- * by default. Use {@link DefaultTaskLoopGroup} to allocate dedicated threads for
- * a stage when it is added to the pipeline. The {@code DefaultTaskLoopGroup} must
- * be shutdown in application shutdown procedure. See {@link PipelineComposer}
- * to synchronize its lifecycle with Niotty.</p>
+ * <p>Each stage is executed in the {@link net.ihiroky.niotty.TaskLoop} to which
+ * the transport belongs by default. Use {@link net.ihiroky.niotty.DefaultTaskLoopGroup}
+ * to allocate dedicated threads for a stage when it is added to the pipeline.
+ * The {@code DefaultTaskLoopGroup} must be shutdown in application shutdown procedure.
+ * See {@link net.ihiroky.niotty.PipelineComposer} to synchronize its lifecycle with Niotty.</p>
  */
 public interface Pipeline {
 
@@ -166,12 +174,26 @@ public interface Pipeline {
      */
     void load(Object message, Object parameter);
 
+    /**
+     * Calles {@link net.ihiroky.niotty.Stage#activated(net.ihiroky.niotty.StageContext)}s in this pipeline.
+     */
     void activate();
 
+    /**
+     * Calles {@link net.ihiroky.niotty.Stage#deactivated(net.ihiroky.niotty.StageContext, net.ihiroky.niotty.DeactivateState)}s in this pipeline.
+     */
     void deactivate(DeactivateState state);
 
+    /**
+     * Calles {@link net.ihiroky.niotty.Stage#exceptionCaught(net.ihiroky.niotty.StageContext, Exception)}s in this pipeline.
+     * @param exception
+     */
     void catchException(Exception exception);
 
+    /**
+     * Returns the transport to which this pipeline belongs to.
+     * @return the transport to which this pipeline belongs to
+     */
     Transport transport();
 
     /**
@@ -187,9 +209,4 @@ public interface Pipeline {
      */
     PipelineElement searchElement(StageKey key);
 
-    static enum DeactivateState {
-        STORE,
-        LOAD,
-        WHOLE,
-    }
 }

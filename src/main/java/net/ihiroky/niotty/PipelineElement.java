@@ -165,7 +165,7 @@ public class PipelineElement {
         });
     }
 
-    void callDeactivate(final Pipeline.DeactivateState state) {
+    void callDeactivate(final DeactivateState state) {
         if (taskLoop_.isInLoopThread()) {
             stage_.deactivated(stateContext_, state);
             return;
@@ -384,7 +384,7 @@ public class PipelineElement {
         }
 
         @Override
-        public void deactivated(StageContext context, Pipeline.DeactivateState state) {
+        public void deactivated(StageContext context, DeactivateState state) {
         }
     }
 

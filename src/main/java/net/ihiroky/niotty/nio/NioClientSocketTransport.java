@@ -1,9 +1,9 @@
 package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.CancelledTransportFuture;
+import net.ihiroky.niotty.DeactivateState;
 import net.ihiroky.niotty.DefaultTransportFuture;
 import net.ihiroky.niotty.FailedTransportFuture;
-import net.ihiroky.niotty.Pipeline;
 import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.SuccessfulTransportFuture;
 import net.ihiroky.niotty.Task;
@@ -11,8 +11,6 @@ import net.ihiroky.niotty.TransportException;
 import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.TransportOption;
 import net.ihiroky.niotty.TransportOptions;
-import net.ihiroky.niotty.TransportState;
-import net.ihiroky.niotty.TransportStateEvent;
 import net.ihiroky.niotty.buffer.BufferSink;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.CodecBuffer;
@@ -205,7 +203,7 @@ public class NioClientSocketTransport extends NioSocketTransport<SelectLoop> {
     @Override
     public TransportFuture bind(final SocketAddress local) {
         final DefaultTransportFuture future = new DefaultTransportFuture(this);
-        taskLoop().execute(new TransportStateEvent(TransportState.BOUND) {
+        taskLoop().execute(new Task() {
             @Override
             public long execute(TimeUnit timeUnit) throws Exception {
                 if (future.executing()) {
@@ -318,7 +316,7 @@ public class NioClientSocketTransport extends NioSocketTransport<SelectLoop> {
                             } else {
                                 channel.socket().shutdownOutput();
                             }
-                            pipeline().deactivate(Pipeline.DeactivateState.STORE);
+                            pipeline().deactivate(DeactivateState.STORE);
                             future.done();
                         } catch (IOException ioe) {
                             future.setThrowable(ioe);
@@ -350,7 +348,7 @@ public class NioClientSocketTransport extends NioSocketTransport<SelectLoop> {
                             } else {
                                 channel.socket().shutdownInput();
                             }
-                            pipeline().deactivate(Pipeline.DeactivateState.LOAD);
+                            pipeline().deactivate(DeactivateState.LOAD);
                             future.done();
                         } catch (IOException ioe) {
                             future.setThrowable(ioe);
@@ -387,7 +385,7 @@ public class NioClientSocketTransport extends NioSocketTransport<SelectLoop> {
                     if (logger_.isDebugEnabled()) {
                         logger_.debug("[onSelected] transport reaches the end of its stream:" + this);
                     }
-                    pipeline().deactivate(Pipeline.DeactivateState.LOAD);
+                    pipeline().deactivate(DeactivateState.LOAD);
                     readBuffer.clear();
                     return;
                 }

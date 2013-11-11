@@ -6,7 +6,6 @@ import net.ihiroky.niotty.Stage;
 import net.ihiroky.niotty.Task;
 import net.ihiroky.niotty.TaskSelection;
 import net.ihiroky.niotty.TransportOptions;
-import net.ihiroky.niotty.TransportStateEvent;
 import net.ihiroky.niotty.buffer.ArrayCodecBuffer;
 import net.ihiroky.niotty.buffer.ByteBufferCodecBuffer;
 import net.ihiroky.niotty.buffer.CodecBuffer;
@@ -392,8 +391,8 @@ public class NioClientSocketTransportTest {
             doAnswer(new Answer<Void>() {
                 @Override
                 public Void answer(InvocationOnMock invocation) throws Throwable {
-                    TransportStateEvent event = (TransportStateEvent) invocation.getArguments()[0];
-                    event.execute(TimeUnit.NANOSECONDS);
+                    Task task = (Task) invocation.getArguments()[0];
+                    task.execute(TimeUnit.NANOSECONDS);
                     return null;
                 }
             }).when(selector).execute(Mockito.<Task>any());
@@ -593,8 +592,8 @@ public class NioClientSocketTransportTest {
             doAnswer(new Answer<Void>() {
                 @Override
                 public Void answer(InvocationOnMock invocation) throws Throwable {
-                    TransportStateEvent event = (TransportStateEvent) invocation.getArguments()[0];
-                    event.execute(TimeUnit.NANOSECONDS);
+                    Task task = (Task) invocation.getArguments()[0];
+                    task.execute(TimeUnit.NANOSECONDS);
                     return null;
                 }
             }).when(selector).execute(Mockito.<Task>any());

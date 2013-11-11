@@ -1,8 +1,8 @@
 package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.AbstractTransport;
+import net.ihiroky.niotty.DeactivateState;
 import net.ihiroky.niotty.DefaultTransportFuture;
-import net.ihiroky.niotty.Pipeline;
 import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.Stage;
 import net.ihiroky.niotty.SuccessfulTransportFuture;
@@ -88,7 +88,7 @@ public abstract class NioSocketTransport<S extends SelectLoop> extends AbstractT
                 closeFuture.setThrowable(e);
             }
 
-            pipeline().deactivate(Pipeline.DeactivateState.WHOLE);
+            pipeline().deactivate(DeactivateState.WHOLE);
             onCloseSelectableChannel();
             closePipeline();
         }

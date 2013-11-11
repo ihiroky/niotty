@@ -1,6 +1,6 @@
 package net.ihiroky.niotty.codec;
 
-import net.ihiroky.niotty.Pipeline;
+import net.ihiroky.niotty.DeactivateState;
 import net.ihiroky.niotty.buffer.ArrayCodecBuffer;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.CodecBuffer;
@@ -182,7 +182,7 @@ public class JZlibTest {
 
         JZlibDeflaterEncoder encoder = new JZlibDeflaterEncoder();
         encoder.stored(context_, deflaterInput);
-        encoder.deactivated(context_, Pipeline.DeactivateState.WHOLE);
+        encoder.deactivated(context_, DeactivateState.WHOLE);
         CodecBuffer inflaterInput0 = context_.pollEvent();
         CodecBuffer inflaterInput1 = context_.pollEvent();
         if (context_.pollEvent() != null) {
@@ -299,7 +299,7 @@ public class JZlibTest {
 
         JZlibDeflaterEncoder encoder = new JZlibDeflaterEncoder(JZlibDeflaterEncoder.BEST_SPEED, true);
         encoder.stored(context_, buffer);
-        encoder.deactivated(context_, Pipeline.DeactivateState.WHOLE);
+        encoder.deactivated(context_, DeactivateState.WHOLE);
         CodecBuffer deflated = context_.pollEvent();
         CodecBuffer finished = context_.pollEvent();
         if (context_.pollEvent() != null) {
@@ -323,7 +323,7 @@ public class JZlibTest {
 
         JZlibDeflaterEncoder encoder = new JZlibDeflaterEncoder(JZlibDeflaterEncoder.BEST_SPEED, true);
         encoder.stored(context_, buffer);
-        encoder.deactivated(context_, Pipeline.DeactivateState.WHOLE);
+        encoder.deactivated(context_, DeactivateState.WHOLE);
         CodecBuffer deflated = context_.pollEvent();
         CodecBuffer finished = context_.pollEvent();
         if (context_.pollEvent() != null) {

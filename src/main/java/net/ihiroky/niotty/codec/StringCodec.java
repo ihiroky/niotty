@@ -1,7 +1,7 @@
 package net.ihiroky.niotty.codec;
 
+import net.ihiroky.niotty.DeactivateState;
 import net.ihiroky.niotty.LoadStage;
-import net.ihiroky.niotty.Pipeline;
 import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.CodecBuffer;
@@ -69,6 +69,6 @@ public class StringCodec extends LoadStage {
     }
 
     @Override
-    public void deactivated(StageContext context, Pipeline.DeactivateState state) {
+    public void deactivated(StageContext context, DeactivateState state) {
     }
 }
