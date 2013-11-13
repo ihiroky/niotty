@@ -154,6 +154,6 @@ public class AbstractTransportFutureTest {
         sut_.fireOnComplete();
 
         verify(listener).onComplete(sut_);
-        assertThat(taskResult[0], is(Long.MAX_VALUE));
+        assertThat(taskResult[0], is(Task.DONE));
     }
 }

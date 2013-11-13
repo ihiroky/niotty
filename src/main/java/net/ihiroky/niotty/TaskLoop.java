@@ -117,7 +117,7 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
         if (isInLoopThread()) {
             try {
                 long waitTimeNanos = task.execute(TIME_UNIT);
-                if (waitTimeNanos == Long.MAX_VALUE) {
+                if (waitTimeNanos == Task.DONE) {
                     return;
                 }
                 if (waitTimeNanos > 0) {
@@ -150,7 +150,7 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
     }
 
     /**
-     * Executes the loop especially on a thread provided by {@link TaskLoopGroup}.
+     * Executes the loop on a thread provided by {@link TaskLoopGroup}.
      */
     public void run() {
         Deque<Task> taskBuffer = new ArrayDeque<Task>(INITIAL_TASK_BUFFER_SIZE);
@@ -177,6 +177,9 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
                         logger_.warn("[run] Unexpected exception.", e);
                     }
                 }
+                while (!taskBuffer.isEmpty()) {
+                    taskQueue.offer(taskBuffer.pollFirst());
+                }
             }
         } finally {
             onClose();
@@ -196,15 +199,8 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
             if (task == null) {
                 break;
             }
-            buffer.offerLast(task);
-        }
-        for (;;) {
-            task = buffer.pollFirst();
-            if (task == null) {
-                break;
-            }
             long retryDelay = task.execute(TIME_UNIT);
-            if (retryDelay == Long.MAX_VALUE) {
+            if (retryDelay == Task.DONE) {
                 continue;
             }
             if (retryDelay > 0) {
@@ -215,7 +211,7 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
                 }
                 delayQueue.offer(new TaskFuture(expire, task));
             } else {
-                taskQueue.offer(task);
+                buffer.offerLast(task);
             }
         }
     }
@@ -236,7 +232,7 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
             try {
                 delayQueue.poll();
                 long waitTimeNanos = f.task_.execute(TIME_UNIT);
-                if (waitTimeNanos == Long.MAX_VALUE) {
+                if (waitTimeNanos == Task.DONE) {
                     f.dispatched();
                     continue;
                 }

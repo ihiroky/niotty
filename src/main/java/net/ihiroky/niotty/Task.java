@@ -12,7 +12,7 @@ public interface Task {
      * and passed to {@link TaskLoop#poll(long, java.util.concurrent.TimeUnit)}
      * to indicate that the thread should wait without timeout.
      */
-    long DONE = Long.MAX_VALUE;
+    long DONE = -1;
 
     /**
      * The value returned by {@link #execute(java.util.concurrent.TimeUnit)}
