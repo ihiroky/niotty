@@ -53,10 +53,10 @@ public class EchoMain {
 
         try {
             serverTransport.bind(new InetSocketAddress(port))
-                    .waitForCompletion().throwExceptionIfFailed();
+                    .await().throwExceptionIfFailed();
 
             clientTransport.connect(new InetSocketAddress("localhost", port))
-                    .waitForCompletion().throwExceptionIfFailed();
+                    .await().throwExceptionIfFailed();
 
             System.out.println("connection wait gets done.");
             clientTransport.write("Hello World.");

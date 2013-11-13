@@ -1,11 +1,10 @@
 package net.ihiroky.niotty;
 
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
- * Created on 13/01/11, 17:29
- *
- * @author Hiroki Itoh
  */
 public class DefaultTransportFuture extends AbstractTransportFuture {
 
@@ -32,7 +31,7 @@ public class DefaultTransportFuture extends AbstractTransportFuture {
     @Override
     public boolean isDone() {
         Object result = result_;
-        return result == DONE || result == CANCELLED;
+        return result != null && result != EXECUTING;
     }
 
     @Override
@@ -76,7 +75,7 @@ public class DefaultTransportFuture extends AbstractTransportFuture {
     }
 
     @Override
-    public TransportFuture waitForCompletion() throws InterruptedException {
+    public TransportFuture await() throws InterruptedException {
         synchronized (this) {
             while (!isDone()) {
                 wait();
@@ -86,23 +85,23 @@ public class DefaultTransportFuture extends AbstractTransportFuture {
     }
 
     @Override
-    public TransportFuture waitForCompletion(long timeout, TimeUnit unit) throws InterruptedException {
-        long left = unit.toMillis(timeout);
+    public boolean await(long timeout, TimeUnit unit) throws InterruptedException {
+        long left = unit.toNanos(timeout);
         synchronized (this) {
-            long start = System.currentTimeMillis();
+            long base = System.nanoTime();
             long now;
             while (!isDone() && left > 0) {
-                wait(left);
-                now = System.currentTimeMillis();
-                left -= (now - start);
-                start = now;
+                TimeUnit.NANOSECONDS.timedWait(this, left);
+                now = System.nanoTime();
+                left -= (now - base);
+                base = now;
             }
         }
-        return this;
+        return left > 0;
     }
 
     @Override
-    public TransportFuture waitForCompletionUninterruptibly() {
+    public TransportFuture awaitUninterruptibly() {
         boolean interrupted = false;
         synchronized (this) {
             while (!isDone()) {
@@ -120,29 +119,84 @@ public class DefaultTransportFuture extends AbstractTransportFuture {
     }
 
     @Override
-    public TransportFuture waitForCompletionUninterruptibly(long timeout, TimeUnit unit) {
+    public boolean awaitUninterruptibly(long timeout, TimeUnit unit) {
         boolean interrupted = false;
-        long left = unit.toMillis(timeout);
+        long left = unit.toNanos(timeout);
         synchronized (this) {
-            long start = System.currentTimeMillis();
+            long base = System.nanoTime();
             long now;
             while (!isDone() && left > 0) {
                 try {
-                    wait(left);
+                    TimeUnit.NANOSECONDS.timedWait(this, left);
                 } catch (InterruptedException ie) {
                     interrupted = true;
                 }
-                now = System.currentTimeMillis();
-                left -= (now - start);
-                start = now;
+                now = System.nanoTime();
+                left -= (now - base);
+                base = now;
             }
         }
         if (interrupted) {
             Thread.currentThread().interrupt();
         }
+        return left > 0;
+    }
+
+    @Override
+    public TransportFuture join() {
+        synchronized (this) {
+            while (!isDone()) {
+                try {
+                    wait();
+                } catch (InterruptedException ie) {
+                    throw new TransportException(ie);
+                }
+            }
+        }
+        if (isCancelled()) {
+            throw new TransportException("Cancelled", new CancellationException());
+        }
+        Throwable t = throwable();
+        if (t != null) {
+            throw new TransportException(t);
+        }
         return this;
     }
 
+    @Override
+    public TransportFuture join(long timeout, TimeUnit unit) {
+        long left = unit.toNanos(timeout);
+        synchronized (this) {
+            long base = System.nanoTime();
+            long now;
+            while (!isDone() && left > 0) {
+                try {
+                    TimeUnit.NANOSECONDS.timedWait(this, left);
+                } catch (InterruptedException ie) {
+                    throw new TransportException(ie);
+                }
+                now = System.nanoTime();
+                left -= (now - base);
+                base = now;
+            }
+        }
+        if (left <= 0) {
+            throw new TransportException("Timeout", new TimeoutException());
+        }
+        if (isCancelled()) {
+            throw new TransportException("Cancelled", new CancellationException());
+        }
+        Throwable t = throwable();
+        if (t != null) {
+            throw new TransportException(t);
+        }
+        return this;
+    }
+
+    /**
+     * Changes the state to EXECUTING.
+     * @return true if the stage is changed successfully
+     */
     public boolean executing() {
         boolean success;
         synchronized (this) {
@@ -155,14 +209,23 @@ public class DefaultTransportFuture extends AbstractTransportFuture {
         return success;
     }
 
-    public void done() {
+    /**
+     * Change the state to DONE.
+     * @return true if the state is changed successfully
+     */
+    public boolean done() {
+        boolean success;
         synchronized (this) {
-            if (result_ == null || result_ == EXECUTING) {
+            success = (result_ == null || result_ == EXECUTING);
+            if (success) {
                 result_ = DONE;
                 notifyAll();
             }
         }
-        fireOnComplete();
+        if (success) {
+            fireOnComplete();
+        }
+        return success;
     }
 
     @Override
@@ -175,17 +238,28 @@ public class DefaultTransportFuture extends AbstractTransportFuture {
                 notifyAll();
             }
         }
-        fireOnComplete();
+        if (success) {
+            fireOnComplete();
+        }
         return success;
     }
 
-    public void setThrowable(Throwable t) {
+    /**
+     * Changes the state to FAILURE with the specified cause.
+     * @param cause the cause
+     */
+    public boolean setThrowable(Throwable cause) {
+        boolean success;
         synchronized (this) {
-            if (result_ == null || result_ == EXECUTING) {
-                result_ = t;
+            success = (result_ == null || result_ == EXECUTING);
+            if (success) {
+                result_ = cause;
                 notifyAll();
             }
         }
-        fireOnComplete();
+        if (success) {
+            fireOnComplete();
+        }
+        return success;
     }
 }

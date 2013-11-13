@@ -53,9 +53,9 @@ public class FileMain {
         NioServerSocketTransport serverTransport = serverProcessor.createTransport();
         NioClientSocketTransport clientTransport = clientProcessor.createTransport();
         try {
-            serverTransport.bind(new InetSocketAddress(serverPort)).waitForCompletion();
+            serverTransport.bind(new InetSocketAddress(serverPort)).await();
             TransportFuture connectFuture = clientTransport.connect(new InetSocketAddress("localhost", serverPort));
-            connectFuture.waitForCompletion().throwExceptionIfFailed();
+            connectFuture.await().throwExceptionIfFailed();
 
             waiter.waitUntilFinished();
         } catch (Exception e) {

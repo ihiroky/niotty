@@ -152,8 +152,8 @@ public class TcpTest {
 
     @Test(timeout = 3000)
     public void testShutdownOutput() throws Exception {
-        serverSut_.bind(SERVER_ENDPOINT).waitForCompletion();
-        clientSut_.connect(SERVER_ENDPOINT).waitForCompletion();
+        serverSut_.bind(SERVER_ENDPOINT).await();
+        clientSut_.connect(SERVER_ENDPOINT).await();
         waitUntilConnected(serverStatusListener_);
 
         clientSut_.shutdownOutput();
@@ -169,8 +169,8 @@ public class TcpTest {
             p.start();
             NioClientSocketTransport clientSut = p.createTransport();
 
-            serverSut_.bind(SERVER_ENDPOINT).waitForCompletion();
-            clientSut.connect(SERVER_ENDPOINT).waitForCompletion();
+            serverSut_.bind(SERVER_ENDPOINT).await();
+            clientSut.connect(SERVER_ENDPOINT).await();
             waitUntilConnected(serverStatusListener_);
 
             clientSut.close();

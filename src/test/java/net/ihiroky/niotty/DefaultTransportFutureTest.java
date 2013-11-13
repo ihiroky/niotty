@@ -6,9 +6,11 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.MatcherAssert.*;
@@ -20,6 +22,7 @@ import static org.mockito.Mockito.*;
 public class DefaultTransportFutureTest {
 
     private DefaultTransportFuture sut_;
+    private Listener listener_;
 
     private static ExecutorService executor_;
 
@@ -42,8 +45,39 @@ public class DefaultTransportFutureTest {
         when(taskLoop.isInLoopThread()).thenReturn(true);
         when(transport.taskLoop()).thenReturn(taskLoop);
         sut_ = new DefaultTransportFuture(transport);
+        listener_ = new Listener();
     }
 
+    @Test
+    public void testSetThrowable_CallListenerOnce() throws Exception {
+        sut_.addListener(listener_);
+        Exception e = new Exception();
+        sut_.setThrowable(e);
+        sut_.setThrowable(e);
+
+        assertThat(listener_.count(), is(1));
+        assertThat(listener_.future(), is(sut_));
+    }
+
+    @Test
+    public void testDone_CallListenerOnce() throws Exception {
+        sut_.addListener(listener_);
+        sut_.done();
+        sut_.done();
+
+        assertThat(listener_.count(), is(1));
+        assertThat(listener_.future(), is(sut_));
+    }
+
+    @Test
+    public void testCancel_CallListenerOnce() throws Exception {
+        sut_.addListener(listener_);
+        sut_.cancel();
+        sut_.cancel();
+
+        assertThat(listener_.count(), is(1));
+        assertThat(listener_.future(), is(sut_));
+    }
     @Test(expected = IndexOutOfBoundsException.class)
     public void testThrowRuntimeExceptionIfFailed_ThrowableIsIndexOutOfBoundException() throws Exception {
         sut_.executing();
@@ -179,7 +213,7 @@ public class DefaultTransportFutureTest {
     }
 
     @Test(timeout = 1000)
-    public void testWaitCompletion() throws Exception {
+    public void testAwait() throws Exception {
         long start = System.currentTimeMillis();
         executor_.execute(new Runnable() {
             @Override
@@ -193,13 +227,13 @@ public class DefaultTransportFutureTest {
                 }
             }
         });
-        sut_.waitForCompletion();
+        sut_.await();
         long elapsed = System.currentTimeMillis() - start;
         assertThat(Long.toString(elapsed), elapsed >= 10, is(true));
     }
 
     @Test(expected = InterruptedException.class)
-    public void testWaitCompletion_ThrowsInterruptedExceptionIfInterrupted() throws Exception {
+    public void testAwait_ThrowsInterruptedExceptionIfInterrupted() throws Exception {
         final Thread thread = Thread.currentThread();
         executor_.execute(new Runnable() {
             @Override
@@ -211,11 +245,11 @@ public class DefaultTransportFutureTest {
                 }
             }
         });
-        sut_.waitForCompletion();
+        sut_.await();
     }
 
     @Test(timeout = 1000)
-    public void testWaitCompletionUninterruptibly() throws Exception {
+    public void testAwaitUninterruptibly() throws Exception {
         long start = System.currentTimeMillis();
         executor_.execute(new Runnable() {
             @Override
@@ -229,13 +263,13 @@ public class DefaultTransportFutureTest {
                 }
             }
         });
-        sut_.waitForCompletionUninterruptibly();
+        sut_.awaitUninterruptibly();
         long elapsed = System.currentTimeMillis() - start;
         assertThat(Long.toString(elapsed), elapsed >= 10, is(true));
     }
 
     @Test
-    public void testWaitCompletionUninterruptibly_InterruptedIfInterrupted() throws Exception {
+    public void testAwaitUninterruptibly_InterruptedIfInterrupted() throws Exception {
         final Thread thread = Thread.currentThread();
         executor_.execute(new Runnable() {
             @Override
@@ -250,12 +284,12 @@ public class DefaultTransportFutureTest {
                 }
             }
         });
-        sut_.waitForCompletionUninterruptibly();
+        sut_.awaitUninterruptibly();
         assertThat(Thread.interrupted(), is(true));
     }
 
     @Test(timeout = 1000)
-    public void testWaitCompletionTimeout_InTimeout() throws Exception {
+    public void testAwaitTimeout_InTimeout() throws Exception {
         long start = System.currentTimeMillis();
         executor_.execute(new Runnable() {
             @Override
@@ -269,13 +303,13 @@ public class DefaultTransportFutureTest {
                 }
             }
         });
-        sut_.waitForCompletion(100, TimeUnit.MILLISECONDS);
+        sut_.await(100, TimeUnit.MILLISECONDS);
         long elapsed = System.currentTimeMillis() - start;
         assertThat(Long.toString(elapsed), elapsed >= 10 && elapsed <= 100, is(true));
     }
 
     @Test(timeout = 1000)
-    public void testWaitCompletionTimeout_ExceedsTimeout() throws Exception {
+    public void testAwaitTimeout_ExceedsTimeout() throws Exception {
         long start = System.currentTimeMillis();
 //        executor_.execute(new Runnable() {
 //            @Override
@@ -287,7 +321,7 @@ public class DefaultTransportFutureTest {
 //                }
 //            }
 //        });
-        sut_.waitForCompletion(10, TimeUnit.MILLISECONDS);
+        sut_.await(10, TimeUnit.MILLISECONDS);
         long elapsed = System.currentTimeMillis() - start;
         assertThat(Long.toString(elapsed), elapsed >= 10 && elapsed < 100, is(true));
     }
@@ -305,11 +339,11 @@ public class DefaultTransportFutureTest {
                 }
             }
         });
-        sut_.waitForCompletion(100, TimeUnit.MILLISECONDS);
+        sut_.await(100, TimeUnit.MILLISECONDS);
     }
 
     @Test(timeout = 1000)
-    public void testWaitCompletionUninterruptiblyTimeout_InTimeout() throws Exception {
+    public void testAwaitUninterruptiblyTimeout_InTimeout() throws Exception {
         long start = System.currentTimeMillis();
         executor_.execute(new Runnable() {
             @Override
@@ -323,13 +357,13 @@ public class DefaultTransportFutureTest {
                 }
             }
         });
-        sut_.waitForCompletionUninterruptibly(100, TimeUnit.MILLISECONDS);
+        sut_.awaitUninterruptibly(100, TimeUnit.MILLISECONDS);
         long elapsed = System.currentTimeMillis() - start;
         assertThat(Long.toString(elapsed), elapsed >= 10, is(true));
     }
 
     @Test(timeout = 1000)
-    public void testWaitCompletionUninterruptiblyTimeout_ExceedsTimeout() throws Exception {
+    public void testAwaitUninterruptiblyTimeout_ExceedsTimeout() throws Exception {
         long start = System.currentTimeMillis();
 //        executor_.execute(new Runnable() {
 //            @Override
@@ -341,13 +375,13 @@ public class DefaultTransportFutureTest {
 //                }
 //            }
 //        });
-        sut_.waitForCompletionUninterruptibly(10, TimeUnit.MILLISECONDS);
+        sut_.awaitUninterruptibly(10, TimeUnit.MILLISECONDS);
         long elapsed = System.currentTimeMillis() - start;
         assertThat(Long.toString(elapsed), elapsed >= 10, is(true));
     }
 
     @Test(timeout = 1000)
-    public void testWaitCompletionUninterruptiblyTimeout_InterruptedIfInterrupted() throws Exception {
+    public void testAwaitUninterruptiblyTimeout_InterruptedIfInterrupted() throws Exception {
         final Thread thread = Thread.currentThread();
         executor_.execute(new Runnable() {
             @Override
@@ -361,7 +395,187 @@ public class DefaultTransportFutureTest {
                 }
             }
         });
-        sut_.waitForCompletionUninterruptibly(1000, TimeUnit.MILLISECONDS);
+        sut_.awaitUninterruptibly(1000, TimeUnit.MILLISECONDS);
         assertThat(Thread.interrupted(), is(true));
+    }
+
+    @Test
+    public void testJoin_ExceptionIfInterrupted() throws Exception {
+        final Thread thread = Thread.currentThread();
+        executor_.execute(new Runnable() {
+            @Override
+            public void run() {
+                sut_.executing();
+                try {
+                    Thread.sleep(10);
+                    thread.interrupt();
+                } catch (Exception ignored) {
+                }
+            }
+        });
+        try {
+            sut_.join();
+            throw new AssertionError();
+        } catch (TransportException te) {
+            assertThat(te.getCause(), is(instanceOf(InterruptedException.class)));
+        }
+    }
+
+    @Test
+    public void testJoin_ExceptionIfCancelled() throws Exception {
+        sut_.cancel();
+        try {
+            sut_.join();
+            throw new AssertionError();
+        } catch (TransportException te) {
+            assertThat(te.getCause(), is(instanceOf(CancellationException.class)));
+        }
+    }
+
+    @Test
+    public void testJoin_ExceptionIfFailed() throws Exception {
+        executor_.execute(new Runnable() {
+            @Override
+            public void run() {
+                sut_.executing();
+                try {
+                    Thread.sleep(10);
+                    sut_.setThrowable(new IOException());
+                } catch (InterruptedException ignored) {
+                }
+            }
+        });
+        try {
+            sut_.join();
+            throw new AssertionError();
+        } catch (TransportException te) {
+            assertThat(te.getCause(), is(instanceOf(IOException.class)));
+        }
+    }
+
+    @Test
+    public void testJoin_Done() throws Exception {
+        executor_.execute(new Runnable() {
+            @Override
+            public void run() {
+                sut_.executing();
+                try {
+                    Thread.sleep(10);
+                    sut_.done();
+                } catch (InterruptedException ignored) {
+                }
+            }
+        });
+        sut_.join();
+    }
+
+    @Test
+    public void testJoinTimeout_ExceptionIfInterrupted() throws Exception {
+        final Thread thread = Thread.currentThread();
+        executor_.execute(new Runnable() {
+            @Override
+            public void run() {
+                sut_.executing();
+                try {
+                    Thread.sleep(10);
+                    thread.interrupt();
+                } catch (Exception ignored) {
+                }
+            }
+        });
+        try {
+            sut_.join(1000, TimeUnit.MILLISECONDS);
+            throw new AssertionError();
+        } catch (TransportException te) {
+            assertThat(te.getCause(), is(instanceOf(InterruptedException.class)));
+        }
+    }
+
+    @Test
+    public void testJoinTimeout_ExceptionIfCancelled() throws Exception {
+        sut_.cancel();
+        try {
+            sut_.join(1000, TimeUnit.MILLISECONDS);
+            throw new AssertionError();
+        } catch (TransportException te) {
+            assertThat(te.getCause(), is(instanceOf(CancellationException.class)));
+        }
+    }
+
+    @Test
+    public void testJoinTimeout_ExceptionIfFailed() throws Exception {
+        executor_.execute(new Runnable() {
+            @Override
+            public void run() {
+                sut_.executing();
+                try {
+                    Thread.sleep(10);
+                    sut_.setThrowable(new IOException());
+                } catch (InterruptedException ignored) {
+                }
+            }
+        });
+        try {
+            sut_.join(1000, TimeUnit.MILLISECONDS);
+            throw new AssertionError();
+        } catch (TransportException te) {
+            assertThat(te.getCause(), is(instanceOf(IOException.class)));
+        }
+    }
+
+    @Test
+    public void testJoinTimeout_Done() throws Exception {
+        executor_.execute(new Runnable() {
+            @Override
+            public void run() {
+                sut_.executing();
+                try {
+                    Thread.sleep(10);
+                    sut_.done();
+                } catch (InterruptedException ignored) {
+                }
+            }
+        });
+        sut_.join(1000, TimeUnit.MILLISECONDS);
+    }
+
+    @Test
+    public void testJoinTimeout_ExceptionIfTimeout() throws Exception {
+        try {
+            sut_.join(10, TimeUnit.MILLISECONDS);
+            throw new AssertionError();
+        } catch (TransportException te) {
+            assertThat(te.getCause(), is(instanceOf(TimeoutException.class)));
+        }
+    }
+
+    private static class Listener implements CompletionListener {
+
+        DefaultTransportFuture future_;
+        int counter_;
+
+        @Override
+        public void onComplete(TransportFuture future) {
+            synchronized (this) {
+                future_ = (DefaultTransportFuture) future;
+                counter_++;
+                notifyAll();
+            }
+        }
+
+        DefaultTransportFuture future() throws InterruptedException {
+            synchronized (this) {
+                while (future_ == null) {
+                    wait();
+                }
+            }
+            return future_;
+        }
+
+        int count() {
+            synchronized (this) {
+                return counter_;
+            }
+        }
     }
 }

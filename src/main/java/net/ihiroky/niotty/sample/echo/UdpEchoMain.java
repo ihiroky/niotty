@@ -44,10 +44,10 @@ public class UdpEchoMain {
         try {
             SocketAddress serverEndpoint = new InetSocketAddress("localhost", serverPort);
             SocketAddress clientEndPoint = new InetSocketAddress("localhost", clientPort);
-            serverTransport.bind(serverEndpoint).waitForCompletion().throwExceptionIfFailed();
-            clientTransport.bind(clientEndPoint).waitForCompletion().throwExceptionIfFailed();
-            serverTransport.connect(clientEndPoint).waitForCompletion().throwExceptionIfFailed();
-            clientTransport.connect(serverEndpoint).waitForCompletion().throwExceptionIfFailed();
+            serverTransport.bind(serverEndpoint).await().throwExceptionIfFailed();
+            clientTransport.bind(clientEndPoint).await().throwExceptionIfFailed();
+            serverTransport.connect(clientEndPoint).await().throwExceptionIfFailed();
+            clientTransport.connect(serverEndpoint).await().throwExceptionIfFailed();
             clientTransport.write("Hello World.");
 
             Thread.sleep(lastWaitMillis);

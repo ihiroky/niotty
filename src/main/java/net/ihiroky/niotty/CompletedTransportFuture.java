@@ -1,5 +1,6 @@
 package net.ihiroky.niotty;
 
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -27,22 +28,40 @@ abstract class CompletedTransportFuture extends AbstractTransportFuture {
     }
 
     @Override
-    public TransportFuture waitForCompletion() throws InterruptedException {
+    public TransportFuture await() throws InterruptedException {
         return this;
     }
 
     @Override
-    public TransportFuture waitForCompletion(long timeout, TimeUnit unit) throws InterruptedException {
+    public boolean await(long timeout, TimeUnit unit) throws InterruptedException {
+        return true;
+    }
+
+    @Override
+    public TransportFuture awaitUninterruptibly() {
         return this;
     }
 
     @Override
-    public TransportFuture waitForCompletionUninterruptibly() {
+    public boolean awaitUninterruptibly(long timeout, TimeUnit unit) {
+        return true;
+    }
+
+    @Override
+    public TransportFuture join() {
+        if (isCancelled()) {
+            throw new TransportException(new CancellationException());
+        }
+        Throwable t = throwable();
+        if (t != null) {
+            throw new TransportException(t);
+        }
         return this;
     }
 
     @Override
-    public TransportFuture waitForCompletionUninterruptibly(long timeout, TimeUnit unit) {
+    public TransportFuture join(long timeout, TimeUnit unit) {
+        join();
         return this;
     }
 }
