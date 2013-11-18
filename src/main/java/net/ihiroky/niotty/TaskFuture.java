@@ -27,7 +27,7 @@ public class TaskFuture implements Comparable<TaskFuture> {
         ;
     }
 
-    TaskFuture(long expire, Task task) {
+    public TaskFuture(long expire, Task task) {
         expire_ = expire;
         task_ = task;
         state_ = State.WAITING;
