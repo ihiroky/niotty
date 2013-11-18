@@ -84,11 +84,10 @@ public abstract class NioSocketTransport<S extends SelectLoop> extends AbstractT
                 unregister(); // decrement register count
                 channel.close();
                 closeFuture.done();
-            } catch (IOException e) {
+            } catch (Exception e) {
                 closeFuture.setThrowable(e);
             }
 
-            pipeline().deactivate(DeactivateState.WHOLE);
             onCloseSelectableChannel();
             closePipeline();
         }
@@ -149,6 +148,9 @@ public abstract class NioSocketTransport<S extends SelectLoop> extends AbstractT
     // Called only from doCloseSelectableChannel().
     // So there is no need to check the current thread.
     private void unregister() {
+        if ((key_.interestOps() & SelectionKey.OP_READ) != 0) {
+            pipeline().deactivate(DeactivateState.WHOLE);
+        }
         key_.cancel();
         taskLoop().reject(this);
         logger_.debug("[unregister] {} is unregistered from {}.", this, Thread.currentThread());

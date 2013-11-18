@@ -17,14 +17,5 @@
  * {@link net.ihiroky.niotty.nio.NioClientSocketProcessor}. These subclass of
  * {@link net.ihiroky.niotty.Processor} manages also the selector pool described
  * above.
- *
- * <h3>Write queue</h3>
- * {@link net.ihiroky.niotty.nio.WriteQueue} defines message queueing and
- * how to flush queued messages to {@code java.nio.channels.WritableByteChanel}.
- * The default {@code WriteQueue} implementation is {@link net.ihiroky.niotty.nio.SimpleWriteQueue}.
- * To use prioritized flushing, use correspondent implementation like
- * {@link net.ihiroky.niotty.nio.DeficitRoundRobinWriteQueue} and so on with
- * {@link net.ihiroky.niotty.buffer.BufferSink} which has non negative priority.
- * <p>The implementation of UDP is not yet.</p>
  */
 package net.ihiroky.niotty.nio;
