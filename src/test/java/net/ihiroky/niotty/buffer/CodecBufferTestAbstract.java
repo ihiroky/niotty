@@ -1548,5 +1548,17 @@ public class CodecBufferTestAbstract {
             assertThat(sut.arrayOffset(), is(0));
             assertThat(sut.array().length, is(8 + 9));
         }
+
+        @Test
+        public void testEquals() throws Exception {
+            byte[] data = new byte[10];
+            Arrays.fill(data, (byte) 1);
+            CodecBuffer sut = createCodecBuffer(data, 0, data.length);
+            CodecBuffer a = new ArrayCodecBuffer(data, 0, data.length);
+            CodecBuffer b = new ByteBufferCodecBuffer(ByteBuffer.wrap(data), false);
+
+            assertThat(sut.equals(a), is(true));
+            assertThat(sut.equals(b), is(true));
+        }
     }
 }

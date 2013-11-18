@@ -4,7 +4,7 @@ package net.ihiroky.niotty.buffer;
  * A skeletal implementation of {@link CodecBuffer}.
  * @author Hiroki Itoh
  */
-public abstract class AbstractCodecBuffer implements CodecBuffer {
+public abstract class AbstractCodecBuffer extends AbstractBufferSink implements CodecBuffer {
 
     /** A factor to expand internal buffer. */
     protected static final int EXPAND_MULTIPLIER = 2;

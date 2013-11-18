@@ -854,6 +854,31 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer {
                 + "(startIndex:" + start_ + ", endIndex:" + end_ + ", capacity:" + buffer_.capacity() + ')';
     }
 
+    @Override
+    public boolean equals(Object object) {
+        if (object == this) {
+            return true;
+        }
+        if (object instanceof ByteBufferCodecBuffer) {
+            ByteBufferCodecBuffer that = (ByteBufferCodecBuffer) object;
+            this.changeModeToRead();
+            that.changeModeToRead();
+            return this.buffer_.equals(that.buffer_);
+        }
+        if (object instanceof CodecBuffer) {
+            changeModeToRead();
+            CodecBuffer that = (CodecBuffer) object;
+            return this.buffer_.equals(that.byteBuffer());
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        changeModeToRead();
+        return buffer_.hashCode();
+    }
+
     /**
      * Returns a reference count of a chunk which manages an internal byte array.
      * @return the reference count

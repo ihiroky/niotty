@@ -97,6 +97,13 @@ public interface BufferSink {
     int arrayOffset();
 
     /**
+     * <p>Returns a byte buffer which has same content of this buffer.</p>
+     * <p>This method may the create new byte buffer and copy the content in this buffer to the byte buffer.</p>
+     * @return the byte buffer
+     */
+    ByteBuffer byteBuffer();
+
+    /**
      * The byte size of remaining data in this instance.
      * @return the byte size of remaining data in this instance.
      */

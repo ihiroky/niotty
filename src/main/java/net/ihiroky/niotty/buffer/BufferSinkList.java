@@ -12,7 +12,7 @@ import java.nio.channels.GatheringByteChannel;
  *
  * @author Hiroki Itoh
  */
-public class BufferSinkList implements BufferSink {
+public class BufferSinkList extends AbstractBufferSink {
 
     private final BufferSink car_;
     private final BufferSink cdr_;
@@ -85,10 +85,7 @@ public class BufferSinkList implements BufferSink {
 
     @Override
     public byte[] array() {
-        int remaining = remaining();
-        ByteBuffer bb = ByteBuffer.allocate(remaining);
-        copyTo(bb);
-        return bb.array();
+        return byteBuffer().array();
     }
 
     @Override

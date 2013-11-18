@@ -542,4 +542,20 @@ public class FileBufferSinkTest {
         assertThat(b0.chunk().referenceCount(), is(0));
         assertThat(b1.chunk().referenceCount(), is(0));
     }
+
+    @Test
+    public void testEquals() throws Exception {
+        GatheringByteChannel outputChannel = mock(GatheringByteChannel.class);
+        when(outputChannel.write(Mockito.any(ByteBuffer.class))).thenAnswer(new TransferAll());
+        when(outputChannel.isOpen()).thenReturn(true);
+
+        byte[] header = new byte[1];
+        byte[] footer = new byte[2];
+        FileBufferSink sut = new FileBufferSink(channel_, 0, originalData_.length);
+        sut.addFirst(Buffers.wrap(header));
+        sut.addLast(Buffers.wrap(footer));
+        BufferSink obj = Buffers.wrap(Buffers.wrap(header), Buffers.wrap(originalData_), Buffers.wrap(footer));
+        assertThat(sut.equals(obj), is(true));
+        sut.dispose();
+    }
 }

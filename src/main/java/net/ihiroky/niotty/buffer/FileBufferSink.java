@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author Hiroki Itoh
  */
-public class FileBufferSink implements BufferSink {
+public class FileBufferSink extends AbstractBufferSink {
 
     private final FileChannel channel_;
     private long start_;
@@ -241,15 +241,12 @@ public class FileBufferSink implements BufferSink {
 
     @Override
     public byte[] array() {
-        int remaining = remaining();
-        ByteBuffer bb = ByteBuffer.allocate(remaining);
-        copyTo(bb);
-        return bb.array();
+        return byteBuffer().array();
     }
 
     @Override
     public int arrayOffset() {
-        throw new UnsupportedOperationException();
+        return 0;
     }
 
     private BufferSink newSlicedBufferSink(BufferSink header, BufferSink content, BufferSink footer) {

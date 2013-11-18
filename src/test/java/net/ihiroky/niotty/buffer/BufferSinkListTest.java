@@ -227,4 +227,18 @@ public class BufferSinkListTest {
         assertThat(duplicated.car(), is(not(sameInstance(sut.car()))));
         assertThat(duplicated.cdr(), is(not(sameInstance(sut.cdr()))));
     }
+
+    @Test
+    public void testEquals() throws Exception {
+        byte[] data0 = new byte[2];
+        Arrays.fill(data0, (byte) 1);
+        BufferSink bs0 = Buffers.wrap(data0, 0, data0.length);
+        byte[] data1 = new byte[3];
+        Arrays.fill(data1, (byte) 1);
+        BufferSink bs1 = Buffers.wrap(data1, 0, data1.length);
+
+        BufferSinkList sut = new BufferSinkList(bs0, bs1);
+        BufferSinkList obj = new BufferSinkList(bs1, bs0);
+        assertThat(sut.equals(obj), is(true));
+    }
 }

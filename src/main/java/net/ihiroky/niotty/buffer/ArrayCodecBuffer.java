@@ -828,6 +828,28 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer {
                 + "(startIndex:" + start_ + ", endIndex:" + end_ + ", capacity:" + buffer_.length + ')';
     }
 
+    @Override
+    public boolean equals(Object object) {
+        if (object == this) {
+            return true;
+        }
+        if (object instanceof ArrayCodecBuffer) {
+            ArrayCodecBuffer that = (ArrayCodecBuffer) object;
+            int r = this.remaining();
+            if (r == that.remaining()) {
+                int s0 = this.start_;
+                int s1 = that.start_;
+                for (int i = 0; i < r; i++) {
+                    if (this.buffer_[s0 + i] != that.buffer_[s1 + i]) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+        return super.equals(object);
+    }
+
     /**
      * Returns a reference count of a chunk which manages an internal byte array.
      * @return the reference count
