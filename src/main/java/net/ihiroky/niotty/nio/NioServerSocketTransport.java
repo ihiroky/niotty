@@ -1,6 +1,7 @@
 package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.DefaultTransportFuture;
+import net.ihiroky.niotty.FailedTransportFuture;
 import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.SuccessfulTransportFuture;
 import net.ihiroky.niotty.Task;
@@ -16,6 +17,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.ServerSocket;
 import java.net.SocketAddress;
 import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
@@ -217,17 +219,34 @@ public class NioServerSocketTransport extends NioSocketTransport<SelectLoop> {
      * @return a future object to get the result of this operation
      */
     public TransportFuture bind(final SocketAddress socketAddress, final int backlog) {
+        try {
+            boolean bound = Platform.javaVersion().ge(JavaVersion.JAVA7)
+                    ? (serverChannel_.getLocalAddress() != null) : serverChannel_.socket().isBound();
+            if (bound) {
+                return new SuccessfulTransportFuture(this);
+            }
+        } catch (IOException ioe) {
+            return new FailedTransportFuture(this, ioe);
+        }
+
+
         final DefaultTransportFuture future = new DefaultTransportFuture(this);
         taskLoop().execute(new Task() {
             @Override
             public long execute(TimeUnit timeUnit) throws Exception {
                 if (future.executing()) {
                     try {
-                        register(serverChannel_, SelectionKey.OP_ACCEPT);
+                        ServerSocketChannel channel = serverChannel_;
+                        register(channel, SelectionKey.OP_ACCEPT);
                         if (Platform.javaVersion().ge(JavaVersion.JAVA7)) {
-                            serverChannel_.bind(socketAddress, backlog);
+                            if (channel.getLocalAddress() == null) {
+                                channel.bind(socketAddress, backlog);
+                            }
                         } else {
-                            serverChannel_.socket().bind(socketAddress, backlog);
+                            ServerSocket socket = channel.socket();
+                            if (!socket.isBound()) {
+                                socket.bind(socketAddress, backlog);
+                            }
                         }
                         future.done();
                     } catch (IOException ioe) {

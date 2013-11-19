@@ -5,6 +5,7 @@ import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.Stage;
 import net.ihiroky.niotty.Task;
 import net.ihiroky.niotty.TaskSelection;
+import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.TransportOptions;
 import net.ihiroky.niotty.buffer.ArrayCodecBuffer;
 import net.ihiroky.niotty.buffer.ByteBufferCodecBuffer;
@@ -20,6 +21,7 @@ import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.StandardSocketOptions;
@@ -407,6 +409,33 @@ public class NioClientSocketTransportTest {
         }
 
         @Test
+        public void testBindThoughBoundThenSuccessful() throws Exception {
+            InetSocketAddress endpoint = new InetSocketAddress(1);
+            SelectLoop selector = mock(SelectLoop.class);
+            when(selector.isInLoopThread()).thenReturn(true);
+            NioClientSocketTransport sut = spy(sut_);
+            when(sut.taskLoop()).thenReturn(selector);
+            TransportFuture future = sut.bind(endpoint);
+            ArgumentCaptor<Task> taskCaptor = ArgumentCaptor.forClass(Task.class);
+            verify(selector).execute(taskCaptor.capture());
+            when(channel_.getLocalAddress()).thenReturn(endpoint);
+
+            taskCaptor.getValue().execute(TimeUnit.NANOSECONDS);
+
+            assertThat(future.isSuccessful(), is(true));
+        }
+
+        @Test
+        public void testBindThoughBoundThenSuccessfulOnCurrentThread() throws Exception {
+            InetSocketAddress endpoint = new InetSocketAddress(1);
+            when(channel_.getLocalAddress()).thenReturn(endpoint);
+
+            TransportFuture future = sut_.bind(endpoint);
+
+            assertThat(future.isSuccessful(), is(true));
+        }
+
+        @Test
         public void testLocalAddress() throws Exception {
             InetSocketAddress expected = new InetSocketAddress(1);
             when(channel_.getLocalAddress()).thenReturn(expected);
@@ -605,6 +634,33 @@ public class NioClientSocketTransportTest {
             ArgumentCaptor<InetSocketAddress> captor = ArgumentCaptor.forClass(InetSocketAddress.class);
             verify(socket_).bind(captor.capture());
             assertThat((captor.getValue()), is(bindAddress));
+        }
+
+        @Test
+        public void testBindThoughBoundThenSuccessful() throws Exception {
+            InetSocketAddress endpoint = new InetSocketAddress(1);
+            SelectLoop selector = mock(SelectLoop.class);
+            when(selector.isInLoopThread()).thenReturn(true);
+            NioClientSocketTransport sut = spy(sut_);
+            when(sut.taskLoop()).thenReturn(selector);
+            TransportFuture future = sut.bind(endpoint);
+            ArgumentCaptor<Task> taskCaptor = ArgumentCaptor.forClass(Task.class);
+            verify(selector).execute(taskCaptor.capture());
+            when(socket_.isBound()).thenReturn(true);
+
+            taskCaptor.getValue().execute(TimeUnit.NANOSECONDS);
+
+            assertThat(future.isSuccessful(), is(true));
+        }
+
+        @Test
+        public void testBindThoughBoundThenSuccessfulOnCurrentThread() throws Exception {
+            InetSocketAddress endpoint = new InetSocketAddress(InetAddress.getByName("127.0.0.1"), 12345);
+            when(socket_.isBound()).thenReturn(true);
+
+            TransportFuture future = sut_.bind(endpoint);
+
+            assertThat(future.isSuccessful(), is(true));
         }
 
         @Test

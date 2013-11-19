@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
@@ -202,16 +203,32 @@ public class NioClientSocketTransport extends NioSocketTransport<SelectLoop> {
 
     @Override
     public TransportFuture bind(final SocketAddress local) {
+        try {
+            boolean bound = Platform.javaVersion().ge(JavaVersion.JAVA7)
+                    ? (channel_.getLocalAddress() != null) : channel_.socket().isBound();
+            if (bound) {
+                return new SuccessfulTransportFuture(this);
+            }
+        } catch (IOException ioe) {
+            return new FailedTransportFuture(this, ioe);
+        }
+
         final DefaultTransportFuture future = new DefaultTransportFuture(this);
         taskLoop().execute(new Task() {
             @Override
             public long execute(TimeUnit timeUnit) throws Exception {
                 if (future.executing()) {
                     try {
+                        SocketChannel channel = channel_;
                         if (Platform.javaVersion().ge(JavaVersion.JAVA7)) {
-                            channel_.bind(local);
+                            if (channel.getLocalAddress() == null) {
+                                channel.bind(local);
+                            }
                         } else {
-                            channel_.socket().bind(local);
+                            Socket socket = channel.socket();
+                            if (!socket.isBound()) {
+                                socket.bind(local);
+                            }
                         }
                         future.done();
                     } catch (IOException ioe) {

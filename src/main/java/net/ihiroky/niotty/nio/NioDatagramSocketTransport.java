@@ -20,6 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
@@ -226,17 +227,33 @@ public class NioDatagramSocketTransport extends NioSocketTransport<SelectLoop> {
      */
     @Override
     public TransportFuture bind(final SocketAddress local) {
+        try {
+            boolean bound = Platform.javaVersion().ge(JavaVersion.JAVA7)
+                    ? (channel_.getLocalAddress() != null) : channel_.socket().isBound();
+            if (bound) {
+                return new SuccessfulTransportFuture(this);
+            }
+        } catch (IOException ioe) {
+            return new FailedTransportFuture(this, ioe);
+        }
+
         final DefaultTransportFuture future = new DefaultTransportFuture(this);
         taskLoop().execute(new Task() {;
             @Override
             public long execute(TimeUnit timeUnit) throws Exception {
                 if (future.executing()) {
                     try {
-                        register(channel_, SelectionKey.OP_READ);
+                        DatagramChannel channel = channel_;
+                        register(channel, SelectionKey.OP_READ);
                         if (Platform.javaVersion().ge(JavaVersion.JAVA7)) {
-                            channel_.bind(local);
+                            if (channel.getLocalAddress() == null) {
+                                channel.bind(local);
+                            }
                         } else {
-                            channel_.socket().bind(local);
+                            DatagramSocket socket = channel.socket();
+                            if (!socket.isBound()) {
+                                socket.bind(local);
+                            }
                         }
                         future.done();
                     } catch (IOException ioe) {
