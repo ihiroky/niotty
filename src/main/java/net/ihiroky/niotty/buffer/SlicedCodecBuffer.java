@@ -312,7 +312,7 @@ public class SlicedCodecBuffer extends AbstractCodecBuffer {
     }
 
     @Override
-    public BufferSink addFirst(CodecBuffer buffer) {
+    public CodecBuffer addFirst(CodecBuffer buffer) {
         int required = buffer.remaining();
         int frontSpace = base_.startIndex() - offset_; // ignore space at tail.
         if (required > frontSpace) {
@@ -324,7 +324,7 @@ public class SlicedCodecBuffer extends AbstractCodecBuffer {
     }
 
     @Override
-    public BufferSink addLast(CodecBuffer buffer) {
+    public CodecBuffer addLast(CodecBuffer buffer) {
         int required = buffer.remaining();
         int backSpace = capacity_ - base_.endIndex(); // ignore space at head.
         if (required > backSpace) {
