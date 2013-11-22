@@ -1,4 +1,4 @@
-package net.ihiroky.niotty.sample.drr;
+package net.ihiroky.niotty.sample;
 
 import net.ihiroky.niotty.Pipeline;
 import net.ihiroky.niotty.PipelineComposer;

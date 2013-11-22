@@ -1,4 +1,4 @@
-package net.ihiroky.niotty.sample.sc;
+package net.ihiroky.niotty.sample;
 
 import net.ihiroky.niotty.CompletionListener;
 import net.ihiroky.niotty.Pipeline;

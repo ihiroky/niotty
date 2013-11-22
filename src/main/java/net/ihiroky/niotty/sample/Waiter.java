@@ -1,4 +1,4 @@
-package net.ihiroky.niotty.sample.file;
+package net.ihiroky.niotty.sample;
 
 /**
 * @author Hiroki Itoh
