@@ -8,6 +8,8 @@ import org.hamcrest.Matcher;
 import org.junit.Test;
 
 import java.nio.charset.Charset;
+import java.util.Arrays;
+import java.util.Collections;
 
 import static net.ihiroky.niotty.codec.ReferenceCountMatcher.*;
 import static org.hamcrest.CoreMatchers.*;
@@ -33,10 +35,12 @@ public class DelimiterDecoderTest {
 
         byte[] data = "input\r\n".getBytes(CHARSET);
         CodecBuffer input = Buffers.wrap(data, 0, data.length);
-        sut.loaded(context, input);
+        Object p = new Object();
+        sut.loaded(context, input, p);
 
         assertContent(context.pollEvent(), is(data));
         assertThat(context.hasNoEvent(), is(true));
+        assertThat(context.parameters(), is(Arrays.asList(p)));
         assertThat(sut.buffer(), is(nullValue()));
         assertThat(input, hasReferenceCount(1)); // alive yet
     }
@@ -48,11 +52,13 @@ public class DelimiterDecoderTest {
 
         byte[] data = "input0\r\ninput1\r\n".getBytes(CHARSET);
         CodecBuffer input = Buffers.wrap(data, 0, data.length);
-        sut.loaded(context, input);
+        Object p = new Object();
+        sut.loaded(context, input, p);
 
         assertContent(context.pollEvent(), is("input0\r\n".getBytes(CHARSET)));
         assertContent(context.pollEvent(), is("input1\r\n".getBytes(CHARSET)));
         assertThat(context.hasNoEvent(), is(true));
+        assertThat(context.parameters(), is(Arrays.asList(p, p)));
         assertThat(sut.buffer(), is(nullValue()));
         assertThat(input, hasReferenceCount(2)); // for input0 and input1
     }
@@ -64,9 +70,11 @@ public class DelimiterDecoderTest {
 
         byte[] data = "input0\r".getBytes(CHARSET);
         CodecBuffer input = Buffers.wrap(data, 0, data.length);
-        sut.loaded(context, input);
+        Object p = new Object();
+        sut.loaded(context, input, p);
 
         assertThat(context.hasNoEvent(), is(true));
+        assertThat(context.parameters(), is (Collections.emptyList()));
         assertContent(sut.buffer(), is(data));
         assertThat(((ArrayCodecBuffer) input).referenceCount(), is(0));
     }
@@ -78,10 +86,12 @@ public class DelimiterDecoderTest {
 
         byte[] data = "input0\r\ninput1".getBytes(CHARSET);
         CodecBuffer input = Buffers.wrap(data, 0, data.length);
-        sut.loaded(context, input);
+        Object p = new Object();
+        sut.loaded(context, input, p);
 
         assertContent(context.pollEvent(), is("input0\r\n".getBytes(CHARSET)));
         assertThat(context.hasNoEvent(), is(true));
+        assertThat(context.parameters(), is(Arrays.asList(p)));
         assertThat(sut.buffer().startIndex(), is(0));
         assertContent(sut.buffer(), is("input1".getBytes(CHARSET)));
         assertThat(((ArrayCodecBuffer) input).referenceCount(), is(1)); // for input0
@@ -96,11 +106,13 @@ public class DelimiterDecoderTest {
         byte[] data1 = "\ninput1".getBytes(CHARSET);
         CodecBuffer input0 = Buffers.wrap(data0, 0, data0.length);
         CodecBuffer input1 = Buffers.wrap(data1, 0, data1.length);
-        sut.loaded(context, input0);
-        sut.loaded(context, input1);
+        Object p = new Object();
+        sut.loaded(context, input0, p);
+        sut.loaded(context, input1, p);
 
         assertContent(context.pollEvent(), is("input0\r\n".getBytes(CHARSET)));
         assertThat(context.hasNoEvent(), is(true));
+        assertThat(context.parameters(), is(Arrays.asList(p)));
         assertThat(sut.buffer().startIndex(), is(0));
         assertContent(sut.buffer(), is("input1".getBytes(CHARSET)));
         assertThat(((ArrayCodecBuffer) input0).referenceCount(), is(0));
@@ -116,12 +128,14 @@ public class DelimiterDecoderTest {
         byte[] data1 = "\ninput2\r".getBytes(CHARSET);
         CodecBuffer input0 = Buffers.wrap(data0, 0, data0.length);
         CodecBuffer input1 = Buffers.wrap(data1, 0, data1.length);
-        sut.loaded(context, input0);
-        sut.loaded(context, input1);
+        Object p = new Object();
+        sut.loaded(context, input0, p);
+        sut.loaded(context, input1, p);
 
         assertContent(context.pollEvent(), is("input0\r\n".getBytes(CHARSET)));
         assertContent(context.pollEvent(), is("input1\r\n".getBytes(CHARSET)));
         assertThat(context.hasNoEvent(), is(true));
+        assertThat(context.parameters(), is(Arrays.asList(p, p)));
         assertThat(sut.buffer().startIndex(), is(0));
         assertContent(sut.buffer(), is("input2\r".getBytes(CHARSET)));
         assertThat(((ArrayCodecBuffer) input0).referenceCount(), is(1)); // for input0
@@ -137,13 +151,15 @@ public class DelimiterDecoderTest {
         byte[] data1 = "\ninput2\r\n".getBytes(CHARSET);
         CodecBuffer input0 = Buffers.wrap(data0, 0, data0.length);
         CodecBuffer input1 = Buffers.wrap(data1, 0, data1.length);
-        sut.loaded(context, input0);
-        sut.loaded(context, input1);
+        Object p = new Object();
+        sut.loaded(context, input0, p);
+        sut.loaded(context, input1, p);
 
         assertContent(context.pollEvent(), is("input0\r\n".getBytes(CHARSET)));
         assertContent(context.pollEvent(), is("input1\r\n".getBytes(CHARSET)));
         assertContent(context.pollEvent(), is("input2\r\n".getBytes(CHARSET)));
         assertThat(context.hasNoEvent(), is(true));
+        assertThat(context.parameters(), is(Arrays.asList(p, p, p)));
         assertThat(sut.buffer(), is(nullValue()));
         assertThat(((ArrayCodecBuffer) input0).referenceCount(), is(1)); // for input0
         assertThat(((ArrayCodecBuffer) input1).referenceCount(), is(0));
@@ -158,13 +174,15 @@ public class DelimiterDecoderTest {
         byte[] data1 = "\ninput2\r\n".getBytes(CHARSET);
         CodecBuffer input0 = Buffers.wrap(data0, 0, data0.length);
         CodecBuffer input1 = Buffers.wrap(data1, 0, data1.length);
-        sut.loaded(context, input0);
-        sut.loaded(context, input1);
+        Object p = new Object();
+        sut.loaded(context, input0, p);
+        sut.loaded(context, input1, p);
 
         assertContent(context.pollEvent(), is("input0".getBytes(CHARSET)));
         assertContent(context.pollEvent(), is("input1".getBytes(CHARSET)));
         assertContent(context.pollEvent(), is("input2".getBytes(CHARSET)));
         assertThat(context.hasNoEvent(), is(true));
+        assertThat(context.parameters(), is(Arrays.asList(p, p, p)));
         assertThat(sut.buffer(), is(nullValue()));
         assertThat(((ArrayCodecBuffer) input0).referenceCount(), is(1)); // for input0
         assertThat(((ArrayCodecBuffer) input1).referenceCount(), is(0));

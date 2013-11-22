@@ -148,9 +148,9 @@ public class SelectLoop extends TaskLoop {
         }
 
         @Override
-        public void stored(StageContext context, Object message) {
+        public void stored(StageContext context, Object message, Object parameter) {
             final NioSocketTransport<?> transport = (NioSocketTransport<?>) context.transport();
-            transport.readyToWrite(new AttachedMessage<BufferSink>((BufferSink) message, context.parameter()));
+            transport.readyToWrite(new AttachedMessage<BufferSink>((BufferSink) message, parameter));
             try {
                 transport.flush(writeBuffer_);
             } catch (IOException ioe) {

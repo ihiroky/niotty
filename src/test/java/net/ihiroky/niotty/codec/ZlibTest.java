@@ -37,13 +37,13 @@ public class ZlibTest {
         CodecBuffer deflaterInput = Buffers.wrap(data, 0, data.length);
 
         DeflaterEncoder encoder = new DeflaterEncoder();
-        encoder.stored(context_, deflaterInput);
+        encoder.stored(context_, deflaterInput, null);
         CodecBuffer inflaterInput = context_.pollEvent();
         if (context_.pollEvent() != null) {
             Assert.fail();
         }
         InflaterDecoder decoder = new InflaterDecoder();
-        decoder.loaded(context_, inflaterInput);
+        decoder.loaded(context_, inflaterInput, null);
 
         CodecBuffer inflated = context_.pollEvent();
         assertThat(inflated.remaining(), is(data.length));
@@ -72,13 +72,13 @@ public class ZlibTest {
         CodecBuffer deflaterInput = Buffers.wrap(data, 0, data.length);
 
         DeflaterEncoder encoder = new DeflaterEncoder();
-        encoder.stored(context_, deflaterInput);
+        encoder.stored(context_, deflaterInput, null);
         CodecBuffer inflaterInput = context_.pollEvent();
         if (context_.pollEvent() != null) {
             Assert.fail();
         }
         InflaterDecoder decoder = new InflaterDecoder();
-        decoder.loaded(context_, inflaterInput);
+        decoder.loaded(context_, inflaterInput, null);
 
         assertProcessedData(data);
         assertThat(((ArrayCodecBuffer) deflaterInput).referenceCount(), is(0));
@@ -94,13 +94,13 @@ public class ZlibTest {
         Arrays.fill(dictionary, (byte) '0');
 
         DeflaterEncoder encoder = new DeflaterEncoder(Deflater.BEST_SPEED, 1024, dictionary, false);
-        encoder.stored(context_, deflaterInput);
+        encoder.stored(context_, deflaterInput, null);
         CodecBuffer inflaterInput = context_.pollEvent();
         if (context_.pollEvent() != null) {
             Assert.fail();
         }
         InflaterDecoder decoder = new InflaterDecoder(1024, dictionary, false);
-        decoder.loaded(context_, inflaterInput);
+        decoder.loaded(context_, inflaterInput, null);
 
         assertProcessedData(data);
         assertThat(((ArrayCodecBuffer) deflaterInput).referenceCount(), is(0));
@@ -114,14 +114,14 @@ public class ZlibTest {
         CodecBuffer deflaterInput = Buffers.wrap(data, 0, data.length);
 
         DeflaterEncoder encoder = new DeflaterEncoder();
-        encoder.stored(context_, deflaterInput);
+        encoder.stored(context_, deflaterInput, null);
         CodecBuffer inflaterInput = context_.pollEvent();
         if (context_.pollEvent() != null) {
             Assert.fail();
         }
         InflaterDecoder decoder = new InflaterDecoder();
-        decoder.loaded(context_, inflaterInput.slice(8));
-        decoder.loaded(context_, inflaterInput);
+        decoder.loaded(context_, inflaterInput.slice(8), null);
+        decoder.loaded(context_, inflaterInput, null);
 
         assertProcessedData(data);
         assertThat(((ArrayCodecBuffer) deflaterInput).referenceCount(), is(0));
@@ -134,13 +134,13 @@ public class ZlibTest {
         Arrays.fill(data, (byte) '0');
         CodecBuffer deflaterInput = Buffers.wrap(data, 0, data.length);
         DeflaterEncoder encoder = new DeflaterEncoder(Deflater.BEST_SPEED, 8, null, false);
-        encoder.stored(context_, deflaterInput);
+        encoder.stored(context_, deflaterInput, null);
         CodecBuffer inflaterInput = context_.pollEvent();
         if (context_.pollEvent() != null) {
             Assert.fail();
         }
         InflaterDecoder decoder = new InflaterDecoder();
-        decoder.loaded(context_, inflaterInput);
+        decoder.loaded(context_, inflaterInput, null);
 
         assertProcessedData(data);
         assertThat(((ArrayCodecBuffer) deflaterInput).referenceCount(), is(0));
@@ -154,13 +154,13 @@ public class ZlibTest {
         CodecBuffer deflaterInput = Buffers.wrap(data, 0, data.length);
 
         DeflaterEncoder encoder = new DeflaterEncoder();
-        encoder.stored(context_, deflaterInput);
+        encoder.stored(context_, deflaterInput, null);
         CodecBuffer inflaterInput = context_.pollEvent();
         if (context_.pollEvent() != null) {
             Assert.fail();
         }
         InflaterDecoder decoder = new InflaterDecoder(8, null, false);
-        decoder.loaded(context_, inflaterInput);
+        decoder.loaded(context_, inflaterInput, null);
 
         assertProcessedData(data);
         assertThat(((ArrayCodecBuffer) deflaterInput).referenceCount(), is(0));
@@ -174,7 +174,7 @@ public class ZlibTest {
         CodecBuffer deflaterInput = Buffers.wrap(data, 0, data.length);
 
         DeflaterEncoder encoder = new DeflaterEncoder();
-        encoder.stored(context_, deflaterInput);
+        encoder.stored(context_, deflaterInput, null);
         encoder.deactivated(context_, DeactivateState.WHOLE);
         CodecBuffer inflaterInput0 = context_.pollEvent();
         CodecBuffer inflaterInput1 = context_.pollEvent();
@@ -182,8 +182,8 @@ public class ZlibTest {
             Assert.fail();
         }
         InflaterDecoder decoder = new InflaterDecoder(8, null, false);
-        decoder.loaded(context_, inflaterInput0);
-        decoder.loaded(context_, inflaterInput1);
+        decoder.loaded(context_, inflaterInput0, null);
+        decoder.loaded(context_, inflaterInput1, null);
 
         assertProcessedData(data);
         assertThat(((ArrayCodecBuffer) deflaterInput).referenceCount(), is(0));

@@ -25,7 +25,7 @@ public class HandshakeDecoder extends LoadStage {
     private static final int INITIAL_STRING_BUFFER_LENGTH = 64;
     private static final Charset CHARSET = Charsets.US_ASCII;
 
-    public void loaded(StageContext context, Object message) {
+    public void loaded(StageContext context, Object message, Object parameter) {
         CodecBuffer input = (CodecBuffer) message;
         int end;
         String line = null;

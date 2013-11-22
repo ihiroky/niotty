@@ -37,7 +37,7 @@ public class TcpTest {
         volatile Transport transport_;
 
         @Override
-        public void loaded(StageContext context, Object input) {
+        public void loaded(StageContext context, Object input, Object parameter) {
         }
 
         @Override

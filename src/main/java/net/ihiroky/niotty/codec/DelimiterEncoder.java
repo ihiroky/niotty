@@ -27,11 +27,11 @@ public class DelimiterEncoder extends StoreStage {
     }
 
     @Override
-    public void stored(StageContext context, Object message) {
+    public void stored(StageContext context, Object message, Object parameter) {
         BufferSink input = (BufferSink) message;
         CodecBuffer b = Buffers.wrap(delimiter_, 0, delimiter_.length);
         input.addLast(b);
-        context.proceed(input);
+        context.proceed(input, parameter);
     }
 
     @Override

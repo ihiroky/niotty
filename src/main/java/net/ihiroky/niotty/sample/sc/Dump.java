@@ -20,7 +20,7 @@ class Dump extends LoadStage {
     }
 
     @Override
-    public void loaded(StageContext context, Object message) {
+    public void loaded(StageContext context, Object message, Object parameter) {
         System.out.println("remote: " + context.transport().remoteAddress() + " - " + message);
         if (echo_) {
             context.transport().write(message);

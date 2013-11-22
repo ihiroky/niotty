@@ -14,7 +14,7 @@ public class EvenOddReporter extends LoadStage {
     private int oddCounter_;
 
     @Override
-    public void loaded(StageContext context, Object message) {
+    public void loaded(StageContext context, Object message, Object parameter) {
         CodecBuffer input = (CodecBuffer) message;
         int i = input.readInt();
         if (i % 2 == 0) {

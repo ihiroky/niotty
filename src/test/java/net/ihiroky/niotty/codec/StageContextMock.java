@@ -8,6 +8,8 @@ import net.ihiroky.niotty.TaskFuture;
 import net.ihiroky.niotty.Transport;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 
@@ -19,6 +21,7 @@ public class StageContextMock<O> implements StageContext {
     Transport transport_;
     Object parameter_;
     Queue<O> proceededMessageEventQueue_;
+    List<Object> proceededParameterList_;
 
     public StageContextMock() {
         this(null, new Object());
@@ -28,6 +31,8 @@ public class StageContextMock<O> implements StageContext {
         transport_ = transport;
         parameter_ = parameter;
         proceededMessageEventQueue_ = new ArrayDeque<O>();
+        proceededParameterList_ = new ArrayList<Object>();
+
     }
 
     @Override
@@ -41,15 +46,11 @@ public class StageContextMock<O> implements StageContext {
     }
 
     @Override
-    public Object parameter() {
-        return parameter_;
-    }
-
-    @Override
-    public void proceed(Object messageEvent) {
+    public void proceed(Object messageEvent, Object parameter) {
         @SuppressWarnings("unchecked")
         O output = (O) messageEvent;
         proceededMessageEventQueue_.add(output);
+        proceededParameterList_.add(parameter);
     }
 
     @Override
@@ -65,7 +66,15 @@ public class StageContextMock<O> implements StageContext {
         return proceededMessageEventQueue_.isEmpty();
     }
 
+    public List<Object> parameters() {
+        return proceededParameterList_;
+    }
+
     public int eventCount() {
         return proceededMessageEventQueue_.size();
+    }
+
+    public int parameterCount() {
+        return proceededParameterList_.size();
     }
 }

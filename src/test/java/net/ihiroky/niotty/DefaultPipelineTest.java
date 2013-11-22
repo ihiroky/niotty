@@ -65,7 +65,7 @@ public class DefaultPipelineTest {
 
         sut_.add(key0, stage0, null);
 
-        PipelineElement pe = (PipelineElement) sut_.searchElement(key0);
+        PipelineElement pe = sut_.searchElement(key0);
         assertThat(pe.taskLoop_, is(sameInstance(taskLoop_)));
     }
 
@@ -129,7 +129,7 @@ public class DefaultPipelineTest {
         sut_.add(key0, stage0);
         sut_.addBefore(key0, key1, stage1, null);
 
-        PipelineElement pe = (PipelineElement) sut_.searchElement(key1);
+        PipelineElement pe = sut_.searchElement(key1);
         assertThat(pe.taskLoop_, is(sameInstance(taskLoop_)));
     }
 
@@ -216,7 +216,7 @@ public class DefaultPipelineTest {
         sut_.add(key0, stage0);
         sut_.addAfter(key0, key1, stage1, null);
 
-        PipelineElement pe = (PipelineElement) sut_.searchElement(key1);
+        PipelineElement pe = sut_.searchElement(key1);
         assertThat(pe.taskLoop_, is(sameInstance(taskLoop_)));
     }
 
@@ -287,7 +287,7 @@ public class DefaultPipelineTest {
         sut_.replace(key0, key1, stage1, null);
 
         @SuppressWarnings("unchecked")
-        PipelineElement pe = (PipelineElement) sut_.searchElement(key1);
+        PipelineElement pe = sut_.searchElement(key1);
         assertThat(pe.taskLoop_, is(sameInstance(taskLoop_)));
     }
 

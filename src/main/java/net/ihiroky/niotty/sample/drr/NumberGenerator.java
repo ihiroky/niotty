@@ -18,7 +18,7 @@ public class NumberGenerator extends LoadStage {
     private Logger logger_ = LoggerFactory.getLogger(NumberGenerator.class);
 
     @Override
-    public void loaded(StageContext context, Object message) {
+    public void loaded(StageContext context, Object message, Object parameter) {
         CodecBuffer input = (CodecBuffer) message;
         int count = input.readInt();
         Transport transport = context.transport();

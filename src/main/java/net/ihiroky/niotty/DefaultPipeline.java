@@ -282,7 +282,7 @@ public class DefaultPipeline<L extends TaskLoop> implements Pipeline {
 
     @Override
     public void store(Object message) {
-        head_.next().callStore(message);
+        head_.next().callStore(message, null);
     }
 
     @Override
@@ -292,7 +292,7 @@ public class DefaultPipeline<L extends TaskLoop> implements Pipeline {
 
     @Override
     public void load(Object message) {
-        tail_.callLoad(message);
+        tail_.callLoad(message, null);
     }
 
     @Override

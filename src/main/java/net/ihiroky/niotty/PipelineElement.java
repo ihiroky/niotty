@@ -90,30 +90,15 @@ public class PipelineElement {
         taskLoop_.reject(pipeline_.transport());
     }
 
-    void callStore(final Object message) {
-        if (taskLoop_.isInLoopThread()) {
-            stage_.stored(storeContext_, message);
-        } else {
-            taskLoop_.offer(new Task() {
-                @Override
-                public long execute(TimeUnit timeUnit) throws Exception {
-                    stage_.stored(storeContext_, message);
-                    return DONE;
-                }
-            });
-        }
-    }
 
     void callStore(final Object message, final Object parameter) {
         if (taskLoop_.isInLoopThread()) {
-            StageContext context = new ParameterStoreStageContext(this, parameter);
-            stage_.stored(context, message);
+            stage_.stored(storeContext_, message, parameter);
         } else {
             taskLoop_.offer(new Task() {
                 @Override
                 public long execute(TimeUnit timeUnit) throws Exception {
-                    StageContext context = new ParameterStoreStageContext(PipelineElement.this, parameter);
-                    stage_.stored(context, message);
+                    stage_.stored(storeContext_, message, parameter);
                     return DONE;
                 }
             });
@@ -121,30 +106,14 @@ public class PipelineElement {
     }
 
     // expand to context class
-    void callLoad(final Object message) {
-        if (taskLoop_.isInLoopThread()) {
-            stage_.loaded(loadContext_, message);
-        } else {
-            taskLoop_.offer(new Task() {
-                @Override
-                public long execute(TimeUnit timeUnit) throws Exception {
-                    stage_.loaded(loadContext_, message);
-                    return DONE;
-                }
-            });
-        }
-    }
-
     void callLoad(final Object message, final Object parameter) {
         if (taskLoop_.isInLoopThread()) {
-            StageContext context = new ParameterLoadStageContext(this, parameter);
-            stage_.loaded(context, message);
+            stage_.loaded(loadContext_, message, parameter);
         } else {
             taskLoop_.offer(new Task() {
                 @Override
                 public long execute(TimeUnit timeUnit) throws Exception {
-                    StageContext context = new ParameterLoadStageContext(PipelineElement.this, parameter);
-                    stage_.loaded(context, message);
+                    stage_.loaded(loadContext_, message, parameter);
                     return DONE;
                 }
             });
@@ -212,13 +181,8 @@ public class PipelineElement {
         }
 
         @Override
-        public Object parameter() {
-            return null;
-        }
-
-        @Override
-        public void proceed(final Object message) {
-            base_.next_.callStore(message);
+        public void proceed(Object message, Object parameter) {
+            base_.next_.callStore(message, parameter);
         }
 
         @Override
@@ -246,85 +210,8 @@ public class PipelineElement {
         }
 
         @Override
-        public Object parameter() {
-            return null;
-        }
-
-        @Override
-        public void proceed(final Object message) {
-            base_.prev_.callLoad(message);
-        }
-
-        @Override
-        public TaskFuture schedule(Task task, long timeout, TimeUnit timeUnit) {
-            return base_.taskLoop_.schedule(task, timeout, timeUnit);
-        }
-    }
-
-    static class ParameterStoreStageContext implements StageContext {
-
-        private final PipelineElement base_;
-        private final Object parameter_;
-
-        ParameterStoreStageContext(PipelineElement base, Object parameter) {
-            base_ = base;
-            parameter_ = parameter;
-        }
-
-        @Override
-        public StageKey key() {
-            return base_.key_;
-        }
-
-        @Override
-        public Transport transport() {
-            return base_.pipeline_.transport();
-        }
-
-        @Override
-        public Object parameter() {
-            return parameter_;
-        }
-
-        @Override
-        public void proceed(final Object message) {
-            base_.next_.callStore(message, parameter_);
-        }
-
-        @Override
-        public TaskFuture schedule(Task task, long timeout, TimeUnit timeUnit) {
-            return base_.taskLoop_.schedule(task, timeout, timeUnit);
-        }
-    }
-
-    static class ParameterLoadStageContext implements StageContext {
-
-        private final PipelineElement base_;
-        private final Object parameter_;
-
-        ParameterLoadStageContext(PipelineElement base, Object parameter) {
-            base_ = base;
-            parameter_ = parameter;
-        }
-
-        @Override
-        public StageKey key() {
-            return base_.key_;
-        }
-
-        @Override
-        public Transport transport() {
-            return base_.pipeline_.transport();
-        }
-
-        @Override
-        public Object parameter() {
-            return parameter_;
-        }
-
-        @Override
-        public void proceed(final Object message) {
-            base_.prev_.callLoad(message, parameter());
+        public void proceed(Object message, Object parameter) {
+            base_.prev_.callLoad(message, parameter);
         }
 
         @Override
@@ -352,12 +239,7 @@ public class PipelineElement {
         }
 
         @Override
-        public Object parameter() {
-            return null;
-        }
-
-        @Override
-        public void proceed(final Object message) {
+        public void proceed(Object message, Object parameter) {
         }
 
         @Override
@@ -368,11 +250,11 @@ public class PipelineElement {
 
     private static class NullStage implements Stage {
         @Override
-        public void stored(StageContext context, Object output) {
+        public void stored(StageContext context, Object output, Object parameter) {
         }
 
         @Override
-        public void loaded(StageContext context, Object input) {
+        public void loaded(StageContext context, Object input, Object parameter) {
         }
 
         @Override

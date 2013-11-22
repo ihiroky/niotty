@@ -14,7 +14,7 @@ public class HelloWorldStage extends LoadStage {
     private Logger logger_ = LoggerFactory.getLogger(HelloWorldStage.class);
 
     @Override
-    public void loaded(StageContext context, Object message) {
+    public void loaded(StageContext context, Object message, Object parameter) {
         String input = (String) message;
         logger_.info(input);
         System.out.println(input + " (from " + this.getClass().getName() + ")");

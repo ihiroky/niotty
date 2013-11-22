@@ -27,10 +27,9 @@ public class SelectLoopTest {
         Stage sut = selectLoop.ioStage();
         StageContext context = mock(StageContext.class);
         when(context.transport()).thenReturn(transport);
-        when(context.parameter()).thenReturn(new Object());
         BufferSink data = Buffers.newCodecBuffer(0);
 
-        sut.stored(context, data);
+        sut.stored(context, data, new Object());
 
         ArgumentCaptor<AttachedMessage> captor = ArgumentCaptor.forClass(AttachedMessage.class);
         verify(transport).readyToWrite(captor.capture());

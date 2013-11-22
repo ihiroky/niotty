@@ -59,7 +59,7 @@ public class JZlibInflaterDecoder extends LoadStage {
     }
 
     @Override
-    public void loaded(StageContext context, Object message) {
+    public void loaded(StageContext context, Object message, Object parameter) {
         CodecBuffer input = (CodecBuffer) message;
         byte[] buffer;
         int offset;
@@ -76,7 +76,7 @@ public class JZlibInflaterDecoder extends LoadStage {
                 length = input.readBytes(buffer, 0, buffer.length);
             }
             try {
-                if (inflate(context, buffer, offset, length)) {
+                if (inflate(context, buffer, offset, length, parameter)) {
                     // input.skipStartIndex(inflater_.getRemaining());
                     input.skipStartIndex(inflater_.next_in_index);
                     break;
@@ -88,7 +88,7 @@ public class JZlibInflaterDecoder extends LoadStage {
         input.dispose();
     }
 
-    private boolean inflate(StageContext context,  byte[] buffer, int offset, int length)
+    private boolean inflate(StageContext context,  byte[] buffer, int offset, int length, Object parameter)
             throws DataFormatException {
 
         Inflater inflater = inflater_;
@@ -104,7 +104,7 @@ public class JZlibInflaterDecoder extends LoadStage {
                 int decompressed = inflater.next_out_index - nextOutIndex;
                 if (decompressed > 0) {
                     CodecBuffer b = Buffers.wrap(output, 0, decompressed);
-                    context.proceed(b);
+                    context.proceed(b, parameter);
                     int newRemaining = inflater.avail_in;
                     if (newRemaining <= 0) {
                         output_ = null;

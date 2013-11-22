@@ -30,15 +30,15 @@ public class DelimiterCodec implements Stage {
     }
 
     @Override
-    public void stored(StageContext context, Object message) {
+    public void stored(StageContext context, Object message, Object parameter) {
         BufferSink input = (BufferSink) message;
         CodecBuffer b = Buffers.wrap(delimiter_, 0, delimiter_.length);
         input.addLast(b);
-        context.proceed(input);
+        context.proceed(input, parameter);
     }
 
     @Override
-    public void loaded(StageContext context, Object message) {
+    public void loaded(StageContext context, Object message, Object parameter) {
         CodecBuffer input = (CodecBuffer) message;
         int end;
         CodecBuffer b = bufferOfInput(input);
@@ -67,23 +67,20 @@ public class DelimiterCodec implements Stage {
             if (removeDelimiter_) {
                 b.skipStartIndex(delimiter_.length);
             }
-            context.proceed(output);
+            context.proceed(output, parameter);
         }
     }
 
     @Override
     public void exceptionCaught(StageContext context, Exception exception) {
-        //To change body of implemented methods use File | Settings | File Templates.
     }
 
     @Override
     public void activated(StageContext context) {
-        //To change body of implemented methods use File | Settings | File Templates.
     }
 
     @Override
     public void deactivated(StageContext context, DeactivateState state) {
-        //To change body of implemented methods use File | Settings | File Templates.
     }
 
     private CodecBuffer bufferOfInput(CodecBuffer input) {

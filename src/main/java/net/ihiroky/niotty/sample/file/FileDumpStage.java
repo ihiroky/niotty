@@ -26,7 +26,7 @@ public class FileDumpStage extends LoadStage {
     }
 
     @Override
-    public void loaded(StageContext context, Object message) {
+    public void loaded(StageContext context, Object message, Object parameter) {
         CodecBuffer input = (CodecBuffer) message;
         ByteBuffer in = input.byteBuffer();
         CharBuffer out = CharBuffer.allocate(BUFFER_SIZE);

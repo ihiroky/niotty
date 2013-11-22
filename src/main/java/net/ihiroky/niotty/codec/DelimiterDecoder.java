@@ -29,7 +29,7 @@ public class DelimiterDecoder extends LoadStage {
     }
 
     @Override
-    public void loaded(StageContext context, Object message) {
+    public void loaded(StageContext context, Object message, Object parameter) {
         CodecBuffer input = (CodecBuffer) message;
         int end;
         CodecBuffer b = bufferOfInput(input);
@@ -58,7 +58,7 @@ public class DelimiterDecoder extends LoadStage {
             if (removeDelimiter_) {
                 b.skipStartIndex(delimiter_.length);
             }
-            context.proceed(output);
+            context.proceed(output, parameter);
         }
     }
 

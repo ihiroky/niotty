@@ -46,11 +46,11 @@ public class DeflaterEncoder extends StoreStage {
     }
 
     @Override
-    public void stored(StageContext context, Object message) {
+    public void stored(StageContext context, Object message, Object parameter) {
         BufferSink input = (BufferSink) message;
         CodecBuffer output = input.hasArray() ? compressRawArray(input) : compressBufferSink(input);
         input.dispose();
-        context.proceed(output);
+        context.proceed(output, parameter);
     }
 
     @Override
@@ -140,7 +140,7 @@ public class DeflaterEncoder extends StoreStage {
 
             deflater_.end();
             if (output.remaining() > 0) {
-                context.proceed(output);
+                context.proceed(output, null); // may be error on non-connected udp
             }
         }
     }

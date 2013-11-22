@@ -8,7 +8,6 @@ import java.util.concurrent.TimeUnit;
 public interface StageContext {
     StageKey key();
     Transport transport();
-    Object parameter();
-    void proceed(Object message);
+    void proceed(Object message, Object parameter);
     TaskFuture schedule(Task task, long timeout, TimeUnit timeUnit);
 }

@@ -23,7 +23,7 @@ public class DelimiterEncoderTest {
 
         byte[] data = "input".getBytes(Charsets.UTF_8);
         BufferSink b = Buffers.wrap(data, 0, data.length);
-        sut.stored(context, b);
+        sut.stored(context, b, new Object());
 
         ByteBuffer buffer = ByteBuffer.allocate(16);
         b.copyTo(buffer);

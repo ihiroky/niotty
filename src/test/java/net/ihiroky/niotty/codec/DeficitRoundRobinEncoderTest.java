@@ -44,12 +44,13 @@ public class DeficitRoundRobinEncoderTest {
         DeficitRoundRobinEncoder sut = new DeficitRoundRobinEncoder(0.5f);
         CodecBuffer b0 = Buffers.wrap(new byte[10]);
         CodecBuffer b1 = Buffers.wrap(new byte[10]);
+        Object p = new Object();
 
-        sut.stored(context_, b0);
-        sut.stored(context_, b1);
+        sut.stored(context_, b0, p);
+        sut.stored(context_, b1, p);
 
         ArgumentCaptor<CodecBuffer> messageCaptor = ArgumentCaptor.forClass(CodecBuffer.class);
-        verify(context_, times(2)).proceed(messageCaptor.capture());
+        verify(context_, times(2)).proceed(messageCaptor.capture(), eq(p));
         List<CodecBuffer> messageList = messageCaptor.getAllValues();
         assertThat(messageList.get(0), is(b0));
         assertThat(messageList.get(1), is(b1));
@@ -60,9 +61,9 @@ public class DeficitRoundRobinEncoderTest {
         DeficitRoundRobinEncoder sut = new DeficitRoundRobinEncoder(256, 1, TimeUnit.MILLISECONDS, 1f);
         WeightedMessage wm0 = new WeightedMessage(Buffers.wrap(new byte[64]));
 
-        sut.stored(context_, wm0);
+        sut.stored(context_, wm0, null);
         int v0 = sut.smoothedBaseQuantum();
-        sut.stored(context_, wm0);
+        sut.stored(context_, wm0, null);
         int v1 = sut.smoothedBaseQuantum();
 
         assertThat(v0, is(256 * 7 / 8 + 64 / 8));
@@ -76,12 +77,12 @@ public class DeficitRoundRobinEncoderTest {
         CodecBuffer b0 = Buffers.wrap(new byte[64]);
         CodecBuffer b1 = Buffers.wrap(new byte[64]);
 
-        sut.stored(context_, new WeightedMessage(b, -1));
-        sut.stored(context_, new WeightedMessage(b0, 0));
-        sut.stored(context_, new WeightedMessage(b1, 1));
+        sut.stored(context_, new WeightedMessage(b, -1), null);
+        sut.stored(context_, new WeightedMessage(b0, 0), null);
+        sut.stored(context_, new WeightedMessage(b1, 1), null);
 
         ArgumentCaptor<Long> timerDelayCaptor = ArgumentCaptor.forClass(Long.class);
-        verify(context_).proceed(b);
+        verify(context_).proceed(b, null);
         verify(context_).schedule(Mockito.<Task>any(), timerDelayCaptor.capture(), Mockito.<TimeUnit>any());
         assertThat(timerDelayCaptor.getValue(), is(TimeUnit.MILLISECONDS.toNanos(1L)));
         assertThat(sut.deficitCounter(0), is(64 / 2));
@@ -96,16 +97,17 @@ public class DeficitRoundRobinEncoderTest {
         CodecBuffer b  = Buffers.wrap(new byte[64]);
         CodecBuffer b0 = Buffers.wrap(new byte[64]);
         CodecBuffer b1 = Buffers.wrap(new byte[64]);
+        Object p = new Object();
 
         for (int i = 0; i < 2; i++) {
-            sut.stored(context_, new WeightedMessage(b, -1));
-            sut.stored(context_, new WeightedMessage(b0, 0));
-            sut.stored(context_, new WeightedMessage(b1, 1));
+            sut.stored(context_, new WeightedMessage(b, -1), p);
+            sut.stored(context_, new WeightedMessage(b0, 0), p);
+            sut.stored(context_, new WeightedMessage(b1, 1), p);
         }
 
         ArgumentCaptor<CodecBuffer> proceededCaptor = ArgumentCaptor.forClass(CodecBuffer.class);
         ArgumentCaptor<Long> timerDelayCaptor = ArgumentCaptor.forClass(Long.class);
-        verify(context_, times(3)).proceed(proceededCaptor.capture());
+        verify(context_, times(3)).proceed(proceededCaptor.capture(), eq(p));
         verify(context_).schedule(Mockito.<Task>any(), timerDelayCaptor.capture(), Mockito.<TimeUnit>any());
         List<CodecBuffer> proceededList = proceededCaptor.getAllValues();
         assertThat(proceededList.get(0), is(sameInstance(b)));
@@ -123,7 +125,7 @@ public class DeficitRoundRobinEncoderTest {
         DeficitRoundRobinEncoder sut = new DeficitRoundRobinEncoder(64, 1L, TimeUnit.MILLISECONDS, 0.5f, 0.25f);
         CodecBuffer b0 = Buffers.wrap(new byte[64]);
 
-        sut.stored(context_, new WeightedMessage(b0, 0));
+        sut.stored(context_, new WeightedMessage(b0, 0), null);
         long delay0 = timer_.execute(TimeUnit.NANOSECONDS);
 
         assertThat(delay0, is(TimeUnit.MILLISECONDS.toNanos(1L)));
@@ -137,7 +139,7 @@ public class DeficitRoundRobinEncoderTest {
         DeficitRoundRobinEncoder sut = new DeficitRoundRobinEncoder(64, 1L, TimeUnit.MILLISECONDS, 0.5f, 0.25f);
         CodecBuffer b0 = Buffers.wrap(new byte[64]);
 
-        sut.stored(context_, new WeightedMessage(b0, 0));
+        sut.stored(context_, new WeightedMessage(b0, 0), null);
         long delay0 = timer_.execute(TimeUnit.NANOSECONDS);
         long delay1 = timer_.execute(TimeUnit.NANOSECONDS);
 
@@ -155,10 +157,10 @@ public class DeficitRoundRobinEncoderTest {
         CodecBuffer b0 = Buffers.wrap(new byte[64]);
         CodecBuffer b1 = Buffers.wrap(new byte[64]);
 
-        sut.stored(context_, new WeightedMessage(b, -1));
+        sut.stored(context_, new WeightedMessage(b, -1), null);
         int smoothedBaseQuantum = sut.smoothedBaseQuantum();
-        sut.stored(context_, new WeightedMessage(b0, 0));
-        sut.stored(context_, new WeightedMessage(b1, 1));
+        sut.stored(context_, new WeightedMessage(b0, 0), null);
+        sut.stored(context_, new WeightedMessage(b1, 1), null);
         long delay0 = timer_.execute(TimeUnit.NANOSECONDS);
 
         assertThat(smoothedBaseQuantum, is(0));

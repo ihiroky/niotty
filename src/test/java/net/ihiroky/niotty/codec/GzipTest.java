@@ -47,13 +47,13 @@ public class GzipTest {
         CodecBuffer buffer = Buffers.wrap(data, 0, data.length);
 
         GzipEncoder encoder = new GzipEncoder();
-        encoder.stored(context_, buffer);
+        encoder.stored(context_, buffer, null);
         CodecBuffer deflated = context_.pollEvent();
         if (context_.pollEvent() != null) {
             Assert.fail();
         }
         GzipDecoder decoder = new GzipDecoder();
-        decoder.loaded(context_, deflated);
+        decoder.loaded(context_, deflated, null);
 
         CodecBuffer inflated = context_.pollEvent();
         assertThat(inflated.remaining(), is(data.length));
@@ -81,13 +81,13 @@ public class GzipTest {
         CodecBuffer buffer = Buffers.wrap(data, 0, data.length);
 
         GzipEncoder encoder = new GzipEncoder();
-        encoder.stored(context_, buffer);
+        encoder.stored(context_, buffer, null);
         CodecBuffer deflated = context_.pollEvent();
         if (context_.pollEvent() != null) {
             Assert.fail();
         }
         GzipDecoder decoder = new GzipDecoder();
-        decoder.loaded(context_, deflated);
+        decoder.loaded(context_, deflated, null);
 
         assertProcessedData(data);
     }
@@ -101,14 +101,14 @@ public class GzipTest {
         CodecBuffer buffer = Buffers.wrap(data, 0, data.length);
 
         GzipEncoder encoder = new GzipEncoder();
-        encoder.stored(context_, buffer);
+        encoder.stored(context_, buffer, null);
         CodecBuffer deflated = context_.pollEvent();
         if (context_.pollEvent() != null) {
             Assert.fail();
         }
         GzipDecoder decoder = new GzipDecoder();
-        decoder.loaded(context_, deflated.slice(8));
-        decoder.loaded(context_, deflated);
+        decoder.loaded(context_, deflated.slice(8), null);
+        decoder.loaded(context_, deflated, null);
 
         assertProcessedData(data);
     }
@@ -119,13 +119,13 @@ public class GzipTest {
         Arrays.fill(data, (byte) '0');
         CodecBuffer buffer = Buffers.wrap(data, 0, data.length);
         GzipEncoder encoder = new GzipEncoder(Deflater.BEST_SPEED, 8);
-        encoder.stored(context_, buffer);
+        encoder.stored(context_, buffer, null);
         CodecBuffer deflated = context_.pollEvent();
         if (context_.pollEvent() != null) {
             Assert.fail();
         }
         GzipDecoder decoder = new GzipDecoder();
-        decoder.loaded(context_, deflated);
+        decoder.loaded(context_, deflated, null);
 
         assertProcessedData(data);
     }
@@ -137,13 +137,13 @@ public class GzipTest {
         CodecBuffer buffer = Buffers.wrap(data, 0, data.length);
 
         GzipEncoder encoder = new GzipEncoder();
-        encoder.stored(context_, buffer);
+        encoder.stored(context_, buffer, null);
         CodecBuffer deflated = context_.pollEvent();
         if (context_.pollEvent() != null) {
             Assert.fail();
         }
         GzipDecoder decoder = new GzipDecoder(8);
-        decoder.loaded(context_, deflated);
+        decoder.loaded(context_, deflated, null);
 
         assertProcessedData(data);
     }
@@ -155,7 +155,7 @@ public class GzipTest {
         CodecBuffer buffer = Buffers.wrap(data, 0, data.length);
 
         GzipEncoder encoder = new GzipEncoder();
-        encoder.stored(context_, buffer);
+        encoder.stored(context_, buffer, null);
         encoder.deactivated(context_, DeactivateState.STORE);
         CodecBuffer deflated = context_.pollEvent();
         CodecBuffer finished = context_.pollEvent();
@@ -163,8 +163,8 @@ public class GzipTest {
             Assert.fail();
         }
         GzipDecoder decoder = new GzipDecoder();
-        decoder.loaded(context_, deflated);
-        decoder.loaded(context_, finished);
+        decoder.loaded(context_, deflated, null);
+        decoder.loaded(context_, finished, null);
 
         assertProcessedData(data);
     }
@@ -179,7 +179,7 @@ public class GzipTest {
         CodecBuffer buffer = Buffers.wrap(data, 0, data.length);
 
         GzipEncoder encoder = new GzipEncoder();
-        encoder.stored(context_, buffer);
+        encoder.stored(context_, buffer, null);
         encoder.deactivated(context_, DeactivateState.STORE);
         CodecBuffer deflated = context_.pollEvent();
         CodecBuffer finished = context_.pollEvent();
@@ -228,7 +228,7 @@ public class GzipTest {
 
         GzipDecoder decoder = new GzipDecoder();
         CodecBuffer buffer = Buffers.wrap(input, 0, inputLength);
-        decoder.loaded(context_, buffer);
+        decoder.loaded(context_, buffer, null);
 
         assertProcessedData(data);
     }

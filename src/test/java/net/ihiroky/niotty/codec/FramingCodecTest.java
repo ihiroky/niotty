@@ -49,7 +49,7 @@ public class FramingCodecTest {
     public void testLoad_MessageShortOnce() throws Exception {
         CodecBuffer input = Buffers.wrap(data_, 0, dataLength_);
 
-        sut_.loaded(context_, input);
+        sut_.loaded(context_, input, null);
 
         CodecBuffer output = context_.pollEvent();
         assertThat(output.readInt(), is(1));
@@ -67,7 +67,7 @@ public class FramingCodecTest {
 
         CodecBuffer input = Buffers.wrap(data_, 0, dataLength_);
 
-        sut_.loaded(context_, input);
+        sut_.loaded(context_, input, null);
 
         CodecBuffer output = context_.pollEvent();
         assertThat(output.readInt(), is(1));
@@ -83,7 +83,7 @@ public class FramingCodecTest {
     public void testLoad_MessageManyIncompleteShortPacket() throws Exception {
         // read first 1 byte
         CodecBuffer b = Buffers.wrap(data_, 0, 1);
-        sut_.loaded(context_, b);
+        sut_.loaded(context_, b, null);
         assertThat(context_.eventCount(), is(0));
         assertThat(sut_.getPooling().remaining(), is(1));
         assertThat(sut_.getPoolingFrameBytes(), is(0));
@@ -92,7 +92,7 @@ public class FramingCodecTest {
 
         // prepend length field is read
         b = Buffers.wrap(data_, 1, 1);
-        sut_.loaded(context_, b);
+        sut_.loaded(context_, b, null);
         assertThat(context_.eventCount(), is(0));
         assertThat(sut_.getPooling(), is(nullValue()));
         assertThat(sut_.getPoolingFrameBytes(), is(12));
@@ -100,7 +100,7 @@ public class FramingCodecTest {
 
         // read remaining
         b = Buffers.wrap(data_, 2, 12);
-        sut_.loaded(context_, b);
+        sut_.loaded(context_, b, null);
 
         CodecBuffer output = context_.pollEvent();
         assertThat(output.readInt(), is(1));
@@ -118,7 +118,7 @@ public class FramingCodecTest {
 
         // read first byte
         CodecBuffer b = Buffers.wrap(data_, 0, 1);
-        sut_.loaded(context_, b);
+        sut_.loaded(context_, b, null);
         assertThat(context_.eventCount(), is(0));
         assertThat(sut_.getPooling().remaining(), is(1));
         assertThat(sut_.getPoolingFrameBytes(), is(0));
@@ -127,7 +127,7 @@ public class FramingCodecTest {
 
         // read second byte
         b = Buffers.wrap(data_, 1, 1);
-        sut_.loaded(context_, b);
+        sut_.loaded(context_, b, null);
         assertThat(context_.eventCount(), is(0));
         assertThat(sut_.getPooling(), is(nullValue()));
         assertThat(sut_.getPoolingFrameBytes(), is(0x80000000));
@@ -136,7 +136,7 @@ public class FramingCodecTest {
 
         // read third byte
         b = Buffers.wrap(data_, 2, 1);
-        sut_.loaded(context_, b);
+        sut_.loaded(context_, b, null);
         assertThat(context_.eventCount(), is(0));
         assertThat(sut_.getPooling().remaining(), is(1));
         assertThat(sut_.getPoolingFrameBytes(), is(0x80000000));
@@ -145,7 +145,7 @@ public class FramingCodecTest {
 
         // prepend length field is read
         b = Buffers.wrap(data_, 3, 1);
-        sut_.loaded(context_, b);
+        sut_.loaded(context_, b, null);
         assertThat(context_.eventCount(), is(0));
         assertThat(sut_.getPooling(), is(nullValue()));
         assertThat(sut_.getPoolingFrameBytes(), is(12));
@@ -153,7 +153,7 @@ public class FramingCodecTest {
 
         // read remaining
         b = Buffers.wrap(data_, 4, 12);
-        sut_.loaded(context_, b);
+        sut_.loaded(context_, b, null);
 
         CodecBuffer output = context_.pollEvent();
         assertThat(output.readInt(), is(1));
@@ -182,7 +182,7 @@ public class FramingCodecTest {
         dataLength_ = encodeBuffer.remaining();
         CodecBuffer input = Buffers.wrap(data_, 0, dataLength_);
 
-        sut_.loaded(context_, input);
+        sut_.loaded(context_, input, null);
 
         for (int i = 0; i < completePacket; i++) {
             CodecBuffer output = context_.pollEvent();
@@ -212,7 +212,7 @@ public class FramingCodecTest {
         dataLength_ = encodeBuffer.remaining();
         CodecBuffer input = Buffers.wrap(data_, 0, dataLength_);
 
-        sut_.loaded(context_, input);
+        sut_.loaded(context_, input, null);
 
         for (int i = 0; i < completePacket; i++) {
             CodecBuffer output = context_.pollEvent();
@@ -244,7 +244,7 @@ public class FramingCodecTest {
             CodecBuffer input = Buffers.newCodecBuffer(8192);
             input.drainFrom(wholeInput, 8192);
             boolean is8192 = input.remaining() == 8192;
-            sut.loaded(context_, input);
+            sut.loaded(context_, input, null);
             if (is8192) {
                 assertThat(input, hasReferenceCount(7));
             } else {
@@ -266,13 +266,13 @@ public class FramingCodecTest {
         CodecBuffer input0 = Buffers.newCodecBuffer();
         input0.writeShort((short) 10);
         input0.writeBytes(data, 0, 3);
-        sut_.loaded(context_, input0);
+        sut_.loaded(context_, input0, null);
         CodecBuffer input1 = Buffers.newCodecBuffer();
         input1.writeBytes(data, 0, 3);
-        sut_.loaded(context_, input1);
+        sut_.loaded(context_, input1, null);
         CodecBuffer input2 = Buffers.newCodecBuffer();
         input2.writeBytes(data, 0, 4);
-        sut_.loaded(context_, input2);
+        sut_.loaded(context_, input2, null);
 
         CodecBuffer proceeded = context_.pollEvent();
         assertThat(proceeded.remaining(), is(10));
@@ -287,7 +287,7 @@ public class FramingCodecTest {
         CodecBuffer input = Buffers.newCodecBuffer(10);
         input.writeBytes(new byte[5], 0, 5);
 
-        sut_.stored(context_, input);
+        sut_.stored(context_, input, null);
 
         BufferSink actual = context_.pollEvent();
         assertThat(actual.remaining(), is(7));
@@ -298,7 +298,7 @@ public class FramingCodecTest {
         CodecBuffer input = Buffers.newCodecBuffer(Short.MAX_VALUE);
         input.writeBytes(new byte[Short.MAX_VALUE], 0, Short.MAX_VALUE);
 
-        sut_.stored(context_, input);
+        sut_.stored(context_, input, null);
 
         BufferSink actual = context_.pollEvent();
         assertThat(actual.remaining(), is(Short.MAX_VALUE + 2));
@@ -309,7 +309,7 @@ public class FramingCodecTest {
         CodecBuffer input = Buffers.newCodecBuffer(Short.MAX_VALUE + 1);
         input.writeBytes(new byte[Short.MAX_VALUE + 1], 0, Short.MAX_VALUE + 1);
 
-        sut_.stored(context_, input);
+        sut_.stored(context_, input, null);
 
         BufferSink actual = context_.pollEvent();
         assertThat(actual.remaining(), is((Short.MAX_VALUE + 1) + 4));

@@ -21,7 +21,7 @@ public class FramingCodec implements Stage {
     static final int MASK_TWO_BYTES = 0xFFFF;
 
     @Override
-    public void stored(StageContext context, Object message) {
+    public void stored(StageContext context, Object message, Object parameter) {
         BufferSink input = (BufferSink) message;
         int contentsLength = input.remaining();
         CodecBuffer headerBuffer;
@@ -33,11 +33,11 @@ public class FramingCodec implements Stage {
             headerBuffer.writeInt(INT_FLAG | contentsLength);
         }
         input.addFirst(headerBuffer);
-        context.proceed(input);
+        context.proceed(input, parameter);
     }
 
     @Override
-    public void loaded(StageContext context, Object message) {
+    public void loaded(StageContext context, Object message, Object parameter) {
         CodecBuffer input = (CodecBuffer) message;
         while (input.remaining() > 0) {
             int frameBytes = poolingFrameBytes_;
@@ -83,7 +83,7 @@ public class FramingCodec implements Stage {
             }
 
             poolingFrameBytes_ = 0;
-            context.proceed(output);
+            context.proceed(output, parameter);
         }
         input.dispose();
     }

@@ -53,7 +53,7 @@ public class InflaterDecoder extends LoadStage {
     }
 
     @Override
-    public void loaded(StageContext context, Object message) {
+    public void loaded(StageContext context, Object message, Object parameter) {
         CodecBuffer input = (CodecBuffer) message;
         byte[] buffer;
         int offset;
@@ -70,7 +70,7 @@ public class InflaterDecoder extends LoadStage {
                 length = input.readBytes(buffer, 0, buffer.length);
             }
             try {
-                if (inflate(context, buffer, offset, length)) {
+                if (inflate(context, buffer, offset, length, parameter)) {
                     input.skipStartIndex(inflater_.getRemaining());
                     onAfterFinished(input, inflater_);
                     break;
@@ -82,7 +82,7 @@ public class InflaterDecoder extends LoadStage {
         input.dispose();
     }
 
-    private boolean inflate(StageContext context,  byte[] buffer, int offset, int length)
+    private boolean inflate(StageContext context,  byte[] buffer, int offset, int length, Object parameter)
             throws DataFormatException {
 
         Inflater inflater = inflater_;
@@ -99,7 +99,7 @@ public class InflaterDecoder extends LoadStage {
             if (decompressed > 0) {
                 onAfterDecode(output, 0, decompressed);
                 CodecBuffer b = Buffers.wrap(output, 0, decompressed);
-                context.proceed(b);
+                context.proceed(b, parameter);
                 int newRemaining = inflater.getRemaining();
                 if (newRemaining == 0) { // equals inflater.needsInput()
                     output_ = null;

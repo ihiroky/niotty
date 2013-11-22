@@ -17,7 +17,7 @@ public class FileLoadStage extends LoadStage {
     private static final String FILE = "build.gradle";
 
     @Override
-    public void loaded(StageContext context, Object message) {
+    public void loaded(StageContext context, Object message, Object parameter) {
     }
 
     @Override
