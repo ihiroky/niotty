@@ -1,7 +1,10 @@
 package net.ihiroky.niotty;
 
+import net.ihiroky.niotty.buffer.Buffers;
+import net.ihiroky.niotty.buffer.CodecBuffer;
 import net.ihiroky.niotty.util.Arguments;
 
+import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
@@ -291,13 +294,22 @@ public class DefaultPipeline<L extends TaskLoop> implements Pipeline {
     }
 
     @Override
-    public void load(Object message) {
+    public void load(ByteBuffer buffer) {
+        CodecBuffer message =  (tail_.taskLoop_.isInLoopThread()) ? copy(buffer) : Buffers.wrap(buffer);
         tail_.callLoad(message, null);
     }
 
     @Override
-    public void load(Object message, Object parameter) {
+    public void load(ByteBuffer buffer, Object parameter) {
+        CodecBuffer message =  (tail_.taskLoop_.isInLoopThread()) ? copy(buffer) : Buffers.wrap(buffer);
         tail_.callLoad(message, parameter);
+    }
+
+    private static CodecBuffer copy(ByteBuffer bb) {
+        int length = bb.limit();
+        byte[] data = new byte[length];
+        bb.get(data, 0, length);
+        return Buffers.wrap(data, 0, length);
     }
 
     @Override

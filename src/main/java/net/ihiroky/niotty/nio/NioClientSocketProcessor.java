@@ -29,7 +29,6 @@ public class NioClientSocketProcessor extends AbstractProcessor<NioClientSocketT
         numberOfMessageIOThread_ = DEFAULT_NUMBER_OF_MESSAGE_IO_THREAD;
         readBufferSize_ = SelectLoopGroup.DEFAULT_READ_BUFFER_SIZE;
         useDirectBuffer_ = SelectLoopGroup.DEFAULT_USE_DIRECT_BUFFER;
-        copyReadBuffer_ = SelectLoopGroup.DEFAULT_COPY_READ_BUFFER;
 
         setName(DEFAULT_NAME);
     }
@@ -46,8 +45,7 @@ public class NioClientSocketProcessor extends AbstractProcessor<NioClientSocketT
                 new NameCountThreadFactory(name().concat("-IO")), numberOfMessageIOThread_)
                 .setReadBufferSize(readBufferSize_)
                 .setWriteBufferSize(0)
-                .setUseDirectBuffer(useDirectBuffer_)
-                .setCopyReadBuffer(copyReadBuffer_);
+                .setUseDirectBuffer(useDirectBuffer_);
 
         if (useNonBlockingConnection_) {
             connectSelectorPool_ = SelectLoopGroup.newNonIoInstance(name().concat("-Connect"));

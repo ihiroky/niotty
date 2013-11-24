@@ -14,12 +14,10 @@ public class SelectLoopGroup extends TaskLoopGroup<SelectLoop> {
     private int readBufferSize_;
     private int writeBufferSize_;
     private boolean useDirectBuffer_;
-    private boolean copyReadBuffer_;
 
     static final int DEFAULT_READ_BUFFER_SIZE = 8192;
     static final int DEFAULT_WRITE_BUFFER_SIZE = 8192;
     static final boolean DEFAULT_USE_DIRECT_BUFFER = false;
-    static final boolean DEFAULT_COPY_READ_BUFFER = true;
 
     /**
      * Constructs a new instance.
@@ -32,7 +30,6 @@ public class SelectLoopGroup extends TaskLoopGroup<SelectLoop> {
         readBufferSize_ = DEFAULT_READ_BUFFER_SIZE;
         writeBufferSize_ = DEFAULT_WRITE_BUFFER_SIZE;
         useDirectBuffer_ = DEFAULT_USE_DIRECT_BUFFER;
-        copyReadBuffer_ = DEFAULT_COPY_READ_BUFFER;
     }
 
     public static SelectLoopGroup newNonIoInstance(String threadNamePrefix) {
@@ -55,11 +52,6 @@ public class SelectLoopGroup extends TaskLoopGroup<SelectLoop> {
         return this;
     }
 
-    public SelectLoopGroup setCopyReadBuffer(boolean copyReadBuffer) {
-        copyReadBuffer_ = copyReadBuffer;
-        return this;
-    }
-
     public int readBufferSize_() {
         return readBufferSize_;
     }
@@ -72,12 +64,8 @@ public class SelectLoopGroup extends TaskLoopGroup<SelectLoop> {
         return useDirectBuffer_;
     }
 
-    public boolean copyReadBuffer() {
-        return copyReadBuffer_;
-    }
-
     @Override
     protected SelectLoop newTaskLoop() {
-        return new SelectLoop(readBufferSize_, writeBufferSize_, useDirectBuffer_, copyReadBuffer_);
+        return new SelectLoop(readBufferSize_, writeBufferSize_, useDirectBuffer_);
     }
 }

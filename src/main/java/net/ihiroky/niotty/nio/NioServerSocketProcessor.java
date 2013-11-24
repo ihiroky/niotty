@@ -30,7 +30,6 @@ public class NioServerSocketProcessor extends AbstractProcessor<NioServerSocketT
         numberOfIoThread_ = DEFAULT_NUMBER_OF_IO_THREAD;
         readBufferSize_ = SelectLoopGroup.DEFAULT_READ_BUFFER_SIZE;
         useDirectBuffer_ = SelectLoopGroup.DEFAULT_USE_DIRECT_BUFFER;
-        copyReadBuffer_ = SelectLoopGroup.DEFAULT_COPY_READ_BUFFER;
 
         setName(DEFAULT_NAME);
     }
@@ -41,8 +40,7 @@ public class NioServerSocketProcessor extends AbstractProcessor<NioServerSocketT
                 new NameCountThreadFactory(name().concat("-IO")), numberOfIoThread_)
                 .setReadBufferSize(readBufferSize_)
                 .setWriteBufferSize(0)
-                .setUseDirectBuffer(useDirectBuffer_)
-                .setCopyReadBuffer(copyReadBuffer_);
+                .setUseDirectBuffer(useDirectBuffer_);
         acceptSelectLoopGroup_ = SelectLoopGroup.newNonIoInstance(name().concat("-Accept"));
     }
 

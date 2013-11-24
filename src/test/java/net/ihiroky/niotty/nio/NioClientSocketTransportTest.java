@@ -7,9 +7,6 @@ import net.ihiroky.niotty.Task;
 import net.ihiroky.niotty.TaskSelection;
 import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.TransportOptions;
-import net.ihiroky.niotty.buffer.ArrayCodecBuffer;
-import net.ihiroky.niotty.buffer.ByteBufferCodecBuffer;
-import net.ihiroky.niotty.buffer.CodecBuffer;
 import net.ihiroky.niotty.util.JavaVersion;
 import net.ihiroky.niotty.util.Platform;
 import org.junit.Before;
@@ -59,39 +56,8 @@ public class NioClientSocketTransportTest {
         }
 
         @Test
-        public void testReadBufferIsNotCopiedWhenConnected() throws Exception {
-            selectLoopGroup_ = new SelectLoopGroup(Executors.defaultThreadFactory(), 1).setCopyReadBuffer(false);
-            NioClientSocketTransport sut = spy(new NioClientSocketTransport(
-                    "TEST", PipelineComposer.empty(), selectLoopGroup_, writeQueueFactory_));
-
-            SocketChannel channel = mock(SocketChannel.class);
-            when(channel.read(Mockito.any(ByteBuffer.class))).thenAnswer(new Answer<Integer>() {
-                @Override
-                public Integer answer(InvocationOnMock invocation) throws Throwable {
-                    ByteBuffer bb = (ByteBuffer) invocation.getArguments()[0];
-                    bb.position(10);
-                    return 10;
-                }
-            });
-            Pipeline pipeline = mock(Pipeline.class);
-            SelectionKey key = spy(new SelectionKeyMock());
-            when(key.channel()).thenReturn(channel);
-            when(key.readyOps()).thenReturn(SelectionKey.OP_READ);
-            when(sut.pipeline()).thenReturn(pipeline);
-            key.attach(sut);
-            sut.setSelectionKey(key);
-
-            sut.onSelected(key, sut.taskLoop());
-
-            ArgumentCaptor<CodecBuffer> captor = ArgumentCaptor.forClass(CodecBuffer.class);
-            verify(sut.pipeline()).load(captor.capture());
-            CodecBuffer cb = captor.getValue();
-            assertThat(cb, is(instanceOf(ByteBufferCodecBuffer.class)));
-        }
-
-        @Test
-        public void testReadBufferIsCopiedWhenConnected() throws Exception {
-            selectLoopGroup_ = new SelectLoopGroup(Executors.defaultThreadFactory(), 1).setCopyReadBuffer(true);
+        public void testReadBuffer() throws Exception {
+            selectLoopGroup_ = new SelectLoopGroup(Executors.defaultThreadFactory(), 1);
             NioClientSocketTransport sut = spy(new NioClientSocketTransport(
                     "TEST", PipelineComposer.empty(), selectLoopGroup_, writeQueueFactory_));
 
@@ -115,11 +81,27 @@ public class NioClientSocketTransportTest {
 
             sut.onSelected(key, sut.taskLoop());
 
-            ArgumentCaptor<CodecBuffer> captor = ArgumentCaptor.forClass(CodecBuffer.class);
-            verify(sut.pipeline()).load(captor.capture());
-            CodecBuffer cb = captor.getValue();
-            assertThat(cb, is(instanceOf(ArrayCodecBuffer.class)));
-            assertThat(cb.remaining(), is(10));
+            verify(sut.pipeline()).load(Mockito.any(ByteBuffer.class));
+        }
+
+        @Test
+        public void testWriteBuffer() throws Exception {
+            selectLoopGroup_ = new SelectLoopGroup(Executors.defaultThreadFactory(), 1);
+            NioClientSocketTransport sut = spy(new NioClientSocketTransport(
+                    "TEST", PipelineComposer.empty(), selectLoopGroup_, writeQueueFactory_));
+            doNothing().when(sut).flush(Mockito.any(ByteBuffer.class)); // super class method
+
+            SocketChannel channel = mock(SocketChannel.class);
+            when(channel.isConnected()).thenReturn(true);
+            SelectionKey key = spy(new SelectionKeyMock());
+            when(key.channel()).thenReturn(channel);
+            when(key.readyOps()).thenReturn(SelectionKey.OP_WRITE);
+            key.attach(sut);
+            sut.setSelectionKey(key);
+
+            sut.onSelected(key, sut.taskLoop());
+
+            verify(sut).flush(null);
         }
 
         static class SelectionKeyMock extends AbstractSelectionKey {

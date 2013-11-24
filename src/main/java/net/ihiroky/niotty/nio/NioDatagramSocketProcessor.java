@@ -17,7 +17,6 @@ public class NioDatagramSocketProcessor extends AbstractProcessor<NioDatagramSoc
     private int readBufferSize_;
     private int writeBufferSize_;
     private boolean useDirectBuffer_;
-    private boolean copyReadBuffer_;
 
     private static final int DEFAULT_NUMBER_OF_MESSAGE_IO_THREAD = 1;
 
@@ -30,7 +29,6 @@ public class NioDatagramSocketProcessor extends AbstractProcessor<NioDatagramSoc
         readBufferSize_ = SelectLoopGroup.DEFAULT_READ_BUFFER_SIZE;
         writeBufferSize_ = SelectLoopGroup.DEFAULT_WRITE_BUFFER_SIZE;
         useDirectBuffer_ = SelectLoopGroup.DEFAULT_USE_DIRECT_BUFFER;
-        copyReadBuffer_ = SelectLoopGroup.DEFAULT_COPY_READ_BUFFER;
         setName(DEFAULT_NAME);
     }
 
@@ -40,8 +38,7 @@ public class NioDatagramSocketProcessor extends AbstractProcessor<NioDatagramSoc
                 new NameCountThreadFactory(name().concat("-IO")), numberOfMessageIOThread_)
                 .setReadBufferSize(readBufferSize_)
                 .setWriteBufferSize(writeBufferSize_)
-                .setUseDirectBuffer(useDirectBuffer_)
-                .setCopyReadBuffer(copyReadBuffer_);
+                .setUseDirectBuffer(useDirectBuffer_);
     }
 
     @Override
@@ -115,15 +112,6 @@ public class NioDatagramSocketProcessor extends AbstractProcessor<NioDatagramSoc
 
     public boolean useDirectBuffer() {
         return useDirectBuffer_;
-    }
-
-    public boolean copyReadBuffer() {
-        return copyReadBuffer_;
-    }
-
-    public NioDatagramSocketProcessor setCopyReadBuffer(boolean copyReadBuffer) {
-        copyReadBuffer_ = copyReadBuffer;
-        return this;
     }
 
     public NioDatagramSocketProcessor setWriteQueueFactory(WriteQueueFactory writeQueueFactory) {

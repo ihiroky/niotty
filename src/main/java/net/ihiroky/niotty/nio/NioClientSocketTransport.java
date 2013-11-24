@@ -12,8 +12,6 @@ import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.TransportOption;
 import net.ihiroky.niotty.TransportOptions;
 import net.ihiroky.niotty.buffer.BufferSink;
-import net.ihiroky.niotty.buffer.Buffers;
-import net.ihiroky.niotty.buffer.CodecBuffer;
 import net.ihiroky.niotty.util.Arguments;
 import net.ihiroky.niotty.util.JavaVersion;
 import net.ihiroky.niotty.util.Platform;
@@ -399,17 +397,14 @@ public class NioClientSocketTransport extends NioSocketTransport<SelectLoop> {
                 ByteBuffer readBuffer = selectLoop.readBuffer_;
                 int read = channel.read(readBuffer);
                 if (read == -1) {
-                    if (logger_.isDebugEnabled()) {
-                        logger_.debug("[onSelected] transport reaches the end of its stream:" + this);
-                    }
+                    logger_.debug("[onSelected] transport reaches the end of its stream: {}", this);
                     pipeline().deactivate(DeactivateState.LOAD);
                     readBuffer.clear();
                     return;
                 }
 
                 readBuffer.flip();
-                CodecBuffer cb = selectLoop.copyReadBuffer_ ? deepCopy(readBuffer) : Buffers.wrap(readBuffer, false);
-                pipeline().load(cb);
+                pipeline().load(readBuffer);
                 readBuffer.clear();
                 // TODO There is any need to check if content is remaining?
             } else if (key.isWritable()) {

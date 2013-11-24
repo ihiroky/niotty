@@ -23,7 +23,7 @@ public class SelectLoopTest {
     @SuppressWarnings({"unchecked", "rawtypes"})
     public void testStore() throws Exception {
         NioSocketTransport<?> transport = mock(NioSocketTransport.class);
-        SelectLoop selectLoop = spy(new SelectLoop(256, 256, false, false));
+        SelectLoop selectLoop = spy(new SelectLoop(256, 256, false));
         Stage sut = selectLoop.ioStage();
         StageContext context = mock(StageContext.class);
         when(context.transport()).thenReturn(transport);

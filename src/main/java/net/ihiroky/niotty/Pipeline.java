@@ -1,5 +1,7 @@
 package net.ihiroky.niotty;
 
+import java.nio.ByteBuffer;
+
 /**
  * <p>Provides a chain of {@link net.ihiroky.niotty.Stage}s to process
  * transmission data and states of a {@link net.ihiroky.niotty.Transport}
@@ -165,14 +167,14 @@ public interface Pipeline {
      * Calls a message load chain in this pipeline.
      * @param message the message
      */
-    void load(Object message);
+    void load(ByteBuffer message);
 
     /**
      * Calls a message load chain with a parameter in this pipeline.
      * @param message the message
      * @param parameter the parameter
      */
-    void load(Object message, Object parameter);
+    void load(ByteBuffer message, Object parameter);
 
     /**
      * Calles {@link net.ihiroky.niotty.Stage#activated(net.ihiroky.niotty.StageContext)}s in this pipeline.

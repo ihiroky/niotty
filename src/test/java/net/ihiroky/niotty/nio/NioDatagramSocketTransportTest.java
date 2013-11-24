@@ -1,5 +1,6 @@
 package net.ihiroky.niotty.nio;
 
+import net.ihiroky.niotty.DeactivateState;
 import net.ihiroky.niotty.Pipeline;
 import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.Stage;
@@ -7,9 +8,6 @@ import net.ihiroky.niotty.Task;
 import net.ihiroky.niotty.TaskSelection;
 import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.TransportOptions;
-import net.ihiroky.niotty.buffer.ArrayCodecBuffer;
-import net.ihiroky.niotty.buffer.ByteBufferCodecBuffer;
-import net.ihiroky.niotty.buffer.CodecBuffer;
 import net.ihiroky.niotty.util.JavaVersion;
 import net.ihiroky.niotty.util.Platform;
 import org.junit.After;
@@ -160,17 +158,21 @@ public class NioDatagramSocketTransportTest {
         }
 
         @Test
-        public void testReadBufferIsNotCopiedWhenConnected() throws Exception {
-            selectLoopGroup_ = new SelectLoopGroup(Executors.defaultThreadFactory(), 1).setCopyReadBuffer(false);
+        public void testReadBufferWhenConnected() throws Exception {
+            selectLoopGroup_ = new SelectLoopGroup(Executors.defaultThreadFactory(), 1);
             NioDatagramSocketTransport sut = spy(new NioDatagramSocketTransport("TEST", PipelineComposer.empty(),
                     selectLoopGroup_, writeQueueFactory_, (InternetProtocolFamily) null));
 
             DatagramChannel channel = mock(DatagramChannel.class);
             when(channel.isConnected()).thenReturn(true);
             when(channel.read(Mockito.any(ByteBuffer.class))).thenAnswer(new Answer<Integer>() {
+                int counter_ = 0;
                 @Override
                 public Integer answer(InvocationOnMock invocation) throws Throwable {
                     ByteBuffer bb = (ByteBuffer) invocation.getArguments()[0];
+                    if (++counter_ == 2) {
+                        return 0;
+                    }
                     bb.position(10);
                     return 10;
                 }
@@ -186,28 +188,20 @@ public class NioDatagramSocketTransportTest {
 
             sut.onSelected(key, sut.taskLoop());
 
-            ArgumentCaptor<CodecBuffer> captor = ArgumentCaptor.forClass(CodecBuffer.class);
-            verify(sut.pipeline()).load(captor.capture());
-            CodecBuffer cb = captor.getValue();
-            assertThat(cb, is(instanceOf(ByteBufferCodecBuffer.class)));
+            verify(sut.pipeline()).load(Mockito.any(ByteBuffer.class));
         }
 
+        // Is it possible that channel.read() return -1 ?
         @Test
-        public void testReadBufferIsCopiedWhenConnected() throws Exception {
-            selectLoopGroup_ = new SelectLoopGroup(Executors.defaultThreadFactory(), 1).setCopyReadBuffer(true);
+        public void testReadBufferWhenNotClosed() throws Exception {
+            selectLoopGroup_ = new SelectLoopGroup(Executors.defaultThreadFactory(), 1);
             NioDatagramSocketTransport sut = spy(new NioDatagramSocketTransport("TEST", PipelineComposer.empty(),
                     selectLoopGroup_, writeQueueFactory_, (InternetProtocolFamily) null));
 
             DatagramChannel channel = mock(DatagramChannel.class);
             when(channel.isConnected()).thenReturn(true);
-            when(channel.read(Mockito.any(ByteBuffer.class))).thenAnswer(new Answer<Integer>() {
-                @Override
-                public Integer answer(InvocationOnMock invocation) throws Throwable {
-                    ByteBuffer bb = (ByteBuffer) invocation.getArguments()[0];
-                    bb.position(10);
-                    return 10;
-                }
-            });
+            when(channel.read(Mockito.any(ByteBuffer.class))).thenReturn(-1);
+
             Pipeline pipeline = mock(Pipeline.class);
             SelectionKey key = spy(new SelectionKeyMock());
             when(key.channel()).thenReturn(channel);
@@ -218,25 +212,25 @@ public class NioDatagramSocketTransportTest {
 
             sut.onSelected(key, sut.taskLoop());
 
-            ArgumentCaptor<CodecBuffer> captor = ArgumentCaptor.forClass(CodecBuffer.class);
-            verify(sut.pipeline()).load(captor.capture());
-            CodecBuffer cb = captor.getValue();
-            assertThat(cb, is(instanceOf(ArrayCodecBuffer.class)));
-            assertThat(cb.remaining(), is(10));
+            verify(sut.pipeline()).deactivate(DeactivateState.LOAD);
         }
 
         @Test
-        public void testReadBufferIsNotCopiedWhenNotConnected() throws Exception {
-            selectLoopGroup_ = new SelectLoopGroup(Executors.defaultThreadFactory(), 1).setCopyReadBuffer(false);
+        public void testReadBufferWhenNotConnected() throws Exception {
+            selectLoopGroup_ = new SelectLoopGroup(Executors.defaultThreadFactory(), 1);
             NioDatagramSocketTransport sut = spy(new NioDatagramSocketTransport("TEST", PipelineComposer.empty(),
                     selectLoopGroup_, writeQueueFactory_, (InternetProtocolFamily) null));
 
             DatagramChannel channel = mock(DatagramChannel.class);
             when(channel.isConnected()).thenReturn(false);
             when(channel.receive(Mockito.any(ByteBuffer.class))).thenAnswer(new Answer<SocketAddress>() {
+                int counter_ = 0;
                 @Override
                 public SocketAddress answer(InvocationOnMock invocation) throws Throwable {
                     ByteBuffer bb = (ByteBuffer) invocation.getArguments()[0];
+                    if (++counter_ == 2) {
+                        return null;
+                    }
                     bb.position(10);
                     return new InetSocketAddress(12345);
                 }
@@ -251,43 +245,26 @@ public class NioDatagramSocketTransportTest {
 
             sut.onSelected(key, sut.taskLoop());
 
-            ArgumentCaptor<CodecBuffer> captor = ArgumentCaptor.forClass(CodecBuffer.class);
-            verify(pipeline).load(captor.capture(), Mockito.any(Object.class));
-            CodecBuffer cb = captor.getValue();
-            assertThat(cb, is(instanceOf(ByteBufferCodecBuffer.class)));
+            verify(pipeline).load(Mockito.any(ByteBuffer.class), Mockito.any(SocketAddress.class));
         }
 
         @Test
-        public void testReadBufferIsCopiedWhenNotConnected() throws Exception {
-            selectLoopGroup_ = new SelectLoopGroup(Executors.defaultThreadFactory(), 1).setCopyReadBuffer(true);
+        public void testWriteBuffer() throws Exception {
+            selectLoopGroup_ = new SelectLoopGroup(Executors.defaultThreadFactory(), 1);
             NioDatagramSocketTransport sut = spy(new NioDatagramSocketTransport("TEST", PipelineComposer.empty(),
                     selectLoopGroup_, writeQueueFactory_, (InternetProtocolFamily) null));
+            doNothing().when(sut).flush(Mockito.any(ByteBuffer.class)); // super class method
 
             DatagramChannel channel = mock(DatagramChannel.class);
-            when(channel.isConnected()).thenReturn(false);
-            when(channel.receive(Mockito.any(ByteBuffer.class))).thenAnswer(new Answer<SocketAddress>() {
-                @Override
-                public SocketAddress answer(InvocationOnMock invocation) throws Throwable {
-                    ByteBuffer bb = (ByteBuffer) invocation.getArguments()[0];
-                    bb.position(10);
-                    return new InetSocketAddress(12345);
-                }
-            });
-            Pipeline pipeline = mock(Pipeline.class);
             SelectionKey key = spy(new SelectionKeyMock());
             when(key.channel()).thenReturn(channel);
-            when(key.readyOps()).thenReturn(SelectionKey.OP_READ);
-            when(sut.pipeline()).thenReturn(pipeline);
+            when(key.readyOps()).thenReturn(SelectionKey.OP_WRITE);
             key.attach(sut);
             sut.setSelectionKey(key);
 
             sut.onSelected(key, sut.taskLoop());
 
-            ArgumentCaptor<CodecBuffer> captor = ArgumentCaptor.forClass(CodecBuffer.class);
-            verify(sut.pipeline()).load(captor.capture(), Mockito.any(Object.class));
-            CodecBuffer cb = captor.getValue();
-            assertThat(cb, is(instanceOf(ArrayCodecBuffer.class)));
-            assertThat(cb.remaining(), is(10));
+            verify(sut).flush(Mockito.any(ByteBuffer.class));
         }
 
         private static class SelectionKeyMock extends AbstractSelectionKey {

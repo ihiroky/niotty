@@ -28,7 +28,6 @@ public class SelectLoop extends TaskLoop {
     private final AtomicBoolean wakenUp_;
     final ByteBuffer readBuffer_;
     final ByteBuffer writeBuffer_;
-    final boolean copyReadBuffer_;
     private final Stage ioStage_;
 
     private static Logger logger_ = LoggerFactory.getLogger(SelectLoop.class);
@@ -42,15 +41,13 @@ public class SelectLoop extends TaskLoop {
         wakenUp_ = new AtomicBoolean();
         readBuffer_ = EMPTY_BUFFER;
         writeBuffer_ = EMPTY_BUFFER;
-        copyReadBuffer_ = false;
         ioStage_ = new IOStage(EMPTY_BUFFER);
     }
 
-    protected SelectLoop(int readBufferSize, int writeBufferSize, boolean direct, boolean copyInput) {
+    protected SelectLoop(int readBufferSize, int writeBufferSize, boolean direct) {
         wakenUp_ = new AtomicBoolean();
         readBuffer_ = direct ? ByteBuffer.allocateDirect(readBufferSize) : ByteBuffer.allocate(readBufferSize);
         writeBuffer_ = direct ? ByteBuffer.allocateDirect(writeBufferSize) : ByteBuffer.allocate(writeBufferSize);
-        copyReadBuffer_ = copyInput;
         ioStage_ = new IOStage(writeBuffer_);
     }
 

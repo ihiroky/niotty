@@ -11,8 +11,6 @@ import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.TransportOption;
 import net.ihiroky.niotty.TransportOptions;
 import net.ihiroky.niotty.buffer.BufferSink;
-import net.ihiroky.niotty.buffer.Buffers;
-import net.ihiroky.niotty.buffer.CodecBuffer;
 import net.ihiroky.niotty.util.Arguments;
 import net.ihiroky.niotty.util.JavaVersion;
 import net.ihiroky.niotty.util.Platform;
@@ -405,26 +403,27 @@ public class NioDatagramSocketTransport extends NioSocketTransport<SelectLoop> {
             if (key.isReadable()) {
                 ByteBuffer readBuffer = selectLoop.readBuffer_;
                 if (channel.isConnected()) {
-                    int read = channel.read(readBuffer);
-                    if (read == -1) {
-                        if (logger_.isDebugEnabled()) {
-                            logger_.debug("transport reaches the end of its stream:" + this);
+                    for (;;) {
+                        int read = channel.read(readBuffer);
+                        if (read <= 0) {
+                            if (read == -1) {
+                                logger_.debug("[onSelected] transport reaches the end of its stream: {}", this);
+                                pipeline().deactivate(DeactivateState.LOAD);
+                            }
+                            break;
                         }
-                        // TODO Discuss to call loadEvent(TransportEvent) and change ops to achieve have close
-                        pipeline().deactivate(DeactivateState.LOAD);
-                        readBuffer.clear();
-                        return;
+                        readBuffer.flip();
+                        pipeline().load(readBuffer);
                     }
-                    readBuffer.flip();
-                    CodecBuffer buffer = selectLoop.copyReadBuffer_
-                            ? deepCopy(readBuffer) : Buffers.wrap(readBuffer, false);
-                    pipeline().load(buffer);
                 } else {
-                    SocketAddress source = channel.receive(readBuffer);
-                    readBuffer.flip();
-                    CodecBuffer buffer = selectLoop.copyReadBuffer_
-                            ? deepCopy(readBuffer) : Buffers.wrap(readBuffer, false);
-                    pipeline().load(buffer, source);
+                    for (;;) {
+                        SocketAddress source = channel.receive(readBuffer);
+                        if (source == null) {
+                            break;
+                        }
+                        readBuffer.flip();
+                        pipeline().load(readBuffer, source);
+                    }
                 }
                 readBuffer.clear();
             } else if (key.isWritable()) {
