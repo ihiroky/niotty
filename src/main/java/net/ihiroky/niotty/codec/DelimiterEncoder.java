@@ -3,7 +3,7 @@ package net.ihiroky.niotty.codec;
 import net.ihiroky.niotty.DeactivateState;
 import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.StoreStage;
-import net.ihiroky.niotty.buffer.BufferSink;
+import net.ihiroky.niotty.buffer.Packet;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.CodecBuffer;
 import net.ihiroky.niotty.util.Arguments;
@@ -28,7 +28,7 @@ public class DelimiterEncoder extends StoreStage {
 
     @Override
     public void stored(StageContext context, Object message, Object parameter) {
-        BufferSink input = (BufferSink) message;
+        Packet input = (Packet) message;
         CodecBuffer b = Buffers.wrap(delimiter_, 0, delimiter_.length);
         input.addLast(b);
         context.proceed(input, parameter);

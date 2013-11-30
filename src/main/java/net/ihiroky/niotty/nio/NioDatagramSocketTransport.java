@@ -10,7 +10,7 @@ import net.ihiroky.niotty.TransportException;
 import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.TransportOption;
 import net.ihiroky.niotty.TransportOptions;
-import net.ihiroky.niotty.buffer.BufferSink;
+import net.ihiroky.niotty.buffer.Packet;
 import net.ihiroky.niotty.util.Arguments;
 import net.ihiroky.niotty.util.JavaVersion;
 import net.ihiroky.niotty.util.Platform;
@@ -385,8 +385,8 @@ public class NioDatagramSocketTransport extends NioSocketTransport<SelectLoop> {
     }
 
     @Override
-    void readyToWrite(BufferSink message, Object parameter) {
-        writeQueue_.offer(new AttachedMessage<BufferSink>(message, parameter));
+    void readyToWrite(Packet message, Object parameter) {
+        writeQueue_.offer(new AttachedMessage<Packet>(message, parameter));
     }
 
     @Override

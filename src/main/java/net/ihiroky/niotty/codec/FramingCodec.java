@@ -3,7 +3,7 @@ package net.ihiroky.niotty.codec;
 import net.ihiroky.niotty.DeactivateState;
 import net.ihiroky.niotty.Stage;
 import net.ihiroky.niotty.StageContext;
-import net.ihiroky.niotty.buffer.BufferSink;
+import net.ihiroky.niotty.buffer.Packet;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.CodecBuffer;
 
@@ -22,7 +22,7 @@ public class FramingCodec implements Stage {
 
     @Override
     public void stored(StageContext context, Object message, Object parameter) {
-        BufferSink input = (BufferSink) message;
+        Packet input = (Packet) message;
         int contentsLength = input.remaining();
         CodecBuffer headerBuffer;
         if (contentsLength <= Short.MAX_VALUE) {

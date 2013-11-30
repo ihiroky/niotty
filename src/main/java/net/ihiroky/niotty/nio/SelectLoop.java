@@ -5,7 +5,7 @@ import net.ihiroky.niotty.Stage;
 import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.StoreStage;
 import net.ihiroky.niotty.TaskLoop;
-import net.ihiroky.niotty.buffer.BufferSink;
+import net.ihiroky.niotty.buffer.Packet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -147,7 +147,7 @@ public class SelectLoop extends TaskLoop {
         @Override
         public void stored(StageContext context, Object message, Object parameter) {
             final NioSocketTransport<?> transport = (NioSocketTransport<?>) context.transport();
-            transport.readyToWrite((BufferSink) message, parameter);
+            transport.readyToWrite((Packet) message, parameter);
             try {
                 transport.flush(writeBuffer_);
             } catch (IOException ioe) {

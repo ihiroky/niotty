@@ -5,7 +5,7 @@ import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.Transport;
 import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.TransportOption;
-import net.ihiroky.niotty.buffer.BufferSink;
+import net.ihiroky.niotty.buffer.Packet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -111,7 +111,7 @@ public class ConnectionWaitTransport extends NioSocketTransport<SelectLoop> {
     }
 
     @Override
-    void readyToWrite(BufferSink message, Object parameter) {
+    void readyToWrite(Packet message, Object parameter) {
         throw new UnsupportedOperationException();
     }
 }

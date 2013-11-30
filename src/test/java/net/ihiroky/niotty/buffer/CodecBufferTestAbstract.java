@@ -1162,7 +1162,7 @@ public class CodecBufferTestAbstract {
         }
     }
 
-    public static abstract class AbstractBufferSinkTests {
+    public static abstract class AbstractPacketTests {
 
         private CodecBuffer sut_;
         private byte[] data_;

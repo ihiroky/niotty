@@ -122,12 +122,10 @@ public class CodecBufferList extends AbstractCodecBuffer {
         if (buffers.size() == 1) {
             return buffers.get(0).sink(channel, buffer, target);
         } else {
-            int start;
             for (CodecBuffer b : buffers) {
-                start = b.startIndex();
-                b.readBytes(buffer);
-                b.startIndex(start);
+                b.copyTo(buffer);
             }
+            buffer.flip();
             boolean sent = (channel.send(buffer, target) > 0);
             buffer.clear();
             return sent;

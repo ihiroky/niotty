@@ -1,6 +1,6 @@
 package net.ihiroky.niotty.nio;
 
-import net.ihiroky.niotty.buffer.BufferSink;
+import net.ihiroky.niotty.buffer.Packet;
 import net.ihiroky.niotty.buffer.Buffers;
 import org.junit.Before;
 import org.junit.Test;
@@ -54,9 +54,9 @@ public class SimplePacketQueueTest {
     @Test
     public void testFlushAllElements() throws Exception {
         GatheringByteChannel channel = mock(GatheringByteChannel.class);
-        BufferSink p0 = mock(BufferSink.class);
-        BufferSink p1 = mock(BufferSink.class);
-        BufferSink p2 = mock(BufferSink.class);
+        Packet p0 = mock(Packet.class);
+        Packet p1 = mock(Packet.class);
+        Packet p2 = mock(Packet.class);
         when(p0.sink(channel)).thenReturn(true);
         when(p1.sink(channel)).thenReturn(true);
         when(p2.sink(channel)).thenReturn(true);
@@ -75,9 +75,9 @@ public class SimplePacketQueueTest {
     @Test
     public void testFlushPartOfElements() throws Exception {
         GatheringByteChannel channel = mock(GatheringByteChannel.class);
-        BufferSink p0 = mock(BufferSink.class);
-        BufferSink p1 = mock(BufferSink.class);
-        BufferSink p2 = mock(BufferSink.class);
+        Packet p0 = mock(Packet.class);
+        Packet p1 = mock(Packet.class);
+        Packet p2 = mock(Packet.class);
         when(p0.sink(channel)).thenReturn(true);
         when(p1.sink(channel)).thenReturn(false);
         when(p2.sink(channel)).thenReturn(true);

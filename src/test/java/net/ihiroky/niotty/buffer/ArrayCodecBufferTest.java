@@ -60,7 +60,7 @@ public class ArrayCodecBufferTest {
         }
     }
 
-    public static class BufferSinkTests extends CodecBufferTestAbstract.AbstractBufferSinkTests {
+    public static class PacketTests extends CodecBufferTestAbstract.AbstractPacketTests {
         @Override
         protected CodecBuffer createCodecBuffer(byte[] buffer, int offset, int length) {
             return new ArrayCodecBuffer(buffer, offset, length);

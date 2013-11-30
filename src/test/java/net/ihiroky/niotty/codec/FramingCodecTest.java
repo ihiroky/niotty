@@ -1,7 +1,7 @@
 package net.ihiroky.niotty.codec;
 
 import net.ihiroky.niotty.buffer.ArrayCodecBuffer;
-import net.ihiroky.niotty.buffer.BufferSink;
+import net.ihiroky.niotty.buffer.Packet;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.CodecBuffer;
 import org.junit.Before;
@@ -289,7 +289,7 @@ public class FramingCodecTest {
 
         sut_.stored(context_, input, null);
 
-        BufferSink actual = context_.pollEvent();
+        Packet actual = context_.pollEvent();
         assertThat(actual.remaining(), is(7));
     }
 
@@ -300,7 +300,7 @@ public class FramingCodecTest {
 
         sut_.stored(context_, input, null);
 
-        BufferSink actual = context_.pollEvent();
+        Packet actual = context_.pollEvent();
         assertThat(actual.remaining(), is(Short.MAX_VALUE + 2));
     }
 
@@ -311,7 +311,7 @@ public class FramingCodecTest {
 
         sut_.stored(context_, input, null);
 
-        BufferSink actual = context_.pollEvent();
+        Packet actual = context_.pollEvent();
         assertThat(actual.remaining(), is((Short.MAX_VALUE + 1) + 4));
     }
 }

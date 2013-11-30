@@ -9,7 +9,7 @@ import net.ihiroky.niotty.TransportException;
 import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.TransportOption;
 import net.ihiroky.niotty.TransportOptions;
-import net.ihiroky.niotty.buffer.BufferSink;
+import net.ihiroky.niotty.buffer.Packet;
 import net.ihiroky.niotty.util.JavaVersion;
 import net.ihiroky.niotty.util.Platform;
 import org.slf4j.Logger;
@@ -309,7 +309,7 @@ public class NioServerSocketTransport extends NioSocketTransport<SelectLoop> {
     }
 
     @Override
-    void readyToWrite(BufferSink message, Object parameter) {
+    void readyToWrite(Packet message, Object parameter) {
         throw new UnsupportedOperationException();
     }
 }

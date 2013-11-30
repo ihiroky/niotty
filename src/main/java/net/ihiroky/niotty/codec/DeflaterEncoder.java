@@ -3,7 +3,7 @@ package net.ihiroky.niotty.codec;
 import net.ihiroky.niotty.DeactivateState;
 import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.StoreStage;
-import net.ihiroky.niotty.buffer.BufferSink;
+import net.ihiroky.niotty.buffer.Packet;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.CodecBuffer;
 import net.ihiroky.niotty.util.JavaVersion;
@@ -11,7 +11,6 @@ import net.ihiroky.niotty.util.Platform;
 
 import java.io.IOException;
 import java.util.zip.Deflater;
-
 /**
  * @author Hiroki Itoh
  */
@@ -47,8 +46,8 @@ public class DeflaterEncoder extends StoreStage {
 
     @Override
     public void stored(StageContext context, Object message, Object parameter) {
-        BufferSink input = (BufferSink) message;
-        CodecBuffer output = input.hasArray() ? compressRawArray(input) : compressBufferSink(input);
+        Packet input = (Packet) message;
+        CodecBuffer output = input.hasArray() ? compressRawArray(input) : compressPacket(input);
         input.dispose();
         context.proceed(output, parameter);
     }
@@ -57,7 +56,7 @@ public class DeflaterEncoder extends StoreStage {
     public void exceptionCaught(StageContext context, Exception exception) {
     }
 
-    private CodecBuffer compressRawArray(BufferSink input) {
+    private CodecBuffer compressRawArray(Packet input) {
         CodecBuffer output = Buffers.newCodecBuffer((int) (input.remaining() * 0.7f + 10));
 
         byte[] inputBytes = input.array();
@@ -86,7 +85,7 @@ public class DeflaterEncoder extends StoreStage {
         }
     }
 
-    private CodecBuffer compressBufferSink(BufferSink input) {
+    private CodecBuffer compressPacket(Packet input) {
         CodecBuffer output = Buffers.newCodecBuffer((int) (input.remaining() * 0.7f + 10));
 
         try {

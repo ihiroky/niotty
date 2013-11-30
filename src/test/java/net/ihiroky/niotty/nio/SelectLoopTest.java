@@ -2,7 +2,7 @@ package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.Stage;
 import net.ihiroky.niotty.StageContext;
-import net.ihiroky.niotty.buffer.BufferSink;
+import net.ihiroky.niotty.buffer.Packet;
 import net.ihiroky.niotty.buffer.Buffers;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -27,11 +27,11 @@ public class SelectLoopTest {
         Stage sut = selectLoop.ioStage();
         StageContext context = mock(StageContext.class);
         when(context.transport()).thenReturn(transport);
-        BufferSink data = Buffers.newCodecBuffer(0);
+        Packet data = Buffers.newCodecBuffer(0);
 
         sut.stored(context, data, new Object());
 
-        ArgumentCaptor<BufferSink> captor = ArgumentCaptor.forClass(BufferSink.class);
+        ArgumentCaptor<Packet> captor = ArgumentCaptor.forClass(Packet.class);
         verify(transport).readyToWrite(captor.capture(), Mockito.<Object>any());
         assertThat(captor.getValue(), is(data));
         verify(transport).flush(Mockito.any(ByteBuffer.class));

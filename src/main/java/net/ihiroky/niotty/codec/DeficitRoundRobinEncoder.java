@@ -5,7 +5,7 @@ import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.StoreStage;
 import net.ihiroky.niotty.Task;
 import net.ihiroky.niotty.TaskFuture;
-import net.ihiroky.niotty.buffer.BufferSink;
+import net.ihiroky.niotty.buffer.Packet;
 import net.ihiroky.niotty.util.Arguments;
 
 import java.util.ArrayDeque;
@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit;
  *
  * <p>This class has weighted queues.A weight index specified by {@code WeightedMessage}
  * decides the queue to be inserted. If the weightIndex is out of the index defined
- * by {@code weights} specified in the constructor (default index), then the {@code BufferSink} is used
+ * by {@code weights} specified in the constructor (default index), then the {@code Packet} is used
  * as the basis of the flush calculation. If valid, then it is inserted to the weighted queue,
  * the same order as {@code weights}. If the input that is not the {@code WeightedMessage},
  * skip the round robin calculation and pass it to the next stage.</p>
@@ -37,7 +37,7 @@ import java.util.concurrent.TimeUnit;
   */
 public class DeficitRoundRobinEncoder extends StoreStage {
 
-    private final List<Deque<Pair<BufferSink>>> weightedQueueList_;
+    private final List<Deque<Pair<Packet>>> weightedQueueList_;
     private final float[] weights_;
     private final int[] deficitCounter_;
     private int smoothedBaseQuantum_;
@@ -67,13 +67,13 @@ public class DeficitRoundRobinEncoder extends StoreStage {
      */
     public DeficitRoundRobinEncoder(int initialBaseQuantum, long interval, TimeUnit timeUnit, float ...weights) {
         int length = weights.length;
-        List<Deque<Pair<BufferSink>>> ql = new ArrayList<Deque<Pair<BufferSink>>>(length);
+        List<Deque<Pair<Packet>>> ql = new ArrayList<Deque<Pair<Packet>>>(length);
         for (int i = 0; i < length; i++) {
             float weight = weights[i];
             if (weight < MIN_WEIGHT || weight > MAX_WEIGHT) {
                 throw new IllegalArgumentException("The weight must be in [" + MIN_WEIGHT + ", " + MAX_WEIGHT + "]");
             }
-            ql.add(new ArrayDeque<Pair<BufferSink>>());
+            ql.add(new ArrayDeque<Pair<Packet>>());
         }
 
         weightedQueueList_ = ql;
@@ -113,14 +113,14 @@ public class DeficitRoundRobinEncoder extends StoreStage {
         }
 
         WeightedMessage pm = (WeightedMessage) message;
-        BufferSink data = (BufferSink) pm.message();
+        Packet data = (Packet) pm.message();
         int index = pm.weightIndex();
         if (index < 0 || index >= weights_.length) {
             smoothedBaseQuantum_ = smooth(smoothedBaseQuantum_, data.remaining());
             context.proceed(data, parameter);
             flush(context, smoothedBaseQuantum_);
         } else {
-            weightedQueueList_.get(index).offer(new Pair<BufferSink>(data, parameter));
+            weightedQueueList_.get(index).offer(new Pair<Packet>(data, parameter));
             flush(context, 0);
         }
     }
@@ -137,9 +137,9 @@ public class DeficitRoundRobinEncoder extends StoreStage {
     public void deactivated(StageContext context, DeactivateState state) {
         int size = weightedQueueList_.size();
         for (int i = size - 1; i >= 0; i++) {
-            Deque<Pair<BufferSink>> q = weightedQueueList_.get(i);
+            Deque<Pair<Packet>> q = weightedQueueList_.get(i);
             while (!q.isEmpty()) {
-                Pair<BufferSink> e = q.poll();
+                Pair<Packet> e = q.poll();
                 context.proceed(e.message_, e.parameter_);
             }
         }
@@ -149,13 +149,13 @@ public class DeficitRoundRobinEncoder extends StoreStage {
         int size = weightedQueueList_.size();
         int firstIndex = INVALID_QUEUE_INDEX;
         for (int i = 0; i < size; i++) {
-            Deque<Pair<BufferSink>> q = weightedQueueList_.get(i);
+            Deque<Pair<Packet>> q = weightedQueueList_.get(i);
             // flush operation
             int deficitCounter = deficitCounter_[i] + (int) (baseQuantum * weights_[i]);
             if (!q.isEmpty()) {
                 int remaining = q.peek().message_.remaining();
                 while (deficitCounter >= remaining) {
-                    Pair<BufferSink> e = q.poll();
+                    Pair<Packet> e = q.poll();
                     context.proceed(e.message_, e.parameter_);
                     deficitCounter -= remaining;
                 }
@@ -178,7 +178,7 @@ public class DeficitRoundRobinEncoder extends StoreStage {
                 public long execute(TimeUnit timeUnit) throws Exception {
                     int baseQuantum = smoothedBaseQuantum_;
                     if (baseQuantum == 0) {
-                        Deque<Pair<BufferSink>> q = weightedQueueList_.get(firstIndex_);
+                        Deque<Pair<Packet>> q = weightedQueueList_.get(firstIndex_);
                         baseQuantum = (int) (q.peek().message_.remaining() / weights_[firstIndex_]);
                     }
                     flush(context, baseQuantum);
@@ -206,7 +206,7 @@ public class DeficitRoundRobinEncoder extends StoreStage {
         return deficitCounter_[priority];
     }
 
-    Deque<Pair<BufferSink>> queue(int priority) {
+    Deque<Pair<Packet>> queue(int priority) {
         return weightedQueueList_.get(priority);
     }
 

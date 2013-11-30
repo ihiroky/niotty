@@ -15,7 +15,7 @@ import java.nio.channels.GatheringByteChannel;
  *
  * <p>Add interface if new Transport is added and new data type is required.</p>
  */
-public interface BufferSink {
+public interface Packet {
     /**
      * Writes data between the startIndex and the endIndex to the given {@code GatheringByteChannel}.
      * The startIndex is increased by size of data which is written into the channel.
@@ -54,37 +54,37 @@ public interface BufferSink {
      * @param buffer buffer to be added
      * @return this instance
      */
-    BufferSink addFirst(CodecBuffer buffer);
+    Packet addFirst(CodecBuffer buffer);
 
     /**
      * Adds a specified buffer after data which already exists in this instance.
      * @param buffer buffer to be added
      * @return this instance
      */
-    BufferSink addLast(CodecBuffer buffer);
+    Packet addLast(CodecBuffer buffer);
 
     /**
-     * Creates a new {@code BufferSink} that shares the base content.
-     * The startIndex of the new {@code BufferSink} is the one of the this instance.
-     * The endIndex of the new {@code BufferSink} is {@code startIndex + bytes}.
-     * The two {@code BufferSink}'s startIndex and endIndex are independent.
+     * Creates a new {@code Packet} that shares the base content.
+     * The startIndex of the new {@code Packet} is the one of the this instance.
+     * The endIndex of the new {@code Packet} is {@code startIndex + bytes}.
+     * The two {@code Packet}'s startIndex and endIndex are independent.
      * After this method is called, the startIndex of this instance increases {@code bytes}.
      *
      * @param bytes size of content to slice
      * @throws IllegalArgumentException if {@code bytes} exceeds this buffer's remaining.
-     * @return the new {@code BufferSink}
+     * @return the new {@code Packet}
      */
-    BufferSink slice(int bytes);
+    Packet slice(int bytes);
 
     /**
-     * Creates a new {@code BufferSink} that shares the base content.
+     * Creates a new {@code Packet} that shares the base content.
      * The content of the new buffer will be that of this buffer. Changes to this buffer's content will be visible
-     * in the new buffer, and vice versa; the two {@code BufferSink}s' startIndex and endIndex values will be independent.
+     * in the new buffer, and vice versa; the two {@code Packet}s' startIndex and endIndex values will be independent.
      * The new buffer's startIndex and endIndex values will be identical to those of this buffer.
      *
-     * @return the new {@code BufferSink}
+     * @return the new {@code Packet}
      */
-    BufferSink duplicate();
+    Packet duplicate();
 
     /**
      * Returns true if this buffer is backed by a byte array.

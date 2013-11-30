@@ -1,6 +1,6 @@
 package net.ihiroky.niotty.nio;
 
-import net.ihiroky.niotty.buffer.BufferSink;
+import net.ihiroky.niotty.buffer.Packet;
 
 import java.io.IOException;
 import java.net.SocketAddress;
@@ -14,26 +14,26 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  */
 public class SimpleDatagramQueue implements DatagramQueue {
 
-    private Queue<AttachedMessage<BufferSink>> queue_;
+    private Queue<AttachedMessage<Packet>> queue_;
 
     public SimpleDatagramQueue() {
-        queue_ = new ConcurrentLinkedQueue<AttachedMessage<BufferSink>>();
+        queue_ = new ConcurrentLinkedQueue<AttachedMessage<Packet>>();
     }
 
     @Override
-    public boolean offer(AttachedMessage<BufferSink> message) {
+    public boolean offer(AttachedMessage<Packet> message) {
         return queue_.offer(message);
     }
 
     @Override
     public FlushStatus flush(DatagramChannel channel, ByteBuffer writeBuffer) throws IOException {
         for (;;) {
-            AttachedMessage<BufferSink> message = queue_.peek();
+            AttachedMessage<Packet> message = queue_.peek();
             if (message == null) {
                 return FlushStatus.FLUSHED;
             }
 
-            BufferSink buffer = message.message();
+            Packet buffer = message.message();
             SocketAddress target = (SocketAddress) message.parameter();
             boolean sunk = (target != null) ? buffer.sink(channel, writeBuffer, target) : buffer.sink(channel);
             if (sunk) {

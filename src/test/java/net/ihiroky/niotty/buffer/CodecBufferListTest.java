@@ -10,8 +10,11 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
+import java.nio.channels.DatagramChannel;
 import java.nio.channels.GatheringByteChannel;
 import java.nio.charset.Charset;
 import java.util.Arrays;
@@ -664,7 +667,7 @@ public class CodecBufferListTest {
         }
     }
 
-    public static class BufferSinkTests {
+    public static class PacketTests {
 
         private CodecBuffer sut_;
         private int dataLength_;
@@ -678,7 +681,7 @@ public class CodecBufferListTest {
         }
 
         @Test
-        public void testTransferTo_SingleBufferWriteOnce() throws Exception {
+        public void testSink_SingleBufferWriteOnce() throws Exception {
             GatheringByteChannel channel = mock(GatheringByteChannel.class);
             when(channel.write(Mockito.any(ByteBuffer[].class), anyInt(), anyInt())).thenAnswer(new Answer<Object>() {
                 @Override
@@ -700,7 +703,7 @@ public class CodecBufferListTest {
         }
 
         @Test
-        public void testTransferTo_SingleBufferNotEnoughWrite() throws Exception {
+        public void testSink_SingleBufferNotEnoughWrite() throws Exception {
             GatheringByteChannel channel = mock(GatheringByteChannel.class);
             when(channel.write(Mockito.any(ByteBuffer[].class), anyInt(), anyInt())).thenAnswer(new Answer<Object>() {
                 @Override
@@ -722,12 +725,45 @@ public class CodecBufferListTest {
         }
 
         @Test(expected = IOException.class)
-        public void testTransferTo_SingleBufferIOException() throws  Exception {
+        public void testSink_SingleBufferIOException() throws  Exception {
             GatheringByteChannel channel = mock(GatheringByteChannel.class);
             when(channel.write(Mockito.any(ByteBuffer[].class), anyInt(), anyInt())).thenThrow(new IOException());
 
             sut_.sink(channel);
             verify(channel, times(1)).write(Mockito.any(ByteBuffer.class));
+        }
+
+        @Test
+        public void testSinkDatagam_SingleElement() throws Exception {
+            CodecBuffer e = mock(CodecBuffer.class);
+            CodecBufferList sut = new CodecBufferList();
+            sut.addLast(e);
+            DatagramChannel channel = mock(DatagramChannel.class);
+            ByteBuffer buffer = ByteBuffer.allocate(10);
+            SocketAddress target = new InetSocketAddress(12345);
+
+            sut.sink(channel, buffer, target);
+
+            verify(e).sink(channel, buffer, target);
+        }
+
+        @Test
+        public void testSinkDatagam_MultiElements() throws Exception {
+            CodecBufferList sut = new CodecBufferList();
+            CodecBuffer e0 = mock(CodecBuffer.class);
+            sut.addLast(e0);
+            CodecBuffer e1 = mock(CodecBuffer.class);
+            sut.addLast(e1);
+
+            DatagramChannel channel = mock(DatagramChannel.class);
+            ByteBuffer buffer = ByteBuffer.allocate(10);
+            SocketAddress target = new InetSocketAddress(12345);
+
+            sut.sink(channel, buffer, target);
+
+            verify(e0).copyTo(buffer);
+            verify(e1).copyTo(buffer);
+            verify(channel).send(buffer, target);
         }
 
         @Test

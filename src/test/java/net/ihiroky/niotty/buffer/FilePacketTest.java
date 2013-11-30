@@ -32,7 +32,7 @@ import static org.mockito.Mockito.*;
 /**
  * @author Hiroki Itoh
  */
-public class FileBufferSinkTest {
+public class FilePacketTest {
 
     private FileChannel channel_;
     private List<ByteBufferChunkPool> closeableList;
@@ -149,7 +149,7 @@ public class FileBufferSinkTest {
         when(outputChannel.write(Mockito.any(ByteBuffer.class))).thenAnswer(new TransferAll());
         when(outputChannel.isOpen()).thenReturn(true);
 
-        FileBufferSink sut = new FileBufferSink(channel_, 8, 24);
+        FilePacket sut = new FilePacket(channel_, 8, 24);
         boolean actual = sut.sink(outputChannel);
         boolean openAfterTransferTo = channel_.isOpen();
         sut.dispose();
@@ -167,7 +167,7 @@ public class FileBufferSinkTest {
         when(outputChannel.write(Mockito.any(ByteBuffer.class))).thenAnswer(new TransferPart(10)); // footer
         when(outputChannel.isOpen()).thenReturn(true);
 
-        FileBufferSink sut = new FileBufferSink(channel_, 0, 15);
+        FilePacket sut = new FilePacket(channel_, 0, 15);
         boolean actual = sut.sink(outputChannel);
 
         assertThat(actual, is(false));
@@ -181,7 +181,7 @@ public class FileBufferSinkTest {
         when(outputChannel.write(Mockito.any(ByteBuffer.class))).thenThrow(new IOException());
         when(outputChannel.isOpen()).thenReturn(true);
 
-        FileBufferSink sut = new FileBufferSink(channel_, 0, 15);
+        FilePacket sut = new FilePacket(channel_, 0, 15);
         try {
             sut.sink(outputChannel);
         } catch (IOException ioe) {
@@ -198,7 +198,7 @@ public class FileBufferSinkTest {
         GatheringByteChannel outputChannel = mock(GatheringByteChannel.class);
         when(outputChannel.write(Mockito.any(ByteBuffer[].class), anyInt(), anyInt()))
                 .thenAnswer(new TransferPartForGathering(header.remaining() - 1));
-        FileBufferSink sut = new FileBufferSink(channel_, 0, 32);
+        FilePacket sut = new FilePacket(channel_, 0, 32);
         sut.addFirst(header).addLast(footer);
 
         boolean result = sut.sink(outputChannel);
@@ -219,7 +219,7 @@ public class FileBufferSinkTest {
                 .thenAnswer(new TransferPartForGathering(7));
         when(outputChannel.write(Mockito.any(ByteBuffer.class)))
                 .thenAnswer(new TransferAll());
-        FileBufferSink sut = new FileBufferSink(channel_, 0, 32);
+        FilePacket sut = new FilePacket(channel_, 0, 32);
         sut.addFirst(header).addLast(footer);
 
         boolean result = sut.sink(outputChannel);
@@ -232,7 +232,7 @@ public class FileBufferSinkTest {
 
     @Test
     public void testSinkDatagram_FlushAll() throws Exception {
-        FileBufferSink sut = new FileBufferSink(channel_, 0, 32);
+        FilePacket sut = new FilePacket(channel_, 0, 32);
         sut.addFirst(Buffers.wrap(new byte[8], 0, 8));
         sut.addLast(Buffers.wrap(new byte[8], 0, 8));
         DatagramChannel channel = mock(DatagramChannel.class);
@@ -249,7 +249,7 @@ public class FileBufferSinkTest {
 
     @Test
     public void testSinkDatagram_FlushNothing() throws Exception {
-        FileBufferSink sut = new FileBufferSink(channel_, 0, 32);
+        FilePacket sut = new FilePacket(channel_, 0, 32);
         sut.addFirst(Buffers.wrap(new byte[8], 0, 8));
         sut.addLast(Buffers.wrap(new byte[8], 0, 8));
         DatagramChannel channel = mock(DatagramChannel.class);
@@ -266,7 +266,7 @@ public class FileBufferSinkTest {
 
     @Test
     public void testCopyTo_ByteBufferAll() throws Exception {
-        FileBufferSink sut = new FileBufferSink(channel_, 0, 32);
+        FilePacket sut = new FilePacket(channel_, 0, 32);
         ByteBuffer buffer = ByteBuffer.allocate(sut.remaining());
 
         sut.copyTo(buffer);
@@ -278,7 +278,7 @@ public class FileBufferSinkTest {
 
     @Test(expected = BufferOverflowException.class)
     public void testCopyTo_ByteBufferPart() throws Exception {
-        FileBufferSink sut = new FileBufferSink(channel_, 0, 32);
+        FilePacket sut = new FilePacket(channel_, 0, 32);
         ByteBuffer buffer = ByteBuffer.allocate(sut.remaining() - 1);
 
         sut.copyTo(buffer);
@@ -296,12 +296,12 @@ public class FileBufferSinkTest {
                 .thenAnswer(all9)
                 .thenAnswer(all10)
                 .thenAnswer(allLeft);
-        FileBufferSink sut = new FileBufferSink(channel_, 0, 32);
+        FilePacket sut = new FilePacket(channel_, 0, 32);
 
-        BufferSink sliced0 = sut.slice(9);
+        Packet sliced0 = sut.slice(9);
         sliced0.sink(outputChannel);
         boolean open0 = channel_.isOpen();
-        BufferSink sliced1 = sut.slice(11);
+        Packet sliced1 = sut.slice(11);
         sliced1.sink(outputChannel);
         boolean open1 = channel_.isOpen();
         sut.sink(outputChannel);
@@ -332,7 +332,7 @@ public class FileBufferSinkTest {
 
     @Test
     public void testSlice_ExceedingBytes() throws Exception {
-        FileBufferSink sut = new FileBufferSink(channel_, 0, 32);
+        FilePacket sut = new FilePacket(channel_, 0, 32);
         sut.addFirst(Buffers.wrap(new byte[1], 0, 1));
         sut.addLast(Buffers.wrap(new byte[2], 0, 2));
         exceptionRule_.expect(IllegalArgumentException.class);
@@ -343,7 +343,7 @@ public class FileBufferSinkTest {
 
     @Test
     public void testSlice_NegativeBytes() throws Exception {
-        FileBufferSink sut = new FileBufferSink(channel_, 0, 32);
+        FilePacket sut = new FilePacket(channel_, 0, 32);
         exceptionRule_.expect(IllegalArgumentException.class);
         exceptionRule_.expectMessage("Invalid input -1. 32 byte remains.");
 
@@ -352,16 +352,16 @@ public class FileBufferSinkTest {
 
     @Test
     public void testSlice_Empty() throws Exception {
-        FileBufferSink sut = new FileBufferSink(channel_, 0, 0);
+        FilePacket sut = new FilePacket(channel_, 0, 0);
 
-        BufferSink sliced = sut.slice(0);
+        Packet sliced = sut.slice(0);
 
         assertThat(sliced.remaining(), is(0));
     }
 
     @Test
     public void testSlice_HeaderOnly() throws Exception {
-        FileBufferSink sut = new FileBufferSink(channel_, 0, 32);
+        FilePacket sut = new FilePacket(channel_, 0, 32);
         byte[] header = new byte[3];
         Arrays.fill(header, (byte) 1);
         sut.addFirst(Buffers.wrap(header, 0, header.length));
@@ -369,7 +369,7 @@ public class FileBufferSinkTest {
         Arrays.fill(footer, (byte) -1);
         sut.addLast(Buffers.wrap(footer, 0, footer.length));
 
-        BufferSink sliced = sut.slice(header.length);
+        Packet sliced = sut.slice(header.length);
 
         assertThat(sliced.remaining(), is(header.length));
         assertThat(sut.remaining(), is(32 + footer.length));
@@ -379,7 +379,7 @@ public class FileBufferSinkTest {
 
     @Test
     public void testSlice_HeaderAndContent() throws Exception {
-        FileBufferSink sut = new FileBufferSink(channel_, 0, 32);
+        FilePacket sut = new FilePacket(channel_, 0, 32);
         byte[] header = new byte[3];
         Arrays.fill(header, (byte) 1);
         sut.addFirst(Buffers.wrap(header, 0, header.length));
@@ -387,7 +387,7 @@ public class FileBufferSinkTest {
         Arrays.fill(footer, (byte) -1);
         sut.addLast(Buffers.wrap(footer, 0, footer.length));
 
-        BufferSink sliced = sut.slice(header.length + 32);
+        Packet sliced = sut.slice(header.length + 32);
 
         assertThat(sliced.remaining(), is(header.length + 32));
         assertThat(sut.remaining(), is(footer.length));
@@ -397,7 +397,7 @@ public class FileBufferSinkTest {
 
     @Test
     public void testSlice_HeaderContentAndFooter() throws Exception {
-        FileBufferSink sut = new FileBufferSink(channel_, 0, 32);
+        FilePacket sut = new FilePacket(channel_, 0, 32);
         byte[] header = new byte[3];
         Arrays.fill(header, (byte) 1);
         sut.addFirst(Buffers.wrap(header, 0, header.length));
@@ -405,7 +405,7 @@ public class FileBufferSinkTest {
         Arrays.fill(footer, (byte) -1);
         sut.addLast(Buffers.wrap(footer, 0, footer.length));
 
-        BufferSink sliced = sut.slice(header.length + 32 + footer.length);
+        Packet sliced = sut.slice(header.length + 32 + footer.length);
 
         assertThat(sliced.remaining(), is(header.length + 32 + footer.length));
         assertThat(sut.remaining(), is(0));
@@ -422,7 +422,7 @@ public class FileBufferSinkTest {
 
     @Test
     public void testDispose() throws Exception {
-        FileBufferSink sut = new FileBufferSink(channel_, 0, 10);
+        FilePacket sut = new FilePacket(channel_, 0, 10);
 
         sut.dispose();
 
@@ -431,7 +431,7 @@ public class FileBufferSinkTest {
 
     @Test
     public void testAddFirst_One() throws Exception {
-        FileBufferSink sut = new FileBufferSink(channel_, 0, 10);
+        FilePacket sut = new FilePacket(channel_, 0, 10);
         byte[] data = new byte[4];
         Arrays.fill(data, (byte) 1);
         CodecBuffer added = Buffers.wrap(data, 0, data.length);
@@ -447,7 +447,7 @@ public class FileBufferSinkTest {
 
     @Test
     public void testAddFirst_Two() throws Exception {
-        FileBufferSink sut = new FileBufferSink(channel_, 0, 10);
+        FilePacket sut = new FilePacket(channel_, 0, 10);
         byte[] data0 = new byte[2];
         Arrays.fill(data0, (byte) 1);
         CodecBuffer added0 = Buffers.wrap(data0, 0, data0.length);
@@ -466,7 +466,7 @@ public class FileBufferSinkTest {
 
     @Test
     public void testAddLast_One() throws Exception {
-        FileBufferSink sut = new FileBufferSink(channel_, 0, 10);
+        FilePacket sut = new FilePacket(channel_, 0, 10);
         byte[] data = new byte[4];
         Arrays.fill(data, (byte) 1);
         CodecBuffer added = Buffers.wrap(data, 0, data.length);
@@ -484,7 +484,7 @@ public class FileBufferSinkTest {
 
     @Test
     public void testAddLast_Two() throws Exception {
-        FileBufferSink sut = new FileBufferSink(channel_, 0, 10);
+        FilePacket sut = new FilePacket(channel_, 0, 10);
         byte[] data0 = new byte[2];
         Arrays.fill(data0, (byte) 1);
         CodecBuffer added0 = Buffers.wrap(data0, 0, data0.length);
@@ -504,7 +504,7 @@ public class FileBufferSinkTest {
 
     @Test
     public void testSlice_ReferenceCount() throws Exception {
-        FileBufferSink sut = new FileBufferSink(channel_, 0, 10);
+        FilePacket sut = new FilePacket(channel_, 0, 10);
         ByteBufferChunkPool pool = new ByteBufferChunkPool(10, true);
         closeableList.add(pool);
         ByteBufferCodecBuffer b0 = (ByteBufferCodecBuffer) Buffers.newCodecBuffer(pool, 5);
@@ -515,13 +515,13 @@ public class FileBufferSinkTest {
         sut.addLast(b1);
 
         // first and second
-        BufferSink sliced0 = sut.slice(10);
+        Packet sliced0 = sut.slice(10);
         assertThat(sut.referenceCount(), is(2));
         assertThat(b0.chunk().referenceCount(), is(2));
         assertThat(b1.chunk().referenceCount(), is(1));
 
         // second and third
-        BufferSink sliced1 = sut.slice(10);
+        Packet sliced1 = sut.slice(10);
         assertThat(sut.referenceCount(), is(3));
         assertThat(b0.chunk().referenceCount(), is(2));
         assertThat(b1.chunk().referenceCount(), is(2));
@@ -544,7 +544,7 @@ public class FileBufferSinkTest {
 
     @Test
     public void testDuplicate_ReferenceCount() throws Exception {
-        FileBufferSink sut = new FileBufferSink(channel_, 0, 10);
+        FilePacket sut = new FilePacket(channel_, 0, 10);
         ByteBufferChunkPool pool = new ByteBufferChunkPool(10, true);
         closeableList.add(pool);
         ByteBufferCodecBuffer b0 = (ByteBufferCodecBuffer) Buffers.newCodecBuffer(pool, 5);
@@ -554,12 +554,12 @@ public class FileBufferSinkTest {
         sut.addFirst(b0);
         sut.addLast(b1);
 
-        BufferSink d0 = sut.duplicate();
+        Packet d0 = sut.duplicate();
         assertThat(sut.referenceCount(), is(2));
         assertThat(b0.chunk().referenceCount(), is(2));
         assertThat(b1.chunk().referenceCount(), is(2));
 
-        BufferSink d1 = sut.duplicate();
+        Packet d1 = sut.duplicate();
         assertThat(sut.referenceCount(), is(3));
         assertThat(b0.chunk().referenceCount(), is(3));
         assertThat(b1.chunk().referenceCount(), is(3));
@@ -588,10 +588,10 @@ public class FileBufferSinkTest {
 
         byte[] header = new byte[1];
         byte[] footer = new byte[2];
-        FileBufferSink sut = new FileBufferSink(channel_, 0, originalData_.length);
+        FilePacket sut = new FilePacket(channel_, 0, originalData_.length);
         sut.addFirst(Buffers.wrap(header));
         sut.addLast(Buffers.wrap(footer));
-        BufferSink obj = Buffers.wrap(Buffers.wrap(header), Buffers.wrap(originalData_), Buffers.wrap(footer));
+        Packet obj = Buffers.wrap(Buffers.wrap(header), Buffers.wrap(originalData_), Buffers.wrap(footer));
         assertThat(sut.equals(obj), is(true));
         sut.dispose();
     }

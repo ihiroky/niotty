@@ -9,7 +9,7 @@ import net.ihiroky.niotty.SuccessfulTransportFuture;
 import net.ihiroky.niotty.Task;
 import net.ihiroky.niotty.TaskLoopGroup;
 import net.ihiroky.niotty.TransportFuture;
-import net.ihiroky.niotty.buffer.BufferSink;
+import net.ihiroky.niotty.buffer.Packet;
 import net.ihiroky.niotty.util.Arguments;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -178,6 +178,6 @@ public abstract class NioSocketTransport<S extends SelectLoop> extends AbstractT
     }
 
     abstract void onSelected(SelectionKey key, SelectLoop selectLoop);
-    abstract void readyToWrite(BufferSink message, Object parameter);
+    abstract void readyToWrite(Packet message, Object parameter);
     abstract void flush(ByteBuffer writeBuffer) throws IOException;
 }

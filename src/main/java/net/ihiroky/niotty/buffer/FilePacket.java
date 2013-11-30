@@ -10,19 +10,19 @@ import java.nio.channels.GatheringByteChannel;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * The implementation of {@link BufferSink} to write a file content
+ * The implementation of {@link Packet} to write a file content
  * in a specified range to {@code java.nio.channels.WritableByteChannel} directly.
- * The {@code FileBufferSink} has header and footer as {@link CodecBuffer},
+ * The {@code FilePacket} has header and footer as {@link CodecBuffer},
  * which are added by calling {@link #addFirst(CodecBuffer)} and {@link #addLast(CodecBuffer)}.
- * A lifecycle of a file in the {@code FileBufferSink} is managed byte a reference counting.
- * A reference count is incremented if new {@code FileBufferSink} is instantiated from a base {@code FileBufferSink},
+ * A lifecycle of a file in the {@code FilePacket} is managed byte a reference counting.
+ * A reference count is incremented if new {@code FilePacket} is instantiated from a base {@code FilePacket},
  * and decremented if {@link #dispose()} is called. The initial (first) value is 1.
  * The file is closed when the value gets 0. A Lifecycle of header and footer is managed by themselves.
  * If this instance is sliced, duplicated and disposed, they are also change states respectively.
  *
  * @author Hiroki Itoh
  */
-public class FileBufferSink extends AbstractBufferSink {
+public class FilePacket extends AbstractPacket {
 
     private final FileChannel channel_;
     private long start_;
@@ -31,11 +31,11 @@ public class FileBufferSink extends AbstractBufferSink {
     private CodecBuffer footer_;
     private final AtomicInteger referenceCount_;
 
-    FileBufferSink(FileChannel channel, long start, long length) {
+    FilePacket(FileChannel channel, long start, long length) {
         this(channel, start, length, null);
     }
 
-    private FileBufferSink(FileChannel channel, long start, long length, AtomicInteger referenceCount) {
+    private FilePacket(FileChannel channel, long start, long length, AtomicInteger referenceCount) {
         if (referenceCount != null) {
             if (referenceCount.getAndIncrement() == 0) {
                 throw new IllegalStateException("reference count is already 0.");
@@ -117,7 +117,7 @@ public class FileBufferSink extends AbstractBufferSink {
     }
 
     @Override
-    public FileBufferSink addFirst(CodecBuffer buffer) {
+    public FilePacket addFirst(CodecBuffer buffer) {
         if (header_.remaining() > 0) {
             header_.addFirst(buffer);
         } else {
@@ -130,7 +130,7 @@ public class FileBufferSink extends AbstractBufferSink {
     }
 
     @Override
-    public FileBufferSink addLast(CodecBuffer buffer) {
+    public FilePacket addLast(CodecBuffer buffer) {
         if (footer_.remaining() > 0) {
             footer_.addLast(buffer);
         } else {
@@ -169,10 +169,10 @@ public class FileBufferSink extends AbstractBufferSink {
     }
 
     /**
-     * Creates new {@code FileBufferSink} that shares this buffer's base content.
-     * The startIndex of the new {@code FileBufferSink} is the one of the this buffer.
-     * The endIndex of the new {@code FileBufferSink} is the {@code startIndex + bytes}.
-     * The two {@code FileBufferSink}'s startIndex and endIndex are independent.
+     * Creates new {@code FilePacket} that shares this buffer's base content.
+     * The startIndex of the new {@code FilePacket} is the one of the this buffer.
+     * The endIndex of the new {@code FilePacket} is the {@code startIndex + bytes}.
+     * The two {@code FilePacket}'s startIndex and endIndex are independent.
      * After this method is called, the startIndex of this buffer increases {@code bytes}.
      * The result of this method is auto closeable if and only if .
      *
@@ -180,7 +180,7 @@ public class FileBufferSink extends AbstractBufferSink {
      * @throws IllegalArgumentException if {@code bytes} exceeds this buffer's remaining.
      * @return the new {@code DecodeBuffer}
      */
-    public BufferSink slice(int bytes) {
+    public Packet slice(int bytes) {
         int headerRemaining = header_.remaining();
         long contentRemaining = end_ - start_;
         int footerRemaining = footer_.remaining();
@@ -189,7 +189,7 @@ public class FileBufferSink extends AbstractBufferSink {
                     + (headerRemaining + contentRemaining + footerRemaining) + " byte remains."));
         }
 
-        BufferSink headerSliced = null;
+        Packet headerSliced = null;
         if (headerRemaining > 0) {
             if (bytes <= headerRemaining) {
                 return header_.slice(bytes);
@@ -201,16 +201,16 @@ public class FileBufferSink extends AbstractBufferSink {
             }
         }
 
-        BufferSink contentSliced = null;
+        Packet contentSliced = null;
         if (contentRemaining > 0) {
             long b = start_;
             if (bytes <= contentRemaining) {
                 start_ += bytes;
-                contentSliced = new FileBufferSink(channel_, b, bytes, referenceCount_);
+                contentSliced = new FilePacket(channel_, b, bytes, referenceCount_);
                 return (headerSliced == null)
                         ? contentSliced : Buffers.wrap(headerSliced, contentSliced);
             }
-            contentSliced = new FileBufferSink(channel_, b, end_, referenceCount_);
+            contentSliced = new FilePacket(channel_, b, end_, referenceCount_);
             bytes -= contentRemaining;
             start_ = end_;
             if (bytes == 0) {
@@ -221,16 +221,16 @@ public class FileBufferSink extends AbstractBufferSink {
 
         if (footerRemaining > 0) {
             if (bytes <= footerRemaining) {
-                return newSlicedBufferSink(headerSliced, contentSliced, footer_.slice(bytes));
+                return newSlicedPacket(headerSliced, contentSliced, footer_.slice(bytes));
             }
-            return newSlicedBufferSink(headerSliced, contentSliced, footer_.slice(footerRemaining));
+            return newSlicedPacket(headerSliced, contentSliced, footer_.slice(footerRemaining));
         }
         return Buffers.newCodecBuffer(0);
     }
 
     @Override
-    public BufferSink duplicate() {
-        return new FileBufferSink(channel_, start_, end_, referenceCount_)
+    public Packet duplicate() {
+        return new FilePacket(channel_, start_, end_, referenceCount_)
                 .addFirst(header_.duplicate()).addLast(footer_.duplicate());
     }
 
@@ -249,7 +249,7 @@ public class FileBufferSink extends AbstractBufferSink {
         return 0;
     }
 
-    private BufferSink newSlicedBufferSink(BufferSink header, BufferSink content, BufferSink footer) {
+    private Packet newSlicedPacket(Packet header, Packet content, Packet footer) {
         if (header == null) {
             if (content != null) {
                 if (footer == null) {
@@ -267,7 +267,7 @@ public class FileBufferSink extends AbstractBufferSink {
             if (footer == null) {
                 return Buffers.wrap(header, content);
             }
-            BufferSink cdr = Buffers.wrap(content, footer);
+            Packet cdr = Buffers.wrap(content, footer);
             return Buffers.wrap(header, cdr);
         }
         if (footer != null) {

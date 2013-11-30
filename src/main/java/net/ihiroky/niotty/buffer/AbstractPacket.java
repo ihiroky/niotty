@@ -8,7 +8,7 @@ import java.nio.channels.DatagramChannel;
 /**
  *
  */
-public abstract class AbstractBufferSink implements BufferSink {
+public abstract class AbstractPacket implements Packet {
 
     @Override
     public boolean sink(DatagramChannel channel, ByteBuffer buffer, SocketAddress target) throws IOException {
@@ -31,7 +31,7 @@ public abstract class AbstractBufferSink implements BufferSink {
 
     /**
      * <p>Tells whether or not this buffer is equal to another object.</p>
-     * <p>If the object is an instance of {@code BufferSink},
+     * <p>If the object is an instance of {@code Packet},
      * then this method uses a temporary temporary byte buffer created by
      * {@link #byteBuffer()} to compare these contents.</p>
      *
@@ -43,8 +43,8 @@ public abstract class AbstractBufferSink implements BufferSink {
         if (object == this) {
             return true;
         }
-        if (object instanceof BufferSink) {
-            BufferSink that = (BufferSink) object;
+        if (object instanceof Packet) {
+            Packet that = (Packet) object;
             return this.byteBuffer().equals(that.byteBuffer());
         }
         return false;

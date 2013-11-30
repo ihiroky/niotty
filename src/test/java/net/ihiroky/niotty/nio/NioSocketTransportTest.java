@@ -8,7 +8,7 @@ import net.ihiroky.niotty.TaskSelection;
 import net.ihiroky.niotty.Transport;
 import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.TransportOption;
-import net.ihiroky.niotty.buffer.BufferSink;
+import net.ihiroky.niotty.buffer.Packet;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -79,7 +79,7 @@ public class NioSocketTransportTest {
         }
 
         @Override
-        void readyToWrite(BufferSink message, Object parameter) {
+        void readyToWrite(Packet message, Object parameter) {
         }
 
         @Override

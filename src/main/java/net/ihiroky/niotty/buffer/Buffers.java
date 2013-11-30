@@ -16,7 +16,7 @@ import java.nio.file.StandardOpenOption;
 
 /**
  * Provides factory methods of {@link CodecBuffer},
- * {@link BufferSink} and utility method for this package.
+ * {@link Packet} and utility method for this package.
  *
  * @author Hiroki Itoh
  */
@@ -183,42 +183,42 @@ public final class Buffers {
     }
 
     /**
-     * Creates a new {@code BufferSink} which presents a file specified with a {@code path} and its range.
+     * Creates a new {@code Packet} which presents a file specified with a {@code path} and its range.
      *
      * @param path the path to points the file
      * @param beginning startIndex byte of the range, from the head of the file
      * @param length byte length of the range
-     * @return a new {@code BufferSink} which presents the file
+     * @return a new {@code Packet} which presents the file
      * @throws IOException if failed to open the file
      */
-    public static BufferSink newBufferSink(Path path, long beginning, long length) throws IOException {
+    public static Packet newPacket(Path path, long beginning, long length) throws IOException {
         FileChannel channel = FileChannel.open(path, StandardOpenOption.READ);
-        return new FileBufferSink(channel, beginning, length);
+        return new FilePacket(channel, beginning, length);
     }
 
     /**
-     * Creates a new {@code BufferSink} which presents a file specified with a {@code file} and its range.
+     * Creates a new {@code Packet} which presents a file specified with a {@code file} and its range.
      *
      * @param file the file to points the file
      * @param beginning startIndex byte of the range, from the head of the file
      * @param length byte length of the range
-     * @return a new {@code BufferSink} which presents the file
+     * @return a new {@code Packet} which presents the file
      * @throws IOException if failed to open the file
      */
-    public static BufferSink newBufferSink(File file, long beginning, long length) throws IOException {
+    public static Packet newPacket(File file, long beginning, long length) throws IOException {
         FileChannel channel = new RandomAccessFile(file, "r").getChannel();
-        return new FileBufferSink(channel, beginning, length);
+        return new FilePacket(channel, beginning, length);
     }
 
     /**
-     * Creates a new {@code BufferSink} which holds a pair of {@code BufferSink}.
+     * Creates a new {@code Packet} which holds a pair of {@code Packet}.
      *
      * @param car the former one of the pair
      * @param cdr the latter one of the pair
-     * @return a new {@code BufferSink} which holds a pair of {@code BufferSink}
+     * @return a new {@code Packet} which holds a pair of {@code Packet}
      */
-    public static BufferSink wrap(BufferSink car, BufferSink cdr) {
-        return new BufferSinkList(car, cdr);
+    public static Packet wrap(Packet car, Packet cdr) {
+        return new PacketList(car, cdr);
     }
 
     /**

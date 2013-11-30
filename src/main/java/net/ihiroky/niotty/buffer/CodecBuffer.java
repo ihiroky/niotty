@@ -34,7 +34,7 @@ import java.nio.charset.CharsetEncoder;
  * The storage is automatically expanded if the end exceeds the capacity on write operation.
  * <p></p>
  */
-public interface CodecBuffer extends BufferSink {
+public interface CodecBuffer extends Packet {
 
     @Override
     CodecBuffer addFirst(CodecBuffer buffer);

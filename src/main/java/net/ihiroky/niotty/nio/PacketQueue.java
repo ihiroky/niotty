@@ -1,6 +1,6 @@
 package net.ihiroky.niotty.nio;
 
-import net.ihiroky.niotty.buffer.BufferSink;
+import net.ihiroky.niotty.buffer.Packet;
 
 import java.io.IOException;
 import java.nio.channels.GatheringByteChannel;
@@ -15,10 +15,10 @@ public interface PacketQueue extends WriteQueue {
      * @param message the element to add
      * @return true if the {@code bufferSink} is added to this queue.
      */
-    boolean offer(BufferSink message);
+    boolean offer(Packet message);
 
     /**
-     * Flushes queued {@code BufferSink}s to a specified {@code channel} directly.
+     * Flushes queued {@code Packet}s to a specified {@code channel} directly.
      *
      * @param channel the channel to write into
      * @return flush status

@@ -3,7 +3,7 @@ package net.ihiroky.niotty.sample;
 import net.ihiroky.niotty.DeactivateState;
 import net.ihiroky.niotty.LoadStage;
 import net.ihiroky.niotty.StageContext;
-import net.ihiroky.niotty.buffer.BufferSink;
+import net.ihiroky.niotty.buffer.Packet;
 import net.ihiroky.niotty.buffer.Buffers;
 
 import java.io.File;
@@ -30,7 +30,7 @@ public class FileLoadStage extends LoadStage {
         File path = new File(FILE);
         try {
             long fileSize = path.length();
-            BufferSink first = Buffers.newBufferSink(path, 0, fileSize);
+            Packet first = Buffers.newPacket(path, 0, fileSize);
             context.transport().write(first);
         } catch (IOException ioe) {
             ioe.printStackTrace();

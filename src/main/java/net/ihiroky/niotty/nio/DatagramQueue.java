@@ -1,6 +1,6 @@
 package net.ihiroky.niotty.nio;
 
-import net.ihiroky.niotty.buffer.BufferSink;
+import net.ihiroky.niotty.buffer.Packet;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -16,10 +16,10 @@ public interface DatagramQueue extends WriteQueue {
      * @param message the element to add
      * @return true if the {@code bufferSink} is added to this queue.
      */
-    boolean offer(AttachedMessage<BufferSink> message);
+    boolean offer(AttachedMessage<Packet> message);
 
     /**
-     * Flushes queued {@code BufferSink}s to a specified {@code channel} using {@code writeBuffer}.
+     * Flushes queued {@code Packet}s to a specified {@code channel} using {@code writeBuffer}.
      * The {@code writeBuffer} is cleared on returning from this method.
      * @param channel the channel to write into
      * @param writeBuffer write buffer

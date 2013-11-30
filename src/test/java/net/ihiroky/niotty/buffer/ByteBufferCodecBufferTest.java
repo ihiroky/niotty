@@ -91,7 +91,7 @@ public class ByteBufferCodecBufferTest {
         }
     }
 
-    public static class BufferSinkTests extends CodecBufferTestAbstract.AbstractBufferSinkTests {
+    public static class PacketTests extends CodecBufferTestAbstract.AbstractPacketTests {
         @Override
         protected CodecBuffer createCodecBuffer(byte[] buffer, int offset, int length) {
             return Buffers.wrap(ByteBuffer.wrap(buffer, offset, length));

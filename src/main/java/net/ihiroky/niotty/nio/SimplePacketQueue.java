@@ -1,6 +1,6 @@
 package net.ihiroky.niotty.nio;
 
-import net.ihiroky.niotty.buffer.BufferSink;
+import net.ihiroky.niotty.buffer.Packet;
 
 import java.io.IOException;
 import java.nio.channels.GatheringByteChannel;
@@ -12,21 +12,21 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  */
 public class SimplePacketQueue implements PacketQueue {
 
-    private Queue<BufferSink> queue_;
+    private Queue<Packet> queue_;
 
     public SimplePacketQueue() {
-        queue_ = new ConcurrentLinkedQueue<BufferSink>();
+        queue_ = new ConcurrentLinkedQueue<Packet>();
     }
 
     @Override
-    public boolean offer(BufferSink bufferSink) {
-        return queue_.offer(bufferSink);
+    public boolean offer(Packet packet) {
+        return queue_.offer(packet);
     }
 
     @Override
     public FlushStatus flush(GatheringByteChannel channel) throws IOException {
         for (;;) {
-            BufferSink message = queue_.peek();
+            Packet message = queue_.peek();
             if (message == null) {
                 return FlushStatus.FLUSHED;
             }
