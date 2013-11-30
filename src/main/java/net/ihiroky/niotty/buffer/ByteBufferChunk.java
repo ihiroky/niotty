@@ -1,6 +1,6 @@
 package net.ihiroky.niotty.buffer;
 
-import sun.nio.ch.DirectBuffer;
+import net.ihiroky.niotty.util.Platform;
 
 import java.nio.ByteBuffer;
 
@@ -35,8 +35,6 @@ public class ByteBufferChunk extends AbstractChunk<ByteBuffer> {
      * @throws Throwable
      */
     void clear() throws Throwable {
-        if (buffer_ instanceof DirectBuffer) {
-            ((DirectBuffer) buffer_).cleaner().clean();
-        }
+        Platform.release(buffer_);
     }
 }

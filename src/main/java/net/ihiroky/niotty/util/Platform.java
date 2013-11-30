@@ -1,9 +1,17 @@
 package net.ihiroky.niotty.util;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import sun.nio.ch.DirectBuffer;
+
+import java.nio.ByteBuffer;
+
 /**
  * Java version etc.
  */
 public final class Platform {
+
+    private static Logger logger_ = LoggerFactory.getLogger(Platform.class);
 
     private static final JavaVersion JAVA_VERSION;
 
@@ -30,5 +38,17 @@ public final class Platform {
         } catch (Throwable ignored) {
         }
         throw new AssertionError("Invalid version/vendor " + version + "/" + vendor);
+    }
+
+    public static void release(ByteBuffer buffer) {
+        if (buffer.isDirect()) {
+            try {
+                if (buffer instanceof DirectBuffer) {
+                    ((DirectBuffer) buffer).cleaner().clean();
+                }
+            } catch (Throwable t) {
+                logger_.warn("[release]", t);
+            }
+        }
     }
 }

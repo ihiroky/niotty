@@ -1,9 +1,7 @@
 package net.ihiroky.niotty.buffer;
 
 import net.ihiroky.niotty.util.Arguments;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import sun.nio.ch.DirectBuffer;
+import net.ihiroky.niotty.util.Platform;
 
 import java.nio.ByteBuffer;
 
@@ -23,8 +21,6 @@ public class ByteBufferChunkPool extends ChunkPool<ByteBuffer> {
      * TODO support multiple ByteBuffer
      */
     private final ByteBuffer whole_;
-
-    private Logger logger_ = LoggerFactory.getLogger(ByteBufferChunkPool.class);
 
     /**
      * Constructs a new instance.
@@ -70,13 +66,7 @@ public class ByteBufferChunkPool extends ChunkPool<ByteBuffer> {
      */
     @Override
     protected void dispose() {
-        try {
-            if (whole_.isDirect()) {
-                ((DirectBuffer) whole_).cleaner().clean();
-            }
-        } catch (Throwable t) {
-            logger_.debug("[dispose] failed.", t);
-        }
+        Platform.release(whole_);
     }
 
     ByteBuffer wholeView() {
