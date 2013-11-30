@@ -1,30 +1,44 @@
 package net.ihiroky.niotty.buffer;
 
 import java.io.IOException;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.DatagramChannel;
 import java.nio.channels.GatheringByteChannel;
 
 /**
- * Writes data into a given {@code java.nio.channel.WritableByteChannel} or {@code java.nio.ByteBuffer}.
+ * Writes data into a given channel or buffer.
  *
  * <p>This class has two member; startIndex and endIndex.
  * The startIndex shows the start index (included) of data to be written.
  * The endIndex shows the endIndex index (excluded) of data to be written.</p>
  *
  * <p>Add interface if new Transport is added and new data type is required.</p>
- *
- * @author Hiroki Itoh
  */
 public interface BufferSink {
     /**
-     * Writes data between the startIndex and the endIndex to the given {@code channel}.
+     * Writes data between the startIndex and the endIndex to the given {@code GatheringByteChannel}.
      * The startIndex is increased by size of data which is written into the channel.
      *
-     * @param channel the {@code WritableByteChannel} to be written into
-     * @return true if all data in this instance is written into the {@code channel}
+     * @param channel the channel to be written into
+     * @return true if the content in this buffer is written into the {@code channel}
      * @throws IOException if I/O operation is failed
      */
-    boolean transferTo(GatheringByteChannel channel) throws IOException;
+    boolean sink(GatheringByteChannel channel) throws IOException;
+
+    /**
+     * Writes data with udp target address between the startIndex and the endIndex
+     * to the given {@code DatagramChannel}. The startIndex is increased by size of data
+     * which is written into the channel.
+     *
+     *
+     * @param channel the channel to be written into
+     * @param buffer a support buffer to be used to send the content
+     * @param target the target
+     * @return true if all data in this buffer is written into the {@code channel}
+     * @throws IOException if I/O operation is failed
+     */
+    boolean sink(DatagramChannel channel, ByteBuffer buffer, SocketAddress target) throws IOException;
 
     /**
      * Copies data between the startIndex and the endIndex to the given {@code buffer}.
@@ -48,7 +62,6 @@ public interface BufferSink {
      * @return this instance
      */
     BufferSink addLast(CodecBuffer buffer);
-
 
     /**
      * Creates a new {@code BufferSink} that shares the base content.

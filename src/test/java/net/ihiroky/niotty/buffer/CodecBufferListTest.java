@@ -692,7 +692,7 @@ public class CodecBufferListTest {
 
             assertThat(sut_.remaining(), is(dataLength_));
 
-            boolean result = sut_.transferTo(channel);
+            boolean result = sut_.sink(channel);
 
             assertThat(result, is(true));
             assertThat(sut_.remaining(), is(0));
@@ -714,7 +714,7 @@ public class CodecBufferListTest {
 
             assertThat(sut_.remaining(), is(dataLength_));
 
-            boolean result = sut_.transferTo(channel);
+            boolean result = sut_.sink(channel);
 
             assertThat(result, is(false));
             assertThat(sut_.remaining(), is(1));
@@ -726,7 +726,7 @@ public class CodecBufferListTest {
             GatheringByteChannel channel = mock(GatheringByteChannel.class);
             when(channel.write(Mockito.any(ByteBuffer[].class), anyInt(), anyInt())).thenThrow(new IOException());
 
-            sut_.transferTo(channel);
+            sut_.sink(channel);
             verify(channel, times(1)).write(Mockito.any(ByteBuffer.class));
         }
 

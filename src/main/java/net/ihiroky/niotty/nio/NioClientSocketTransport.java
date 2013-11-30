@@ -41,8 +41,8 @@ public class NioClientSocketTransport extends NioSocketTransport<SelectLoop> {
 
     private final SocketChannel channel_;
     private final SelectLoopGroup connectSelectGroup_;
-    private final WriteQueue writeQueue_;
-    private WriteQueue.FlushStatus flushStatus_;
+    private final PacketQueue writeQueue_;
+    private FlushStatus flushStatus_;
 
     private static Logger logger_ = LoggerFactory.getLogger(NioClientSocketTransport.class);
 
@@ -52,12 +52,13 @@ public class NioClientSocketTransport extends NioSocketTransport<SelectLoop> {
                     TransportOptions.SO_KEEPALIVE, TransportOptions.SO_LINGER, TransportOptions.TCP_NODELAY)));
 
     public NioClientSocketTransport(String name, PipelineComposer composer,
-            SelectLoopGroup ioSelectPool, WriteQueueFactory writeQueueFactory) {
+            SelectLoopGroup ioSelectPool, WriteQueueFactory<PacketQueue> writeQueueFactory) {
         this(name, composer, null, ioSelectPool, writeQueueFactory);
     }
 
     public NioClientSocketTransport(String name, PipelineComposer composer,
-            SelectLoopGroup connectSelectGroup, SelectLoopGroup ioSelectPool, WriteQueueFactory writeQueueFactory) {
+            SelectLoopGroup connectSelectGroup, SelectLoopGroup ioSelectPool,
+            WriteQueueFactory<PacketQueue> writeQueueFactory) {
         super(name, composer, ioSelectPool);
 
         Arguments.requireNonNull(ioSelectPool, "ioPool");
@@ -76,7 +77,8 @@ public class NioClientSocketTransport extends NioSocketTransport<SelectLoop> {
     }
 
     public NioClientSocketTransport(String name, PipelineComposer composer,
-            SelectLoopGroup ioSelectGroup, WriteQueueFactory writeQueueFactory, SocketChannel child) {
+            SelectLoopGroup ioSelectGroup, WriteQueueFactory<PacketQueue> writeQueueFactory,
+            SocketChannel child) {
         super(name, composer, ioSelectGroup);
 
         Arguments.requireNonNull(writeQueueFactory, "writeQueueFactory");
@@ -378,7 +380,7 @@ public class NioClientSocketTransport extends NioSocketTransport<SelectLoop> {
     }
 
     @Override
-    void readyToWrite(AttachedMessage<BufferSink> message) {
+    void readyToWrite(BufferSink message, Object parameter) {
         writeQueue_.offer(message);
     }
 
@@ -423,11 +425,11 @@ public class NioClientSocketTransport extends NioSocketTransport<SelectLoop> {
 
     @Override
     void flush(ByteBuffer writeBuffer) throws IOException {
-        if (flushStatus_ == WriteQueue.FlushStatus.FLUSHING) {
+        if (flushStatus_ == FlushStatus.FLUSHING) {
             return;
         }
 
-        WriteQueue.FlushStatus status = writeQueue_.flushTo(channel_);
+        FlushStatus status = writeQueue_.flush(channel_);
         flushStatus_ = status;
         handleFlushStatus(status);
     }

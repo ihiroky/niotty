@@ -3,8 +3,10 @@ package net.ihiroky.niotty.buffer;
 import net.ihiroky.niotty.util.Arguments;
 
 import java.io.IOException;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
+import java.nio.channels.DatagramChannel;
 import java.nio.channels.GatheringByteChannel;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CharsetDecoder;
@@ -85,7 +87,7 @@ public class CodecBufferList extends AbstractCodecBuffer {
     }
 
     @Override
-    public boolean transferTo(GatheringByteChannel channel) throws IOException {
+    public boolean sink(GatheringByteChannel channel) throws IOException {
         List<CodecBuffer> buffers = buffers_;
         int offset = startBufferIndex_;
         final int end = endBufferIndex_;
@@ -112,6 +114,24 @@ public class CodecBufferList extends AbstractCodecBuffer {
         }
         startBufferIndex_ = end;
         return true;
+    }
+
+    @Override
+    public boolean sink(DatagramChannel channel, ByteBuffer buffer, SocketAddress target) throws IOException {
+        List<CodecBuffer> buffers = buffers_;
+        if (buffers.size() == 1) {
+            return buffers.get(0).sink(channel, buffer, target);
+        } else {
+            int start;
+            for (CodecBuffer b : buffers) {
+                start = b.startIndex();
+                b.readBytes(buffer);
+                b.startIndex(start);
+            }
+            boolean sent = (channel.send(buffer, target) > 0);
+            buffer.clear();
+            return sent;
+        }
     }
 
     @Override

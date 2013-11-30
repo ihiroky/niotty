@@ -1,11 +1,24 @@
 package net.ihiroky.niotty.buffer;
 
+import java.io.IOException;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.DatagramChannel;
 
 /**
  *
  */
 public abstract class AbstractBufferSink implements BufferSink {
+
+    @Override
+    public boolean sink(DatagramChannel channel, ByteBuffer buffer, SocketAddress target) throws IOException {
+        copyTo(buffer);
+        buffer.flip();
+        int remaining = buffer.remaining();
+        boolean sent = (channel.send(buffer, target) == remaining);
+        buffer.clear();
+        return sent;
+    }
 
     @Override
     public ByteBuffer byteBuffer() {

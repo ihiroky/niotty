@@ -3,8 +3,10 @@ package net.ihiroky.niotty.buffer;
 import net.ihiroky.niotty.util.Arguments;
 
 import java.io.IOException;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
+import java.nio.channels.DatagramChannel;
 import java.nio.channels.GatheringByteChannel;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CharsetDecoder;
@@ -302,8 +304,13 @@ public class SlicedCodecBuffer extends AbstractCodecBuffer {
     }
 
     @Override
-    public boolean transferTo(GatheringByteChannel channel) throws IOException {
-        return base_.transferTo(channel);
+    public boolean sink(GatheringByteChannel channel) throws IOException {
+        return base_.sink(channel);
+    }
+
+    @Override
+    public boolean sink(DatagramChannel channel, ByteBuffer buffer, SocketAddress target) throws IOException {
+        return base_.sink(channel, buffer, target);
     }
 
     @Override

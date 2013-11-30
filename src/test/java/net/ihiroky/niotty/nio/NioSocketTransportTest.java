@@ -79,7 +79,7 @@ public class NioSocketTransportTest {
         }
 
         @Override
-        void readyToWrite(AttachedMessage<BufferSink> message) {
+        void readyToWrite(BufferSink message, Object parameter) {
         }
 
         @Override

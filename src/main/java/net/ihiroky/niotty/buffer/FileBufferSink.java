@@ -70,8 +70,8 @@ public class FileBufferSink extends AbstractBufferSink {
      * {@inheritDoc}
      */
     @Override
-    public boolean transferTo(GatheringByteChannel channel) throws IOException {
-        return header_.transferTo(channel) && transferFile(channel) && footer_.transferTo(channel);
+    public boolean sink(GatheringByteChannel channel) throws IOException {
+        return header_.sink(channel) && transferFile(channel) && footer_.sink(channel);
     }
 
     @Override

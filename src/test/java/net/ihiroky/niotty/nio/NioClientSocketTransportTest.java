@@ -48,9 +48,10 @@ public class NioClientSocketTransportTest {
     public static class OnSelectedTest {
 
         private SelectLoopGroup selectLoopGroup_;
-        private WriteQueueFactory writeQueueFactory_;
+        private WriteQueueFactory<PacketQueue> writeQueueFactory_;
 
         @Before
+        @SuppressWarnings("unchecked")
         public void setUp() throws Exception {
             writeQueueFactory_ = mock(WriteQueueFactory.class);
         }
@@ -135,7 +136,7 @@ public class NioClientSocketTransportTest {
     public static class FlushTest {
         private NioClientSocketTransport sut_;
         private SocketChannel channel_;
-        private WriteQueue writeQueue_;
+        private PacketQueue writeQueue_;
 
         @Before
         public void setUp() throws Exception {
@@ -147,8 +148,9 @@ public class NioClientSocketTransportTest {
             Socket socket = mock(Socket.class);
             channel_ = mock(SocketChannel.class);
             when(channel_.socket()).thenReturn(socket);
-            writeQueue_ = mock(WriteQueue.class);
-            WriteQueueFactory writeQueueFactory = mock(WriteQueueFactory.class);
+            writeQueue_ = mock(PacketQueue.class);
+            @SuppressWarnings("unchecked")
+            WriteQueueFactory<PacketQueue> writeQueueFactory = mock(WriteQueueFactory.class);
             when(writeQueueFactory.newWriteQueue()).thenReturn(writeQueue_);
             SelectionKey selectionKey = mock(SelectionKey.class);
             SelectLoop taskLoop = mock(SelectLoop.class);
@@ -161,8 +163,8 @@ public class NioClientSocketTransportTest {
 
         @Test
         public void testFlush_Flushed() throws Exception {
-            when(writeQueue_.flushTo(Mockito.any(GatheringByteChannel.class)))
-                    .thenReturn(WriteQueue.FlushStatus.FLUSHED);
+            when(writeQueue_.flush(Mockito.any(GatheringByteChannel.class)))
+                    .thenReturn(FlushStatus.FLUSHED);
             when(sut_.key().interestOps()).thenReturn(0xFFFFFFFF);
 
             sut_.flush(null);
@@ -175,8 +177,8 @@ public class NioClientSocketTransportTest {
 
         @Test
         public void testFlush_Flushing() throws Exception {
-            when(writeQueue_.flushTo(Mockito.any(GatheringByteChannel.class)))
-                    .thenReturn(WriteQueue.FlushStatus.FLUSHING);
+            when(writeQueue_.flush(Mockito.any(GatheringByteChannel.class)))
+                    .thenReturn(FlushStatus.FLUSHING);
             when(sut_.key().interestOps()).thenReturn(SelectionKey.OP_WRITE);
 
             sut_.flush(null);
@@ -196,20 +198,20 @@ public class NioClientSocketTransportTest {
 
         @Test
         public void testFlush_SkipFlushingIfPreviousFlushIsFlushing() throws Exception {
-            when(writeQueue_.flushTo(Mockito.any(GatheringByteChannel.class)))
-                    .thenReturn(WriteQueue.FlushStatus.FLUSHING);
+            when(writeQueue_.flush(Mockito.any(GatheringByteChannel.class)))
+                    .thenReturn(FlushStatus.FLUSHING);
             when(sut_.key().interestOps()).thenReturn(SelectionKey.OP_WRITE);
 
             sut_.flush(null);
             sut_.flush(null);
 
-            verify(writeQueue_).flushTo(Mockito.any(GatheringByteChannel.class));
+            verify(writeQueue_).flush(Mockito.any(GatheringByteChannel.class));
         }
 
         @Test
         public void testFlush_Skipped() throws Exception {
-            when(writeQueue_.flushTo(Mockito.any(GatheringByteChannel.class)))
-                    .thenReturn(WriteQueue.FlushStatus.SKIPPED);
+            when(writeQueue_.flush(Mockito.any(GatheringByteChannel.class)))
+                    .thenReturn(FlushStatus.SKIPPED);
             when(sut_.key().interestOps()).thenReturn(0);
 
             sut_.flush(null);
@@ -237,7 +239,8 @@ public class NioClientSocketTransportTest {
             Socket socket = mock(Socket.class);
             channel_ = mock(SocketChannel.class);
             when(channel_.socket()).thenReturn(socket);
-            WriteQueueFactory writeQueueFactory = mock(WriteQueueFactory.class);
+            @SuppressWarnings("unchecked")
+            WriteQueueFactory<PacketQueue> writeQueueFactory = mock(WriteQueueFactory.class);
 
             sut_ = new NioClientSocketTransport(
                     "TEST", PipelineComposer.empty(), ioPool, writeQueueFactory, channel_);
@@ -456,7 +459,8 @@ public class NioClientSocketTransportTest {
             socket_ = mock(Socket.class);
             SocketChannel channel = mock(SocketChannel.class);
             when(channel.socket()).thenReturn(socket_);
-            WriteQueueFactory writeQueueFactory = mock(WriteQueueFactory.class);
+            @SuppressWarnings("unchecked")
+            WriteQueueFactory<PacketQueue> writeQueueFactory = mock(WriteQueueFactory.class);
 
             sut_ = new NioClientSocketTransport(
                     "TEST", PipelineComposer.empty(), ioPool, writeQueueFactory, channel);

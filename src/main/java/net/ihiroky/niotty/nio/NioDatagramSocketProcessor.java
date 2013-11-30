@@ -12,7 +12,7 @@ public class NioDatagramSocketProcessor extends AbstractProcessor<NioDatagramSoc
 
     private SelectLoopGroup ioSelectLoopGroup_;
     private int numberOfMessageIOThread_;
-    private WriteQueueFactory writeQueueFactory_;
+    private WriteQueueFactory<DatagramQueue> writeQueueFactory_;
 
     private int readBufferSize_;
     private int writeBufferSize_;
@@ -24,7 +24,7 @@ public class NioDatagramSocketProcessor extends AbstractProcessor<NioDatagramSoc
 
     public NioDatagramSocketProcessor() {
         numberOfMessageIOThread_ = DEFAULT_NUMBER_OF_MESSAGE_IO_THREAD;
-        writeQueueFactory_ = new SimpleWriteQueueFactory();
+        writeQueueFactory_ = new SimpleDatagramQueueFactory();
 
         readBufferSize_ = SelectLoopGroup.DEFAULT_READ_BUFFER_SIZE;
         writeBufferSize_ = SelectLoopGroup.DEFAULT_WRITE_BUFFER_SIZE;
@@ -114,7 +114,7 @@ public class NioDatagramSocketProcessor extends AbstractProcessor<NioDatagramSoc
         return useDirectBuffer_;
     }
 
-    public NioDatagramSocketProcessor setWriteQueueFactory(WriteQueueFactory writeQueueFactory) {
+    public NioDatagramSocketProcessor setWriteQueueFactory(WriteQueueFactory<DatagramQueue> writeQueueFactory) {
         writeQueueFactory_ = Arguments.requireNonNull(writeQueueFactory, "writeQueueFactory");
         return this;
     }

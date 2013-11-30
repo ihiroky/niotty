@@ -111,7 +111,7 @@ public class ConnectionWaitTransport extends NioSocketTransport<SelectLoop> {
     }
 
     @Override
-    void readyToWrite(AttachedMessage<BufferSink> message) {
+    void readyToWrite(BufferSink message, Object parameter) {
         throw new UnsupportedOperationException();
     }
 }

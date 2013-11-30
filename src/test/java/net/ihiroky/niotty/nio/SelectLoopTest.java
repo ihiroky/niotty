@@ -31,9 +31,9 @@ public class SelectLoopTest {
 
         sut.stored(context, data, new Object());
 
-        ArgumentCaptor<AttachedMessage> captor = ArgumentCaptor.forClass(AttachedMessage.class);
-        verify(transport).readyToWrite(captor.capture());
-        assertThat(captor.getValue().message(), is((Object) data));
+        ArgumentCaptor<BufferSink> captor = ArgumentCaptor.forClass(BufferSink.class);
+        verify(transport).readyToWrite(captor.capture(), Mockito.<Object>any());
+        assertThat(captor.getValue(), is(data));
         verify(transport).flush(Mockito.any(ByteBuffer.class));
     }
 

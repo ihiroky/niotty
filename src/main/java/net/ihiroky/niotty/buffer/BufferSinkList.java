@@ -25,8 +25,8 @@ public class BufferSinkList extends AbstractBufferSink {
     }
 
     @Override
-    public boolean transferTo(GatheringByteChannel channel) throws IOException {
-        return car_.transferTo(channel) && cdr_.transferTo(channel);
+    public boolean sink(GatheringByteChannel channel) throws IOException {
+        return car_.sink(channel) && cdr_.sink(channel);
     }
 
     @Override

@@ -13,7 +13,7 @@ public class NioClientSocketProcessor extends AbstractProcessor<NioClientSocketT
     private SelectLoopGroup connectSelectorPool_;
     private SelectLoopGroup ioSelectorPool_;
     private int numberOfMessageIOThread_;
-    private WriteQueueFactory writeQueueFactory_;
+    private WriteQueueFactory<PacketQueue> writeQueueFactory_;
     private boolean useNonBlockingConnection_;
 
     private int readBufferSize_;
@@ -25,7 +25,7 @@ public class NioClientSocketProcessor extends AbstractProcessor<NioClientSocketT
     static final String DEFAULT_NAME = "NioClientSocket";
 
     public NioClientSocketProcessor() {
-        writeQueueFactory_ = new SimpleWriteQueueFactory();
+        writeQueueFactory_ = new SimplePacketQueueFactory();
         numberOfMessageIOThread_ = DEFAULT_NUMBER_OF_MESSAGE_IO_THREAD;
         readBufferSize_ = SelectLoopGroup.DEFAULT_READ_BUFFER_SIZE;
         useDirectBuffer_ = SelectLoopGroup.DEFAULT_USE_DIRECT_BUFFER;
@@ -97,7 +97,7 @@ public class NioClientSocketProcessor extends AbstractProcessor<NioClientSocketT
         return this;
     }
 
-    public NioClientSocketProcessor setWriteQueueFactory(WriteQueueFactory writeQueueFactory) {
+    public NioClientSocketProcessor setWriteQueueFactory(WriteQueueFactory<PacketQueue> writeQueueFactory) {
         writeQueueFactory_ = Arguments.requireNonNull(writeQueueFactory, "writeQueueFactory");
         return this;
     }

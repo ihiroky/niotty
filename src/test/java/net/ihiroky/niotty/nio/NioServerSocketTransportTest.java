@@ -49,7 +49,8 @@ public class NioServerSocketTransportTest {
             channel_ = mock(ServerSocketChannel.class);
             acceptGroup_ = new SelectLoopGroup(Executors.defaultThreadFactory(), 1);
             ioGroup_ = new SelectLoopGroup(Executors.defaultThreadFactory(), 1);
-            WriteQueueFactory writeQueueFactory = mock(WriteQueueFactory.class);
+            @SuppressWarnings("unchecked")
+            WriteQueueFactory<PacketQueue> writeQueueFactory = mock(WriteQueueFactory.class);
             sut_ = new NioServerSocketTransport("TEST", PipelineComposer.empty(),
                     acceptGroup_, ioGroup_, writeQueueFactory, channel_);
         }
@@ -204,7 +205,8 @@ public class NioServerSocketTransportTest {
             when(channel.socket()).thenReturn(socket_);
             acceptGroup_ = new SelectLoopGroup(Executors.defaultThreadFactory(), 1);
             ioGroup_ = new SelectLoopGroup(Executors.defaultThreadFactory(), 1);
-            WriteQueueFactory writeQueueFactory = mock(WriteQueueFactory.class);
+            @SuppressWarnings("unchecked")
+            WriteQueueFactory<PacketQueue> writeQueueFactory = mock(WriteQueueFactory.class);
             sut_ = new NioServerSocketTransport("TEST", PipelineComposer.empty(), acceptGroup_, ioGroup_,
                     writeQueueFactory, channel);
 

@@ -10,8 +10,6 @@ import net.ihiroky.niotty.Task;
 import net.ihiroky.niotty.TaskLoopGroup;
 import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.buffer.BufferSink;
-import net.ihiroky.niotty.buffer.Buffers;
-import net.ihiroky.niotty.buffer.CodecBuffer;
 import net.ihiroky.niotty.util.Arguments;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -156,7 +154,7 @@ public abstract class NioSocketTransport<S extends SelectLoop> extends AbstractT
         logger_.debug("[unregister] {} is unregistered from {}.", this, Thread.currentThread());
     }
 
-    protected void handleFlushStatus(WriteQueue.FlushStatus status) {
+    protected void handleFlushStatus(FlushStatus status) {
         switch (status) {
             case FLUSHED:
                 clearInterestOp(SelectionKey.OP_WRITE);
@@ -179,14 +177,7 @@ public abstract class NioSocketTransport<S extends SelectLoop> extends AbstractT
         }
     }
 
-    protected static CodecBuffer deepCopy(ByteBuffer bb) {
-        int length = bb.limit();
-        byte[] data = new byte[length];
-        bb.get(data, 0, length);
-        return Buffers.wrap(data, 0, length);
-    }
-
     abstract void onSelected(SelectionKey key, SelectLoop selectLoop);
-    abstract void readyToWrite(AttachedMessage<BufferSink> message);
+    abstract void readyToWrite(BufferSink message, Object parameter);
     abstract void flush(ByteBuffer writeBuffer) throws IOException;
 }

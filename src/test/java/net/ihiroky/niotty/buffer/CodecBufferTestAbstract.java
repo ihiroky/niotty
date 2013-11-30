@@ -10,8 +10,11 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
+import java.nio.channels.DatagramChannel;
 import java.nio.channels.GatheringByteChannel;
 import java.nio.charset.Charset;
 import java.util.Arrays;
@@ -1177,7 +1180,7 @@ public class CodecBufferTestAbstract {
         }
 
         @Test
-        public void testTransferTo_WriteOnce() throws Exception {
+        public void testSink_WriteOnce() throws Exception {
             GatheringByteChannel channel = mock(GatheringByteChannel.class);
             when(channel.write(Mockito.any(ByteBuffer.class))).thenAnswer(new Answer<Object>() {
                 @Override
@@ -1191,7 +1194,7 @@ public class CodecBufferTestAbstract {
 
             assertThat(sut_.remaining(), is(dataLength_));
 
-            boolean result = sut_.transferTo(channel);
+            boolean result = sut_.sink(channel);
 
             assertThat(result, is(true));
             assertThat(sut_.remaining(), is(0));
@@ -1199,7 +1202,7 @@ public class CodecBufferTestAbstract {
         }
 
         @Test
-        public void testTransferTo_NotEnoughWrite() throws Exception {
+        public void testSink_NotEnoughWrite() throws Exception {
             GatheringByteChannel channel = mock(GatheringByteChannel.class);
             when(channel.write(Mockito.any(ByteBuffer.class))).thenAnswer(new Answer<Object>() {
                 @Override
@@ -1213,7 +1216,7 @@ public class CodecBufferTestAbstract {
 
             assertThat(sut_.remaining(), is(dataLength_));
 
-            boolean result = sut_.transferTo(channel);
+            boolean result = sut_.sink(channel);
 
             assertThat(result, is(false));
             assertThat(sut_.remaining(), is(1));
@@ -1221,12 +1224,42 @@ public class CodecBufferTestAbstract {
         }
 
         @Test(expected = IOException.class)
-        public void testTransferTo_IOException() throws  Exception {
+        public void testSink_IOException() throws  Exception {
             GatheringByteChannel channel = mock(GatheringByteChannel.class);
             when(channel.write(Mockito.any(ByteBuffer.class))).thenThrow(new IOException());
 
-            sut_.transferTo(channel);
+            sut_.sink(channel);
             verify(channel, times(1)).write(Mockito.any(ByteBuffer.class));
+        }
+
+        @Test
+        public void testSinkDatagram_FlushAll() throws Exception {
+            DatagramChannel channel = mock(DatagramChannel.class);
+            ByteBuffer buffer = ByteBuffer.allocate(data_.length);
+            SocketAddress target = new InetSocketAddress(12345);
+            when(channel.send(Mockito.<ByteBuffer>any(), eq(target))).thenReturn(data_.length);
+
+            boolean result = sut_.sink(channel, buffer, target);
+
+            assertThat(result, is(true));
+            assertThat(sut_.startIndex(), is(0));
+            assertThat(sut_.endIndex(), is(data_.length));
+            verify(channel).send(Mockito.<ByteBuffer>any(), eq(target));
+        }
+
+        @Test
+        public void testSinkDatagram_FlushNothing() throws Exception {
+            DatagramChannel channel = mock(DatagramChannel.class);
+            ByteBuffer buffer = ByteBuffer.allocate(data_.length);
+            SocketAddress target = new InetSocketAddress(12345);
+            when(channel.send(Mockito.<ByteBuffer>any(), eq(target))).thenReturn(0);
+
+            boolean result = sut_.sink(channel, buffer, target);
+
+            assertThat(result, is(false));
+            assertThat(sut_.startIndex(), is(0));
+            assertThat(sut_.endIndex(), is(data_.length));
+            verify(channel).send(Mockito.<ByteBuffer>any(), eq(target));
         }
 
         @Test

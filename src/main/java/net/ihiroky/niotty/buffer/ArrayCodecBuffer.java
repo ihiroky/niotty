@@ -3,9 +3,10 @@ package net.ihiroky.niotty.buffer;
 import net.ihiroky.niotty.util.Arguments;
 
 import java.io.IOException;
-import java.nio.BufferOverflowException;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
+import java.nio.channels.DatagramChannel;
 import java.nio.channels.GatheringByteChannel;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CharsetDecoder;
@@ -422,7 +423,7 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer {
      * {@inheritDoc}
      */
     @Override
-    public boolean transferTo(GatheringByteChannel channel) throws IOException {
+    public boolean sink(GatheringByteChannel channel) throws IOException {
         int remaining = end_ - start_;
         if (remaining == 0) {
             return true;
@@ -435,13 +436,22 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer {
     }
 
     @Override
+    public boolean sink(DatagramChannel channel, ByteBuffer buffer, SocketAddress target) throws IOException {
+        int remaining = end_ - start_;
+        if (remaining == 0) {
+            return true;
+        }
+
+        buffer.put(buffer_, start_, remaining).flip();
+        boolean sent = (channel.send(buffer, target) == remaining);
+        buffer.clear();
+        return sent;
+    }
+
+    @Override
     public void copyTo(ByteBuffer byteBuffer) {
-        int space = byteBuffer.remaining();
         int start = start_;
         int remaining = end_ - start;
-        if (space < remaining) {
-            throw new BufferOverflowException();
-        }
         byteBuffer.put(buffer_, start_, remaining);
     }
 

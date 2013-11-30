@@ -57,7 +57,7 @@ public class NioDatagramSocketTransportTest {
     public static class FlushTest {
 
         private NioDatagramSocketTransport sut_;
-        private WriteQueue writeQueue_;
+        private DatagramQueue writeQueue_;
 
         @Before
         public void setUp() throws Exception {
@@ -66,8 +66,9 @@ public class NioDatagramSocketTransportTest {
             when(selector.ioStage()).thenReturn(ioStage);
             SelectLoopGroup ioPool = mock(SelectLoopGroup.class);
             when(ioPool.assign(Mockito.<TaskSelection>any())).thenReturn(selector);
-            writeQueue_ = mock(WriteQueue.class);
-            WriteQueueFactory writeQueueFactory = mock(WriteQueueFactory.class);
+            writeQueue_ = mock(DatagramQueue.class);
+            @SuppressWarnings("unchecked")
+            WriteQueueFactory<DatagramQueue> writeQueueFactory = mock(WriteQueueFactory.class);
             when(writeQueueFactory.newWriteQueue()).thenReturn(writeQueue_);
             SelectionKey selectionKey = mock(SelectionKey.class);
             SelectLoop taskLoop = mock(SelectLoop.class);
@@ -80,8 +81,8 @@ public class NioDatagramSocketTransportTest {
 
         @Test
         public void testFlush_Flushed() throws Exception {
-            when(writeQueue_.flushTo(Mockito.any(DatagramChannel.class), Mockito.any(ByteBuffer.class)))
-                    .thenReturn(WriteQueue.FlushStatus.FLUSHED);
+            when(writeQueue_.flush(Mockito.any(DatagramChannel.class), Mockito.any(ByteBuffer.class)))
+                    .thenReturn(FlushStatus.FLUSHED);
             when(sut_.key().interestOps()).thenReturn(0xFFFFFFFF);
 
             sut_.flush(ByteBuffer.allocate(0));
@@ -94,8 +95,8 @@ public class NioDatagramSocketTransportTest {
 
         @Test
         public void testFlush_Flushing() throws Exception {
-            when(writeQueue_.flushTo(Mockito.any(DatagramChannel.class), Mockito.any(ByteBuffer.class)))
-                    .thenReturn(WriteQueue.FlushStatus.FLUSHING);
+            when(writeQueue_.flush(Mockito.any(DatagramChannel.class), Mockito.any(ByteBuffer.class)))
+                    .thenReturn(FlushStatus.FLUSHING);
             when(sut_.key().interestOps()).thenReturn(SelectionKey.OP_WRITE);
 
             sut_.flush(null);
@@ -115,20 +116,20 @@ public class NioDatagramSocketTransportTest {
 
         @Test
         public void testFlush_SkipFlushingIfPreviousFlushIsFlushing() throws Exception {
-            when(writeQueue_.flushTo(Mockito.any(DatagramChannel.class), Mockito.any(ByteBuffer.class)))
-                    .thenReturn(WriteQueue.FlushStatus.FLUSHING);
+            when(writeQueue_.flush(Mockito.any(DatagramChannel.class), Mockito.any(ByteBuffer.class)))
+                    .thenReturn(FlushStatus.FLUSHING);
             when(sut_.key().interestOps()).thenReturn(SelectionKey.OP_WRITE);
 
             sut_.flush(null);
             sut_.flush(null);
 
-            verify(writeQueue_).flushTo(Mockito.any(DatagramChannel.class), Mockito.any(ByteBuffer.class));
+            verify(writeQueue_).flush(Mockito.any(DatagramChannel.class), Mockito.any(ByteBuffer.class));
         }
 
         @Test
         public void testFlush_Skipped() throws Exception {
-            when(writeQueue_.flushTo(Mockito.any(DatagramChannel.class), Mockito.any(ByteBuffer.class)))
-                    .thenReturn(WriteQueue.FlushStatus.SKIPPED);
+            when(writeQueue_.flush(Mockito.any(DatagramChannel.class), Mockito.any(ByteBuffer.class)))
+                    .thenReturn(FlushStatus.SKIPPED);
             when(sut_.key().interestOps()).thenReturn(0);
 
             sut_.flush(ByteBuffer.allocate(0));
@@ -143,9 +144,10 @@ public class NioDatagramSocketTransportTest {
     public static class OnSelectedTest {
 
         private SelectLoopGroup selectLoopGroup_;
-        private WriteQueueFactory writeQueueFactory_;
+        private WriteQueueFactory<DatagramQueue> writeQueueFactory_;
 
         @Before
+        @SuppressWarnings("unchecked")
         public void setUp() throws Exception {
             writeQueueFactory_ = mock(WriteQueueFactory.class);
         }
@@ -315,7 +317,8 @@ public class NioDatagramSocketTransportTest {
             DatagramSocket socket = mock(DatagramSocket.class);
             channel_ = mock(DatagramChannel.class);
             when(channel_.socket()).thenReturn(socket);
-            WriteQueueFactory writeQueueFactory = mock(WriteQueueFactory.class);
+            @SuppressWarnings("unchecked")
+            WriteQueueFactory<DatagramQueue> writeQueueFactory = mock(WriteQueueFactory.class);
 
             sut_ = new NioDatagramSocketTransport(
                     "TEST", PipelineComposer.empty(), ioPool, writeQueueFactory, channel_);
@@ -640,7 +643,8 @@ public class NioDatagramSocketTransportTest {
             socket_ = mock(DatagramSocket.class);
             DatagramChannel channel = mock(DatagramChannel.class);
             when(channel.socket()).thenReturn(socket_);
-            WriteQueueFactory writeQueueFactory = mock(WriteQueueFactory.class);
+            @SuppressWarnings("unchecked")
+            WriteQueueFactory<DatagramQueue> writeQueueFactory = mock(WriteQueueFactory.class);
 
             sut_ = new NioDatagramSocketTransport(
                     "TEST", PipelineComposer.empty(), ioPool, writeQueueFactory, channel);

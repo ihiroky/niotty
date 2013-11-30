@@ -7,7 +7,10 @@ import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.DatagramChannel;
 import java.nio.channels.GatheringByteChannel;
 import java.util.Arrays;
 
@@ -38,51 +41,89 @@ public class BufferSinkListTest {
     }
 
     @Test
-    public void testTransferTo_CarAndCdrIsTrue() throws Exception {
+    public void testSink_CarAndCdrIsTrue() throws Exception {
         GatheringByteChannel channel = mock(GatheringByteChannel.class);
         BufferSink car = mock(BufferSink.class);
-        doReturn(true).when(car).transferTo(channel);
+        doReturn(true).when(car).sink(channel);
         BufferSink cdr = mock(BufferSink.class);
-        doReturn(true).when(cdr).transferTo(channel);
+        doReturn(true).when(cdr).sink(channel);
 
         BufferSinkList List = new BufferSinkList(car, cdr);
-        boolean result = List.transferTo(channel);
+        boolean result = List.sink(channel);
 
         assertThat(result, is(true));
-        verify(car, times(1)).transferTo(channel);
-        verify(cdr, times(1)).transferTo(channel);
+        verify(car, times(1)).sink(channel);
+        verify(cdr, times(1)).sink(channel);
     }
 
     @Test
-    public void testTransferTo_CarIsTrueAndCdrIsFalse() throws Exception {
+    public void testSink_CarIsTrueAndCdrIsFalse() throws Exception {
         GatheringByteChannel channel = mock(GatheringByteChannel.class);
         BufferSink car = mock(BufferSink.class);
-        doReturn(true).when(car).transferTo(channel);
+        doReturn(true).when(car).sink(channel);
         BufferSink cdr = mock(BufferSink.class);
-        doReturn(false).when(cdr).transferTo(channel);
+        doReturn(false).when(cdr).sink(channel);
 
         BufferSinkList List = new BufferSinkList(car, cdr);
-        boolean result = List.transferTo(channel);
+        boolean result = List.sink(channel);
 
         assertThat(result, is(false));
-        verify(car, times(1)).transferTo(channel);
-        verify(cdr, times(1)).transferTo(channel);
+        verify(car, times(1)).sink(channel);
+        verify(cdr, times(1)).sink(channel);
     }
 
     @Test
-    public void testTransferTo_CarAndCdrIsFalse() throws Exception {
+    public void testSink_CarAndCdrIsFalse() throws Exception {
         GatheringByteChannel channel = mock(GatheringByteChannel.class);
         BufferSink car = mock(BufferSink.class);
-        doReturn(false).when(car).transferTo(channel);
+        doReturn(false).when(car).sink(channel);
         BufferSink cdr = mock(BufferSink.class);
-        doReturn(false).when(cdr).transferTo(channel);
+        doReturn(false).when(cdr).sink(channel);
 
         BufferSinkList sut = new BufferSinkList(car, cdr);
-        boolean result = sut.transferTo(channel);
+        boolean result = sut.sink(channel);
 
         assertThat(result, is(false));
-        verify(car, times(1)).transferTo(channel);
-        verify(cdr, never()).transferTo(channel);
+        verify(car, times(1)).sink(channel);
+        verify(cdr, never()).sink(channel);
+    }
+
+    @Test
+    public void testSinkDatagram_FlushAll() throws Exception {
+        byte[] carData = new byte[]{0};
+        BufferSink car = Buffers.wrap(carData, 0, carData.length);
+        byte[] cdrData = new byte[]{1, 2};
+        BufferSink cdr = Buffers.wrap(cdrData, 0, cdrData.length);
+        DatagramChannel channel = mock(DatagramChannel.class);
+        ByteBuffer buffer = ByteBuffer.allocate(3);
+        SocketAddress target = new InetSocketAddress(12345);
+        when(channel.send(buffer, target)).thenReturn(3);
+        BufferSinkList sut = new BufferSinkList(car, cdr);
+
+        boolean result = sut.sink(channel, buffer, target);
+
+        assertThat(result, is(true));
+        assertThat(buffer.remaining(), is(buffer.capacity()));
+        verify(channel).send(ByteBuffer.wrap(new byte[]{0, 1, 2}), target);
+    }
+
+    @Test
+    public void testSinDatagram_FlushNothing() throws Exception {
+        byte[] carData = new byte[]{0};
+        BufferSink car = Buffers.wrap(carData, 0, carData.length);
+        byte[] cdrData = new byte[]{1, 2};
+        BufferSink cdr = Buffers.wrap(cdrData, 0, cdrData.length);
+        DatagramChannel channel = mock(DatagramChannel.class);
+        ByteBuffer buffer = ByteBuffer.allocate(3);
+        SocketAddress target = new InetSocketAddress(12345);
+        when(channel.send(buffer, target)).thenReturn(0);
+        BufferSinkList sut = new BufferSinkList(car, cdr);
+
+        boolean result = sut.sink(channel, buffer, target);
+
+        assertThat(result, is(false));
+        assertThat(buffer.remaining(), is(buffer.capacity()));
+        verify(channel).send(ByteBuffer.wrap(new byte[]{0, 1, 2}), target);
     }
 
     @Test
@@ -220,7 +261,7 @@ public class BufferSinkListTest {
 
         BufferSinkList sut = new BufferSinkList(car, cdr);
         BufferSinkList duplicated = sut.duplicate();
-        sut.transferTo(channel);
+        sut.sink(channel);
 
         assertThat(duplicated.remaining(), is(2 + 3));
         assertThat(sut.remaining(), is(0));

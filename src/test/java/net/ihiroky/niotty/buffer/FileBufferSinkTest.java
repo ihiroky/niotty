@@ -14,8 +14,11 @@ import org.mockito.stubbing.Answer;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
+import java.nio.channels.DatagramChannel;
 import java.nio.channels.FileChannel;
 import java.nio.channels.GatheringByteChannel;
 import java.util.ArrayList;
@@ -141,13 +144,13 @@ public class FileBufferSinkTest {
     }
 
     @Test
-    public void testTransferTo_WriteAllAtOnce() throws Exception {
+    public void testSink_WriteAllAtOnce() throws Exception {
         GatheringByteChannel outputChannel = mock(GatheringByteChannel.class);
         when(outputChannel.write(Mockito.any(ByteBuffer.class))).thenAnswer(new TransferAll());
         when(outputChannel.isOpen()).thenReturn(true);
 
         FileBufferSink sut = new FileBufferSink(channel_, 8, 24);
-        boolean actual = sut.transferTo(outputChannel);
+        boolean actual = sut.sink(outputChannel);
         boolean openAfterTransferTo = channel_.isOpen();
         sut.dispose();
         boolean openAfterDisposed = channel_.isOpen();
@@ -159,13 +162,13 @@ public class FileBufferSinkTest {
     }
 
     @Test
-    public void testTransferTo_WritePart() throws Exception {
+    public void testSink_WritePart() throws Exception {
         GatheringByteChannel outputChannel = mock(GatheringByteChannel.class);
         when(outputChannel.write(Mockito.any(ByteBuffer.class))).thenAnswer(new TransferPart(10)); // footer
         when(outputChannel.isOpen()).thenReturn(true);
 
         FileBufferSink sut = new FileBufferSink(channel_, 0, 15);
-        boolean actual = sut.transferTo(outputChannel);
+        boolean actual = sut.sink(outputChannel);
 
         assertThat(actual, is(false));
         assertThat(sut.remaining(), is(5));
@@ -173,14 +176,14 @@ public class FileBufferSinkTest {
     }
 
     @Test
-    public void testTransferTo_IOException() throws Exception {
+    public void testSink_IOException() throws Exception {
         GatheringByteChannel outputChannel = mock(GatheringByteChannel.class);
         when(outputChannel.write(Mockito.any(ByteBuffer.class))).thenThrow(new IOException());
         when(outputChannel.isOpen()).thenReturn(true);
 
         FileBufferSink sut = new FileBufferSink(channel_, 0, 15);
         try {
-            sut.transferTo(outputChannel);
+            sut.sink(outputChannel);
         } catch (IOException ioe) {
         }
 
@@ -189,7 +192,7 @@ public class FileBufferSinkTest {
     }
 
     @Test
-    public void testTransferTo_HeaderHalfway() throws Exception {
+    public void testSink_HeaderHalfway() throws Exception {
         CodecBuffer header = Buffers.wrap(new byte[8], 0, 8);
         CodecBuffer footer = Buffers.wrap(new byte[8], 0, 8);
         GatheringByteChannel outputChannel = mock(GatheringByteChannel.class);
@@ -198,7 +201,7 @@ public class FileBufferSinkTest {
         FileBufferSink sut = new FileBufferSink(channel_, 0, 32);
         sut.addFirst(header).addLast(footer);
 
-        boolean result = sut.transferTo(outputChannel);
+        boolean result = sut.sink(outputChannel);
 
         assertThat(result, is(false));
         assertThat(sut.remaining(), is(1 + 32 + 8));
@@ -206,7 +209,7 @@ public class FileBufferSinkTest {
     }
 
     @Test
-    public void testTransferTo_FooterHalfway() throws Exception {
+    public void testSink_FooterHalfway() throws Exception {
         CodecBuffer header = Buffers.wrap(new byte[8], 0, 8);
         CodecBuffer footer = Buffers.wrap(new byte[8], 0, 8);
         GatheringByteChannel outputChannel = mock(GatheringByteChannel.class);
@@ -219,12 +222,46 @@ public class FileBufferSinkTest {
         FileBufferSink sut = new FileBufferSink(channel_, 0, 32);
         sut.addFirst(header).addLast(footer);
 
-        boolean result = sut.transferTo(outputChannel);
+        boolean result = sut.sink(outputChannel);
 
         assertThat(result, is(false));
         assertThat(sut.remaining(), is(0 + 0 + 1));
         verify(outputChannel, times(1)).write(Mockito.any(ByteBuffer.class));
         verify(outputChannel, times(2)).write(Mockito.any(ByteBuffer[].class), anyInt(), anyInt());
+    }
+
+    @Test
+    public void testSinkDatagram_FlushAll() throws Exception {
+        FileBufferSink sut = new FileBufferSink(channel_, 0, 32);
+        sut.addFirst(Buffers.wrap(new byte[8], 0, 8));
+        sut.addLast(Buffers.wrap(new byte[8], 0, 8));
+        DatagramChannel channel = mock(DatagramChannel.class);
+        ByteBuffer buffer = ByteBuffer.allocate(48);
+        SocketAddress target = new InetSocketAddress(12345);
+        when(channel.send(buffer, target)).thenReturn(48);
+
+        boolean result = sut.sink(channel, buffer, target);
+
+        assertThat(result, is(true));
+        assertThat(buffer.remaining(), is(buffer.capacity()));
+        verify(channel).send(buffer, target);
+    }
+
+    @Test
+    public void testSinkDatagram_FlushNothing() throws Exception {
+        FileBufferSink sut = new FileBufferSink(channel_, 0, 32);
+        sut.addFirst(Buffers.wrap(new byte[8], 0, 8));
+        sut.addLast(Buffers.wrap(new byte[8], 0, 8));
+        DatagramChannel channel = mock(DatagramChannel.class);
+        ByteBuffer buffer = ByteBuffer.allocate(48);
+        SocketAddress target = new InetSocketAddress(12345);
+        when(channel.send(buffer, target)).thenReturn(0);
+
+        boolean result = sut.sink(channel, buffer, target);
+
+        assertThat(result, is(false));
+        assertThat(buffer.remaining(), is(buffer.capacity()));
+        verify(channel).send(buffer, target);
     }
 
     @Test
@@ -262,12 +299,12 @@ public class FileBufferSinkTest {
         FileBufferSink sut = new FileBufferSink(channel_, 0, 32);
 
         BufferSink sliced0 = sut.slice(9);
-        sliced0.transferTo(outputChannel);
+        sliced0.sink(outputChannel);
         boolean open0 = channel_.isOpen();
         BufferSink sliced1 = sut.slice(11);
-        sliced1.transferTo(outputChannel);
+        sliced1.sink(outputChannel);
         boolean open1 = channel_.isOpen();
-        sut.transferTo(outputChannel);
+        sut.sink(outputChannel);
         boolean openLeft = channel_.isOpen();
         sliced0.dispose();
         boolean openDisposed0 = channel_.isOpen();

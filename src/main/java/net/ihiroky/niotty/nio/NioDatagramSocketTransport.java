@@ -42,9 +42,9 @@ import java.util.concurrent.TimeUnit;
  */
 public class NioDatagramSocketTransport extends NioSocketTransport<SelectLoop> {
 
-    private DatagramChannel channel_;
-    private WriteQueue writeQueue_;
-    private WriteQueue.FlushStatus flushStatus_;
+    private final DatagramChannel channel_;
+    private final DatagramQueue writeQueue_;
+    private FlushStatus flushStatus_;
     private final Map<GroupKey, MembershipKey> membershipKeyMap_;
 
     private static Logger logger_ = LoggerFactory.getLogger(NioDatagramSocketTransport.class);
@@ -57,7 +57,7 @@ public class NioDatagramSocketTransport extends NioSocketTransport<SelectLoop> {
                     TransportOptions.IP_MULTICAST_TTL, TransportOptions.IP_TOS)));
 
     public NioDatagramSocketTransport(String name, PipelineComposer composer,
-            SelectLoopGroup ioSelectLoopGroup, WriteQueueFactory writeQueueFactory,
+            SelectLoopGroup ioSelectLoopGroup, WriteQueueFactory<DatagramQueue> writeQueueFactory,
             InternetProtocolFamily family) {
         super(name, composer, ioSelectLoopGroup);
 
@@ -89,7 +89,7 @@ public class NioDatagramSocketTransport extends NioSocketTransport<SelectLoop> {
     }
 
     public NioDatagramSocketTransport(String name, PipelineComposer composer,
-            SelectLoopGroup ioSelectLoopGroup, WriteQueueFactory writeQueueFactory,
+            SelectLoopGroup ioSelectLoopGroup, WriteQueueFactory<DatagramQueue> writeQueueFactory,
             DatagramChannel channel) {
         super(name, composer, ioSelectLoopGroup);
 
@@ -385,8 +385,8 @@ public class NioDatagramSocketTransport extends NioSocketTransport<SelectLoop> {
     }
 
     @Override
-    void readyToWrite(AttachedMessage<BufferSink> message) {
-        writeQueue_.offer(message);
+    void readyToWrite(BufferSink message, Object parameter) {
+        writeQueue_.offer(new AttachedMessage<BufferSink>(message, parameter));
     }
 
     @Override
@@ -442,10 +442,10 @@ public class NioDatagramSocketTransport extends NioSocketTransport<SelectLoop> {
 
     @Override
     void flush(ByteBuffer writeBuffer) throws IOException {
-        if (flushStatus_ == WriteQueue.FlushStatus.FLUSHING) {
+        if (flushStatus_ == FlushStatus.FLUSHING) {
             return;
         }
-        WriteQueue.FlushStatus status = writeQueue_.flushTo(channel_, writeBuffer);
+        FlushStatus status = writeQueue_.flush(channel_, writeBuffer);
         flushStatus_ = status;
         handleFlushStatus(status);
     }

@@ -12,7 +12,7 @@ public class NioServerSocketProcessor extends AbstractProcessor<NioServerSocketT
 
     private SelectLoopGroup acceptSelectLoopGroup_;
     private SelectLoopGroup ioSelectLoopGroup_;
-    private WriteQueueFactory writeQueueFactory_;
+    private WriteQueueFactory<PacketQueue> writeQueueFactory_;
 
     private int numberOfIoThread_;
     private int readBufferSize_;
@@ -25,7 +25,7 @@ public class NioServerSocketProcessor extends AbstractProcessor<NioServerSocketT
     static final String DEFAULT_NAME = "NioServerSocket";
 
     public NioServerSocketProcessor() {
-        writeQueueFactory_ = new SimpleWriteQueueFactory();
+        writeQueueFactory_ = new SimplePacketQueueFactory();
 
         numberOfIoThread_ = DEFAULT_NUMBER_OF_IO_THREAD;
         readBufferSize_ = SelectLoopGroup.DEFAULT_READ_BUFFER_SIZE;
@@ -89,7 +89,7 @@ public class NioServerSocketProcessor extends AbstractProcessor<NioServerSocketT
         return this;
     }
 
-    public NioServerSocketProcessor setWriteQueueFactory(WriteQueueFactory writeQueueFactory) {
+    public NioServerSocketProcessor setWriteQueueFactory(WriteQueueFactory<PacketQueue> writeQueueFactory) {
         writeQueueFactory_ = writeQueueFactory;
         return this;
     }
@@ -98,7 +98,7 @@ public class NioServerSocketProcessor extends AbstractProcessor<NioServerSocketT
         return ioSelectLoopGroup_;
     }
 
-    WriteQueueFactory writeQueueFactory() {
+    WriteQueueFactory<PacketQueue> writeQueueFactory() {
         return writeQueueFactory_;
     }
 

@@ -4,12 +4,17 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.runners.Enclosed;
 import org.junit.runner.RunWith;
+import org.mockito.Mockito;
 
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.DatagramChannel;
 import java.util.Arrays;
 
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 
 /**
  * @author Hiroki Itoh
@@ -91,6 +96,61 @@ public class ByteBufferCodecBufferTest {
         protected CodecBuffer createCodecBuffer(byte[] buffer, int offset, int length) {
             return Buffers.wrap(ByteBuffer.wrap(buffer, offset, length));
         }
+
+        @Test
+        public void testSinkDatagram_SutHasDirectBuffer() throws Exception {
+            ByteBuffer internalBuffer = ByteBuffer.allocateDirect(10);
+            internalBuffer.put(new byte[10]).flip();
+            CodecBuffer sut = new ByteBufferCodecBuffer(internalBuffer, true);
+            DatagramChannel channel = mock(DatagramChannel.class);
+            ByteBuffer buffer = ByteBuffer.allocate(10);
+            SocketAddress target = new InetSocketAddress(12345);
+            when(channel.send(Mockito.<ByteBuffer>any(), eq(target))).thenReturn(10);
+
+            boolean result = sut.sink(channel, buffer, target);
+
+            assertThat(result, is(true));
+            verify(channel).send(internalBuffer, target);
+
+            sut.dispose();
+        }
+
+        @Test
+        public void testSinkDatagram_SutAHasHeapBufferAndHeapWriteBuffer() throws Exception {
+            ByteBuffer internalBuffer = ByteBuffer.allocate(10);
+            internalBuffer.put(new byte[10]).flip();
+            CodecBuffer sut = new ByteBufferCodecBuffer(internalBuffer, true);
+            DatagramChannel channel = mock(DatagramChannel.class);
+            ByteBuffer writeBuffer = ByteBuffer.allocate(10);
+            SocketAddress target = new InetSocketAddress(12345);
+            when(channel.send(Mockito.<ByteBuffer>any(), eq(target))).thenReturn(10);
+
+            boolean result = sut.sink(channel, writeBuffer, target);
+
+            assertThat(result, is(true));
+            verify(channel).send(internalBuffer, target);
+
+            sut.dispose();
+        }
+
+        @Test
+        public void testSinkDatagram_SutAHasHeapBufferAndDirectWriteBuffer() throws Exception {
+            ByteBuffer internalBuffer = ByteBuffer.allocate(10);
+            internalBuffer.put(new byte[10]).flip();
+            CodecBuffer sut = new ByteBufferCodecBuffer(internalBuffer, true);
+            DatagramChannel channel = mock(DatagramChannel.class);
+            ByteBuffer writeBuffer = ByteBuffer.allocateDirect(10);
+            SocketAddress target = new InetSocketAddress(12345);
+            when(channel.send(Mockito.<ByteBuffer>any(), eq(target))).thenReturn(10);
+
+            boolean result = sut.sink(channel, writeBuffer, target);
+
+            assertThat(result, is(true));
+            verify(channel).send(internalBuffer, target);
+
+            sut.dispose();
+        }
+
     }
 
     public static class StructureChangeTests extends CodecBufferTestAbstract.AbstractStructureChangeTests {

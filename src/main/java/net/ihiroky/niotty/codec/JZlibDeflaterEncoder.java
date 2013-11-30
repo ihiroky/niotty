@@ -133,7 +133,7 @@ public class JZlibDeflaterEncoder extends StoreStage {
         try {
             while (input.remaining() > 0) {
                 buffer_.reset();
-                input.transferTo(buffer_);
+                input.sink(buffer_);
                 byte[] inputBytes = buffer_.array();
                 int inputLength = buffer_.position();
 

@@ -42,7 +42,7 @@ public class NioServerSocketTransport extends NioSocketTransport<SelectLoop> {
     private final String name_;
     private final SelectLoopGroup ioSelectLoopGroup_;
     private final PipelineComposer childPipelineComposer_;
-    private final WriteQueueFactory writeQueueFactory_;
+    private final WriteQueueFactory<PacketQueue> writeQueueFactory_;
     private final Map<TransportOption<Object>, Object> acceptedSocketOptionMap_;
     private Logger logger_ = LoggerFactory.getLogger(NioServerSocketTransport.class);
 
@@ -52,7 +52,7 @@ public class NioServerSocketTransport extends NioSocketTransport<SelectLoop> {
 
     public NioServerSocketTransport(String name, PipelineComposer childPipelineComposer,
             SelectLoopGroup acceptSelectLoopGroup, SelectLoopGroup ioSelectLoopGroup,
-            WriteQueueFactory writeQueueFactory) {
+            WriteQueueFactory<PacketQueue> writeQueueFactory) {
         super(name, PipelineComposer.empty(), acceptSelectLoopGroup);
 
         ServerSocketChannel serverChannel = null;
@@ -80,7 +80,7 @@ public class NioServerSocketTransport extends NioSocketTransport<SelectLoop> {
 
     public NioServerSocketTransport(String name, PipelineComposer childPipelineComposer,
             SelectLoopGroup acceptSelectLoopGroup, SelectLoopGroup ioSelectLoopGroup,
-            WriteQueueFactory writeQueueFactory, ServerSocketChannel channel) {
+            WriteQueueFactory<PacketQueue> writeQueueFactory, ServerSocketChannel channel) {
         super(name, PipelineComposer.empty(), acceptSelectLoopGroup);
 
         serverChannel_ = channel;
@@ -309,7 +309,7 @@ public class NioServerSocketTransport extends NioSocketTransport<SelectLoop> {
     }
 
     @Override
-    void readyToWrite(AttachedMessage<BufferSink> message) {
+    void readyToWrite(BufferSink message, Object parameter) {
         throw new UnsupportedOperationException();
     }
 }
