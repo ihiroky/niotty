@@ -11,43 +11,43 @@ import java.util.NoSuchElementException;
 /**
  * A skeletal implementation of {@link Pipeline}.
  *
- * @param <L> the type of the TaskLoop which executes the stages by default
+ * @param <L> the type of the EventDispatcher which executes the stages by default
  */
-public class DefaultPipeline<L extends TaskLoop> implements Pipeline {
+public class DefaultPipeline<L extends EventDispatcher> implements Pipeline {
 
     private final String name_;
     private final AbstractTransport<L> transport_;
     private final PipelineElement head_;
     private final PipelineElement tail_;
-    private final TaskLoopGroup<L> taskLoopGroup_;
+    private final EventDispatcherGroup<L> eventDispatcherGroup_;
 
     /**
      * Creates a new instance.
      *
      * @param name name of this pipeline
      * @param transport transport which associate with this pipeline
-     * @param taskLoopGroup an pool which provides TaskLoop to execute stages
+     * @param eventDispatcherGroup an pool which provides EventDispatcher to execute stages
      * @param tailStageKey a key to be associated with the tailStage
      * @param tailStage a stage that is executed at last in this pipeline
      */
     protected DefaultPipeline(
-            String name, AbstractTransport<L> transport, TaskLoopGroup<L> taskLoopGroup,
+            String name, AbstractTransport<L> transport, EventDispatcherGroup<L> eventDispatcherGroup,
             StageKey tailStageKey, Stage tailStage) {
         Arguments.requireNonNull(name, "name");
         Arguments.requireNonNull(transport, "transport");
-        Arguments.requireNonNull(taskLoopGroup, "taskLoopGroup");
+        Arguments.requireNonNull(eventDispatcherGroup, "eventDispatcherGroup");
         Arguments.requireNonNull(tailStageKey, "tailStageKey");
         Arguments.requireNonNull(tailStage, "tailStage");
 
         transport_ = transport;
-        PipelineElement tail = createContext(tailStageKey, tailStage, taskLoopGroup);
+        PipelineElement tail = createContext(tailStageKey, tailStage, eventDispatcherGroup);
         PipelineElement head = PipelineElement.newNullObject();
         head.setNext(tail);
 
         name_ = name;
         head_ = head;
         tail_ = tail;
-        taskLoopGroup_ = taskLoopGroup;
+        eventDispatcherGroup_ = eventDispatcherGroup;
     }
 
     private static void addLink(PipelineElement prev, PipelineElement next, PipelineElement e) {
@@ -77,11 +77,11 @@ public class DefaultPipeline<L extends TaskLoop> implements Pipeline {
 
     @Override
     public Pipeline add(StageKey key, Stage stage) {
-        return add(key, stage, taskLoopGroup_);
+        return add(key, stage, eventDispatcherGroup_);
     }
 
     @Override
-    public Pipeline add(StageKey key, Stage stage, TaskLoopGroup<? extends TaskLoop> pool) {
+    public Pipeline add(StageKey key, Stage stage, EventDispatcherGroup<? extends EventDispatcher> pool) {
         Arguments.requireNonNull(key, "key");
         Arguments.requireNonNull(stage, "stage");
         if (key.equals(IO_STAGE_KEY)) {
@@ -89,7 +89,7 @@ public class DefaultPipeline<L extends TaskLoop> implements Pipeline {
         }
 
         if (pool == null) {
-            pool = taskLoopGroup_;
+            pool = eventDispatcherGroup_;
         }
         synchronized (head_) {
             if (head_.next() == tail_) {
@@ -110,11 +110,11 @@ public class DefaultPipeline<L extends TaskLoop> implements Pipeline {
 
     @Override
     public Pipeline addBefore(StageKey baseKey, StageKey key, Stage stage) {
-        return addBefore(baseKey, key, stage, taskLoopGroup_);
+        return addBefore(baseKey, key, stage, eventDispatcherGroup_);
     }
 
     @Override
-    public Pipeline addBefore(StageKey baseKey, StageKey key, Stage stage, TaskLoopGroup<? extends TaskLoop> pool) {
+    public Pipeline addBefore(StageKey baseKey, StageKey key, Stage stage, EventDispatcherGroup<? extends EventDispatcher> pool) {
         Arguments.requireNonNull(baseKey, "baseKey");
         Arguments.requireNonNull(key, "key");
         Arguments.requireNonNull(stage, "stage");
@@ -123,7 +123,7 @@ public class DefaultPipeline<L extends TaskLoop> implements Pipeline {
         }
 
         if (pool == null) {
-            pool = taskLoopGroup_;
+            pool = eventDispatcherGroup_;
         }
         synchronized (head_) {
             PipelineElement target = null;
@@ -147,11 +147,11 @@ public class DefaultPipeline<L extends TaskLoop> implements Pipeline {
 
     @Override
     public Pipeline addAfter(StageKey baseKey, StageKey key, Stage stage) {
-        return addAfter(baseKey, key, stage, taskLoopGroup_);
+        return addAfter(baseKey, key, stage, eventDispatcherGroup_);
     }
 
     @Override
-    public Pipeline addAfter(StageKey baseKey, StageKey key, Stage stage, TaskLoopGroup<? extends TaskLoop> pool) {
+    public Pipeline addAfter(StageKey baseKey, StageKey key, Stage stage, EventDispatcherGroup<? extends EventDispatcher> pool) {
         Arguments.requireNonNull(baseKey, "baseKey");
         Arguments.requireNonNull(key, "key");
         Arguments.requireNonNull(stage, "stage");
@@ -163,7 +163,7 @@ public class DefaultPipeline<L extends TaskLoop> implements Pipeline {
         }
 
         if (pool == null) {
-            pool = taskLoopGroup_;
+            pool = eventDispatcherGroup_;
         }
         synchronized (head_) {
             PipelineElement target = null;
@@ -206,11 +206,11 @@ public class DefaultPipeline<L extends TaskLoop> implements Pipeline {
 
     @Override
     public Pipeline replace(StageKey oldKey, StageKey newKey, Stage newStage) {
-        return replace(oldKey, newKey, newStage, taskLoopGroup_);
+        return replace(oldKey, newKey, newStage, eventDispatcherGroup_);
     }
 
     @Override
-    public Pipeline replace(StageKey oldKey, StageKey newKey, Stage newStage, TaskLoopGroup<? extends TaskLoop> pool) {
+    public Pipeline replace(StageKey oldKey, StageKey newKey, Stage newStage, EventDispatcherGroup<? extends EventDispatcher> pool) {
         Arguments.requireNonNull(oldKey, "oldKey");
         Arguments.requireNonNull(newKey, "newKey");
         Arguments.requireNonNull(newStage, "newStage");
@@ -222,7 +222,7 @@ public class DefaultPipeline<L extends TaskLoop> implements Pipeline {
         }
 
         if (pool == null) {
-            pool = taskLoopGroup_;
+            pool = eventDispatcherGroup_;
         }
         synchronized (head_) {
             PipelineElement target = null;
@@ -269,11 +269,11 @@ public class DefaultPipeline<L extends TaskLoop> implements Pipeline {
      *
      * @param key the key to be associated with the stage
      * @param stage the stage
-     * @param group a group of TaskLoop which assigns TaskLoop to execute the stage
+     * @param group a group of EventDispatcher which assigns EventDispatcher to execute the stage
      * @return the context
      */
     PipelineElement createContext(
-            StageKey key, Stage stage, TaskLoopGroup<? extends TaskLoop> group) {
+            StageKey key, Stage stage, EventDispatcherGroup<? extends EventDispatcher> group) {
         return new PipelineElement(this, key, stage, group);
     }
 
@@ -295,13 +295,13 @@ public class DefaultPipeline<L extends TaskLoop> implements Pipeline {
 
     @Override
     public void load(ByteBuffer buffer) {
-        CodecBuffer message =  (tail_.taskLoop_.isInLoopThread()) ? copy(buffer) : Buffers.wrap(buffer);
+        CodecBuffer message =  (tail_.eventDispatcher_.isInDispatcherThread()) ? copy(buffer) : Buffers.wrap(buffer);
         tail_.callLoad(message, null);
     }
 
     @Override
     public void load(ByteBuffer buffer, Object parameter) {
-        CodecBuffer message =  (tail_.taskLoop_.isInLoopThread()) ? copy(buffer) : Buffers.wrap(buffer);
+        CodecBuffer message =  (tail_.eventDispatcher_.isInDispatcherThread()) ? copy(buffer) : Buffers.wrap(buffer);
         tail_.callLoad(message, parameter);
     }
 

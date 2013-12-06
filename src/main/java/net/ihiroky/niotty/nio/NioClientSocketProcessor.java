@@ -10,8 +10,8 @@ import net.ihiroky.niotty.util.Arguments;
  */
 public class NioClientSocketProcessor extends AbstractProcessor<NioClientSocketTransport> {
 
-    private SelectLoopGroup connectSelectorPool_;
-    private SelectLoopGroup ioSelectorPool_;
+    private SelectDispatcherGroup connectSelectorPool_;
+    private SelectDispatcherGroup ioSelectorPool_;
     private int numberOfMessageIOThread_;
     private WriteQueueFactory<PacketQueue> writeQueueFactory_;
     private boolean useNonBlockingConnection_;
@@ -27,8 +27,8 @@ public class NioClientSocketProcessor extends AbstractProcessor<NioClientSocketT
     public NioClientSocketProcessor() {
         writeQueueFactory_ = new SimplePacketQueueFactory();
         numberOfMessageIOThread_ = DEFAULT_NUMBER_OF_MESSAGE_IO_THREAD;
-        readBufferSize_ = SelectLoopGroup.DEFAULT_READ_BUFFER_SIZE;
-        useDirectBuffer_ = SelectLoopGroup.DEFAULT_USE_DIRECT_BUFFER;
+        readBufferSize_ = SelectDispatcherGroup.DEFAULT_READ_BUFFER_SIZE;
+        useDirectBuffer_ = SelectDispatcherGroup.DEFAULT_USE_DIRECT_BUFFER;
 
         setName(DEFAULT_NAME);
     }
@@ -41,14 +41,14 @@ public class NioClientSocketProcessor extends AbstractProcessor<NioClientSocketT
 
     @Override
     protected void onStart() {
-        ioSelectorPool_ = new SelectLoopGroup(
+        ioSelectorPool_ = new SelectDispatcherGroup(
                 new NameCountThreadFactory(name().concat("-IO")), numberOfMessageIOThread_)
                 .setReadBufferSize(readBufferSize_)
                 .setWriteBufferSize(0)
                 .setUseDirectBuffer(useDirectBuffer_);
 
         if (useNonBlockingConnection_) {
-            connectSelectorPool_ = SelectLoopGroup.newNonIoInstance(name().concat("-Connect"));
+            connectSelectorPool_ = SelectDispatcherGroup.newNonIoInstance(name().concat("-Connect"));
         }
     }
 

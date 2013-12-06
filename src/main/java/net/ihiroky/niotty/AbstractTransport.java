@@ -8,35 +8,35 @@ import java.util.concurrent.atomic.AtomicReference;
  * <p>A skeletal implementation of {@code Transport}.</p>
  *
  * <p>This class holds a load (inbound) and store (outbound) pipeline, an attachment reference and an event listener.
- * {@link TaskLoop} is also held by this class, which handles asynchronous I/O operations</p>
+ * {@link EventDispatcher} is also held by this class, which handles asynchronous I/O operations</p>
  *
- * @param <T> The type of {@link TaskLoop}
+ * @param <T> The type of {@link EventDispatcher}
  */
-public abstract class AbstractTransport<T extends TaskLoop> implements Transport, TaskSelection {
+public abstract class AbstractTransport<T extends EventDispatcher> implements Transport {
 
     private final DefaultPipeline<T> pipeline_;
     private final AtomicReference<Object> attachmentReference_;
     private final DefaultTransportFuture closeFuture_;
-    private final T loop_;
+    private final T dispatcher_;
 
     /**
      * Creates a new instance.
      *
      * @param name a name of this transport
      * @param pipelineComposer a composer to initialize a pipeline for this transport
-     * @param taskLoopGroup the pool which offers the TaskLoop to execute the stage
+     * @param eventDispatcherGroup the pool which offers the EventDispatcher to execute the stage
      */
     protected AbstractTransport(
-            String name, PipelineComposer pipelineComposer, TaskLoopGroup<T> taskLoopGroup) {
+            String name, PipelineComposer pipelineComposer, EventDispatcherGroup<T> eventDispatcherGroup) {
         Arguments.requireNonNull(name, "name");
         Arguments.requireNonNull(pipelineComposer, "pipelineComposer");
 
         attachmentReference_ = new AtomicReference<Object>();
         closeFuture_ = new DefaultTransportFuture(this);
-        loop_ = taskLoopGroup.assign(this);
+        dispatcher_ = eventDispatcherGroup.assign(this);
 
         DefaultPipeline<T> pipeline =
-                new DefaultPipeline<T>(name, this, taskLoopGroup, Pipeline.IO_STAGE_KEY, ioStage());
+                new DefaultPipeline<T>(name, this, eventDispatcherGroup, Pipeline.IO_STAGE_KEY, ioStage());
         pipelineComposer.compose(pipeline);
         pipeline_ = pipeline;
     }
@@ -63,11 +63,11 @@ public abstract class AbstractTransport<T extends TaskLoop> implements Transport
     }
 
     /**
-     * Gets the instance of {@link TaskLoop}.
-     * @return <T> the TaskLoop.
+     * Gets the instance of {@link EventDispatcher}.
+     * @return <T> the EventDispatcher.
      */
-    public T taskLoop() {
-        return loop_;
+    public T eventDispatcher() {
+        return dispatcher_;
     }
 
     @Override

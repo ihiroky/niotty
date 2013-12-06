@@ -14,7 +14,7 @@ public class PipelineElement {
     final Pipeline pipeline_;
     final StageKey key_;
     final Stage stage_;
-    final TaskLoop taskLoop_;
+    final EventDispatcher eventDispatcher_;
     final StoreContext storeContext_;
     final LoadContext loadContext_;
     final StateContext stateContext_;
@@ -22,15 +22,15 @@ public class PipelineElement {
     private static final Pipeline NULL_PIPELINE = new NullPipeline();
     private static final StageKey NULL_STAGE_KEY = StageKeys.of("NullStage");
     private static final Stage NULL_STAGE = new NullStage();
-    private static final TaskLoopGroup<TaskLoop> NULL_TASK_LOOP_GROUP = new NullPipelineElementExecutorPool();
+    private static final EventDispatcherGroup<EventDispatcher> NULL_EVENT_DISPATCHER_GROUP = new NullPipelineElementExecutorPool();
     private static final PipelineElement TERMINAL = newNullObject();
 
     protected PipelineElement(Pipeline pipeline, StageKey key, Stage stage,
-            TaskLoopGroup<? extends TaskLoop> pool) {
+            EventDispatcherGroup<? extends EventDispatcher> pool) {
         pipeline_ = Arguments.requireNonNull(pipeline, "pipeline");
         key_ = Arguments.requireNonNull(key, "key");
         stage_ = Arguments.requireNonNull(stage, "stage");
-        taskLoop_ = Arguments.requireNonNull(pool, "pool").assign(pipeline.transport());
+        eventDispatcher_ = Arguments.requireNonNull(pool, "pool").assign(pipeline.transport());
         storeContext_ = new StoreContext(this);
         loadContext_ = new LoadContext(this);
         stateContext_ = new StateContext(this);
@@ -39,7 +39,7 @@ public class PipelineElement {
     }
 
     static PipelineElement newNullObject() {
-        return new PipelineElement(NULL_PIPELINE, NULL_STAGE_KEY, NULL_STAGE, NULL_TASK_LOOP_GROUP);
+        return new PipelineElement(NULL_PIPELINE, NULL_STAGE_KEY, NULL_STAGE, NULL_EVENT_DISPATCHER_GROUP);
     }
 
     static Stage newNullStage() {
@@ -50,12 +50,12 @@ public class PipelineElement {
         return key_;
     }
 
-    public void execute(Task task) {
-        taskLoop_.execute(task);
+    public void execute(Event event) {
+        eventDispatcher_.execute(event);
     }
 
-    public TaskFuture schedule(Task task, long timeout, TimeUnit timeUnit) {
-        return taskLoop_.schedule(task, timeout, timeUnit);
+    public EventFuture schedule(Event event, long timeout, TimeUnit timeUnit) {
+        return eventDispatcher_.schedule(event, timeout, timeUnit);
     }
 
     Stage stage() {
@@ -88,15 +88,15 @@ public class PipelineElement {
     }
 
     void close() {
-        taskLoop_.reject(pipeline_.transport());
+        eventDispatcher_.reject(pipeline_.transport());
     }
 
 
     void callStore(final Object message, final Object parameter) {
-        if (taskLoop_.isInLoopThread()) {
+        if (eventDispatcher_.isInDispatcherThread()) {
             stage_.stored(storeContext_, message, parameter);
         } else {
-            taskLoop_.offer(new Task() {
+            eventDispatcher_.offer(new Event() {
                 @Override
                 public long execute(TimeUnit timeUnit) throws Exception {
                     stage_.stored(storeContext_, message, parameter);
@@ -108,10 +108,10 @@ public class PipelineElement {
 
     // expand to context class
     void callLoad(final Object message, final Object parameter) {
-        if (taskLoop_.isInLoopThread()) {
+        if (eventDispatcher_.isInDispatcherThread()) {
             stage_.loaded(loadContext_, message, parameter);
         } else {
-            taskLoop_.offer(new Task() {
+            eventDispatcher_.offer(new Event() {
                 @Override
                 public long execute(TimeUnit timeUnit) throws Exception {
                     stage_.loaded(loadContext_, message, parameter);
@@ -122,11 +122,11 @@ public class PipelineElement {
     }
 
     void callActivate() {
-        if (taskLoop_.isInLoopThread()) {
+        if (eventDispatcher_.isInDispatcherThread()) {
             stage_.activated(stateContext_);
             return;
         }
-        taskLoop_.offer(new Task() {
+        eventDispatcher_.offer(new Event() {
             @Override
             public long execute(TimeUnit timeUnit) throws Exception {
                 stage_.activated(stateContext_);
@@ -136,11 +136,11 @@ public class PipelineElement {
     }
 
     void callDeactivate(final DeactivateState state) {
-        if (taskLoop_.isInLoopThread()) {
+        if (eventDispatcher_.isInDispatcherThread()) {
             stage_.deactivated(stateContext_, state);
             return;
         }
-        taskLoop_.offer(new Task() {
+        eventDispatcher_.offer(new Event() {
             @Override
             public long execute(TimeUnit timeUnit) throws Exception {
                 stage_.deactivated(stateContext_, state);
@@ -150,11 +150,11 @@ public class PipelineElement {
     }
 
     void callCatchException(final Exception exception) {
-        if (taskLoop_.isInLoopThread()) {
+        if (eventDispatcher_.isInDispatcherThread()) {
             stage_.exceptionCaught(stateContext_, exception);
             return;
         }
-        taskLoop_.offer(new Task() {
+        eventDispatcher_.offer(new Event() {
             @Override
             public long execute(TimeUnit timeUnit) throws Exception {
                 stage_.exceptionCaught(stateContext_, exception);
@@ -187,8 +187,8 @@ public class PipelineElement {
         }
 
         @Override
-        public TaskFuture schedule(Task task, long timeout, TimeUnit timeUnit) {
-            return base_.taskLoop_.schedule(task, timeout, timeUnit);
+        public EventFuture schedule(Event event, long timeout, TimeUnit timeUnit) {
+            return base_.eventDispatcher_.schedule(event, timeout, timeUnit);
         }
     }
 
@@ -216,8 +216,8 @@ public class PipelineElement {
         }
 
         @Override
-        public TaskFuture schedule(Task task, long timeout, TimeUnit timeUnit) {
-            return base_.taskLoop_.schedule(task, timeout, timeUnit);
+        public EventFuture schedule(Event event, long timeout, TimeUnit timeUnit) {
+            return base_.eventDispatcher_.schedule(event, timeout, timeUnit);
         }
     }
 
@@ -244,8 +244,8 @@ public class PipelineElement {
         }
 
         @Override
-        public TaskFuture schedule(Task task, long timeout, TimeUnit timeUnit) {
-            return context_.taskLoop_.schedule(task, timeout, timeUnit);
+        public EventFuture schedule(Event event, long timeout, TimeUnit timeUnit) {
+            return context_.eventDispatcher_.schedule(event, timeout, timeUnit);
         }
     }
 
@@ -271,15 +271,15 @@ public class PipelineElement {
         }
     }
 
-    private static class NullPipelineElementExecutorPool extends TaskLoopGroup<TaskLoop> {
+    private static class NullPipelineElementExecutorPool extends EventDispatcherGroup<EventDispatcher> {
 
-        static final TaskFuture NULL_FUTURE = new TaskFuture(-1L, new Task() {
+        static final EventFuture NULL_FUTURE = new EventFuture(-1L, new Event() {
             @Override
             public long execute(TimeUnit timeUnit) throws Exception {
                 return DONE;
             }
         });
-        static final TaskLoop NULL_TASK_LOOP = new TaskLoop() {
+        static final EventDispatcher NULL_EVENT_DISPATCHER = new EventDispatcher() {
             @Override
             protected void onOpen() {
             }
@@ -293,17 +293,17 @@ public class PipelineElement {
             protected void wakeUp() {
             }
             @Override
-            public void offer(Task task) {
+            public void offer(Event event) {
             }
             @Override
-            public TaskFuture schedule(Task task, long timeout, TimeUnit timeUnit) {
+            public EventFuture schedule(Event event, long timeout, TimeUnit timeUnit) {
                 return NULL_FUTURE;
             }
             @Override
-            public void execute(Task task) {
+            public void execute(Event event) {
             }
             @Override
-            public boolean isInLoopThread() {
+            public boolean isInDispatcherThread() {
                 return true;
             }
         };
@@ -313,13 +313,13 @@ public class PipelineElement {
         }
 
         @Override
-        public TaskLoop assign(TaskSelection context) {
-            return NULL_TASK_LOOP;
+        public EventDispatcher assign(EventDispatcherSelection context) {
+            return NULL_EVENT_DISPATCHER;
         }
 
         @Override
-        protected TaskLoop newTaskLoop() {
-            return NULL_TASK_LOOP;
+        protected EventDispatcher newEventDispatcher() {
+            return NULL_EVENT_DISPATCHER;
         }
 
         @Override
@@ -334,7 +334,7 @@ public class PipelineElement {
         }
 
         @Override
-        public Pipeline add(StageKey key, Stage stage, TaskLoopGroup<? extends TaskLoop> pool) {
+        public Pipeline add(StageKey key, Stage stage, EventDispatcherGroup<? extends EventDispatcher> pool) {
             return this;
         }
 
@@ -344,7 +344,7 @@ public class PipelineElement {
         }
 
         @Override
-        public Pipeline addBefore(StageKey baseKey, StageKey key, Stage stage, TaskLoopGroup<? extends TaskLoop> pool) {
+        public Pipeline addBefore(StageKey baseKey, StageKey key, Stage stage, EventDispatcherGroup<? extends EventDispatcher> pool) {
             return this;
         }
 
@@ -354,7 +354,7 @@ public class PipelineElement {
         }
 
         @Override
-        public Pipeline addAfter(StageKey baseKey, StageKey key, Stage stage, TaskLoopGroup<? extends TaskLoop> pool) {
+        public Pipeline addAfter(StageKey baseKey, StageKey key, Stage stage, EventDispatcherGroup<? extends EventDispatcher> pool) {
             return this;
         }
 
@@ -369,7 +369,7 @@ public class PipelineElement {
         }
 
         @Override
-        public Pipeline replace(StageKey oldKey, StageKey newKey, Stage newStage, TaskLoopGroup<? extends TaskLoop> pool) {
+        public Pipeline replace(StageKey oldKey, StageKey newKey, Stage newStage, EventDispatcherGroup<? extends EventDispatcher> pool) {
             return this;
         }
 

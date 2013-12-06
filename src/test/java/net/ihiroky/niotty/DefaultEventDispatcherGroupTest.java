@@ -11,13 +11,13 @@ import static org.mockito.Mockito.*;
 /**
  *
  */
-public class DefaultTaskLoopGroupTest {
+public class DefaultEventDispatcherGroupTest {
 
-    private DefaultTaskLoopGroup sut_;
+    private DefaultEventDispatcherGroup sut_;
 
     @Before
     public void setUp() throws Exception {
-        sut_ = new DefaultTaskLoopGroup(2);
+        sut_ = new DefaultEventDispatcherGroup(2);
     }
 
     @After
@@ -26,13 +26,13 @@ public class DefaultTaskLoopGroupTest {
     }
 
     @Test
-    public void testAssign_TaskLoopSelectionCount() throws Exception {
-        TaskSelection ts0 = mock(TaskSelection.class);
-        TaskSelection ts1 = mock(TaskSelection.class);
+    public void testAssign_EventDispatcherSelectionCount() throws Exception {
+        EventDispatcherSelection ts0 = mock(EventDispatcherSelection.class);
+        EventDispatcherSelection ts1 = mock(EventDispatcherSelection.class);
 
-        DefaultTaskLoop t0 = sut_.assign(ts0);
-        DefaultTaskLoop t1 = sut_.assign(ts0);
-        DefaultTaskLoop t2 = sut_.assign(ts1);
+        DefaultEventDispatcher t0 = sut_.assign(ts0);
+        DefaultEventDispatcher t1 = sut_.assign(ts0);
+        DefaultEventDispatcher t2 = sut_.assign(ts1);
 
         assertThat(t0, is(sameInstance(t1)));
         assertThat(t0.selectionCount(), is(1));
@@ -42,13 +42,13 @@ public class DefaultTaskLoopGroupTest {
     }
 
     @Test
-    public void testAssign_SelectionCountGetsZeroIfTaskLoopIsRejected() throws Exception {
-        TaskSelection ts0 = mock(TaskSelection.class);
-        TaskSelection ts1 = mock(TaskSelection.class);
+    public void testAssign_SelectionCountGetsZeroIfEventDispatcherIsRejected() throws Exception {
+        EventDispatcherSelection ts0 = mock(EventDispatcherSelection.class);
+        EventDispatcherSelection ts1 = mock(EventDispatcherSelection.class);
 
-        DefaultTaskLoop t0 = sut_.assign(ts0);
-        DefaultTaskLoop t1 = sut_.assign(ts0);
-        DefaultTaskLoop t2 = sut_.assign(ts1);
+        DefaultEventDispatcher t0 = sut_.assign(ts0);
+        DefaultEventDispatcher t1 = sut_.assign(ts0);
+        DefaultEventDispatcher t2 = sut_.assign(ts1);
         t0.reject(ts0);
         int dupCount0 = t0.duplicationCountFor(ts0);
         t1.reject(ts0);

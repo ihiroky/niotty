@@ -10,8 +10,8 @@ import net.ihiroky.niotty.util.Arguments;
  */
 public class NioServerSocketProcessor extends AbstractProcessor<NioServerSocketTransport> {
 
-    private SelectLoopGroup acceptSelectLoopGroup_;
-    private SelectLoopGroup ioSelectLoopGroup_;
+    private SelectDispatcherGroup acceptSelectDispatcherGroup_;
+    private SelectDispatcherGroup ioSelectDispatcherGroup_;
     private WriteQueueFactory<PacketQueue> writeQueueFactory_;
 
     private int numberOfIoThread_;
@@ -28,32 +28,32 @@ public class NioServerSocketProcessor extends AbstractProcessor<NioServerSocketT
         writeQueueFactory_ = new SimplePacketQueueFactory();
 
         numberOfIoThread_ = DEFAULT_NUMBER_OF_IO_THREAD;
-        readBufferSize_ = SelectLoopGroup.DEFAULT_READ_BUFFER_SIZE;
-        useDirectBuffer_ = SelectLoopGroup.DEFAULT_USE_DIRECT_BUFFER;
+        readBufferSize_ = SelectDispatcherGroup.DEFAULT_READ_BUFFER_SIZE;
+        useDirectBuffer_ = SelectDispatcherGroup.DEFAULT_USE_DIRECT_BUFFER;
 
         setName(DEFAULT_NAME);
     }
 
     @Override
     protected void onStart() {
-        ioSelectLoopGroup_ = new SelectLoopGroup(
+        ioSelectDispatcherGroup_ = new SelectDispatcherGroup(
                 new NameCountThreadFactory(name().concat("-IO")), numberOfIoThread_)
                 .setReadBufferSize(readBufferSize_)
                 .setWriteBufferSize(0)
                 .setUseDirectBuffer(useDirectBuffer_);
-        acceptSelectLoopGroup_ = SelectLoopGroup.newNonIoInstance(name().concat("-Accept"));
+        acceptSelectDispatcherGroup_ = SelectDispatcherGroup.newNonIoInstance(name().concat("-Accept"));
     }
 
     @Override
     protected void onStop() {
-        acceptSelectLoopGroup_.close();
-        ioSelectLoopGroup_.close();
+        acceptSelectDispatcherGroup_.close();
+        ioSelectDispatcherGroup_.close();
     }
 
     @Override
     public NioServerSocketTransport createTransport() {
         return new NioServerSocketTransport(name(), pipelineComposer(),
-                acceptSelectLoopGroup_, ioSelectLoopGroup_, writeQueueFactory_);
+                acceptSelectDispatcherGroup_, ioSelectDispatcherGroup_, writeQueueFactory_);
     }
 
     @Override
@@ -94,8 +94,8 @@ public class NioServerSocketProcessor extends AbstractProcessor<NioServerSocketT
         return this;
     }
 
-    SelectLoopGroup ioSelectLoopGroup_() {
-        return ioSelectLoopGroup_;
+    SelectDispatcherGroup ioSelectLoopGroup_() {
+        return ioSelectDispatcherGroup_;
     }
 
     WriteQueueFactory<PacketQueue> writeQueueFactory() {

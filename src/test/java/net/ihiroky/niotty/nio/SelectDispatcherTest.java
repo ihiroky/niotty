@@ -17,14 +17,14 @@ import static org.mockito.Mockito.*;
 /**
  *
  */
-public class SelectLoopTest {
+public class SelectDispatcherTest {
 
     @Test
     @SuppressWarnings({"unchecked", "rawtypes"})
     public void testStore() throws Exception {
         NioSocketTransport<?> transport = mock(NioSocketTransport.class);
-        SelectLoop selectLoop = spy(new SelectLoop(256, 256, false));
-        Stage sut = selectLoop.ioStage();
+        SelectDispatcher selectDispatcher = spy(new SelectDispatcher(256, 256, false));
+        Stage sut = selectDispatcher.ioStage();
         StageContext context = mock(StageContext.class);
         when(context.transport()).thenReturn(transport);
         Packet data = Buffers.newCodecBuffer(0);

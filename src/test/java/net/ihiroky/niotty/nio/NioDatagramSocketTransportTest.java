@@ -1,11 +1,11 @@
 package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.DeactivateState;
+import net.ihiroky.niotty.Event;
+import net.ihiroky.niotty.EventDispatcherSelection;
 import net.ihiroky.niotty.Pipeline;
 import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.Stage;
-import net.ihiroky.niotty.Task;
-import net.ihiroky.niotty.TaskSelection;
 import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.TransportOptions;
 import net.ihiroky.niotty.util.JavaVersion;
@@ -62,20 +62,20 @@ public class NioDatagramSocketTransportTest {
         @Before
         public void setUp() throws Exception {
             Stage ioStage = mock(Stage.class);
-            SelectLoop selector = mock(SelectLoop.class);
+            SelectDispatcher selector = mock(SelectDispatcher.class);
             when(selector.ioStage()).thenReturn(ioStage);
-            SelectLoopGroup ioPool = mock(SelectLoopGroup.class);
-            when(ioPool.assign(Mockito.<TaskSelection>any())).thenReturn(selector);
+            SelectDispatcherGroup ioPool = mock(SelectDispatcherGroup.class);
+            when(ioPool.assign(Mockito.<EventDispatcherSelection>any())).thenReturn(selector);
             writeQueue_ = mock(DatagramQueue.class);
             @SuppressWarnings("unchecked")
             WriteQueueFactory<DatagramQueue> writeQueueFactory = mock(WriteQueueFactory.class);
             when(writeQueueFactory.newWriteQueue()).thenReturn(writeQueue_);
             SelectionKey selectionKey = mock(SelectionKey.class);
-            SelectLoop taskLoop = mock(SelectLoop.class);
+            SelectDispatcher eventLoop = mock(SelectDispatcher.class);
 
             sut_ = spy(new NioDatagramSocketTransport(
                     "TEST", PipelineComposer.empty(), ioPool, writeQueueFactory, (InternetProtocolFamily) null));
-            when(sut_.taskLoop()).thenReturn(taskLoop);
+            when(sut_.eventDispatcher()).thenReturn(eventLoop);
             sut_.setSelectionKey(selectionKey);
         }
 
@@ -90,7 +90,7 @@ public class NioDatagramSocketTransportTest {
             ArgumentCaptor<Integer> opsCaptor = ArgumentCaptor.forClass(Integer.class);
             verify(sut_.key()).interestOps(opsCaptor.capture());
             assertThat(opsCaptor.getValue(), is(~SelectionKey.OP_WRITE));
-            verify(sut_, never()).taskLoop();
+            verify(sut_, never()).eventDispatcher();
         }
 
         @Test
@@ -102,10 +102,10 @@ public class NioDatagramSocketTransportTest {
             sut_.flush(null);
             when(sut_.key().interestOps()).thenReturn(0); // sut_.key() is mock, so set result explicitly.
 
-            ArgumentCaptor<Task> taskCaptor = ArgumentCaptor.forClass(Task.class);
-            verify(sut_.taskLoop()).schedule(taskCaptor.capture(), anyLong(), Mockito.any(TimeUnit.class));
-            Task task = taskCaptor.getValue();
-            task.execute(TimeUnit.NANOSECONDS);
+            ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
+            verify(sut_.eventDispatcher()).schedule(eventCaptor.capture(), anyLong(), Mockito.any(TimeUnit.class));
+            Event event = eventCaptor.getValue();
+            event.execute(TimeUnit.NANOSECONDS);
 
             ArgumentCaptor<Integer> opsCaptor = ArgumentCaptor.forClass(Integer.class);
             verify(sut_.key(), times(2)).interestOps(opsCaptor.capture());
@@ -137,13 +137,13 @@ public class NioDatagramSocketTransportTest {
             ArgumentCaptor<Integer> opsCaptor = ArgumentCaptor.forClass(Integer.class);
             verify(sut_.key()).interestOps(opsCaptor.capture());
             assertThat(opsCaptor.getValue(), is(SelectionKey.OP_WRITE));
-            verify(sut_, never()).taskLoop();
+            verify(sut_, never()).eventDispatcher();
         }
     }
 
     public static class OnSelectedTest {
 
-        private SelectLoopGroup selectLoopGroup_;
+        private SelectDispatcherGroup selectDispatcherGroup_;
         private WriteQueueFactory<DatagramQueue> writeQueueFactory_;
 
         @Before
@@ -154,16 +154,16 @@ public class NioDatagramSocketTransportTest {
 
         @After
         public void tearDown() throws Exception {
-            if (selectLoopGroup_ != null) {
-                selectLoopGroup_.close();
+            if (selectDispatcherGroup_ != null) {
+                selectDispatcherGroup_.close();
             }
         }
 
         @Test
         public void testReadBufferWhenConnected() throws Exception {
-            selectLoopGroup_ = new SelectLoopGroup(Executors.defaultThreadFactory(), 1);
+            selectDispatcherGroup_ = new SelectDispatcherGroup(Executors.defaultThreadFactory(), 1);
             NioDatagramSocketTransport sut = spy(new NioDatagramSocketTransport("TEST", PipelineComposer.empty(),
-                    selectLoopGroup_, writeQueueFactory_, (InternetProtocolFamily) null));
+                    selectDispatcherGroup_, writeQueueFactory_, (InternetProtocolFamily) null));
 
             DatagramChannel channel = mock(DatagramChannel.class);
             when(channel.isConnected()).thenReturn(true);
@@ -188,7 +188,7 @@ public class NioDatagramSocketTransportTest {
             key.attach(sut);
             sut.setSelectionKey(key);
 
-            sut.onSelected(key, sut.taskLoop());
+            sut.onSelected(key, sut.eventDispatcher());
 
             verify(sut.pipeline()).load(Mockito.any(ByteBuffer.class));
         }
@@ -196,9 +196,9 @@ public class NioDatagramSocketTransportTest {
         // Is it possible that channel.read() return -1 ?
         @Test
         public void testReadBufferWhenNotClosed() throws Exception {
-            selectLoopGroup_ = new SelectLoopGroup(Executors.defaultThreadFactory(), 1);
+            selectDispatcherGroup_ = new SelectDispatcherGroup(Executors.defaultThreadFactory(), 1);
             NioDatagramSocketTransport sut = spy(new NioDatagramSocketTransport("TEST", PipelineComposer.empty(),
-                    selectLoopGroup_, writeQueueFactory_, (InternetProtocolFamily) null));
+                    selectDispatcherGroup_, writeQueueFactory_, (InternetProtocolFamily) null));
 
             DatagramChannel channel = mock(DatagramChannel.class);
             when(channel.isConnected()).thenReturn(true);
@@ -212,16 +212,16 @@ public class NioDatagramSocketTransportTest {
             key.attach(sut);
             sut.setSelectionKey(key);
 
-            sut.onSelected(key, sut.taskLoop());
+            sut.onSelected(key, sut.eventDispatcher());
 
             verify(sut.pipeline()).deactivate(DeactivateState.LOAD);
         }
 
         @Test
         public void testReadBufferWhenNotConnected() throws Exception {
-            selectLoopGroup_ = new SelectLoopGroup(Executors.defaultThreadFactory(), 1);
+            selectDispatcherGroup_ = new SelectDispatcherGroup(Executors.defaultThreadFactory(), 1);
             NioDatagramSocketTransport sut = spy(new NioDatagramSocketTransport("TEST", PipelineComposer.empty(),
-                    selectLoopGroup_, writeQueueFactory_, (InternetProtocolFamily) null));
+                    selectDispatcherGroup_, writeQueueFactory_, (InternetProtocolFamily) null));
 
             DatagramChannel channel = mock(DatagramChannel.class);
             when(channel.isConnected()).thenReturn(false);
@@ -245,16 +245,16 @@ public class NioDatagramSocketTransportTest {
             key.attach(sut);
             sut.setSelectionKey(key);
 
-            sut.onSelected(key, sut.taskLoop());
+            sut.onSelected(key, sut.eventDispatcher());
 
             verify(pipeline).load(Mockito.any(ByteBuffer.class), Mockito.any(SocketAddress.class));
         }
 
         @Test
         public void testWriteBuffer() throws Exception {
-            selectLoopGroup_ = new SelectLoopGroup(Executors.defaultThreadFactory(), 1);
+            selectDispatcherGroup_ = new SelectDispatcherGroup(Executors.defaultThreadFactory(), 1);
             NioDatagramSocketTransport sut = spy(new NioDatagramSocketTransport("TEST", PipelineComposer.empty(),
-                    selectLoopGroup_, writeQueueFactory_, (InternetProtocolFamily) null));
+                    selectDispatcherGroup_, writeQueueFactory_, (InternetProtocolFamily) null));
             doNothing().when(sut).flush(Mockito.any(ByteBuffer.class)); // super class method
 
             DatagramChannel channel = mock(DatagramChannel.class);
@@ -264,7 +264,7 @@ public class NioDatagramSocketTransportTest {
             key.attach(sut);
             sut.setSelectionKey(key);
 
-            sut.onSelected(key, sut.taskLoop());
+            sut.onSelected(key, sut.eventDispatcher());
 
             verify(sut).flush(Mockito.any(ByteBuffer.class));
         }
@@ -310,10 +310,10 @@ public class NioDatagramSocketTransportTest {
             assumeThat(Platform.javaVersion(), is(greaterOrEqual(JavaVersion.JAVA7)));
 
             Stage ioStage = mock(Stage.class);
-            SelectLoop selector = mock(SelectLoop.class);
+            SelectDispatcher selector = mock(SelectDispatcher.class);
             when(selector.ioStage()).thenReturn(ioStage);
-            SelectLoopGroup ioPool = mock(SelectLoopGroup.class);
-            when(ioPool.assign(Mockito.<TaskSelection>any())).thenReturn(selector);
+            SelectDispatcherGroup ioPool = mock(SelectDispatcherGroup.class);
+            when(ioPool.assign(Mockito.<EventDispatcherSelection>any())).thenReturn(selector);
             DatagramSocket socket = mock(DatagramSocket.class);
             channel_ = mock(DatagramChannel.class);
             when(channel_.socket()).thenReturn(socket);
@@ -493,18 +493,18 @@ public class NioDatagramSocketTransportTest {
         @Test
         public void testBind() throws Exception {
             InetSocketAddress endpoint = new InetSocketAddress(InetAddress.getByName("127.0.0.1"), 12345);
-            SelectLoop selector = mock(SelectLoop.class);
-            when(selector.isInLoopThread()).thenReturn(true);
+            SelectDispatcher selector = mock(SelectDispatcher.class);
+            when(selector.isInDispatcherThread()).thenReturn(true);
             doAnswer(new Answer<Void>() {
                 @Override
                 public Void answer(InvocationOnMock invocation) throws Throwable {
-                    Task event = (Task) invocation.getArguments()[0];
+                    Event event = (Event) invocation.getArguments()[0];
                     event.execute(TimeUnit.NANOSECONDS);
                     return null;
                 }
-            }).when(selector).execute(Mockito.<Task>any());
+            }).when(selector).execute(Mockito.<Event>any());
             NioDatagramSocketTransport sut = spy(sut_);
-            when(sut.taskLoop()).thenReturn(selector);
+            when(sut.eventDispatcher()).thenReturn(selector);
 
             sut.bind(endpoint);
 
@@ -514,16 +514,16 @@ public class NioDatagramSocketTransportTest {
         @Test
         public void testBindThoughBoundThenSuccessful() throws Exception {
             InetSocketAddress endpoint = new InetSocketAddress(InetAddress.getByName("127.0.0.1"), 12345);
-            SelectLoop selector = mock(SelectLoop.class);
-            when(selector.isInLoopThread()).thenReturn(true);
+            SelectDispatcher selector = mock(SelectDispatcher.class);
+            when(selector.isInDispatcherThread()).thenReturn(true);
             NioDatagramSocketTransport sut = spy(sut_);
-            when(sut.taskLoop()).thenReturn(selector);
+            when(sut.eventDispatcher()).thenReturn(selector);
             TransportFuture future = sut.bind(endpoint);
-            ArgumentCaptor<Task> taskCaptor = ArgumentCaptor.forClass(Task.class);
-            verify(selector).execute(taskCaptor.capture());
+            ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
+            verify(selector).execute(eventCaptor.capture());
             when(channel_.getLocalAddress()).thenReturn(endpoint);
 
-            taskCaptor.getValue().execute(TimeUnit.NANOSECONDS);
+            eventCaptor.getValue().execute(TimeUnit.NANOSECONDS);
 
             assertThat(future.isSuccessful(), is(true));
         }
@@ -636,10 +636,10 @@ public class NioDatagramSocketTransportTest {
             assumeThat(Platform.javaVersion(), is(equal(JavaVersion.JAVA6)));
 
             Stage ioStage = mock(Stage.class);
-            SelectLoop selector = mock(SelectLoop.class);
+            SelectDispatcher selector = mock(SelectDispatcher.class);
             when(selector.ioStage()).thenReturn(ioStage);
-            SelectLoopGroup ioPool = mock(SelectLoopGroup.class);
-            when(ioPool.assign(Mockito.<TaskSelection>any())).thenReturn(selector);
+            SelectDispatcherGroup ioPool = mock(SelectDispatcherGroup.class);
+            when(ioPool.assign(Mockito.<EventDispatcherSelection>any())).thenReturn(selector);
             socket_ = mock(DatagramSocket.class);
             DatagramChannel channel = mock(DatagramChannel.class);
             when(channel.socket()).thenReturn(socket_);
@@ -808,18 +808,18 @@ public class NioDatagramSocketTransportTest {
         @Test
         public void testBind() throws Exception {
             InetSocketAddress endpoint = new InetSocketAddress(InetAddress.getByName("127.0.0.1"), 12345);
-            SelectLoop selector = mock(SelectLoop.class);
+            SelectDispatcher selector = mock(SelectDispatcher.class);
             doAnswer(new Answer<Void>() {
                 @Override
                 public Void answer(InvocationOnMock invocation) throws Throwable {
-                    Task event = (Task) invocation.getArguments()[0];
+                    Event event = (Event) invocation.getArguments()[0];
                     event.execute(TimeUnit.NANOSECONDS);
                     return null;
                 }
-            }).when(selector).execute(Mockito.<Task>any());
-            when(selector.isInLoopThread()).thenReturn(true);
+            }).when(selector).execute(Mockito.<Event>any());
+            when(selector.isInDispatcherThread()).thenReturn(true);
             NioDatagramSocketTransport sut = spy(sut_);
-            when(sut.taskLoop()).thenReturn(selector);
+            when(sut.eventDispatcher()).thenReturn(selector);
 
             sut.bind(endpoint);
 
@@ -829,16 +829,16 @@ public class NioDatagramSocketTransportTest {
         @Test
         public void testBindThoughBoundThenSuccessful() throws Exception {
             InetSocketAddress endpoint = new InetSocketAddress(InetAddress.getByName("127.0.0.1"), 12345);
-            SelectLoop selector = mock(SelectLoop.class);
-            when(selector.isInLoopThread()).thenReturn(true);
+            SelectDispatcher selector = mock(SelectDispatcher.class);
+            when(selector.isInDispatcherThread()).thenReturn(true);
             NioDatagramSocketTransport sut = spy(sut_);
-            when(sut.taskLoop()).thenReturn(selector);
+            when(sut.eventDispatcher()).thenReturn(selector);
             TransportFuture future = sut.bind(endpoint);
-            ArgumentCaptor<Task> taskCaptor = ArgumentCaptor.forClass(Task.class);
-            verify(selector).execute(taskCaptor.capture());
+            ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
+            verify(selector).execute(eventCaptor.capture());
             when(socket_.isBound()).thenReturn(true);
 
-            taskCaptor.getValue().execute(TimeUnit.NANOSECONDS);
+            eventCaptor.getValue().execute(TimeUnit.NANOSECONDS);
 
             assertThat(future.isSuccessful(), is(true));
         }

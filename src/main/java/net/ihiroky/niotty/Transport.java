@@ -10,7 +10,7 @@ import java.util.Set;
  * The pipelines handles I/O request associated with this transport. The load pipeline handles user request
  * for a transport implementation. The store pipeline handles events which come up in an I/O thread.</p>
  */
-public interface Transport extends TaskSelection {
+public interface Transport extends EventDispatcherSelection {
 
     /**
      * Binds the socket of this transport to a local address.

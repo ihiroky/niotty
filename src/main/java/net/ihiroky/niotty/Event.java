@@ -3,30 +3,30 @@ package net.ihiroky.niotty;
 import java.util.concurrent.TimeUnit;
 
 /**
- * The task executed by the {@link TaskLoop}.
+ * The event dispatched by the {@link EventDispatcher}.
  */
-public interface Task {
+public interface Event {
 
     /**
      * The value returned by {@link #execute(java.util.concurrent.TimeUnit)}
-     * and passed to {@link TaskLoop#poll(long, java.util.concurrent.TimeUnit)}
+     * and passed to {@link EventDispatcher#poll(long, java.util.concurrent.TimeUnit)}
      * to indicate that the thread should wait without timeout.
      */
     long DONE = -1;
 
     /**
      * The value returned by {@link #execute(java.util.concurrent.TimeUnit)}
-     * and passed to {@link TaskLoop#poll(long, java.util.concurrent.TimeUnit)}
+     * and passed to {@link EventDispatcher#poll(long, java.util.concurrent.TimeUnit)}
      * to indicate that the thread should not wait.
      */
     long RETRY_IMMEDIATELY = 0L;
 
     /**
-     * Executes the task procedure.
+     * Executes the event procedure.
      * @param timeUnit unit of time returned by this method
-     * @return {@link TaskLoop DONE} if task is normally finished,
-     *   {@link TaskLoop RETRY_IMMEDIATELY} if task is required to execute again immediately,
-     *   {@code timeUnit.convert(delay, unitOfDelay)} if task is required to execute again with the specified
+     * @return {@link EventDispatcher DONE} if event is normally finished,
+     *   {@link EventDispatcher RETRY_IMMEDIATELY} if event is required to execute again immediately,
+     *   {@code timeUnit.convert(delay, unitOfDelay)} if event is required to execute again with the specified
      *   delay.
      * @throws Exception if some error occurs
      */

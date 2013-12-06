@@ -14,47 +14,47 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Provides an loop to process tasks which is queued in a task queue.
+ * Provides an dispatcher to process events which is queued in a event queue.
  * <p>
- * The task, which implements {@link Task}, is queued by
- * {@link #offer(Task)}. It is processed by a dedicated
+ * The event, which implements {@link Event}, is queued by
+ * {@link #offer(Event)}. It is processed by a dedicated
  * thread in queued (FIFO) order. A queue blocking strategy is determined by
  * {@link #poll(long, TimeUnit)} and {@link #wakeUp()} of this sub class, this class provides
  * the queue only.
  * </p>
  * <p>
- * This class has a timer to process a task with some delay.
- * {@link #schedule(Task, long, java.util.concurrent.TimeUnit)}
- * is used to register a task to the timer. If a task returns a positive value, the task is
+ * This class has a timer to process a event with some delay.
+ * {@link #schedule(Event, long, java.util.concurrent.TimeUnit)}
+ * is used to register a event to the timer. If a event returns a positive value, the event is
  * registered to the timer implicitly to be processed after the returned value. If returns
- * zero, the task is inserted to the task queue to processed again immediately.
+ * zero, the event is inserted to the event queue to processed again immediately.
  * </p>
  * <p>
- * This class holds a set of {@link TaskSelection}. The selection shows
- * a object which is associated with this task loop. The number of selections can be used
+ * This class holds a set of {@link EventDispatcherSelection}. The selection shows
+ * a object which is associated with this event dispatcher. The number of selections can be used
  * to control the balancing of the association.
  * </p>
  */
-public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
+public abstract class EventDispatcher implements Runnable, Comparable<EventDispatcher> {
 
-    private final Queue<Task> taskQueue_;
-    private final Queue<TaskFuture> delayQueue_;
+    private final Queue<Event> eventQueue_;
+    private final Queue<EventFuture> delayQueue_;
     private volatile Thread thread_;
-    private final Map<TaskSelection, Integer> selectionCountMap_;
+    private final Map<EventDispatcherSelection, Integer> selectionCountMap_;
 
-    private Logger logger_ = LoggerFactory.getLogger(TaskLoop.class);
+    private Logger logger_ = LoggerFactory.getLogger(EventDispatcher.class);
 
     private static final TimeUnit TIME_UNIT = TimeUnit.NANOSECONDS;
-    private static final int INITIAL_TASK_BUFFER_SIZE = 1024;
+    private static final int INITIAL_EVENT_BUFFER_SIZE = 1024;
     private static final int INITIAL_DELAY_QUEUE_SIZE = 1024;
 
     /**
      * Creates a new instance.
      */
-    protected TaskLoop() {
-        taskQueue_ = new ConcurrentLinkedQueue<Task>();
-        delayQueue_ = new PriorityQueue<TaskFuture>(INITIAL_DELAY_QUEUE_SIZE);
-        selectionCountMap_ = new HashMap<TaskSelection, Integer>();
+    protected EventDispatcher() {
+        eventQueue_ = new ConcurrentLinkedQueue<Event>();
+        delayQueue_ = new PriorityQueue<EventFuture>(INITIAL_DELAY_QUEUE_SIZE);
+        selectionCountMap_ = new HashMap<EventDispatcherSelection, Integer>();
     }
 
     void close() {
@@ -66,37 +66,37 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
     }
 
     /**
-     * Inserts a specified task to the task queue.
-     * @param task the task to be inserted to the task queue
-     * @throws NullPointerException the task is null
+     * Inserts a specified event to the event queue.
+     * @param event the event to be inserted to the event queue
+     * @throws NullPointerException the event is null
      */
-    public void offer(Task task) {
-        taskQueue_.offer(task);
+    public void offer(Event event) {
+        eventQueue_.offer(event);
         wakeUp();
     }
 
     /**
-     * Registers a specified task to the timer with specified delay time.
-     * @param task the task to be registered to the timer
-     * @param delay the delay of task execution
+     * Registers a specified event to the timer with specified delay time.
+     * @param event the event to be registered to the timer
+     * @param delay the delay of event execution
      * @param timeUnit unit of the delay
-     * @return a future representing pending completion of the task
-     * @throws NullPointerException if task or timeUnit is null
+     * @return a future representing pending completion of the event
+     * @throws NullPointerException if event or timeUnit is null
      */
-    public TaskFuture schedule(final Task task, long delay, TimeUnit timeUnit) {
-        Arguments.requireNonNull(task, "task");
+    public EventFuture schedule(final Event event, long delay, TimeUnit timeUnit) {
+        Arguments.requireNonNull(event, "event");
         Arguments.requireNonNull(timeUnit, "timeUnit");
 
         long expire = System.nanoTime() + timeUnit.toNanos(delay);
-        final TaskFuture future = new TaskFuture(expire, task);
+        final EventFuture future = new EventFuture(expire, event);
 
-        if (isInLoopThread()) {
+        if (isInDispatcherThread()) {
             delayQueue_.offer(future);
             wakeUp();
             return future;
         }
 
-        taskQueue_.offer(new Task() {
+        eventQueue_.offer(new Event() {
             @Override
             public long execute(TimeUnit timeUnit) throws Exception {
                 delayQueue_.offer(future);
@@ -108,35 +108,35 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
     }
 
     /**
-     * If a caller is executed in the loop thread, run the task immediately.
-     * Otherwise, inserts the task to the task queue.
-     * @param task the task
-     * @throws NullPointerException if the task is null
+     * If a caller is executed in the dispatcher thread, run the event immediately.
+     * Otherwise, inserts the event to the event queue.
+     * @param event the event
+     * @throws NullPointerException if the event is null
      */
-    public void execute(Task task) {
-        if (isInLoopThread()) {
+    public void execute(Event event) {
+        if (isInDispatcherThread()) {
             try {
-                long waitTimeNanos = task.execute(TIME_UNIT);
-                if (waitTimeNanos == Task.DONE) {
+                long waitTimeNanos = event.execute(TIME_UNIT);
+                if (waitTimeNanos == Event.DONE) {
                     return;
                 }
                 if (waitTimeNanos > 0) {
                     long expire = System.nanoTime() + waitTimeNanos;
                     if (expire < 0) {
-                        logger_.warn("[execute] The expire for {} is overflowed. Skip to schedule.", task);
+                        logger_.warn("[execute] The expire for {} is overflowed. Skip to schedule.", event);
                         return;
                     }
-                    delayQueue_.offer(new TaskFuture(expire, task));
+                    delayQueue_.offer(new EventFuture(expire, event));
                     wakeUp();
                 } else {
-                    taskQueue_.offer(task);
+                    eventQueue_.offer(event);
                     wakeUp();
                 }
             } catch (Exception e) {
                 logger_.warn("[execute] Unexpected exception.", e);
             }
         } else {
-            taskQueue_.offer(task);
+            eventQueue_.offer(event);
             wakeUp();
         }
     }
@@ -150,12 +150,12 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
     }
 
     /**
-     * Executes the loop on a thread provided by {@link TaskLoopGroup}.
+     * Executes the dispatcher on a thread provided by {@link EventDispatcherGroup}.
      */
     public void run() {
-        Deque<Task> taskBuffer = new ArrayDeque<Task>(INITIAL_TASK_BUFFER_SIZE);
-        Queue<Task> taskQueue = taskQueue_;
-        Queue<TaskFuture> delayQueue = delayQueue_;
+        Deque<Event> eventBuffer = new ArrayDeque<Event>(INITIAL_EVENT_BUFFER_SIZE);
+        Queue<Event> eventQueue = eventQueue_;
+        Queue<EventFuture> delayQueue = delayQueue_;
         try {
             synchronized (this) {
                 thread_ = Thread.currentThread();
@@ -166,9 +166,9 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
             long delayNanos = Long.MAX_VALUE;
             while (thread_ != null) {
                 try {
-                    poll(taskQueue.isEmpty() ? delayNanos : Task.RETRY_IMMEDIATELY, TIME_UNIT);
-                    processTasks(taskQueue, taskBuffer, delayQueue);
-                    delayNanos = processDelayedTask(taskQueue, delayQueue);
+                    poll(eventQueue.isEmpty() ? delayNanos : Event.RETRY_IMMEDIATELY, TIME_UNIT);
+                    processEvents(eventQueue, eventBuffer, delayQueue);
+                    delayNanos = processDelayedEvent(eventQueue, delayQueue);
                 } catch (InterruptedException ie) {
                     logger_.debug("[run] Interrupted.", ie);
                     break;
@@ -177,13 +177,13 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
                         logger_.warn("[run] Unexpected exception.", e);
                     }
                 }
-                while (!taskBuffer.isEmpty()) {
-                    taskQueue.offer(taskBuffer.pollFirst());
+                while (!eventBuffer.isEmpty()) {
+                    eventQueue.offer(eventBuffer.pollFirst());
                 }
             }
         } finally {
             onClose();
-            taskQueue.clear();
+            eventQueue.clear();
             synchronized (selectionCountMap_) {
                 selectionCountMap_.clear();
             }
@@ -191,34 +191,34 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
         }
     }
 
-    private void processTasks(
-            Queue<Task> taskQueue, Deque<Task> buffer, Queue<TaskFuture> delayQueue) throws Exception {
-        Task task;
+    private void processEvents(
+            Queue<Event> eventQueue, Deque<Event> buffer, Queue<EventFuture> delayQueue) throws Exception {
+        Event event;
         for (;;) {
-            task = taskQueue.poll();
-            if (task == null) {
+            event = eventQueue.poll();
+            if (event == null) {
                 break;
             }
-            long retryDelay = task.execute(TIME_UNIT);
-            if (retryDelay == Task.DONE) {
+            long retryDelay = event.execute(TIME_UNIT);
+            if (retryDelay == Event.DONE) {
                 continue;
             }
             if (retryDelay > 0) {
                 long expire = System.nanoTime() + retryDelay;
                 if (expire < 0) {
-                    logger_.warn("[processTask] The expire for {} is overflowed. Skip to schedule.", task);
+                    logger_.warn("[processEvent] The expire for {} is overflowed. Skip to schedule.", event);
                     continue;
                 }
-                delayQueue.offer(new TaskFuture(expire, task));
+                delayQueue.offer(new EventFuture(expire, event));
             } else {
-                buffer.offerLast(task);
+                buffer.offerLast(event);
             }
         }
     }
 
-    private long processDelayedTask(Queue<Task> taskQueue, Queue<TaskFuture> delayQueue) throws Exception {
+    private long processDelayedEvent(Queue<Event> eventQueue, Queue<EventFuture> delayQueue) throws Exception {
         long now = System.nanoTime();
-        TaskFuture f;
+        EventFuture f;
         for (;;) {
             f = delayQueue.peek();
             if (f == null || f.expire() > now) {
@@ -231,8 +231,8 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
 
             try {
                 delayQueue.poll();
-                long waitTimeNanos = f.task_.execute(TIME_UNIT);
-                if (waitTimeNanos == Task.DONE) {
+                long waitTimeNanos = f.event_.execute(TIME_UNIT);
+                if (waitTimeNanos == Event.DONE) {
                     f.dispatched();
                     continue;
                 }
@@ -243,9 +243,9 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
                         delayQueue.offer(f);
                         continue;
                     }
-                    logger_.warn("[processDelayedTask] The expire for {} is overflowed. Skip to schedule.", f.task_);
+                    logger_.warn("[processDelayedEvent] The expire for {} is overflowed. Skip to schedule.", f.event_);
                 } else {
-                    taskQueue.offer(f.task_);
+                    eventQueue.offer(f.event_);
                 }
                 f.dispatched();
             } catch (Exception ex) {
@@ -260,16 +260,16 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
     }
 
     /**
-     * Returns true if the caller is executed on the thread which executes this loop.
-     * @return true if the caller is executed on the thread which executes this loop
+     * Returns true if the caller is executed on the thread which executes this dispatcher.
+     * @return true if the caller is executed on the thread which executes this dispatcher
      */
-    public boolean isInLoopThread() {
+    public boolean isInDispatcherThread() {
         return Thread.currentThread() == thread_;
     }
 
     /**
-     * Returns true if the thread which executes this loop is alive.
-     * @return true if the thread which executes this loop is alive
+     * Returns true if the thread which executes this dispatcher is alive.
+     * @return true if the thread which executes this dispatcher is alive
      */
     public boolean isAlive() {
         Thread t = thread_;
@@ -282,7 +282,7 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
     }
 
     @Override
-    public int compareTo(TaskLoop that) {
+    public int compareTo(EventDispatcher that) {
         return selectionCount() - that.selectionCount();
     }
 
@@ -292,7 +292,7 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
         }
     }
 
-    int duplicationCountFor(TaskSelection selection) {
+    int duplicationCountFor(EventDispatcherSelection selection) {
         Integer count;
         synchronized (selectionCountMap_) {
             count = selectionCountMap_.get(selection);
@@ -305,7 +305,7 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
      * @param selection the object to test
      * @return true if a object specified by the selection is associated with this object
      */
-    boolean countUpDuplication(TaskSelection selection) {
+    boolean countUpDuplication(EventDispatcherSelection selection) {
         Integer count;
         synchronized (selectionCountMap_) {
             count = selectionCountMap_.get(selection);
@@ -322,7 +322,7 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
      * @return the number of the selections associated with this object
      * @throws NullPointerException if selection is null
      */
-    public int accept(TaskSelection selection) {
+    public int accept(EventDispatcherSelection selection) {
         Arguments.requireNonNull(selection, "selection");
         int size;
         synchronized (selectionCountMap_) {
@@ -341,7 +341,7 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
      * @param selection the object to be dissociate
      * @return the number of the selections weight associated with this object, exclude the selection
      */
-    public int reject(TaskSelection selection) {
+    public int reject(EventDispatcherSelection selection) {
         Arguments.requireNonNull(selection, "selection");
         int size;
         synchronized (selectionCountMap_) {
@@ -360,12 +360,12 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
     }
 
     /**
-     * This method is called once when the loop is initialized.
+     * This method is called once when the dispatcher is initialized.
      */
     protected abstract void onOpen();
 
     /**
-     * This method is called once when the loop is ready to terminate.
+     * This method is called once when the dispatcher is ready to terminate.
      */
     protected abstract void onClose();
 
@@ -383,7 +383,7 @@ public abstract class TaskLoop implements Runnable, Comparable<TaskLoop> {
     protected abstract void poll(long timeout, TimeUnit timeUnit) throws Exception;
 
     /**
-     * This method is called when a new task is inserted to the task queue.
+     * This method is called when a new event is inserted to the event queue.
      * The implementation is required to wake up the thread executing
      * {@link #poll(long, java.util.concurrent.TimeUnit)} on waiting timeout.
      */

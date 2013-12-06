@@ -20,14 +20,14 @@ import java.util.Set;
 /**
  * @author Hiroki Itoh
  */
-public class ConnectionWaitTransport extends NioSocketTransport<SelectLoop> {
+public class ConnectionWaitTransport extends NioSocketTransport<SelectDispatcher> {
 
     private final NioClientSocketTransport transport_;
     private final DefaultTransportFuture future_;
 
     private static Logger logger_ = LoggerFactory.getLogger(ConnectionWaitTransport.class);
 
-    ConnectionWaitTransport(SelectLoopGroup group, NioClientSocketTransport transport, DefaultTransportFuture future) {
+    ConnectionWaitTransport(SelectDispatcherGroup group, NioClientSocketTransport transport, DefaultTransportFuture future) {
         super("ConnectionPending", PipelineComposer.empty(), group);
         transport_ = transport;
         future_ = future;
@@ -89,7 +89,7 @@ public class ConnectionWaitTransport extends NioSocketTransport<SelectLoop> {
     }
 
     @Override
-    void onSelected(SelectionKey key, SelectLoop selectLoop) {
+    void onSelected(SelectionKey key, SelectDispatcher selectDispatcher) {
         if (!future_.executing()) {
             return;
         }

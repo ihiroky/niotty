@@ -22,10 +22,10 @@ import java.nio.ByteBuffer;
  * and so on.</p>
  *
  * <h4>Thread model</h4>
- * <p>Each stage is executed in the {@link net.ihiroky.niotty.TaskLoop} to which
- * the transport belongs by default. Use {@link net.ihiroky.niotty.DefaultTaskLoopGroup}
+ * <p>Each stage is executed in the {@link EventDispatcher} to which
+ * the transport belongs by default. Use {@link DefaultEventDispatcherGroup}
  * to allocate dedicated threads for a stage when it is added to the pipeline.
- * The {@code DefaultTaskLoopGroup} must be shutdown in application shutdown procedure.
+ * The {@code DefaultEventDispatcherGroup} must be shutdown in application shutdown procedure.
  * See {@link net.ihiroky.niotty.PipelineComposer} to synchronize its lifecycle with Niotty.</p>
  */
 public interface Pipeline {
@@ -49,11 +49,11 @@ public interface Pipeline {
      *
      * @param key the stage key which is associated with the stage
      * @param stage the stage to be added
-     * @param pool the pool which offers the TaskLoop to execute the stage
+     * @param pool the pool which offers the EventDispatcher to execute the stage
      * @throws IllegalArgumentException the key is {@link #IO_STAGE_KEY} or already exist in this pipeline
      * @throws NullPointerException if the key or stage is null
      */
-    Pipeline add(StageKey key, Stage stage, TaskLoopGroup<? extends TaskLoop> pool);
+    Pipeline add(StageKey key, Stage stage, EventDispatcherGroup<? extends EventDispatcher> pool);
 
     /**
      * Adds the specified key and stage before the stage specified with the base stage key.
@@ -74,13 +74,13 @@ public interface Pipeline {
      * @param baseKey the base stage key
      * @param key the stage key which is associated with the stage
      * @param stage the stage to be added
-     * @param pool the pool which offers the TaskLoop to execute the stage
+     * @param pool the pool which offers the EventDispatcher to execute the stage
      * @return this pipeline
      * @throws IllegalArgumentException the key is {@link #IO_STAGE_KEY} or already exist in this pipeline
      * @throws NullPointerException if the baseKey, key or stage is null
      * @throws java.util.NoSuchElementException if the base stage key is not found in this pipeline
      */
-    Pipeline addBefore(StageKey baseKey, StageKey key, Stage stage, TaskLoopGroup<? extends TaskLoop> pool);
+    Pipeline addBefore(StageKey baseKey, StageKey key, Stage stage, EventDispatcherGroup<? extends EventDispatcher> pool);
 
     /**
      * Adds the specified key and stage after the stage specified with the base stage key.
@@ -101,13 +101,13 @@ public interface Pipeline {
      * @param baseKey the base stage key
      * @param key the stage key which is associated with the stage
      * @param stage the stage to be added
-     * @param pool the pool which offers the TaskLoop to execute the stage
+     * @param pool the pool which offers the EventDispatcher to execute the stage
      * @return this pipeline
      * @throws IllegalArgumentException the key is {@link #IO_STAGE_KEY} or already exist in this pipeline
      * @throws NullPointerException if the baseKey, key or stage is null
      * @throws java.util.NoSuchElementException if the base stage key is not found in this pipeline
      */
-    Pipeline addAfter(StageKey baseKey, StageKey key, Stage stage, TaskLoopGroup<? extends TaskLoop> pool);
+    Pipeline addAfter(StageKey baseKey, StageKey key, Stage stage, EventDispatcherGroup<? extends EventDispatcher> pool);
 
     /**
      * Removes a stage specified with the stage key.
@@ -140,14 +140,14 @@ public interface Pipeline {
      * @param oldKey the old key which specifies the stage to be removed
      * @param newKey the new key which is associated with the new stage
      * @param newStage the new stage to be added
-     * @param pool the pool which offers the TaskLoop to execute the stage
+     * @param pool the pool which offers the EventDispatcher to execute the stage
      * @return this pipeline
      * @throws IllegalArgumentException the new key is {@link #IO_STAGE_KEY} or already exist in this pipeline
      * @throws NullPointerException if the old key, new key, new stage is null
      * @throws java.util.NoSuchElementException if the stage associated with the old key key is not found
      *         in this pipeline
      */
-    Pipeline replace(StageKey oldKey, StageKey newKey, Stage newStage, TaskLoopGroup<? extends TaskLoop> pool);
+    Pipeline replace(StageKey oldKey, StageKey newKey, Stage newStage, EventDispatcherGroup<? extends EventDispatcher> pool);
 
     /**
      * Calls a message store chain in this pipeline.

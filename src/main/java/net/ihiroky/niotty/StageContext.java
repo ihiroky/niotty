@@ -9,5 +9,5 @@ public interface StageContext {
     StageKey key();
     Transport transport();
     void proceed(Object message, Object parameter);
-    TaskFuture schedule(Task task, long timeout, TimeUnit timeUnit);
+    EventFuture schedule(Event event, long timeout, TimeUnit timeUnit);
 }

@@ -33,7 +33,7 @@ public abstract class AbstractTransportFuture implements TransportFuture {
     public final TransportFuture addListener(final CompletionListener listener) {
         Arguments.requireNonNull(listener, "listener");
 
-        TaskLoop taskLoop = transport_.taskLoop();
+        EventDispatcher eventDispatcher = transport_.eventDispatcher();
         synchronized (this) {
             if (!isDone()) {
                 CompletionListener old = listener_;
@@ -53,18 +53,18 @@ public abstract class AbstractTransportFuture implements TransportFuture {
             }
         }
 
-        if (taskLoop.isInLoopThread()) {
+        if (eventDispatcher.isInDispatcherThread()) {
             listener.onComplete(this);
         } else {
             @SuppressWarnings("unchecked")
-            Task task = new Task() {
+            Event event = new Event() {
                 @Override
                 public long execute(TimeUnit timeUnit) throws Exception {
                     listener.onComplete(AbstractTransportFuture.this);
                     return DONE;
                 }
             };
-            taskLoop.offer(task);
+            eventDispatcher.offer(event);
         }
 
         return this;
@@ -94,11 +94,11 @@ public abstract class AbstractTransportFuture implements TransportFuture {
      * Executes {@code onComplete(this)} for added {@code CompletionListener}s.
      */
     protected final void fireOnComplete() {
-        TaskLoop taskLoop = transport_.taskLoop();
-        if (taskLoop.isInLoopThread()) {
+        EventDispatcher eventDispatcher = transport_.eventDispatcher();
+        if (eventDispatcher.isInDispatcherThread()) {
             listener_.onComplete(this);
         } else {
-            taskLoop.offer(new Task() {
+            eventDispatcher.offer(new Event() {
                 @Override
                 public long execute(TimeUnit timeUnit) throws Exception {
                     listener_.onComplete(AbstractTransportFuture.this);

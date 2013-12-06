@@ -19,24 +19,24 @@ public class AbstractTransportFutureTest {
 
     private DefaultTransportFuture sut_;
     private AbstractTransport<?> transport_;
-    private TaskLoop taskLoop_;
+    private EventDispatcher eventDispatcher_;
 
     @Before
     public void setUp() {
         @SuppressWarnings("unchecked")
-        AbstractTransport<TaskLoop> transport = mock(AbstractTransport.class);
-        TaskLoop taskLoop = mock(TaskLoop.class);
-        when(transport.taskLoop()).thenReturn(taskLoop);
+        AbstractTransport<EventDispatcher> transport = mock(AbstractTransport.class);
+        EventDispatcher eventDispatcher = mock(EventDispatcher.class);
+        when(transport.eventDispatcher()).thenReturn(eventDispatcher);
 
         transport_ = transport;
-        taskLoop_ = taskLoop;
+        eventDispatcher_ = eventDispatcher;
         sut_ = new DefaultTransportFuture(transport);
     }
 
     @Test
     public void testOneListenerIsCalledOnCompleteIfNotDoneAtAdded() throws Exception {
         CompletionListener listener = mock(CompletionListener.class);
-        when(transport_.taskLoop().isInLoopThread()).thenReturn(true);
+        when(transport_.eventDispatcher().isInDispatcherThread()).thenReturn(true);
 
         sut_.addListener(listener);
         sut_.fireOnComplete();
@@ -46,7 +46,7 @@ public class AbstractTransportFutureTest {
 
     @Test
     public void testListenersIsCalledOnCompleteIfNotDoneAtAdded() throws Exception {
-        when(transport_.taskLoop().isInLoopThread()).thenReturn(true);
+        when(transport_.eventDispatcher().isInDispatcherThread()).thenReturn(true);
         CompletionListener listener0 = mock(CompletionListener.class);
         CompletionListener listener1 = mock(CompletionListener.class);
         CompletionListener listener2 = mock(CompletionListener.class);
@@ -63,7 +63,7 @@ public class AbstractTransportFutureTest {
 
     @Test
     public void testOneListenerIsCalledOnAddListenerIfDone() throws Exception {
-        when(transport_.taskLoop().isInLoopThread()).thenReturn(true);
+        when(transport_.eventDispatcher().isInDispatcherThread()).thenReturn(true);
         CompletionListener listener = mock(CompletionListener.class);
 
         sut_.executing();
@@ -75,7 +75,7 @@ public class AbstractTransportFutureTest {
 
     @Test
     public void testListenersIsCalledOnAddListenerIfDone() throws Exception {
-        when(transport_.taskLoop().isInLoopThread()).thenReturn(true);
+        when(transport_.eventDispatcher().isInDispatcherThread()).thenReturn(true);
         CompletionListener listener0 = mock(CompletionListener.class);
         CompletionListener listener1 = mock(CompletionListener.class);
         CompletionListener listener2 = mock(CompletionListener.class);
@@ -93,7 +93,7 @@ public class AbstractTransportFutureTest {
 
     @Test
     public void testRemoveListener_InternalListenerGetsNullListener() throws Exception {
-        when(transport_.taskLoop().isInLoopThread()).thenReturn(true);
+        when(transport_.eventDispatcher().isInDispatcherThread()).thenReturn(true);
         CompletionListener listener = mock(CompletionListener.class);
 
         sut_.addListener(listener);
@@ -105,7 +105,7 @@ public class AbstractTransportFutureTest {
 
     @Test
     public void testRemoveListener_InternalListenerGetsNormalListener() throws Exception {
-        when(transport_.taskLoop().isInLoopThread()).thenReturn(true);
+        when(transport_.eventDispatcher().isInDispatcherThread()).thenReturn(true);
         CompletionListener listener0 = mock(CompletionListener.class);
         CompletionListener listener1 = mock(CompletionListener.class);
 
@@ -120,7 +120,7 @@ public class AbstractTransportFutureTest {
 
     @Test
     public void testRemoveListener_InternalListenerGetsListenerList() throws Exception {
-        when(transport_.taskLoop().isInLoopThread()).thenReturn(true);
+        when(transport_.eventDispatcher().isInDispatcherThread()).thenReturn(true);
         CompletionListener listener0 = mock(CompletionListener.class);
         CompletionListener listener1 = mock(CompletionListener.class);
         CompletionListener listener2 = mock(CompletionListener.class);
@@ -137,23 +137,23 @@ public class AbstractTransportFutureTest {
     }
 
     @Test
-    public void testFireOnComplete_CallsOfferTask() throws Exception {
-        final long[] taskResult = new long[]{0L};
-        when(transport_.taskLoop().isInLoopThread()).thenReturn(false);
+    public void testFireOnComplete_CallsOfferEvent() throws Exception {
+        final long[] eventResult = new long[]{0L};
+        when(transport_.eventDispatcher().isInDispatcherThread()).thenReturn(false);
         doAnswer(new Answer<Void>() {
             @Override
             public Void answer(InvocationOnMock invocation) throws Throwable {
-                Task task = (Task) invocation.getArguments()[0];
-                taskResult[0] = task.execute(TimeUnit.MILLISECONDS);
+                Event event = (Event) invocation.getArguments()[0];
+                eventResult[0] = event.execute(TimeUnit.MILLISECONDS);
                 return null;
             }
-        }).when(taskLoop_).offer(Mockito.any(Task.class));
+        }).when(eventDispatcher_).offer(Mockito.any(Event.class));
         CompletionListener listener = mock(CompletionListener.class);
 
         sut_.addListener(listener);
         sut_.fireOnComplete();
 
         verify(listener).onComplete(sut_);
-        assertThat(taskResult[0], is(Task.DONE));
+        assertThat(eventResult[0], is(Event.DONE));
     }
 }

@@ -1,10 +1,10 @@
 package net.ihiroky.niotty.codec;
 
+import net.ihiroky.niotty.Event;
+import net.ihiroky.niotty.EventFuture;
 import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.StageKey;
 import net.ihiroky.niotty.StageKeys;
-import net.ihiroky.niotty.Task;
-import net.ihiroky.niotty.TaskFuture;
 import net.ihiroky.niotty.Transport;
 
 import java.util.ArrayDeque;
@@ -54,7 +54,7 @@ public class StageContextMock<O> implements StageContext {
     }
 
     @Override
-    public TaskFuture schedule(Task task, long timeout, TimeUnit timeUnit) {
+    public EventFuture schedule(Event event, long timeout, TimeUnit timeUnit) {
         throw new UnsupportedOperationException();
     }
 

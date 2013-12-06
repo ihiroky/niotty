@@ -4,10 +4,10 @@
  * <h3>Selector and its pool</h3>
  * This package has three type of NIO selector separated by its role;
  * accept, connect and message I/O. The message I/O means read and write.
- * These processes its own selection and asynchronous task received
- * through a task queue. The selector is associated with a dedicated
- * thread to execute its selection. The thread and the task queue
- * is provided by {@link net.ihiroky.niotty.TaskLoop}.
+ * These processes its own selection and asynchronous event received
+ * through a event queue. The selector is associated with a dedicated
+ * thread to execute its selection. The thread and the event queue
+ * is provided by {@link net.ihiroky.niotty.EventDispatcher}.
  *
  * <h3>Transport implementation</h3>
  * {@link net.ihiroky.niotty.Transport} implementation of Server side TCP socket is

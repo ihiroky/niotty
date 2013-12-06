@@ -3,9 +3,9 @@ package net.ihiroky.niotty;
 import java.util.concurrent.TimeUnit;
 
 /**
- * A implementation of {@link TaskLoop}. Wait operation depends on {@code Object.wait()} and {@code Object.notify()}.
+ * A implementation of {@link EventDispatcher}. Wait operation depends on {@code Object.wait()} and {@code Object.notify()}.
  */
-public class DefaultTaskLoop extends TaskLoop {
+public class DefaultEventDispatcher extends EventDispatcher {
 
     private boolean signaled_;
     private final Object lock_;
@@ -13,7 +13,7 @@ public class DefaultTaskLoop extends TaskLoop {
     /**
      * Create a new instance.
      */
-    public DefaultTaskLoop() {
+    public DefaultEventDispatcher() {
         signaled_ = false;
         lock_ = new Object();
     }

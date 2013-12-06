@@ -1,7 +1,7 @@
 package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.NameCountThreadFactory;
-import net.ihiroky.niotty.TaskLoopGroup;
+import net.ihiroky.niotty.EventDispatcherGroup;
 import net.ihiroky.niotty.util.Arguments;
 
 import java.util.concurrent.ThreadFactory;
@@ -9,7 +9,7 @@ import java.util.concurrent.ThreadFactory;
 /**
  *
  */
-public class SelectLoopGroup extends TaskLoopGroup<SelectLoop> {
+public class SelectDispatcherGroup extends EventDispatcherGroup<SelectDispatcher> {
 
     private int readBufferSize_;
     private int writeBufferSize_;
@@ -22,32 +22,32 @@ public class SelectLoopGroup extends TaskLoopGroup<SelectLoop> {
     /**
      * Constructs a new instance.
      *
-     * @param threadFactory a factory to create thread which runs a task loop
+     * @param threadFactory a factory to create thread which runs a event dispatcher
      * @param workers       the number of threads held in the thread pool
      */
-    public SelectLoopGroup(ThreadFactory threadFactory, int workers) {
+    public SelectDispatcherGroup(ThreadFactory threadFactory, int workers) {
         super(threadFactory, workers);
         readBufferSize_ = DEFAULT_READ_BUFFER_SIZE;
         writeBufferSize_ = DEFAULT_WRITE_BUFFER_SIZE;
         useDirectBuffer_ = DEFAULT_USE_DIRECT_BUFFER;
     }
 
-    public static SelectLoopGroup newNonIoInstance(String threadNamePrefix) {
-        return new SelectLoopGroup(new NameCountThreadFactory(threadNamePrefix), 1)
+    public static SelectDispatcherGroup newNonIoInstance(String threadNamePrefix) {
+        return new SelectDispatcherGroup(new NameCountThreadFactory(threadNamePrefix), 1)
                 .setReadBufferSize(0).setWriteBufferSize(0);
     }
 
-    public SelectLoopGroup setReadBufferSize(int readBufferSize) {
+    public SelectDispatcherGroup setReadBufferSize(int readBufferSize) {
         readBufferSize_ = Arguments.requirePositiveOrZero(readBufferSize, "readBufferSize");
         return this;
     }
 
-    public SelectLoopGroup setWriteBufferSize(int writeBufferSize) {
+    public SelectDispatcherGroup setWriteBufferSize(int writeBufferSize) {
         writeBufferSize_ = Arguments.requirePositiveOrZero(writeBufferSize, "writeBufferSize");
         return this;
     }
 
-    public SelectLoopGroup setUseDirectBuffer(boolean useDirectBuffer) {
+    public SelectDispatcherGroup setUseDirectBuffer(boolean useDirectBuffer) {
         useDirectBuffer_ = useDirectBuffer;
         return this;
     }
@@ -65,7 +65,7 @@ public class SelectLoopGroup extends TaskLoopGroup<SelectLoop> {
     }
 
     @Override
-    protected SelectLoop newTaskLoop() {
-        return new SelectLoop(readBufferSize_, writeBufferSize_, useDirectBuffer_);
+    protected SelectDispatcher newEventDispatcher() {
+        return new SelectDispatcher(readBufferSize_, writeBufferSize_, useDirectBuffer_);
     }
 }

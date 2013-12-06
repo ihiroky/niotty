@@ -18,19 +18,19 @@ import static org.mockito.Mockito.*;
  */
 public class DefaultPipelineTest {
 
-    private DefaultPipeline<TaskLoop> sut_;
-    private AbstractTransport<TaskLoop> transport_;
-    private TaskLoopGroup<TaskLoop> taskLoopGroup_;
-    private TaskLoop taskLoop_;
+    private DefaultPipeline<EventDispatcher> sut_;
+    private AbstractTransport<EventDispatcher> transport_;
+    private EventDispatcherGroup<EventDispatcher> eventDispatcherGroup_;
+    private EventDispatcher eventDispatcher_;
 
     @Before
     @SuppressWarnings("unchecked")
     public void setUp() throws Exception {
         transport_ = mock(AbstractTransport.class);
-        taskLoopGroup_ = mock(TaskLoopGroup.class);
-        taskLoop_ = mock(TaskLoop.class);
-        when(taskLoopGroup_.assign(transport_)).thenReturn(taskLoop_);
-        sut_ = new PipelineImpl(transport_, taskLoopGroup_);
+        eventDispatcherGroup_ = mock(EventDispatcherGroup.class);
+        eventDispatcher_ = mock(EventDispatcher.class);
+        when(eventDispatcherGroup_.assign(transport_)).thenReturn(eventDispatcher_);
+        sut_ = new PipelineImpl(transport_, eventDispatcherGroup_);
     }
 
     @Rule
@@ -59,14 +59,14 @@ public class DefaultPipelineTest {
     }
 
     @Test
-    public void testAdd_NullTaskLoopGroupReplacesToDefault() throws Exception {
+    public void testAdd_NullEventDispatcherGroupReplacesToDefault() throws Exception {
         StageKey key0 = StageKeys.of(0);
         Stage stage0 = PipelineElement.newNullStage();
 
         sut_.add(key0, stage0, null);
 
         PipelineElement pe = sut_.searchElement(key0);
-        assertThat(pe.taskLoop_, is(sameInstance(taskLoop_)));
+        assertThat(pe.eventDispatcher_, is(sameInstance(eventDispatcher_)));
     }
 
     @Test
@@ -120,7 +120,7 @@ public class DefaultPipelineTest {
     }
 
     @Test
-    public void testAddBefore_NullTaskLoopGroupReplacesToDefault() throws Exception {
+    public void testAddBefore_NullEventDispatcherGroupReplacesToDefault() throws Exception {
         StageKey key0 = StageKeys.of(0);
         Stage stage0 = PipelineElement.newNullStage();
         StageKey key1 = StageKeys.of(1);
@@ -130,7 +130,7 @@ public class DefaultPipelineTest {
         sut_.addBefore(key0, key1, stage1, null);
 
         PipelineElement pe = sut_.searchElement(key1);
-        assertThat(pe.taskLoop_, is(sameInstance(taskLoop_)));
+        assertThat(pe.eventDispatcher_, is(sameInstance(eventDispatcher_)));
     }
 
     @Test
@@ -207,7 +207,7 @@ public class DefaultPipelineTest {
     }
 
     @Test
-    public void testAddAfter_NullTaskLoopGroupReplacesToDefault() throws Exception {
+    public void testAddAfter_NullEventDispatcherGroupReplacesToDefault() throws Exception {
         StageKey key0 = StageKeys.of(0);
         Stage stage0 = PipelineElement.newNullStage();
         StageKey key1 = StageKeys.of(1);
@@ -217,7 +217,7 @@ public class DefaultPipelineTest {
         sut_.addAfter(key0, key1, stage1, null);
 
         PipelineElement pe = sut_.searchElement(key1);
-        assertThat(pe.taskLoop_, is(sameInstance(taskLoop_)));
+        assertThat(pe.eventDispatcher_, is(sameInstance(eventDispatcher_)));
     }
 
     @Test
@@ -277,7 +277,7 @@ public class DefaultPipelineTest {
     }
 
     @Test
-    public void testReplace_NullTaskLoopGroupReplacesToDefault() throws Exception {
+    public void testReplace_NullEventDispatcherGroupReplacesToDefault() throws Exception {
         StageKey key0 = StageKeys.of(0);
         Stage stage0 = PipelineElement.newNullStage();
         StageKey key1 = StageKeys.of(1);
@@ -288,7 +288,7 @@ public class DefaultPipelineTest {
 
         @SuppressWarnings("unchecked")
         PipelineElement pe = sut_.searchElement(key1);
-        assertThat(pe.taskLoop_, is(sameInstance(taskLoop_)));
+        assertThat(pe.eventDispatcher_, is(sameInstance(eventDispatcher_)));
     }
 
     @Test
@@ -569,7 +569,7 @@ public class DefaultPipelineTest {
         Stage s1 = spy(PipelineElement.newNullStage());
         sut_.add(StageKeys.of(0), s0);
         sut_.add(StageKeys.of(1), s1);
-        when(taskLoop_.isInLoopThread()).thenReturn(true);
+        when(eventDispatcher_.isInDispatcherThread()).thenReturn(true);
 
         sut_.activate();
 
@@ -583,7 +583,7 @@ public class DefaultPipelineTest {
         Stage s1 = spy(PipelineElement.newNullStage());
         sut_.add(StageKeys.of(0), s0);
         sut_.add(StageKeys.of(1), s1);
-        when(taskLoop_.isInLoopThread()).thenReturn(true);
+        when(eventDispatcher_.isInDispatcherThread()).thenReturn(true);
 
         sut_.deactivate(DeactivateState.WHOLE);
 
@@ -598,7 +598,7 @@ public class DefaultPipelineTest {
         Stage s1 = mock(Stage.class);
         sut_.add(StageKeys.of(0), s0);
         sut_.add(StageKeys.of(1), s1);
-        when(taskLoop_.isInLoopThread()).thenReturn(true);
+        when(eventDispatcher_.isInDispatcherThread()).thenReturn(true);
 
         sut_.catchException(e);
 
@@ -623,19 +623,19 @@ public class DefaultPipelineTest {
                 + ")]"));
     }
 
-    private static class PipelineImpl extends DefaultPipeline<TaskLoop> {
+    private static class PipelineImpl extends DefaultPipeline<EventDispatcher> {
 
         static final StageKey LAST = StageKeys.of("LAST");
         static final Stage LAST_STAGE = PipelineElement.newNullStage();
 
         @SuppressWarnings("unchecked")
-        protected PipelineImpl(AbstractTransport<TaskLoop> transport, TaskLoopGroup<TaskLoop> taskLoopGroup) {
-            super("test", transport, taskLoopGroup, LAST, LAST_STAGE);
+        protected PipelineImpl(AbstractTransport<EventDispatcher> transport, EventDispatcherGroup<EventDispatcher> eventDispatcherGroup) {
+            super("test", transport, eventDispatcherGroup, LAST, LAST_STAGE);
         }
 
         @Override
         PipelineElement createContext(
-                StageKey key, final Stage stage, TaskLoopGroup<? extends TaskLoop> pool) {
+                StageKey key, final Stage stage, EventDispatcherGroup<? extends EventDispatcher> pool) {
             // return spy(new PipelineElement(this, key, stage, pool));
             return new PipelineElement(this, key, stage, pool);
         }

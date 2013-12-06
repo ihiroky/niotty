@@ -8,13 +8,13 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
 * @author Hiroki Itoh
 */
-class TaskLoopMock extends TaskLoop {
+class EventDispatcherMock extends EventDispatcher {
 
     private final Lock lock_;
     private final Condition condition_;
     private volatile boolean signaled_;
 
-    TaskLoopMock() {
+    EventDispatcherMock() {
         lock_ = new ReentrantLock();
         condition_ = lock_.newCondition();
     }

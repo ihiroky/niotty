@@ -23,9 +23,9 @@ import static org.mockito.Mockito.*;
 /**
  * @author Hiroki Itoh
  */
-public class TaskLoopTest {
+public class EventDispatcherTest {
 
-    private TaskLoopMock sut_;
+    private EventDispatcherMock sut_;
     private static ExecutorService executor_;
     private static final String THREAD_NAME = "TEST";
 
@@ -46,7 +46,7 @@ public class TaskLoopTest {
 
     @Before
     public void setUp() {
-        sut_ = new TaskLoopMock();
+        sut_ = new EventDispatcherMock();
     }
 
     @After
@@ -58,16 +58,16 @@ public class TaskLoopTest {
     }
 
     @Test(timeout = 1000)
-    public void testOfferTask() throws Exception {
+    public void testOfferEvent() throws Exception {
         executor_.execute(sut_);
         final boolean[] executed = new boolean[1];
         @SuppressWarnings("unchecked")
-        Task t = mock(Task.class);
+        Event t = mock(Event.class);
         doAnswer(new Answer<Long>() {
             @Override
             public Long answer(InvocationOnMock invocation) throws Throwable {
                 executed[0] = true;
-                return Task.RETRY_IMMEDIATELY;
+                return Event.RETRY_IMMEDIATELY;
             }
         }).when(t).execute(TimeUnit.NANOSECONDS);
 
@@ -79,12 +79,12 @@ public class TaskLoopTest {
     }
 
     @Test//(timeout = 1000)
-    public void testProcessTask_ExecuteAgainLater() throws Exception {
+    public void testProcessEvent_ExecuteAgainLater() throws Exception {
         executor_.execute(sut_);
         final AtomicInteger counter = new AtomicInteger();
 
         @SuppressWarnings("unchecked")
-        Task t = mock(Task.class);
+        Event t = mock(Event.class);
         doAnswer(new Answer<Long>() {
             @Override
             public Long answer(InvocationOnMock invocation) throws Throwable {
@@ -102,29 +102,29 @@ public class TaskLoopTest {
     }
 
     @Test(timeout = 1000)
-    public void testIsInLoopThread_ReturnsTrueIfInTaskLoop() throws Exception {
+    public void testIsInDispatcherThread_ReturnsTrueIfInEventDispatcher() throws Exception {
         executor_.execute(sut_);
-        final boolean[] isInLoopThread = new boolean[1];
+        final boolean[] isInDispatcherThread = new boolean[1];
         @SuppressWarnings("unchecked")
-        Task t = mock(Task.class);
+        Event t = mock(Event.class);
         doAnswer(new Answer<Long>() {
             @Override
             public Long answer(InvocationOnMock invocation) throws Throwable {
-                isInLoopThread[0] = sut_.isInLoopThread();
-                return Task.RETRY_IMMEDIATELY;
+                isInDispatcherThread[0] = sut_.isInDispatcherThread();
+                return Event.RETRY_IMMEDIATELY;
             }
         }).when(t).execute(TimeUnit.NANOSECONDS);
 
         sut_.offer(t);
 
-        while (!isInLoopThread[0]) {
+        while (!isInDispatcherThread[0]) {
             Thread.sleep(10);
         }
     }
 
     @Test
-    public void testIsInLoopThread_ReturnsFalseIfNotInTaskLoop() throws Exception {
-        assertThat(sut_.isInLoopThread(), is(false));
+    public void testIsInDispatcherThread_ReturnsFalseIfNotInEventDispatcher() throws Exception {
+        assertThat(sut_.isInDispatcherThread(), is(false));
     }
 
     @Test(timeout = 1000)
@@ -153,15 +153,15 @@ public class TaskLoopTest {
     @Test
     public void testToString_ReturnsDefaultIfSutIsNotExecuted() throws Exception {
         String actual = sut_.toString();
-        assertThat(actual, actual.matches(".*\\.TaskLoopMock@[0-9a-f]+"), is(true));
+        assertThat(actual, actual.matches(".*\\.EventDispatcherMock@[0-9a-f]+"), is(true));
     }
 
     @Test
     public void testCompareTo_ReturnsPositiveIfSutHasMoreSelection() throws Exception {
-        TaskLoop t = new TaskLoopMock();
-        TaskSelection s0 = mock(TaskSelection.class);
-        TaskSelection s1 = mock(TaskSelection.class);
-        TaskSelection s2 = mock(TaskSelection.class);
+        EventDispatcher t = new EventDispatcherMock();
+        EventDispatcherSelection s0 = mock(EventDispatcherSelection.class);
+        EventDispatcherSelection s1 = mock(EventDispatcherSelection.class);
+        EventDispatcherSelection s2 = mock(EventDispatcherSelection.class);
 
         t.accept(s0);
         sut_.accept(s1);
@@ -173,10 +173,10 @@ public class TaskLoopTest {
 
     @Test
     public void testCompareTo_ReturnsNegativeIfSutHasLessSelection() throws Exception {
-        TaskLoop t = new TaskLoopMock();
-        TaskSelection s0 = mock(TaskSelection.class);
-        TaskSelection s1 = mock(TaskSelection.class);
-        TaskSelection s2 = mock(TaskSelection.class);
+        EventDispatcher t = new EventDispatcherMock();
+        EventDispatcherSelection s0 = mock(EventDispatcherSelection.class);
+        EventDispatcherSelection s1 = mock(EventDispatcherSelection.class);
+        EventDispatcherSelection s2 = mock(EventDispatcherSelection.class);
 
         t.accept(s0);
         t.accept(s1);
@@ -187,9 +187,9 @@ public class TaskLoopTest {
 
     @Test
     public void testCompareTo_Return0IfSelectionCountIsTheSame() throws Exception {
-        TaskLoop t = new TaskLoopMock();
-        TaskSelection s0 = mock(TaskSelection.class);
-        TaskSelection s1 = mock(TaskSelection.class);
+        EventDispatcher t = new EventDispatcherMock();
+        EventDispatcherSelection s0 = mock(EventDispatcherSelection.class);
+        EventDispatcherSelection s1 = mock(EventDispatcherSelection.class);
 
         t.accept(s0);
         sut_.accept(s1);
@@ -199,8 +199,8 @@ public class TaskLoopTest {
 
     @Test
     public void testAcceptReject_Ordinary() throws Exception {
-        TaskSelection s0 = mock(TaskSelection.class);
-        TaskSelection s1 = mock(TaskSelection.class);
+        EventDispatcherSelection s0 = mock(EventDispatcherSelection.class);
+        EventDispatcherSelection s1 = mock(EventDispatcherSelection.class);
 
         assertThat(sut_.selectionCount(), is(0));
         assertThat(sut_.accept(s0), is(1));
@@ -215,33 +215,33 @@ public class TaskLoopTest {
     public void testRun_DelayQueueIsPolledTwiceSimultaneously() throws Exception {
         executor_.execute(sut_);
         final boolean[] done = new boolean[2];
-        Task task0 = mock(Task.class);
-        when(task0.execute(TimeUnit.NANOSECONDS)).thenAnswer(new Answer<Long>() {
+        Event event0 = mock(Event.class);
+        when(event0.execute(TimeUnit.NANOSECONDS)).thenAnswer(new Answer<Long>() {
             @Override
             public Long answer(InvocationOnMock invocation) throws Throwable {
                 done[0] = true;
-                return Task.DONE;
+                return Event.DONE;
             }
         });
-        Task task1 = mock(Task.class);
-        when(task1.execute(TimeUnit.NANOSECONDS)).thenAnswer(new Answer<Long>() {
+        Event event1 = mock(Event.class);
+        when(event1.execute(TimeUnit.NANOSECONDS)).thenAnswer(new Answer<Long>() {
             @Override
             public Long answer(InvocationOnMock invocation) throws Throwable {
                 done[1] = true;
-                return Task.DONE;
+                return Event.DONE;
             }
         });
 
-        TaskFuture e0 = sut_.schedule(task0, 100, TimeUnit.MILLISECONDS);
-        TaskFuture e1 = sut_.schedule(task1, 100, TimeUnit.MILLISECONDS);
+        EventFuture e0 = sut_.schedule(event0, 100, TimeUnit.MILLISECONDS);
+        EventFuture e1 = sut_.schedule(event1, 100, TimeUnit.MILLISECONDS);
 
         while (!done[0] || !done[1]) {
             Thread.sleep(10);
         }
-        verify(task0, timeout(120)).execute(TimeUnit.NANOSECONDS);
+        verify(event0, timeout(120)).execute(TimeUnit.NANOSECONDS);
         assertThat(e0.isDispatched(), is(true));
         assertThat(e0.isCancelled(), is(false));
-        verify(task1, timeout(120)).execute(TimeUnit.NANOSECONDS);
+        verify(event1, timeout(120)).execute(TimeUnit.NANOSECONDS);
         assertThat(e1.isDispatched(), is(true));
         assertThat(e1.isCancelled(), is(false));
     }
@@ -250,53 +250,53 @@ public class TaskLoopTest {
     public void testRun_DelayQueuePriority() throws Exception {
         executor_.execute(sut_);
         final Queue<Integer> order = new ArrayBlockingQueue<Integer>(10);
-        Task task0 = mock(Task.class);
-        when(task0.execute(TimeUnit.NANOSECONDS)).thenAnswer(new Answer<Long>() {
+        Event event0 = mock(Event.class);
+        when(event0.execute(TimeUnit.NANOSECONDS)).thenAnswer(new Answer<Long>() {
             @Override
             public Long answer(InvocationOnMock invocation) throws Throwable {
                 order.offer(0);
-                return Task.DONE;
+                return Event.DONE;
             }
         });
-        when(task0.toString()).thenReturn("task0");
-        Task task1 = mock(Task.class);
-        when(task1.execute(TimeUnit.NANOSECONDS)).thenAnswer(new Answer<Long>() {
+        when(event0.toString()).thenReturn("event0");
+        Event event1 = mock(Event.class);
+        when(event1.execute(TimeUnit.NANOSECONDS)).thenAnswer(new Answer<Long>() {
             @Override
             public Long answer(InvocationOnMock invocation) throws Throwable {
                 order.offer(1);
-                return Task.DONE;
+                return Event.DONE;
             }
         });
-        when(task1.toString()).thenReturn("task1");
+        when(event1.toString()).thenReturn("event1");
 
-        TaskFuture e0 = sut_.schedule(task0, 200, TimeUnit.MILLISECONDS);
-        TaskFuture e1 = sut_.schedule(task1, 100, TimeUnit.MILLISECONDS);
+        EventFuture e0 = sut_.schedule(event0, 200, TimeUnit.MILLISECONDS);
+        EventFuture e1 = sut_.schedule(event1, 100, TimeUnit.MILLISECONDS);
 
         while (order.size() < 2) {
             Thread.sleep(10);
         }
         assertThat(order.poll(), is(1));
         assertThat(order.poll(), is(0));
-        verify(task0, timeout(220)).execute(TimeUnit.NANOSECONDS);
+        verify(event0, timeout(220)).execute(TimeUnit.NANOSECONDS);
         assertThat(e0.isDispatched(), is(true));
         assertThat(e0.isCancelled(), is(false));
-        verify(task1, timeout(120)).execute(TimeUnit.NANOSECONDS);
+        verify(event1, timeout(120)).execute(TimeUnit.NANOSECONDS);
         assertThat(e1.isDispatched(), is(true));
         assertThat(e1.isCancelled(), is(false));
     }
 
     @Test
-    public void testTaskFutureCancel_RemoveHeadEntryInDelayQueue() throws Exception {
+    public void testEventFutureCancel_RemoveHeadEntryInDelayQueue() throws Exception {
         executor_.execute(sut_);
-        Task task0 = mock(Task.class);
-        when(task0.execute(TimeUnit.NANOSECONDS)).thenAnswer(new Answer<Long>() {
+        Event event0 = mock(Event.class);
+        when(event0.execute(TimeUnit.NANOSECONDS)).thenAnswer(new Answer<Long>() {
             @Override
             public Long answer(InvocationOnMock invocation) throws Throwable {
-                return Task.DONE;
+                return Event.DONE;
             }
         });
 
-        TaskFuture e = sut_.schedule(task0, 100, TimeUnit.MILLISECONDS);
+        EventFuture e = sut_.schedule(event0, 100, TimeUnit.MILLISECONDS);
         e.cancel();
         while (!e.isDone()) {
             Thread.sleep(10);
@@ -306,27 +306,27 @@ public class TaskLoopTest {
     }
 
     @Test
-    public void testTaskFutureCancel_RemoveHeadEntryInDelayQueueAfterExecute() throws Exception {
+    public void testEventFutureCancel_RemoveHeadEntryInDelayQueueAfterExecute() throws Exception {
         executor_.execute(sut_);
-        Task task0 = mock(Task.class);
-        when(task0.execute(TimeUnit.NANOSECONDS)).thenAnswer(new Answer<Long>() {
+        Event event0 = mock(Event.class);
+        when(event0.execute(TimeUnit.NANOSECONDS)).thenAnswer(new Answer<Long>() {
             @Override
             public Long answer(InvocationOnMock invocation) throws Throwable {
-                // System.out.println("task0");
-                return Task.DONE;
+                // System.out.println("event0");
+                return Event.DONE;
             }
         });
-        Task task1 = mock(Task.class);
-        when(task1.execute(TimeUnit.NANOSECONDS)).thenAnswer(new Answer<Long>() {
+        Event event1 = mock(Event.class);
+        when(event1.execute(TimeUnit.NANOSECONDS)).thenAnswer(new Answer<Long>() {
             @Override
             public Long answer(InvocationOnMock invocation) throws Throwable {
-                // System.out.println("task1");
-                return Task.DONE;
+                // System.out.println("event1");
+                return Event.DONE;
             }
         });
 
-        TaskFuture e0 = sut_.schedule(task0, 100, TimeUnit.MILLISECONDS);
-        TaskFuture e1 = sut_.schedule(task1, 100, TimeUnit.MILLISECONDS);
+        EventFuture e0 = sut_.schedule(event0, 100, TimeUnit.MILLISECONDS);
+        EventFuture e1 = sut_.schedule(event1, 100, TimeUnit.MILLISECONDS);
         e1.cancel();
         while (!e0.isDone() || !e1.isDone()) {
             // System.out.println(e0 + ", " + e1);

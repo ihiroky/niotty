@@ -13,7 +13,7 @@ import java.util.List;
  * <h3>Set up and close for support objects.</h3>
  * <p>This class has life cycle methods {@link #setUp()} and {@link #close()},
  * and a subsidiary method {@link #addClosable(Closable)} . If it is necessary
- * to set up support objects like {@link DefaultTaskLoopGroup} to execute {@link Stage},
+ * to set up support objects like {@link DefaultEventDispatcherGroup} to execute {@link Stage},
  * and {@link net.ihiroky.niotty.buffer.ChunkPool}, which are used
  * over the composing plural sets of load and store pipelines, {@link #setUp()} is overridden
  * and the objects is initialized in it. If tear down, {@link #close()} is overridden.

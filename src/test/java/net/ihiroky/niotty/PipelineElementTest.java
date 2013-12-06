@@ -15,20 +15,20 @@ import static org.mockito.Mockito.*;
 public class PipelineElementTest {
 
     private PipelineElement sut_;
-    private TaskLoop taskLoop_;
+    private EventDispatcher eventDispatcher_;
     private Stage stage_;
     private PipelineElement next_;
     private PipelineElement prev_;
 
     @Before
     public void setUp() throws Exception {
-        taskLoop_ = mock(TaskLoop.class);
+        eventDispatcher_ = mock(EventDispatcher.class);
         @SuppressWarnings("unchecked")
-        TaskLoopGroup<? extends TaskLoop> taskLoopGroup = mock(TaskLoopGroup.class);
+        EventDispatcherGroup<? extends EventDispatcher> eventDispatcherGroup = mock(EventDispatcherGroup.class);
         Pipeline pipeline = mock(Pipeline.class);
         stage_ = mock(Stage.class);
-        when(taskLoopGroup.assign(Mockito.<TaskSelection>any())).thenReturn(taskLoop_);
-        sut_ = new PipelineElement(pipeline, StageKeys.of("Test"), stage_, taskLoopGroup);
+        when(eventDispatcherGroup.assign(Mockito.<EventDispatcherSelection>any())).thenReturn(eventDispatcher_);
+        sut_ = new PipelineElement(pipeline, StageKeys.of("Test"), stage_, eventDispatcherGroup);
         next_ = mock(PipelineElement.class);
         prev_ = mock(PipelineElement.class);
         sut_.setNext(next_);
@@ -56,20 +56,20 @@ public class PipelineElementTest {
     }
 
     @Test
-    public void testCallStore_DirectlyIfInLoopThread() throws Exception {
-        when(taskLoop_.isInLoopThread()).thenReturn(true);
+    public void testCallStore_DirectlyIfInDispatcherThread() throws Exception {
+        when(eventDispatcher_.isInDispatcherThread()).thenReturn(true);
         Object message = new Object();
         Object p = new Object();
 
         sut_.callStore(message, p);
 
         verify(stage_).stored(sut_.storeContext_, message, p);
-        verify(taskLoop_, never()).offer(Mockito.<Task>any());
+        verify(eventDispatcher_, never()).offer(Mockito.<Event>any());
     }
 
     @Test
-    public void testCallStore_IndirectlyIfNotInLoopThread() throws Exception {
-        when(taskLoop_.isInLoopThread()).thenReturn(false);
+    public void testCallStore_IndirectlyIfNotInDispatcherThread() throws Exception {
+        when(eventDispatcher_.isInDispatcherThread()).thenReturn(false);
         Object message = new Object();
         Object parameter = new Object();
 
@@ -77,27 +77,27 @@ public class PipelineElementTest {
 
         verify(stage_, never()).stored(sut_.storeContext_, message, parameter);
 
-        ArgumentCaptor<Task> taskCaptor = ArgumentCaptor.forClass(Task.class);
-        verify(taskLoop_).offer(taskCaptor.capture());
-        taskCaptor.getValue().execute(TimeUnit.MILLISECONDS);
+        ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
+        verify(eventDispatcher_).offer(eventCaptor.capture());
+        eventCaptor.getValue().execute(TimeUnit.MILLISECONDS);
         verify(stage_).stored(sut_.storeContext_, message, parameter);
     }
 
     @Test
-    public void testCallLoad_DirectlyIfInLoopThread() throws Exception {
-        when(taskLoop_.isInLoopThread()).thenReturn(true);
+    public void testCallLoad_DirectlyIfInDispatcherThread() throws Exception {
+        when(eventDispatcher_.isInDispatcherThread()).thenReturn(true);
         Object message = new Object();
         Object parameter = new Object();
 
         sut_.callLoad(message, parameter);
 
         verify(stage_).loaded(sut_.loadContext_, message, parameter);
-        verify(taskLoop_, never()).offer(Mockito.<Task>any());
+        verify(eventDispatcher_, never()).offer(Mockito.<Event>any());
     }
 
     @Test
-    public void testCallLoad_IndirectlyIfNotInLoopThread() throws Exception {
-        when(taskLoop_.isInLoopThread()).thenReturn(false);
+    public void testCallLoad_IndirectlyIfNotInDispatcherThread() throws Exception {
+        when(eventDispatcher_.isInDispatcherThread()).thenReturn(false);
         Object message = new Object();
         Object parameter = new Object();
 
@@ -105,83 +105,83 @@ public class PipelineElementTest {
 
         verify(stage_, never()).loaded(sut_.loadContext_, message, parameter);
 
-        ArgumentCaptor<Task> taskCaptor = ArgumentCaptor.forClass(Task.class);
-        verify(taskLoop_).offer(taskCaptor.capture());
-        taskCaptor.getValue().execute(TimeUnit.MILLISECONDS);
+        ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
+        verify(eventDispatcher_).offer(eventCaptor.capture());
+        eventCaptor.getValue().execute(TimeUnit.MILLISECONDS);
         verify(stage_).loaded(sut_.loadContext_, message, parameter);
     }
 
     @Test
-    public void testActivate_DirectlyIfInLoopThread() throws Exception {
-        when(taskLoop_.isInLoopThread()).thenReturn(true);
+    public void testActivate_DirectlyIfInDispatcherThread() throws Exception {
+        when(eventDispatcher_.isInDispatcherThread()).thenReturn(true);
 
         sut_.callActivate();
 
         verify(stage_).activated(sut_.stateContext_);
-        verify(taskLoop_, never()).offer(Mockito.<Task>any());
+        verify(eventDispatcher_, never()).offer(Mockito.<Event>any());
     }
 
     @Test
-    public void testActivate_IndirectlyIfNotInLoopThread() throws Exception {
-        when(taskLoop_.isInLoopThread()).thenReturn(false);
+    public void testActivate_IndirectlyIfNotInDispatcherThread() throws Exception {
+        when(eventDispatcher_.isInDispatcherThread()).thenReturn(false);
 
         sut_.callActivate();
 
         verify(stage_, never()).activated(sut_.stateContext_);
 
-        ArgumentCaptor<Task> taskCaptor = ArgumentCaptor.forClass(Task.class);
-        verify(taskLoop_).offer(taskCaptor.capture());
-        taskCaptor.getValue().execute(TimeUnit.MILLISECONDS);
+        ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
+        verify(eventDispatcher_).offer(eventCaptor.capture());
+        eventCaptor.getValue().execute(TimeUnit.MILLISECONDS);
         verify(stage_).activated(sut_.stateContext_);
     }
 
     @Test
-    public void testDeactivate_DirectlyIfInLoopThread() throws Exception {
-        when(taskLoop_.isInLoopThread()).thenReturn(true);
+    public void testDeactivate_DirectlyIfInDispatcherThread() throws Exception {
+        when(eventDispatcher_.isInDispatcherThread()).thenReturn(true);
 
         sut_.callDeactivate(DeactivateState.LOAD);
 
         verify(stage_).deactivated(sut_.stateContext_, DeactivateState.LOAD);
-        verify(taskLoop_, never()).offer(Mockito.<Task>any());
+        verify(eventDispatcher_, never()).offer(Mockito.<Event>any());
     }
 
     @Test
-    public void testDeactivate_IndirectlyIfNotInLoopThread() throws Exception {
-        when(taskLoop_.isInLoopThread()).thenReturn(false);
+    public void testDeactivate_IndirectlyIfNotInDispatcherThread() throws Exception {
+        when(eventDispatcher_.isInDispatcherThread()).thenReturn(false);
 
         sut_.callDeactivate(DeactivateState.LOAD);
 
         verify(stage_, never()).deactivated(sut_.stateContext_, DeactivateState.LOAD);
 
-        ArgumentCaptor<Task> taskCaptor = ArgumentCaptor.forClass(Task.class);
-        verify(taskLoop_).offer(taskCaptor.capture());
-        taskCaptor.getValue().execute(TimeUnit.MILLISECONDS);
+        ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
+        verify(eventDispatcher_).offer(eventCaptor.capture());
+        eventCaptor.getValue().execute(TimeUnit.MILLISECONDS);
         verify(stage_).deactivated(sut_.stateContext_, DeactivateState.LOAD);
     }
 
     @Test
-    public void testCatchException_DirectlyIfInLoopThread() throws Exception {
-        when(taskLoop_.isInLoopThread()).thenReturn(true);
+    public void testCatchException_DirectlyIfInDispatcherThread() throws Exception {
+        when(eventDispatcher_.isInDispatcherThread()).thenReturn(true);
         Exception e = new Exception();
 
         sut_.callCatchException(e);
 
         verify(stage_).exceptionCaught(sut_.stateContext_, e);
-        verify(taskLoop_, never()).offer(Mockito.<Task>any());
+        verify(eventDispatcher_, never()).offer(Mockito.<Event>any());
     }
 
     @Test
-    public void testCatchException_IndirectlyIfNotInLoopThread() throws Exception {
-        when(taskLoop_.isInLoopThread()).thenReturn(false);
+    public void testCatchException_IndirectlyIfNotInDispatcherThread() throws Exception {
+        when(eventDispatcher_.isInDispatcherThread()).thenReturn(false);
         Exception e = new Exception();
 
         sut_.callCatchException(e);
 
         verify(stage_, never()).exceptionCaught(sut_.stateContext_, e);
 
-        ArgumentCaptor<Task> taskCaptor = ArgumentCaptor.forClass(Task.class);
-        verify(taskLoop_).offer(taskCaptor.capture());
-        taskCaptor.getValue().execute(TimeUnit.MILLISECONDS);
+        ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
+        verify(eventDispatcher_).offer(eventCaptor.capture());
+        eventCaptor.getValue().execute(TimeUnit.MILLISECONDS);
         verify(stage_).exceptionCaught(sut_.stateContext_, e);
     }
 }

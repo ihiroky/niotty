@@ -1,10 +1,10 @@
 package net.ihiroky.niotty.codec;
 
 import net.ihiroky.niotty.DeactivateState;
+import net.ihiroky.niotty.EventFuture;
 import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.StoreStage;
-import net.ihiroky.niotty.Task;
-import net.ihiroky.niotty.TaskFuture;
+import net.ihiroky.niotty.Event;
 import net.ihiroky.niotty.buffer.Packet;
 import net.ihiroky.niotty.util.Arguments;
 
@@ -43,7 +43,7 @@ public class DeficitRoundRobinEncoder extends StoreStage {
     private int smoothedBaseQuantum_;
     private int firstIndex_; // TODO calculate
     private final long timerIntervalNanos_;
-    private TaskFuture timerFuture_;
+    private EventFuture timerFuture_;
 
     private static final float MIN_WEIGHT = 0.05f;
     private static final float MAX_WEIGHT = 1f;
@@ -173,7 +173,7 @@ public class DeficitRoundRobinEncoder extends StoreStage {
             if (timerFuture_ != null) {
                 return;
             }
-            timerFuture_ = context.schedule(new Task() {
+            timerFuture_ = context.schedule(new Event() {
                 @Override
                 public long execute(TimeUnit timeUnit) throws Exception {
                     int baseQuantum = smoothedBaseQuantum_;
@@ -210,7 +210,7 @@ public class DeficitRoundRobinEncoder extends StoreStage {
         return weightedQueueList_.get(priority);
     }
 
-    TaskFuture timerFuture() {
+    EventFuture timerFuture() {
         return timerFuture_;
     }
 

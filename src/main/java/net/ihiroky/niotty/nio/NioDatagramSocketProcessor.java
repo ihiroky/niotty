@@ -10,7 +10,7 @@ import net.ihiroky.niotty.util.Arguments;
  */
 public class NioDatagramSocketProcessor extends AbstractProcessor<NioDatagramSocketTransport> {
 
-    private SelectLoopGroup ioSelectLoopGroup_;
+    private SelectDispatcherGroup ioSelectDispatcherGroup_;
     private int numberOfMessageIOThread_;
     private WriteQueueFactory<DatagramQueue> writeQueueFactory_;
 
@@ -26,15 +26,15 @@ public class NioDatagramSocketProcessor extends AbstractProcessor<NioDatagramSoc
         numberOfMessageIOThread_ = DEFAULT_NUMBER_OF_MESSAGE_IO_THREAD;
         writeQueueFactory_ = new SimpleDatagramQueueFactory();
 
-        readBufferSize_ = SelectLoopGroup.DEFAULT_READ_BUFFER_SIZE;
-        writeBufferSize_ = SelectLoopGroup.DEFAULT_WRITE_BUFFER_SIZE;
-        useDirectBuffer_ = SelectLoopGroup.DEFAULT_USE_DIRECT_BUFFER;
+        readBufferSize_ = SelectDispatcherGroup.DEFAULT_READ_BUFFER_SIZE;
+        writeBufferSize_ = SelectDispatcherGroup.DEFAULT_WRITE_BUFFER_SIZE;
+        useDirectBuffer_ = SelectDispatcherGroup.DEFAULT_USE_DIRECT_BUFFER;
         setName(DEFAULT_NAME);
     }
 
     @Override
     protected void onStart() {
-        ioSelectLoopGroup_ = new SelectLoopGroup(
+        ioSelectDispatcherGroup_ = new SelectDispatcherGroup(
                 new NameCountThreadFactory(name().concat("-IO")), numberOfMessageIOThread_)
                 .setReadBufferSize(readBufferSize_)
                 .setWriteBufferSize(writeBufferSize_)
@@ -43,13 +43,13 @@ public class NioDatagramSocketProcessor extends AbstractProcessor<NioDatagramSoc
 
     @Override
     protected void onStop() {
-        ioSelectLoopGroup_.close();
+        ioSelectDispatcherGroup_.close();
     }
 
     @Override
     public NioDatagramSocketTransport createTransport() {
         return new NioDatagramSocketTransport(
-                name(), pipelineComposer(), ioSelectLoopGroup_, writeQueueFactory_, (InternetProtocolFamily) null);
+                name(), pipelineComposer(), ioSelectDispatcherGroup_, writeQueueFactory_, (InternetProtocolFamily) null);
     }
 
     /**
@@ -63,7 +63,7 @@ public class NioDatagramSocketProcessor extends AbstractProcessor<NioDatagramSoc
      */
     public NioDatagramSocketTransport createTransport(InternetProtocolFamily family) {
         return new NioDatagramSocketTransport(
-                name(), pipelineComposer(), ioSelectLoopGroup_, writeQueueFactory_, family);
+                name(), pipelineComposer(), ioSelectDispatcherGroup_, writeQueueFactory_, family);
     }
 
     @Override

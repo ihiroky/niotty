@@ -1,10 +1,10 @@
 package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.DefaultTransportFuture;
+import net.ihiroky.niotty.Event;
 import net.ihiroky.niotty.FailedTransportFuture;
 import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.SuccessfulTransportFuture;
-import net.ihiroky.niotty.Task;
 import net.ihiroky.niotty.TransportException;
 import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.TransportOption;
@@ -36,11 +36,11 @@ import java.util.concurrent.TimeUnit;
 /**
  * An implementation of {@link net.ihiroky.niotty.Transport} for NIO {@code ServerSocketChannel}.
  */
-public class NioServerSocketTransport extends NioSocketTransport<SelectLoop> {
+public class NioServerSocketTransport extends NioSocketTransport<SelectDispatcher> {
 
     private ServerSocketChannel serverChannel_;
     private final String name_;
-    private final SelectLoopGroup ioSelectLoopGroup_;
+    private final SelectDispatcherGroup ioSelectDispatcherGroup_;
     private final PipelineComposer childPipelineComposer_;
     private final WriteQueueFactory<PacketQueue> writeQueueFactory_;
     private final Map<TransportOption<Object>, Object> acceptedSocketOptionMap_;
@@ -51,9 +51,9 @@ public class NioServerSocketTransport extends NioSocketTransport<SelectLoop> {
                     TransportOptions.SO_RCVBUF, TransportOptions.SO_REUSEADDR)));
 
     public NioServerSocketTransport(String name, PipelineComposer childPipelineComposer,
-            SelectLoopGroup acceptSelectLoopGroup, SelectLoopGroup ioSelectLoopGroup,
+            SelectDispatcherGroup acceptSelectDispatcherGroup, SelectDispatcherGroup ioSelectDispatcherGroup,
             WriteQueueFactory<PacketQueue> writeQueueFactory) {
-        super(name, PipelineComposer.empty(), acceptSelectLoopGroup);
+        super(name, PipelineComposer.empty(), acceptSelectDispatcherGroup);
 
         ServerSocketChannel serverChannel = null;
         try {
@@ -62,7 +62,7 @@ public class NioServerSocketTransport extends NioSocketTransport<SelectLoop> {
 
             serverChannel_ = serverChannel;
             name_ = name;
-            ioSelectLoopGroup_ = ioSelectLoopGroup;
+            ioSelectDispatcherGroup_ = ioSelectDispatcherGroup;
             childPipelineComposer_ = childPipelineComposer;
             writeQueueFactory_ = writeQueueFactory;
             acceptedSocketOptionMap_ = new HashMap<TransportOption<Object>, Object>();
@@ -79,13 +79,13 @@ public class NioServerSocketTransport extends NioSocketTransport<SelectLoop> {
     }
 
     public NioServerSocketTransport(String name, PipelineComposer childPipelineComposer,
-            SelectLoopGroup acceptSelectLoopGroup, SelectLoopGroup ioSelectLoopGroup,
+            SelectDispatcherGroup acceptSelectDispatcherGroup, SelectDispatcherGroup ioSelectDispatcherGroup,
             WriteQueueFactory<PacketQueue> writeQueueFactory, ServerSocketChannel channel) {
-        super(name, PipelineComposer.empty(), acceptSelectLoopGroup);
+        super(name, PipelineComposer.empty(), acceptSelectDispatcherGroup);
 
         serverChannel_ = channel;
         name_ = name;
-        ioSelectLoopGroup_ = ioSelectLoopGroup;
+        ioSelectDispatcherGroup_ = ioSelectDispatcherGroup;
         childPipelineComposer_ = childPipelineComposer;
         writeQueueFactory_ = writeQueueFactory;
         acceptedSocketOptionMap_ = new HashMap<TransportOption<Object>, Object>();
@@ -231,7 +231,7 @@ public class NioServerSocketTransport extends NioSocketTransport<SelectLoop> {
 
 
         final DefaultTransportFuture future = new DefaultTransportFuture(this);
-        taskLoop().execute(new Task() {
+        eventDispatcher().execute(new Event() {
             @Override
             public long execute(TimeUnit timeUnit) throws Exception {
                 if (future.executing()) {
@@ -261,7 +261,7 @@ public class NioServerSocketTransport extends NioSocketTransport<SelectLoop> {
 
     @Override
     public TransportFuture close() {
-        if (taskLoop() != null) {
+        if (eventDispatcher() != null) {
             return closeSelectableChannel();
         }
         try {
@@ -279,7 +279,7 @@ public class NioServerSocketTransport extends NioSocketTransport<SelectLoop> {
     }
 
     @Override
-    void onSelected(SelectionKey key, SelectLoop selectLoop) {
+    void onSelected(SelectionKey key, SelectDispatcher selectDispatcher) {
         ServerSocketChannel channel = (ServerSocketChannel) key.channel();
         try {
             SocketChannel acceptedChannel = channel.accept();
@@ -295,7 +295,7 @@ public class NioServerSocketTransport extends NioSocketTransport<SelectLoop> {
         // SocketChannel#getRemoteAddress() may throw IOException, so get remoteAddress first.
         SocketChannel socketChannel = (SocketChannel) channel;
         NioClientSocketTransport acceptedChannel = new NioClientSocketTransport(
-                name_, childPipelineComposer_, ioSelectLoopGroup_, writeQueueFactory_, socketChannel);
+                name_, childPipelineComposer_, ioSelectDispatcherGroup_, writeQueueFactory_, socketChannel);
         synchronized (acceptedSocketOptionMap_) {
             for (Map.Entry<TransportOption<Object>, Object> option : acceptedSocketOptionMap_.entrySet()) {
                 acceptedChannel.setOption(option.getKey(), option.getValue());

@@ -2,10 +2,10 @@ package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.DeactivateState;
 import net.ihiroky.niotty.DefaultTransportFuture;
+import net.ihiroky.niotty.Event;
 import net.ihiroky.niotty.FailedTransportFuture;
 import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.SuccessfulTransportFuture;
-import net.ihiroky.niotty.Task;
 import net.ihiroky.niotty.TransportException;
 import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.TransportOption;
@@ -40,7 +40,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * An implementation of {@link net.ihiroky.niotty.Transport} for NIO {@code DatagramChannel}.
  */
-public class NioDatagramSocketTransport extends NioSocketTransport<SelectLoop> {
+public class NioDatagramSocketTransport extends NioSocketTransport<SelectDispatcher> {
 
     private final DatagramChannel channel_;
     private final DatagramQueue writeQueue_;
@@ -57,9 +57,9 @@ public class NioDatagramSocketTransport extends NioSocketTransport<SelectLoop> {
                     TransportOptions.IP_MULTICAST_TTL, TransportOptions.IP_TOS)));
 
     public NioDatagramSocketTransport(String name, PipelineComposer composer,
-            SelectLoopGroup ioSelectLoopGroup, WriteQueueFactory<DatagramQueue> writeQueueFactory,
+            SelectDispatcherGroup ioSelectDispatcherGroup, WriteQueueFactory<DatagramQueue> writeQueueFactory,
             InternetProtocolFamily family) {
-        super(name, composer, ioSelectLoopGroup);
+        super(name, composer, ioSelectDispatcherGroup);
 
         Arguments.requireNonNull(writeQueueFactory, "writeQueueFactory");
 
@@ -89,9 +89,9 @@ public class NioDatagramSocketTransport extends NioSocketTransport<SelectLoop> {
     }
 
     public NioDatagramSocketTransport(String name, PipelineComposer composer,
-            SelectLoopGroup ioSelectLoopGroup, WriteQueueFactory<DatagramQueue> writeQueueFactory,
+            SelectDispatcherGroup ioSelectDispatcherGroup, WriteQueueFactory<DatagramQueue> writeQueueFactory,
             DatagramChannel channel) {
-        super(name, composer, ioSelectLoopGroup);
+        super(name, composer, ioSelectDispatcherGroup);
 
         Arguments.requireNonNull(writeQueueFactory, "writeQueueFactory");
 
@@ -236,7 +236,7 @@ public class NioDatagramSocketTransport extends NioSocketTransport<SelectLoop> {
         }
 
         final DefaultTransportFuture future = new DefaultTransportFuture(this);
-        taskLoop().execute(new Task() {;
+        eventDispatcher().execute(new Event() {;
             @Override
             public long execute(TimeUnit timeUnit) throws Exception {
                 if (future.executing()) {
@@ -311,7 +311,7 @@ public class NioDatagramSocketTransport extends NioSocketTransport<SelectLoop> {
     @Override
     public TransportFuture connect(final SocketAddress remote) {
         final DefaultTransportFuture future = new DefaultTransportFuture(this);
-        taskLoop().execute(new Task() {
+        eventDispatcher().execute(new Event() {
             @Override
             public long execute(TimeUnit timeUnit) throws Exception {
                 if (future.executing()) {
@@ -347,7 +347,7 @@ public class NioDatagramSocketTransport extends NioSocketTransport<SelectLoop> {
      */
     public TransportFuture disconnect() {
         final DefaultTransportFuture future = new DefaultTransportFuture(this);
-        taskLoop().execute(new Task() {
+        eventDispatcher().execute(new Event() {
             @Override
             public long execute(TimeUnit timeUnit) {
                 if (future.executing()) {
@@ -395,13 +395,13 @@ public class NioDatagramSocketTransport extends NioSocketTransport<SelectLoop> {
     }
 
     @Override
-    void onSelected(SelectionKey key, SelectLoop selectLoop) {
+    void onSelected(SelectionKey key, SelectDispatcher selectDispatcher) {
         assert key == key();
 
         DatagramChannel channel = (DatagramChannel) key.channel();
         try {
             if (key.isReadable()) {
-                ByteBuffer readBuffer = selectLoop.readBuffer_;
+                ByteBuffer readBuffer = selectDispatcher.readBuffer_;
                 if (channel.isConnected()) {
                     for (;;) {
                         int read = channel.read(readBuffer);
@@ -427,7 +427,7 @@ public class NioDatagramSocketTransport extends NioSocketTransport<SelectLoop> {
                 }
                 readBuffer.clear();
             } else if (key.isWritable()) {
-                flush(selectLoop.writeBuffer_);
+                flush(selectDispatcher.writeBuffer_);
             }
         } catch (ClosedByInterruptException ie) {
             if (logger_.isDebugEnabled()) {

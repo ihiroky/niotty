@@ -40,10 +40,10 @@ public class DefaultTransportFutureTest {
     @Before
     public void setUp() {
         @SuppressWarnings("unchecked")
-        AbstractTransport<TaskLoop> transport = mock(AbstractTransport.class);
-        TaskLoop taskLoop = mock(TaskLoop.class);
-        when(taskLoop.isInLoopThread()).thenReturn(true);
-        when(transport.taskLoop()).thenReturn(taskLoop);
+        AbstractTransport<EventDispatcher> transport = mock(AbstractTransport.class);
+        EventDispatcher eventDispatcher = mock(EventDispatcher.class);
+        when(eventDispatcher.isInDispatcherThread()).thenReturn(true);
+        when(transport.eventDispatcher()).thenReturn(eventDispatcher);
         sut_ = new DefaultTransportFuture(transport);
         listener_ = new Listener();
     }

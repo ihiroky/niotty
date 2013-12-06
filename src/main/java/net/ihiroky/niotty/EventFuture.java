@@ -3,21 +3,21 @@ package net.ihiroky.niotty;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 /**
- * A future represents the result of a delayed task scheduled by
- * {@link TaskLoop#schedule(Task, long, java.util.concurrent.TimeUnit)}.
+ * A future represents the result of a delayed event scheduled by
+ * {@link EventDispatcher#schedule(Event, long, java.util.concurrent.TimeUnit)}.
  *
- * This class has a state. If the task is cancelled, then {@link #isCancelled()}
- * returns true. If dispatched (the task was executed or retried immediately), then
+ * This class has a state. If the event is cancelled, then {@link #isCancelled()}
+ * returns true. If dispatched (the event was executed or retried immediately), then
  * {@link #isDispatched()} returns true. If cancelled or dispatched, then
  * {@link #isDone()} returns true.
  */
-public class TaskFuture implements Comparable<TaskFuture> {
+public class EventFuture implements Comparable<EventFuture> {
     private long expire_;
-    final Task task_;
+    final Event event_;
     private volatile State state_;
 
-    private static final AtomicReferenceFieldUpdater<TaskFuture, State> STATE_UPDATER =
-            AtomicReferenceFieldUpdater.newUpdater(TaskFuture.class, State.class, "state_");
+    private static final AtomicReferenceFieldUpdater<EventFuture, State> STATE_UPDATER =
+            AtomicReferenceFieldUpdater.newUpdater(EventFuture.class, State.class, "state_");
 
     private enum State {
         WAITING,
@@ -27,9 +27,9 @@ public class TaskFuture implements Comparable<TaskFuture> {
         ;
     }
 
-    public TaskFuture(long expire, Task task) {
+    public EventFuture(long expire, Event event) {
         expire_ = expire;
-        task_ = task;
+        event_ = event;
         state_ = State.WAITING;
     }
 
@@ -51,38 +51,38 @@ public class TaskFuture implements Comparable<TaskFuture> {
     }
 
     /**
-     * Cancels the task if not dispatched.
+     * Cancels the event if not dispatched.
      */
     public void cancel() {
         STATE_UPDATER.compareAndSet(this, State.WAITING, State.CANCELLED);
     }
 
     /**
-     * Returns true if the task is cancelled.
-     * @return true if the task is cancelled
+     * Returns true if the event is cancelled.
+     * @return true if the event is cancelled
      */
     public boolean isCancelled() {
         return state_ == State.CANCELLED;
     }
 
     /**
-     * Returns true if the task is dispatched.
-     * @return true if the task is dispatched
+     * Returns true if the event is dispatched.
+     * @return true if the event is dispatched
      */
     public boolean isDispatched() {
         return state_ == State.DISPATCHED;
     }
 
     /**
-     * Returns true if the task is cancelled or dispatched.
-     * @return true if the task is cancelled or dispatched
+     * Returns true if the event is cancelled or dispatched.
+     * @return true if the event is cancelled or dispatched
      */
     public boolean isDone() {
         return state_ == State.CANCELLED || state_ == State.DISPATCHED;
     }
 
     @Override
-    public int compareTo(TaskFuture o) {
+    public int compareTo(EventFuture o) {
         return (expire_ > o.expire_)
                 ? 1
                 : ((expire_ < o.expire_) ? -1 : 0);
@@ -90,6 +90,6 @@ public class TaskFuture implements Comparable<TaskFuture> {
 
     @Override
     public String toString() {
-        return "(expire:" + expire_ + ", task:" + task_ + ", state:" + state_ + ")";
+        return "(expire:" + expire_ + ", event:" + event_ + ", state:" + state_ + ")";
     }
 }

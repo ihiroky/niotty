@@ -4,7 +4,7 @@ import net.ihiroky.niotty.DeactivateState;
 import net.ihiroky.niotty.Stage;
 import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.StoreStage;
-import net.ihiroky.niotty.TaskLoop;
+import net.ihiroky.niotty.EventDispatcher;
 import net.ihiroky.niotty.buffer.Packet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,9 +20,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * An implementation of {@link net.ihiroky.niotty.TaskLoop} to handle {@link java.nio.channels.SelectableChannel}.
+ * An implementation of {@link net.ihiroky.niotty.EventDispatcher} to handle {@link java.nio.channels.SelectableChannel}.
  */
-public class SelectLoop extends TaskLoop {
+public class SelectDispatcher extends EventDispatcher {
 
     private Selector selector_;
     private final AtomicBoolean wakenUp_;
@@ -30,21 +30,21 @@ public class SelectLoop extends TaskLoop {
     final ByteBuffer writeBuffer_;
     private final Stage ioStage_;
 
-    private static Logger logger_ = LoggerFactory.getLogger(SelectLoop.class);
+    private static Logger logger_ = LoggerFactory.getLogger(SelectDispatcher.class);
 
     private static final ByteBuffer EMPTY_BUFFER = ByteBuffer.allocate(0).asReadOnlyBuffer();
 
     /**
      * Creates a new instance.
      */
-    protected SelectLoop() {
+    protected SelectDispatcher() {
         wakenUp_ = new AtomicBoolean();
         readBuffer_ = EMPTY_BUFFER;
         writeBuffer_ = EMPTY_BUFFER;
         ioStage_ = new IOStage(EMPTY_BUFFER);
     }
 
-    protected SelectLoop(int readBufferSize, int writeBufferSize, boolean direct) {
+    protected SelectDispatcher(int readBufferSize, int writeBufferSize, boolean direct) {
         wakenUp_ = new AtomicBoolean();
         readBuffer_ = direct ? ByteBuffer.allocateDirect(readBufferSize) : ByteBuffer.allocate(readBufferSize);
         writeBuffer_ = direct ? ByteBuffer.allocateDirect(writeBufferSize) : ByteBuffer.allocate(writeBufferSize);

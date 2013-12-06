@@ -27,14 +27,14 @@
  * {@link net.ihiroky.niotty.Stage#exceptionCaught(net.ihiroky.niotty.StageContext, Exception)}
  * (when an exception occurs on I/O operation).
  *
- * <h3>TaskLoop and TaskLoopGroup</h3>
- * {@link net.ihiroky.niotty.TaskLoop} consists of a queue to receive
- * {@link net.ihiroky.niotty.Task} and a thread to execute the {@code Task}
+ * <h3>EventDispatcher and EventDispatcherGroup</h3>
+ * {@link net.ihiroky.niotty.EventDispatcher} consists of a queue to receive
+ * {@link net.ihiroky.niotty.Event} and a thread to execute the {@code Event}
  * and its own processing implemented by its sub type.
- * {@link net.ihiroky.niotty.TaskLoopGroup} manages the {@code TaskLoop} instances
- * and registers objects which are processed by the {@code TaskLoop} with it.
+ * {@link net.ihiroky.niotty.EventDispatcherGroup} manages the {@code EventDispatcher} instances
+ * and registers objects which are processed by the {@code EventDispatcher} with it.
  * Once the object is registered with the object, it is processed by the
- * thread {@code TaskLoop} until unregistered.
+ * thread {@code EventDispatcher} until unregistered.
  *
  * <h3>Processor</h3>
  * {@link net.ihiroky.niotty.Processor} manages the {@code Transport} and the I/O threads.

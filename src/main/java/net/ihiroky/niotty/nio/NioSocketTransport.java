@@ -3,11 +3,11 @@ package net.ihiroky.niotty.nio;
 import net.ihiroky.niotty.AbstractTransport;
 import net.ihiroky.niotty.DeactivateState;
 import net.ihiroky.niotty.DefaultTransportFuture;
+import net.ihiroky.niotty.Event;
 import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.Stage;
 import net.ihiroky.niotty.SuccessfulTransportFuture;
-import net.ihiroky.niotty.Task;
-import net.ihiroky.niotty.TaskLoopGroup;
+import net.ihiroky.niotty.EventDispatcherGroup;
 import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.buffer.Packet;
 import net.ihiroky.niotty.util.Arguments;
@@ -24,19 +24,19 @@ import java.util.concurrent.TimeUnit;
  * A skeletal implementation of {@link net.ihiroky.niotty.Transport} for NIO.
  * @param <S> a type of selector
  */
-public abstract class NioSocketTransport<S extends SelectLoop> extends AbstractTransport<S> {
+public abstract class NioSocketTransport<S extends SelectDispatcher> extends AbstractTransport<S> {
 
     private SelectionKey key_;
     private static Logger logger_ = LoggerFactory.getLogger(NioSocketTransport.class);
 
     NioSocketTransport(
-            String name, PipelineComposer pipelineComposer, TaskLoopGroup<S> taskLoopGroup) {
-        super(name, pipelineComposer, taskLoopGroup);
+            String name, PipelineComposer pipelineComposer, EventDispatcherGroup<S> eventDispatcherGroup) {
+        super(name, pipelineComposer, eventDispatcherGroup);
     }
 
     @Override
     protected Stage ioStage() {
-        return taskLoop().ioStage();
+        return eventDispatcher().ioStage();
     }
 
     @Override
@@ -50,12 +50,12 @@ public abstract class NioSocketTransport<S extends SelectLoop> extends AbstractT
     }
 
     final TransportFuture closeSelectableChannel() {
-        S selector = taskLoop();
+        S selector = eventDispatcher();
         if (selector == null) {
             closePipeline();
             return new SuccessfulTransportFuture(this);
         }
-        selector.offer(new Task() {
+        selector.offer(new Event() {
             @Override
             public long execute(TimeUnit timeUnit) {
                 NioSocketTransport.this.doCloseSelectableChannel();
@@ -118,22 +118,22 @@ public abstract class NioSocketTransport<S extends SelectLoop> extends AbstractT
             return;
         }
 
-        final S loop = taskLoop();
-        if (loop.isInLoopThread()) {
+        final S dispatcher = eventDispatcher();
+        if (dispatcher.isInDispatcherThread()) {
             if (ops == SelectionKey.OP_READ) {
                 pipeline().activate();
             }
-            key_ = loop.register(channel, ops, NioSocketTransport.this);
+            key_ = dispatcher.register(channel, ops, NioSocketTransport.this);
         } else {
             // case: ConnectorSelector <-> TcpIOSelector
-            loop.offer(new Task() {
+            dispatcher.offer(new Event() {
                 @Override
                 public long execute(TimeUnit timeUnit) {
                     try {
                         if (ops == SelectionKey.OP_READ) {
                             pipeline().activate();
                         }
-                        key_ = loop.register(channel, ops, NioSocketTransport.this);
+                        key_ = dispatcher.register(channel, ops, NioSocketTransport.this);
                     } catch (IOException ioe) {
                         logger_.warn("[register] Failed to register a channel:" + this, ioe);
                     }
@@ -150,7 +150,7 @@ public abstract class NioSocketTransport<S extends SelectLoop> extends AbstractT
             pipeline().deactivate(DeactivateState.WHOLE);
         }
         key_.cancel();
-        taskLoop().reject(this);
+        eventDispatcher().reject(this);
         logger_.debug("[unregister] {} is unregistered from {}.", this, Thread.currentThread());
     }
 
@@ -161,7 +161,7 @@ public abstract class NioSocketTransport<S extends SelectLoop> extends AbstractT
                 return;
             case FLUSHING:
                 clearInterestOp(SelectionKey.OP_WRITE);
-                taskLoop().schedule(new Task() {
+                eventDispatcher().schedule(new Event() {
                     @Override
                     public long execute(TimeUnit timeUnit) throws Exception {
                         setInterestOp(SelectionKey.OP_WRITE);
@@ -177,7 +177,7 @@ public abstract class NioSocketTransport<S extends SelectLoop> extends AbstractT
         }
     }
 
-    abstract void onSelected(SelectionKey key, SelectLoop selectLoop);
+    abstract void onSelected(SelectionKey key, SelectDispatcher selectDispatcher);
     abstract void readyToWrite(Packet message, Object parameter);
     abstract void flush(ByteBuffer writeBuffer) throws IOException;
 }

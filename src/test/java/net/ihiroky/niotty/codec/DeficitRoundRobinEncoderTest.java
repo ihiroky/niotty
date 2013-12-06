@@ -1,8 +1,8 @@
 package net.ihiroky.niotty.codec;
 
+import net.ihiroky.niotty.Event;
+import net.ihiroky.niotty.EventFuture;
 import net.ihiroky.niotty.StageContext;
-import net.ihiroky.niotty.Task;
-import net.ihiroky.niotty.TaskFuture;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.CodecBuffer;
 import org.junit.Before;
@@ -25,18 +25,18 @@ import static org.mockito.Mockito.*;
 public class DeficitRoundRobinEncoderTest {
 
     private StageContext context_;
-    private Task timer_;
+    private Event timer_;
 
     @Before
     public void setUp() throws Exception {
         context_ = mock(StageContext.class);
-        doAnswer(new Answer<TaskFuture>() {
+        doAnswer(new Answer<EventFuture>() {
             @Override
-            public TaskFuture answer(InvocationOnMock invocation) throws Throwable {
-                timer_ = (Task) invocation.getArguments()[0];
-                return new TaskFuture(0, timer_);
+            public EventFuture answer(InvocationOnMock invocation) throws Throwable {
+                timer_ = (Event) invocation.getArguments()[0];
+                return new EventFuture(0, timer_);
             }
-        }).when(context_).schedule(Mockito.<Task>any(), anyLong(), Mockito.<TimeUnit>any());
+        }).when(context_).schedule(Mockito.<Event>any(), anyLong(), Mockito.<TimeUnit>any());
     }
 
     @Test
@@ -83,7 +83,7 @@ public class DeficitRoundRobinEncoderTest {
 
         ArgumentCaptor<Long> timerDelayCaptor = ArgumentCaptor.forClass(Long.class);
         verify(context_).proceed(b, null);
-        verify(context_).schedule(Mockito.<Task>any(), timerDelayCaptor.capture(), Mockito.<TimeUnit>any());
+        verify(context_).schedule(Mockito.<Event>any(), timerDelayCaptor.capture(), Mockito.<TimeUnit>any());
         assertThat(timerDelayCaptor.getValue(), is(TimeUnit.MILLISECONDS.toNanos(1L)));
         assertThat(sut.deficitCounter(0), is(64 / 2));
         assertThat(sut.deficitCounter(1), is(64 / 4));
@@ -108,7 +108,7 @@ public class DeficitRoundRobinEncoderTest {
         ArgumentCaptor<CodecBuffer> proceededCaptor = ArgumentCaptor.forClass(CodecBuffer.class);
         ArgumentCaptor<Long> timerDelayCaptor = ArgumentCaptor.forClass(Long.class);
         verify(context_, times(3)).proceed(proceededCaptor.capture(), eq(p));
-        verify(context_).schedule(Mockito.<Task>any(), timerDelayCaptor.capture(), Mockito.<TimeUnit>any());
+        verify(context_).schedule(Mockito.<Event>any(), timerDelayCaptor.capture(), Mockito.<TimeUnit>any());
         List<CodecBuffer> proceededList = proceededCaptor.getAllValues();
         assertThat(proceededList.get(0), is(sameInstance(b)));
         assertThat(proceededList.get(1), is(sameInstance(b)));
@@ -144,7 +144,7 @@ public class DeficitRoundRobinEncoderTest {
         long delay1 = timer_.execute(TimeUnit.NANOSECONDS);
 
         assertThat(delay0, is(TimeUnit.MILLISECONDS.toNanos(1L)));
-        assertThat(delay1, is(Task.DONE));
+        assertThat(delay1, is(Event.DONE));
         assertThat(sut.deficitCounter(0), is(0));
         assertThat(sut.queue(0).size(), is(0));
         assertThat(sut.timerFuture(), is(nullValue()));
