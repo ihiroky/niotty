@@ -3,6 +3,7 @@ apply plugin: 'checkstyle'
 apply plugin: 'findbugs'
 apply plugin: 'pmd'
 apply plugin: 'jacoco'
+apply plugin: 'coveralls'
 apply plugin: 'idea'
 
 version = '0.3'
@@ -16,6 +17,16 @@ targetCompatibility = 1.6
     it.options.encoding = encoding
 }
 compileJava.options.compilerArgs = ['-Xlint:all']
+
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath 'org.kt3k.gradle.plugin:coveralls-gradle-plugin:0.2.1'
+    }
+}
 
 repositories {
     mavenCentral()
