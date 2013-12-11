@@ -4,5 +4,8 @@ jdk:
   - openjdk7
   - oraclejdk7
 
+script
+  - gradle test  # skip check for the time being
+
 after_success:
   - gradle jacocoTestReport coveralls
