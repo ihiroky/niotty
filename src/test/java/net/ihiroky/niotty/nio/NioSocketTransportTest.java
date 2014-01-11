@@ -130,5 +130,10 @@ public class NioSocketTransportTest {
         public Set<TransportOption<?>> supportedOptions() {
             return null;
         }
+
+        @Override
+        public int pendingWriteBuffers() {
+            return 0;
+        }
     }
 }

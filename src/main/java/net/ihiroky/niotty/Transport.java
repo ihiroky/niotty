@@ -119,4 +119,10 @@ public interface Transport extends EventDispatcherSelection {
      * @return the pipeline
      */
     Pipeline pipeline();
+
+    /**
+     * Returns the number of write buffers to be flushed.
+     * @return the number of write buffers to be flushed
+     */
+    int pendingWriteBuffers();
 }

@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.nio.channels.GatheringByteChannel;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 /**
  *
@@ -13,6 +14,30 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class SimplePacketQueue implements PacketQueue {
 
     private Queue<Packet> queue_;
+    private volatile int size_; // broken if queue_ has elements more than Integer.MAX_VALUE.
+
+    private static final AtomicIntegerFieldUpdater<SimplePacketQueue> SIZE_UPDATER =
+            AtomicIntegerFieldUpdater.newUpdater(SimplePacketQueue.class, "size_");
+
+    private void incrementSize() {
+        int size;
+        for (;;) {
+            size = size_;
+            if (SIZE_UPDATER.compareAndSet(this, size, size + 1)) {
+                return;
+            }
+        }
+    }
+
+    private void decrementSize() {
+        int size;
+        for (;;) {
+            size = size_;
+            if (SIZE_UPDATER.compareAndSet(this, size, size - 1)) {
+                return;
+            }
+        }
+    }
 
     public SimplePacketQueue() {
         queue_ = new ConcurrentLinkedQueue<Packet>();
@@ -20,6 +45,7 @@ public class SimplePacketQueue implements PacketQueue {
 
     @Override
     public boolean offer(Packet packet) {
+        incrementSize();
         return queue_.offer(packet);
     }
 
@@ -34,6 +60,7 @@ public class SimplePacketQueue implements PacketQueue {
             if (message.sink(channel)) {
                 message.dispose();
                 queue_.poll();
+                decrementSize();
             } else {
                 return FlushStatus.FLUSHING;
             }
@@ -42,7 +69,7 @@ public class SimplePacketQueue implements PacketQueue {
 
     @Override
     public int size() {
-        return queue_.size();
+        return size_;
     }
 
     @Override

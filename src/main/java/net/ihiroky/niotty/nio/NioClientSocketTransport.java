@@ -273,6 +273,7 @@ public class NioClientSocketTransport extends NioSocketTransport<SelectDispatche
         return channel_.isOpen();
     }
 
+    @Override
     public int pendingWriteBuffers() {
         return writeQueue_.size();
     }

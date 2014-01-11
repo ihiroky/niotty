@@ -84,6 +84,11 @@ public class ConnectionWaitTransport extends NioSocketTransport<SelectDispatcher
     }
 
     @Override
+    public int pendingWriteBuffers() {
+        return 0;
+    }
+
+    @Override
     void flush(ByteBuffer writeBuffer) throws IOException {
         throw new UnsupportedOperationException();
     }

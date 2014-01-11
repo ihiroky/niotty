@@ -8,6 +8,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 /**
  *
@@ -15,6 +16,30 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class SimpleDatagramQueue implements DatagramQueue {
 
     private Queue<AttachedMessage<Packet>> queue_;
+    private volatile int size_; // broken if queue_ has elements more than Integer.MAX_VALUE.
+
+    private static final AtomicIntegerFieldUpdater<SimpleDatagramQueue> SIZE_UPDATER =
+            AtomicIntegerFieldUpdater.newUpdater(SimpleDatagramQueue.class, "size_");
+
+    private void incrementSize() {
+        int size;
+        for (;;) {
+            size = size_;
+            if (SIZE_UPDATER.compareAndSet(this, size, size + 1)) {
+                return;
+            }
+        }
+    }
+
+    private void decrementSize() {
+        int size;
+        for (;;) {
+            size = size_;
+            if (SIZE_UPDATER.compareAndSet(this, size, size - 1)) {
+                return;
+            }
+        }
+    }
 
     public SimpleDatagramQueue() {
         queue_ = new ConcurrentLinkedQueue<AttachedMessage<Packet>>();
@@ -22,6 +47,7 @@ public class SimpleDatagramQueue implements DatagramQueue {
 
     @Override
     public boolean offer(AttachedMessage<Packet> message) {
+        incrementSize();
         return queue_.offer(message);
     }
 
@@ -39,6 +65,7 @@ public class SimpleDatagramQueue implements DatagramQueue {
             if (sunk) {
                 buffer.dispose();
                 queue_.poll();
+                decrementSize();
             } else {
                 return FlushStatus.FLUSHING;
             }
@@ -47,7 +74,7 @@ public class SimpleDatagramQueue implements DatagramQueue {
 
     @Override
     public int size() {
-        return queue_.size();
+        return size_;
     }
 
     @Override

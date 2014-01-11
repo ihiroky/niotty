@@ -291,6 +291,7 @@ public class NioDatagramSocketTransport extends NioSocketTransport<SelectDispatc
         return channel_.isOpen();
     }
 
+    @Override
     public int pendingWriteBuffers() {
         return writeQueue_.size();
     }

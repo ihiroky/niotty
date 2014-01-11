@@ -162,6 +162,11 @@ public class NioServerSocketTransport extends NioSocketTransport<SelectDispatche
         return SUPPORTED_OPTIONS;
     }
 
+    @Override
+    public int pendingWriteBuffers() {
+        return 0;
+    }
+
     @SuppressWarnings("unchecked")
     public <T> NioServerSocketTransport setAcceptedTransportOption(TransportOption<T> option, T value) {
         synchronized (acceptedSocketOptionMap_) {
