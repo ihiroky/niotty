@@ -48,7 +48,8 @@ public class UdpEchoMain {
             clientTransport.bind(clientEndPoint).await().throwExceptionIfFailed();
             serverTransport.connect(clientEndPoint).await().throwExceptionIfFailed();
             clientTransport.connect(serverEndpoint).await().throwExceptionIfFailed();
-            clientTransport.write("Hello World.");
+            clientTransport.write("Hello World 0.");
+            clientTransport.write("Hello World 1.");
 
             Thread.sleep(lastWaitMillis);
 

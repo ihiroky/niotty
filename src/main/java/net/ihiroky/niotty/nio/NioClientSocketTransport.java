@@ -398,18 +398,20 @@ public class NioClientSocketTransport extends NioSocketTransport<SelectDispatche
         try {
             if (key.isReadable()) {
                 ByteBuffer readBuffer = selectDispatcher.readBuffer_;
-                int read = channel.read(readBuffer);
-                if (read == -1) {
-                    logger_.debug("[onSelected] transport reaches the end of its stream: {}", this);
-                    pipeline().deactivate(DeactivateState.LOAD);
+                for (int read;;) {
+                    read = channel.read(readBuffer);
+                    if (read <= 0) {
+                        if (read == -1 && channel_.isOpen()) {
+                            logger_.debug("[onSelected] transport reaches the end of its stream: {}", this);
+                            pipeline().deactivate(DeactivateState.LOAD);
+                        }
+                        readBuffer.clear();
+                        return;
+                    }
+                    readBuffer.flip();
+                    pipeline().load(readBuffer);
                     readBuffer.clear();
-                    return;
                 }
-
-                readBuffer.flip();
-                pipeline().load(readBuffer);
-                readBuffer.clear();
-                // TODO There is any need to check if content is remaining?
             } else if (key.isWritable()) {
                 flush(null);
             }

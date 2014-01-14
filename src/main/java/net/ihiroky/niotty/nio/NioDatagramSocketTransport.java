@@ -404,10 +404,10 @@ public class NioDatagramSocketTransport extends NioSocketTransport<SelectDispatc
             if (key.isReadable()) {
                 ByteBuffer readBuffer = selectDispatcher.readBuffer_;
                 if (channel.isConnected()) {
-                    for (;;) {
-                        int read = channel.read(readBuffer);
+                    for (int read;;) {
+                        read = channel.read(readBuffer);
                         if (read <= 0) {
-                            if (read == -1) {
+                            if (read == -1 && channel_.isOpen()) {
                                 logger_.debug("[onSelected] transport reaches the end of its stream: {}", this);
                                 pipeline().deactivate(DeactivateState.LOAD);
                             }
@@ -415,6 +415,7 @@ public class NioDatagramSocketTransport extends NioSocketTransport<SelectDispatc
                         }
                         readBuffer.flip();
                         pipeline().load(readBuffer);
+                        readBuffer.clear();
                     }
                 } else {
                     for (;;) {
@@ -424,6 +425,7 @@ public class NioDatagramSocketTransport extends NioSocketTransport<SelectDispatc
                         }
                         readBuffer.flip();
                         pipeline().load(readBuffer, source);
+                        readBuffer.clear();
                     }
                 }
                 readBuffer.clear();

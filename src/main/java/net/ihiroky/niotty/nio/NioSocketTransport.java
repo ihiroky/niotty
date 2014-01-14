@@ -79,7 +79,7 @@ public abstract class NioSocketTransport<S extends SelectDispatcher> extends Abs
         if (key_ != null && key_.isValid() && closeFuture.executing()) {
             SelectableChannel channel = key_.channel();
             try {
-                unregister(); // decrement register count
+                unregister(); // deactivate and decrement register count
                 channel.close();
                 closeFuture.done();
             } catch (Exception e) {
