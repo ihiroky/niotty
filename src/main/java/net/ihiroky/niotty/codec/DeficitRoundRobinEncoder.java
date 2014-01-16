@@ -135,9 +135,7 @@ public class DeficitRoundRobinEncoder extends StoreStage {
 
     @Override
     public void deactivated(StageContext context, DeactivateState state) {
-        int size = weightedQueueList_.size();
-        for (int i = size - 1; i >= 0; i++) {
-            Deque<Pair<Packet>> q = weightedQueueList_.get(i);
+        for (Deque<Pair<Packet>> q : weightedQueueList_) {
             while (!q.isEmpty()) {
                 Pair<Packet> e = q.poll();
                 context.proceed(e.message_, e.parameter_);
@@ -154,7 +152,7 @@ public class DeficitRoundRobinEncoder extends StoreStage {
             int deficitCounter = deficitCounter_[i] + (int) (baseQuantum * weights_[i]);
             if (!q.isEmpty()) {
                 int remaining = q.peek().message_.remaining();
-                while (deficitCounter >= remaining) {
+                while (deficitCounter >= remaining) { // always true if remaining == 0
                     Pair<Packet> e = q.poll();
                     context.proceed(e.message_, e.parameter_);
                     deficitCounter -= remaining;
