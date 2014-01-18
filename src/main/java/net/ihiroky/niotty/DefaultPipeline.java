@@ -313,6 +313,11 @@ public class DefaultPipeline<L extends EventDispatcher> implements Pipeline {
     }
 
     @Override
+    public void load(CodecBuffer message, Object parameter) {
+        tail_.callLoad(message, parameter);
+    }
+
+    @Override
     public void activate() {
         for (PipelineElement e = tail_; e.isValid(); e = e.prev()) {
             e.callActivate();

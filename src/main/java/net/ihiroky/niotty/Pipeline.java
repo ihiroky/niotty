@@ -1,5 +1,7 @@
 package net.ihiroky.niotty;
 
+import net.ihiroky.niotty.buffer.CodecBuffer;
+
 import java.nio.ByteBuffer;
 
 /**
@@ -175,6 +177,13 @@ public interface Pipeline {
      * @param parameter the parameter
      */
     void load(ByteBuffer message, Object parameter);
+
+    /**
+     * Calls a message load chain with a parameter in this pipeline.
+     * @param message the message
+     * @param parameter the parameter
+     */
+    void load(CodecBuffer message, Object parameter);
 
     /**
      * Calls {@link net.ihiroky.niotty.Stage#activated(net.ihiroky.niotty.StageContext)}s in this pipeline.
