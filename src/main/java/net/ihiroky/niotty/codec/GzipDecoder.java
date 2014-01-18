@@ -106,6 +106,7 @@ public class GzipDecoder extends InflaterDecoder {
         /*
          * Reads GZIP member header and returns the total byte number of this member header.
          */
+        @SuppressWarnings("fallthrough")
         int parse(final CodecBuffer input, final CRC32 crc) throws DataFormatException {
             CodecBuffer b;
             int beginning = input.startIndex();
