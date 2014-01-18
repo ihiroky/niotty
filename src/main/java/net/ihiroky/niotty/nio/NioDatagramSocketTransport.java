@@ -1,6 +1,5 @@
 package net.ihiroky.niotty.nio;
 
-import net.ihiroky.niotty.DeactivateState;
 import net.ihiroky.niotty.DefaultTransportFuture;
 import net.ihiroky.niotty.Event;
 import net.ihiroky.niotty.FailedTransportFuture;
@@ -404,19 +403,15 @@ public class NioDatagramSocketTransport extends NioSocketTransport<SelectDispatc
             if (key.isReadable()) {
                 ByteBuffer readBuffer = selectDispatcher.readBuffer_;
                 if (channel.isConnected()) {
-                    for (int read;;) {
-                        read = channel.read(readBuffer);
-                        if (read <= 0) {
-                            if (read == -1 && channel_.isOpen()) {
-                                logger_.debug("[onSelected] transport reaches the end of its stream: {}", this);
-                                pipeline().deactivate(DeactivateState.LOAD);
-                            }
-                            break;
-                        }
-                        readBuffer.flip();
-                        pipeline().load(readBuffer);
-                        readBuffer.clear();
+                    int read = channel.read(readBuffer);
+                    if (read == -1) {
+                        logger_.debug("[onSelected] transport reaches the end of its stream: {}", this);
+                        doCloseSelectableChannel();
+                        return;
                     }
+                    readBuffer.flip();
+                    pipeline().load(readBuffer);
+                    readBuffer.clear();
                 } else {
                     for (;;) {
                         SocketAddress source = channel.receive(readBuffer);

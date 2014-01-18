@@ -1,6 +1,5 @@
 package net.ihiroky.niotty.codec;
 
-import net.ihiroky.niotty.DeactivateState;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.CodecBuffer;
 import net.ihiroky.niotty.util.JavaVersion;
@@ -156,7 +155,7 @@ public class GzipTest {
 
         GzipEncoder encoder = new GzipEncoder();
         encoder.stored(context_, buffer, null);
-        encoder.deactivated(context_, DeactivateState.STORE);
+        encoder.deactivated(context_);
         CodecBuffer deflated = context_.pollEvent();
         CodecBuffer finished = context_.pollEvent();
         if (context_.pollEvent() != null) {
@@ -180,7 +179,7 @@ public class GzipTest {
 
         GzipEncoder encoder = new GzipEncoder();
         encoder.stored(context_, buffer, null);
-        encoder.deactivated(context_, DeactivateState.STORE);
+        encoder.deactivated(context_);
         CodecBuffer deflated = context_.pollEvent();
         CodecBuffer finished = context_.pollEvent();
         if (context_.pollEvent() != null) {

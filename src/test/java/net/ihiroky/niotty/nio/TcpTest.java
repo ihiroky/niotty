@@ -1,12 +1,12 @@
 package net.ihiroky.niotty.nio;
 
-import net.ihiroky.niotty.DeactivateState;
 import net.ihiroky.niotty.LoadStage;
 import net.ihiroky.niotty.Pipeline;
 import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.StageKeys;
 import net.ihiroky.niotty.Transport;
+import net.ihiroky.niotty.TransportOptions;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -54,28 +54,27 @@ public class TcpTest {
         }
 
         @Override
-        public void deactivated(StageContext context, DeactivateState state) {
-            switch (state) {
-                case LOAD:
-                    synchronized (this) {
-                        loadClosed_ = true;
-                        notify();
-                    }
-                    break;
-                case STORE:
-                    synchronized (this) {
-                        storeClosed_ = true;
-                        notify();
-                    }
-                    break;
-                case WHOLE:
-                    synchronized (this) {
-                        wholeClosed_ = true;
-                        notify();
-                    }
-                    break;
-                default:
-                    throw new UnsupportedOperationException();
+        public void deactivated(StageContext context) {
+            synchronized (this) {
+                wholeClosed_ = true;
+                notify();
+            }
+        }
+
+        @Override
+        public void eventTriggered(StageContext context, Object event) {
+            if (event == NioClientSocketTransport.ShutdownEvent.INPUT) {
+                synchronized (this) {
+                    loadClosed_ = true;
+                    notify();
+                }
+            } else if (event == NioClientSocketTransport.ShutdownEvent.OUTPUT) {
+                synchronized (this) {
+                    storeClosed_ = true;
+                    notify();
+                }
+            } else {
+                throw new UnsupportedOperationException();
             }
         }
     }
@@ -150,15 +149,38 @@ public class TcpTest {
         }
     }
 
+    private static void waitUntilDeactivated(TransportStatusListener tsl) throws InterruptedException {
+        synchronized (tsl) {
+            while (!tsl.wholeClosed_) {
+                tsl.wait();
+            }
+        }
+    }
+
     @Test(timeout = 3000)
     public void testShutdownOutput() throws Exception {
+        // Enable tcp half close
+        serverSut_.setAcceptedTransportOption(TransportOptions.DEACTIVATE_ON_END_OF_STREAM, false);
+        clientSut_.setOption(TransportOptions.DEACTIVATE_ON_END_OF_STREAM, false);
+
         serverSut_.bind(SERVER_ENDPOINT).await();
         clientSut_.connect(SERVER_ENDPOINT).await();
         waitUntilConnected(serverStatusListener_);
 
-        clientSut_.shutdownOutput();
+        clientSut_.shutdownOutput(); // shutdown client output -> shutdown server input
         waitUntilShutdownInput(serverStatusListener_);
         waitUntilShutdownOutput(clientStatusListener_);
+    }
+
+    @Test
+    public void testShutdownInput() throws Exception {
+        serverSut_.bind(SERVER_ENDPOINT).await();
+        clientSut_.connect(SERVER_ENDPOINT).await();
+        waitUntilConnected(serverStatusListener_);
+
+        clientSut_.shutdownInput(); // shutdown client input -> close client -> server client
+        waitUntilClosed(clientSut_);
+        waitUntilDeactivated(serverStatusListener_);
     }
 
     @Test(timeout = 3000)
@@ -176,7 +198,7 @@ public class TcpTest {
             clientSut.close();
 
             // check client transport state in the server
-            waitUntilShutdownInput(serverStatusListener_);
+            waitUntilDeactivated(serverStatusListener_);
             waitUntilClosed(clientSut);
         } finally {
             p.stop();

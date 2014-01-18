@@ -1,6 +1,5 @@
 package net.ihiroky.niotty.codec;
 
-import net.ihiroky.niotty.DeactivateState;
 import net.ihiroky.niotty.Stage;
 import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.buffer.Packet;
@@ -80,7 +79,11 @@ public class DelimiterCodec implements Stage {
     }
 
     @Override
-    public void deactivated(StageContext context, DeactivateState state) {
+    public void deactivated(StageContext context) {
+    }
+
+    @Override
+    public void eventTriggered(StageContext context, Object event) {
     }
 
     private CodecBuffer bufferOfInput(CodecBuffer input) {

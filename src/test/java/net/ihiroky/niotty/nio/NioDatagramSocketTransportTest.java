@@ -1,6 +1,5 @@
 package net.ihiroky.niotty.nio;
 
-import net.ihiroky.niotty.DeactivateState;
 import net.ihiroky.niotty.Event;
 import net.ihiroky.niotty.EventDispatcherSelection;
 import net.ihiroky.niotty.Pipeline;
@@ -149,7 +148,7 @@ public class NioDatagramSocketTransportTest {
         @Before
         @SuppressWarnings("unchecked")
         public void setUp() throws Exception {
-            writeQueueFactory_ = mock(WriteQueueFactory.class);
+            writeQueueFactory_ = new SimpleDatagramQueueFactory();
         }
 
         @After
@@ -193,7 +192,6 @@ public class NioDatagramSocketTransportTest {
             verify(sut.pipeline()).load(Mockito.any(ByteBuffer.class));
         }
 
-        // Is it possible that channel.read() return -1 ?
         @Test
         public void testReadBufferWhenNotClosed() throws Exception {
             selectDispatcherGroup_ = new SelectDispatcherGroup(Executors.defaultThreadFactory(), 1);
@@ -214,7 +212,7 @@ public class NioDatagramSocketTransportTest {
 
             sut.onSelected(key, sut.eventDispatcher());
 
-            verify(sut.pipeline()).deactivate(DeactivateState.LOAD);
+            verify(sut).doCloseSelectableChannel();
         }
 
         @Test

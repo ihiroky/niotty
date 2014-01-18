@@ -585,10 +585,10 @@ public class DefaultPipelineTest {
         sut_.add(StageKeys.of(1), s1);
         when(eventDispatcher_.isInDispatcherThread()).thenReturn(true);
 
-        sut_.deactivate(DeactivateState.WHOLE);
+        sut_.deactivate();
 
-        verify(s0).deactivated(Mockito.<StageContext>any(), eq(DeactivateState.WHOLE));
-        verify(s1).deactivated(Mockito.<StageContext>any(), eq(DeactivateState.WHOLE));
+        verify(s0).deactivated(Mockito.<StageContext>any());
+        verify(s1).deactivated(Mockito.<StageContext>any());
     }
 
     @Test

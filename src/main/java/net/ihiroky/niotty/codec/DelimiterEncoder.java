@@ -1,6 +1,5 @@
 package net.ihiroky.niotty.codec;
 
-import net.ihiroky.niotty.DeactivateState;
 import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.StoreStage;
 import net.ihiroky.niotty.buffer.Packet;
@@ -43,6 +42,10 @@ public class DelimiterEncoder extends StoreStage {
     }
 
     @Override
-    public void deactivated(StageContext context, DeactivateState state) {
+    public void deactivated(StageContext context) {
+    }
+
+    @Override
+    public void eventTriggered(StageContext context, Object event) {
     }
 }

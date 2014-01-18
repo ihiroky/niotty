@@ -1,6 +1,5 @@
 package net.ihiroky.niotty.sample;
 
-import net.ihiroky.niotty.DeactivateState;
 import net.ihiroky.niotty.LoadStage;
 import net.ihiroky.niotty.StageContext;
 
@@ -37,7 +36,11 @@ class Dump extends LoadStage {
     }
 
     @Override
-    public void deactivated(StageContext context, DeactivateState state) {
+    public void deactivated(StageContext context) {
         context.transport().close();
+    }
+
+    @Override
+    public void eventTriggered(StageContext context, Object event) {
     }
 }

@@ -102,7 +102,7 @@ public class NioClientSocketTransportTest {
 
             sut.onSelected(key, sut.eventDispatcher());
 
-            verify(sut).flush(null);
+            verify(sut).flush(Mockito.any(ByteBuffer.class));
         }
 
         static class SelectionKeyMock extends AbstractSelectionKey {

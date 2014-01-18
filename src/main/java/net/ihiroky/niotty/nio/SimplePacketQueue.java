@@ -14,7 +14,9 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 public class SimplePacketQueue implements PacketQueue {
 
     private Queue<Packet> queue_;
-    private volatile int size_; // broken if queue_ has elements more than Integer.MAX_VALUE.
+
+    @SuppressWarnings("unused")
+    private volatile int size_; // For monitoring. Broken if queue_ has elements more than Integer.MAX_VALUE.
 
     private static final AtomicIntegerFieldUpdater<SimplePacketQueue> SIZE_UPDATER =
             AtomicIntegerFieldUpdater.newUpdater(SimplePacketQueue.class, "size_");

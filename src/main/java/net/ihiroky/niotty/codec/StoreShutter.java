@@ -1,6 +1,5 @@
 package net.ihiroky.niotty.codec;
 
-import net.ihiroky.niotty.DeactivateState;
 import net.ihiroky.niotty.Event;
 import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.StoreStage;
@@ -93,10 +92,12 @@ public class StoreShutter extends StoreStage {
     }
 
     @Override
-    public void deactivated(StageContext context, DeactivateState state) {
-        if (state != DeactivateState.LOAD) {
-            state_ = State.OVER_LIMIT;
-        }
+    public void deactivated(StageContext context) {
+        state_ = State.OVER_LIMIT;
+    }
+
+    @Override
+    public void eventTriggered(StageContext context, Object event) {
     }
 
     State state() {

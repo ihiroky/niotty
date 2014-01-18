@@ -1,6 +1,5 @@
 package net.ihiroky.niotty.sample;
 
-import net.ihiroky.niotty.DeactivateState;
 import net.ihiroky.niotty.LoadStage;
 import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.Transport;
@@ -47,7 +46,11 @@ public class NumberGenerator extends LoadStage {
     }
 
     @Override
-    public void deactivated(StageContext context, DeactivateState state) {
-        logger_.info("[deactivated] state:{}", state);
+    public void deactivated(StageContext context) {
+        logger_.info("[deactivated]");
+    }
+
+    @Override
+    public void eventTriggered(StageContext context, Object event) {
     }
 }

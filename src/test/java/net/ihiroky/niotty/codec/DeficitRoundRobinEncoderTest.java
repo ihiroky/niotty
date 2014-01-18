@@ -1,6 +1,5 @@
 package net.ihiroky.niotty.codec;
 
-import net.ihiroky.niotty.DeactivateState;
 import net.ihiroky.niotty.Event;
 import net.ihiroky.niotty.EventFuture;
 import net.ihiroky.niotty.StageContext;
@@ -180,7 +179,7 @@ public class DeficitRoundRobinEncoderTest {
         StageContext context = mock(StageContext.class);
 
         sut.stored(context, new WeightedMessage(b, 0), null);
-        sut.deactivated(context, DeactivateState.WHOLE);
+        sut.deactivated(context);
 
         assertThat(sut.queue(0).size(), is(0));
     }

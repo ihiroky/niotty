@@ -320,9 +320,9 @@ public class DefaultPipeline<L extends EventDispatcher> implements Pipeline {
     }
 
     @Override
-    public void deactivate(DeactivateState state) {
+    public void deactivate() {
         for (PipelineElement e = tail_; e.isValid(); e = e.prev()) {
-            e.callDeactivate(state);
+            e.callDeactivate();
         }
     }
 
@@ -330,6 +330,13 @@ public class DefaultPipeline<L extends EventDispatcher> implements Pipeline {
     public void catchException(Exception exception) {
         for (PipelineElement e = tail_; e.isValid(); e = e.prev()) {
             e.callCatchException(exception);
+        }
+    }
+
+    @Override
+    public void eventTriggered(Object event) {
+        for (PipelineElement e = tail_; e.isValid(); e = e.prev()) {
+            e.callEventTriggered(event);
         }
     }
 

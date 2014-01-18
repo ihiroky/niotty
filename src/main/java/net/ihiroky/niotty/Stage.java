@@ -12,12 +12,12 @@ package net.ihiroky.niotty;
  * is called in these methods, the call chain is proceeded; {@code stored()} and {@code loaded()}
  * in the next stage is called. If not proceeded, the methods of the next stage is not called.
  * In contrast, all of {@link #activated(net.ihiroky.niotty.StageContext)},
- * {@link #deactivated(net.ihiroky.niotty.StageContext, net.ihiroky.niotty.DeactivateState)} or
+ * {@link #deactivated(net.ihiroky.niotty.StageContext)} or
  * {@link #exceptionCaught(net.ihiroky.niotty.StageContext, Exception)} are called by the pipeline.
  * There is no need to call {@link net.ihiroky.niotty.StageContext#proceed(Object, Object)} for these methods.</p>
  *
  * <p>Each method of this class receives {@link net.ihiroky.niotty.StageContext}. The context
- * holds the related infomation to this stage, {@link net.ihiroky.niotty.StageKey}
+ * holds the related information to this stage, {@link net.ihiroky.niotty.StageKey}
  * and {@link net.ihiroky.niotty.Transport} etc.</p>
  */
 public interface Stage {
@@ -46,15 +46,22 @@ public interface Stage {
     void exceptionCaught(StageContext context, Exception exception);
 
     /**
-     * Invoked when the transport associated to the pipeline to which this stage belongs gets readable.
+     * Invoked when the transport gets readable, which associated to the pipeline to which this stage belongs.
      * @param context the context
      */
     void activated(StageContext context);
 
     /**
-     * Invoked when the transport associated to the pipeline to which this stage belongs is closed.
+     * Invoked when the transport is closed, which associated to the pipeline to which this stage belongs.
      * @param context the context
-     * @param state a state of the deactivation
      */
-    void deactivated(StageContext context, DeactivateState state);
+    void deactivated(StageContext context);
+
+    /**
+     * Invoked when an event which is not defined in this interface is triggered
+     * in the transport which associated to the pipeline to which this stage belongs.
+     *
+     * @param event the event
+     */
+    void eventTriggered(StageContext context, Object event);
 }

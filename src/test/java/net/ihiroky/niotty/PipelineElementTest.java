@@ -139,9 +139,9 @@ public class PipelineElementTest {
     public void testDeactivate_DirectlyIfInDispatcherThread() throws Exception {
         when(eventDispatcher_.isInDispatcherThread()).thenReturn(true);
 
-        sut_.callDeactivate(DeactivateState.LOAD);
+        sut_.callDeactivate();
 
-        verify(stage_).deactivated(sut_.stateContext_, DeactivateState.LOAD);
+        verify(stage_).deactivated(sut_.stateContext_);
         verify(eventDispatcher_, never()).offer(Mockito.<Event>any());
     }
 
@@ -149,14 +149,14 @@ public class PipelineElementTest {
     public void testDeactivate_IndirectlyIfNotInDispatcherThread() throws Exception {
         when(eventDispatcher_.isInDispatcherThread()).thenReturn(false);
 
-        sut_.callDeactivate(DeactivateState.LOAD);
+        sut_.callDeactivate();
 
-        verify(stage_, never()).deactivated(sut_.stateContext_, DeactivateState.LOAD);
+        verify(stage_, never()).deactivated(sut_.stateContext_);
 
         ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
         verify(eventDispatcher_).offer(eventCaptor.capture());
         eventCaptor.getValue().execute(TimeUnit.MILLISECONDS);
-        verify(stage_).deactivated(sut_.stateContext_, DeactivateState.LOAD);
+        verify(stage_).deactivated(sut_.stateContext_);
     }
 
     @Test

@@ -1,7 +1,6 @@
 package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.CancelledTransportFuture;
-import net.ihiroky.niotty.DeactivateState;
 import net.ihiroky.niotty.DefaultTransportFuture;
 import net.ihiroky.niotty.Event;
 import net.ihiroky.niotty.FailedTransportFuture;
@@ -43,6 +42,11 @@ public class NioClientSocketTransport extends NioSocketTransport<SelectDispatche
     private final SelectDispatcherGroup connectSelectGroup_;
     private final PacketQueue writeQueue_;
     private FlushStatus flushStatus_;
+    private boolean deactivateOnEndOfStream_;
+
+    public enum ShutdownEvent {
+        INPUT, OUTPUT
+    }
 
     private static Logger logger_ = LoggerFactory.getLogger(NioClientSocketTransport.class);
 
@@ -71,6 +75,7 @@ public class NioClientSocketTransport extends NioSocketTransport<SelectDispatche
             channel_ = clientChannel;
             connectSelectGroup_ = connectSelectGroup;
             writeQueue_ = writeQueueFactory.newWriteQueue();
+            deactivateOnEndOfStream_ = true;
         } catch (Exception e) {
             throw new RuntimeException("failed to open client socket channel.", e);
         }
@@ -87,6 +92,7 @@ public class NioClientSocketTransport extends NioSocketTransport<SelectDispatche
         channel_ = child;
         connectSelectGroup_ = null;
         writeQueue_ = writeQueueFactory.newWriteQueue();
+        deactivateOnEndOfStream_ = true;
     }
 
     /**
@@ -100,6 +106,11 @@ public class NioClientSocketTransport extends NioSocketTransport<SelectDispatche
      */
     @Override
     public <T> NioClientSocketTransport setOption(TransportOption<T> option, T value) {
+        if (option == TransportOptions.DEACTIVATE_ON_END_OF_STREAM) {
+            deactivateOnEndOfStream_ = TransportOptions.DEACTIVATE_ON_END_OF_STREAM.cast(value);
+            return this;
+        }
+
         try {
             JavaVersion javaVersion = Platform.javaVersion();
             if (javaVersion.ge(JavaVersion.JAVA7)) {
@@ -156,6 +167,10 @@ public class NioClientSocketTransport extends NioSocketTransport<SelectDispatche
      */
     @Override
     public <T> T option(TransportOption<T> option) {
+        if (option == TransportOptions.DEACTIVATE_ON_END_OF_STREAM) {
+            return option.cast(deactivateOnEndOfStream_);
+        }
+
         try {
             JavaVersion javaVersion = Platform.javaVersion();
             if (javaVersion.ge(JavaVersion.JAVA7)) {
@@ -334,7 +349,7 @@ public class NioClientSocketTransport extends NioSocketTransport<SelectDispatche
                             } else {
                                 channel.socket().shutdownOutput();
                             }
-                            pipeline().deactivate(DeactivateState.STORE);
+                            pipeline().eventTriggered(ShutdownEvent.OUTPUT);
                             future.done();
                         } catch (IOException ioe) {
                             future.setThrowable(ioe);
@@ -366,7 +381,7 @@ public class NioClientSocketTransport extends NioSocketTransport<SelectDispatche
                             } else {
                                 channel.socket().shutdownInput();
                             }
-                            pipeline().deactivate(DeactivateState.LOAD);
+                            pipeline().eventTriggered(ShutdownEvent.INPUT);
                             future.done();
                         } catch (IOException ioe) {
                             future.setThrowable(ioe);
@@ -398,22 +413,21 @@ public class NioClientSocketTransport extends NioSocketTransport<SelectDispatche
         try {
             if (key.isReadable()) {
                 ByteBuffer readBuffer = selectDispatcher.readBuffer_;
-                for (int read;;) {
-                    read = channel.read(readBuffer);
-                    if (read <= 0) {
-                        if (read == -1 && channel_.isOpen()) {
-                            logger_.debug("[onSelected] transport reaches the end of its stream: {}", this);
-                            pipeline().deactivate(DeactivateState.LOAD);
-                        }
-                        readBuffer.clear();
-                        return;
-                    }
+                int read = channel.read(readBuffer);
+                if (read >= 0) {
                     readBuffer.flip();
                     pipeline().load(readBuffer);
                     readBuffer.clear();
+                    return;
+                }
+                logger_.debug("[onSelected] transport reaches the end of its stream: {}", this);
+                if (deactivateOnEndOfStream_) {
+                    doCloseSelectableChannel();
+                } else {
+                    pipeline().eventTriggered(ShutdownEvent.INPUT);
                 }
             } else if (key.isWritable()) {
-                flush(null);
+                flush(selectDispatcher.writeBuffer_);
             }
         } catch (ClosedByInterruptException ie) {
             if (logger_.isDebugEnabled()) {

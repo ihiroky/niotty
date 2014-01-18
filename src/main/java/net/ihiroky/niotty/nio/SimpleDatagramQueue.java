@@ -16,7 +16,9 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 public class SimpleDatagramQueue implements DatagramQueue {
 
     private Queue<AttachedMessage<Packet>> queue_;
-    private volatile int size_; // broken if queue_ has elements more than Integer.MAX_VALUE.
+
+    @SuppressWarnings("unused")
+    private volatile int size_; // For monitoring. Broken if queue_ has elements more than Integer.MAX_VALUE.
 
     private static final AtomicIntegerFieldUpdater<SimpleDatagramQueue> SIZE_UPDATER =
             AtomicIntegerFieldUpdater.newUpdater(SimpleDatagramQueue.class, "size_");

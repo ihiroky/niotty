@@ -124,45 +124,58 @@ public class PipelineElement {
     void callActivate() {
         if (eventDispatcher_.isInDispatcherThread()) {
             stage_.activated(stateContext_);
-            return;
-        }
-        eventDispatcher_.offer(new Event() {
+        } else {
+            eventDispatcher_.offer(new Event() {
             @Override
             public long execute(TimeUnit timeUnit) throws Exception {
                 stage_.activated(stateContext_);
                 return DONE;
             }
-        });
+            });
+        }
     }
 
-    void callDeactivate(final DeactivateState state) {
+    void callDeactivate() {
         if (eventDispatcher_.isInDispatcherThread()) {
-            stage_.deactivated(stateContext_, state);
-            return;
-        }
-        eventDispatcher_.offer(new Event() {
+            stage_.deactivated(stateContext_);
+        } else {
+            eventDispatcher_.offer(new Event() {
             @Override
             public long execute(TimeUnit timeUnit) throws Exception {
-                stage_.deactivated(stateContext_, state);
+                stage_.deactivated(stateContext_);
                 return DONE;
             }
-        });
+            });
+        }
     }
 
     void callCatchException(final Exception exception) {
         if (eventDispatcher_.isInDispatcherThread()) {
             stage_.exceptionCaught(stateContext_, exception);
-            return;
-        }
-        eventDispatcher_.offer(new Event() {
+        } else {
+            eventDispatcher_.offer(new Event() {
             @Override
             public long execute(TimeUnit timeUnit) throws Exception {
                 stage_.exceptionCaught(stateContext_, exception);
                 return DONE;
             }
-        });
+            });
+        }
     }
 
+    void callEventTriggered(final Object event) {
+        if (eventDispatcher_.isInDispatcherThread()) {
+            stage_.eventTriggered(stateContext_, event);
+        } else {
+            eventDispatcher_.offer(new Event() {
+                @Override
+                public long execute(TimeUnit timeUnit) throws Exception {
+                    stage_.eventTriggered(stateContext_, event);
+                    return DONE;
+                }
+            });
+        }
+    }
     static class StoreContext implements StageContext {
 
         private PipelineElement base_;
@@ -267,7 +280,11 @@ public class PipelineElement {
         }
 
         @Override
-        public void deactivated(StageContext context, DeactivateState state) {
+        public void deactivated(StageContext context) {
+        }
+
+        @Override
+        public void eventTriggered(StageContext context, Object event) {
         }
     }
 
@@ -394,11 +411,16 @@ public class PipelineElement {
         }
 
         @Override
-        public void deactivate(DeactivateState state) {
+        public void deactivate() {
         }
 
         @Override
         public void catchException(Exception exception) {
+        }
+
+        @Override
+        public void eventTriggered(Object event) {
+
         }
 
         @Override

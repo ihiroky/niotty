@@ -1,6 +1,5 @@
 package net.ihiroky.niotty.codec;
 
-import net.ihiroky.niotty.DeactivateState;
 import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.StoreStage;
 import net.ihiroky.niotty.buffer.Packet;
@@ -20,10 +19,6 @@ public class DeflaterEncoder extends StoreStage {
     private final BufferChannel buffer_;
 
     protected static final int DEFAULT_BUFFER_SIZE = 8192;
-
-    @Override
-    public void activated(StageContext context) {
-    }
 
     public DeflaterEncoder() {
         this(Deflater.BEST_SPEED, DEFAULT_BUFFER_SIZE, null, false);
@@ -50,10 +45,6 @@ public class DeflaterEncoder extends StoreStage {
         CodecBuffer output = input.hasArray() ? compressRawArray(input) : compressPacket(input);
         input.dispose();
         context.proceed(output, parameter);
-    }
-
-    @Override
-    public void exceptionCaught(StageContext context, Exception exception) {
     }
 
     private CodecBuffer compressRawArray(Packet input) {
@@ -123,9 +114,16 @@ public class DeflaterEncoder extends StoreStage {
     }
 
     @Override
-    public void deactivated(StageContext context, DeactivateState state) {
-        if (!deflater_.finished()
-                && (state == DeactivateState.STORE || state == DeactivateState.WHOLE)) {
+    public void exceptionCaught(StageContext context, Exception exception) {
+    }
+
+    @Override
+    public void activated(StageContext context) {
+    }
+
+    @Override
+    public void deactivated(StageContext context) {
+        if (!deflater_.finished()) {
             CodecBuffer output = Buffers.newCodecBuffer(16);
             deflater_.finish();
             while (!deflater_.finished()) {
@@ -142,6 +140,10 @@ public class DeflaterEncoder extends StoreStage {
                 context.proceed(output, null); // may be error on non-connected udp
             }
         }
+    }
+
+    @Override
+    public void eventTriggered(StageContext context, Object event) {
     }
 
     protected void onBeforeEncode(byte[] input, int offset, int length, CodecBuffer output) {

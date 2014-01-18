@@ -1,6 +1,5 @@
 package net.ihiroky.niotty.codec;
 
-import net.ihiroky.niotty.DeactivateState;
 import net.ihiroky.niotty.LoadStage;
 import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.buffer.Buffers;
@@ -132,13 +131,16 @@ public class InflaterDecoder extends LoadStage {
     }
 
     @Override
-    public void deactivated(StageContext context, DeactivateState state) {
-        if (!deactivated_
-                && (state == DeactivateState.LOAD || state == DeactivateState.WHOLE)) {
+    public void deactivated(StageContext context) {
+        if (!deactivated_) {
             inflater_.end();
             output_ = null;
             deactivated_ = true;
         }
+    }
+
+    @Override
+    public void eventTriggered(StageContext context, Object event) {
     }
 
     protected int onBeforeDecode(byte[] output, int offset, int length) throws DataFormatException {

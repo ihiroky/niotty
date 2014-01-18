@@ -1,7 +1,6 @@
 package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.AbstractTransport;
-import net.ihiroky.niotty.DeactivateState;
 import net.ihiroky.niotty.DefaultTransportFuture;
 import net.ihiroky.niotty.Event;
 import net.ihiroky.niotty.PipelineComposer;
@@ -147,7 +146,7 @@ public abstract class NioSocketTransport<S extends SelectDispatcher> extends Abs
     // So there is no need to check the current thread.
     private void unregister() {
         if ((key_.interestOps() & SelectionKey.OP_READ) != 0) {
-            pipeline().deactivate(DeactivateState.WHOLE);
+            pipeline().deactivate();
         }
         key_.cancel();
         eventDispatcher().reject(this);

@@ -1,6 +1,5 @@
 package net.ihiroky.niotty.codec;
 
-import net.ihiroky.niotty.DeactivateState;
 import net.ihiroky.niotty.EventFuture;
 import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.StoreStage;
@@ -134,13 +133,17 @@ public class DeficitRoundRobinEncoder extends StoreStage {
     }
 
     @Override
-    public void deactivated(StageContext context, DeactivateState state) {
+    public void deactivated(StageContext context) {
         for (Deque<Pair<Packet>> q : weightedQueueList_) {
             while (!q.isEmpty()) {
                 Pair<Packet> e = q.poll();
                 context.proceed(e.message_, e.parameter_);
             }
         }
+    }
+
+    @Override
+    public void eventTriggered(StageContext context, Object event) {
     }
 
     private void flush(final StageContext context, int baseQuantum) {

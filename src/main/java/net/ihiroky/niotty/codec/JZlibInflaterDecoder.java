@@ -3,7 +3,6 @@ package net.ihiroky.niotty.codec;
 import com.jcraft.jzlib.GZIPException;
 import com.jcraft.jzlib.Inflater;
 import com.jcraft.jzlib.JZlib;
-import net.ihiroky.niotty.DeactivateState;
 import net.ihiroky.niotty.LoadStage;
 import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.TransportException;
@@ -138,12 +137,15 @@ public class JZlibInflaterDecoder extends LoadStage {
     }
 
     @Override
-    public void deactivated(StageContext context, DeactivateState state) {
-        if (!deactivated_
-                && (state == DeactivateState.LOAD || state == DeactivateState.WHOLE)) {
+    public void deactivated(StageContext context) {
+        if (!deactivated_) {
             inflater_.end();
             output_ = null;
         }
+    }
+
+    @Override
+    public void eventTriggered(StageContext context, Object event) {
     }
 
     byte[] output() {

@@ -1,6 +1,5 @@
 package net.ihiroky.niotty.nio;
 
-import net.ihiroky.niotty.DeactivateState;
 import net.ihiroky.niotty.Stage;
 import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.StoreStage;
@@ -166,7 +165,11 @@ public class SelectDispatcher extends EventDispatcher {
         }
 
         @Override
-        public void deactivated(StageContext context, DeactivateState state) {
+        public void deactivated(StageContext context) {
+        }
+
+        @Override
+        public void eventTriggered(StageContext context, Object event) {
         }
     }
 }

@@ -110,7 +110,7 @@ public class StoreShutterTest {
 
     @Test
     public void testDeactivated() throws Exception {
-        sut_.deactivated(context_, null);
+        sut_.deactivated(context_);
 
         assertThat(sut_.state(), is(StoreShutter.State.OVER_LIMIT));
     }

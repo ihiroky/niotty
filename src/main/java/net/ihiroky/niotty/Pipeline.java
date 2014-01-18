@@ -177,20 +177,28 @@ public interface Pipeline {
     void load(ByteBuffer message, Object parameter);
 
     /**
-     * Calles {@link net.ihiroky.niotty.Stage#activated(net.ihiroky.niotty.StageContext)}s in this pipeline.
+     * Calls {@link net.ihiroky.niotty.Stage#activated(net.ihiroky.niotty.StageContext)}s in this pipeline.
      */
     void activate();
 
     /**
-     * Calles {@link net.ihiroky.niotty.Stage#deactivated(net.ihiroky.niotty.StageContext, net.ihiroky.niotty.DeactivateState)}s in this pipeline.
+     * Calls {@link net.ihiroky.niotty.Stage#deactivated(net.ihiroky.niotty.StageContext)}s in this pipeline.
      */
-    void deactivate(DeactivateState state);
+    void deactivate();
 
     /**
-     * Calles {@link net.ihiroky.niotty.Stage#exceptionCaught(net.ihiroky.niotty.StageContext, Exception)}s in this pipeline.
-     * @param exception
+     * Calls {@link net.ihiroky.niotty.Stage#exceptionCaught(net.ihiroky.niotty.StageContext, java.lang.Exception)}s
+     * in this pipeline.
+     * @param exception the exception thrown in the I/O thread
      */
     void catchException(Exception exception);
+
+    /**
+     * Calls {@link net.ihiroky.niotty.Stage#eventTriggered(net.ihiroky.niotty.StageContext, java.lang.Object)}s
+     * in this pipeline.
+     * @param event the event triggered in the I/O thread
+     */
+    void eventTriggered(Object event);
 
     /**
      * Returns the transport to which this pipeline belongs to.

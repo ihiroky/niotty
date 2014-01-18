@@ -3,7 +3,6 @@ package net.ihiroky.niotty.codec;
 import com.jcraft.jzlib.Deflater;
 import com.jcraft.jzlib.GZIPException;
 import com.jcraft.jzlib.JZlib;
-import net.ihiroky.niotty.DeactivateState;
 import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.StoreStage;
 import net.ihiroky.niotty.TransportException;
@@ -166,9 +165,8 @@ public class JZlibDeflaterEncoder extends StoreStage {
     }
 
     @Override
-    public void deactivated(StageContext context, DeactivateState state) {
-        if (!deflater_.finished()
-                && (state == DeactivateState.STORE || state == DeactivateState.WHOLE)) {
+    public void deactivated(StageContext context) {
+        if (!deflater_.finished()) {
             final int bufferLength = 16;
             CodecBuffer output = Buffers.newCodecBuffer(bufferLength);
             byte[] buffer = new byte[bufferLength];
@@ -188,5 +186,9 @@ public class JZlibDeflaterEncoder extends StoreStage {
                 context.proceed(output, null); // may be error on non-connected udp
             }
         }
+    }
+
+    @Override
+    public void eventTriggered(StageContext context, Object event) {
     }
 }

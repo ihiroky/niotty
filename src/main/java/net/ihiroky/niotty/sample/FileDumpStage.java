@@ -1,6 +1,5 @@
 package net.ihiroky.niotty.sample;
 
-import net.ihiroky.niotty.DeactivateState;
 import net.ihiroky.niotty.LoadStage;
 import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.buffer.CodecBuffer;
@@ -62,7 +61,11 @@ public class FileDumpStage extends LoadStage {
     }
 
     @Override
-    public void deactivated(StageContext context, DeactivateState state) {
+    public void deactivated(StageContext context) {
         context.transport().close();
+    }
+
+    @Override
+    public void eventTriggered(StageContext context, Object event) {
     }
 }

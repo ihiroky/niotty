@@ -30,6 +30,9 @@ public final class TransportOptions {
     public static final TransportOption<Integer> IP_TOS =
             new TransportOptionImpl<Integer>("IP_TOS", Integer.class);
 
+    public static final TransportOption<Boolean> DEACTIVATE_ON_END_OF_STREAM =
+            new TransportOptionImpl<Boolean>("DEACTIVATE_ON_END_OF_STREAM", Boolean.class);
+
     private static class TransportOptionImpl<T> implements TransportOption<T> {
         private final String name_;
         private final Class<T> type_;
