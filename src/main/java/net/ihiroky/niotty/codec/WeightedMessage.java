@@ -32,4 +32,18 @@ public class WeightedMessage {
     public int weightIndex() {
         return weightIndex_;
     }
+
+    @Override
+    public boolean equals(Object object) {
+        if (object instanceof WeightedMessage) {
+            WeightedMessage that = (WeightedMessage) object;
+            return this.message_.equals(that.message_) && this.weightIndex_ == that.weightIndex_;
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return message_.hashCode() + weightIndex_;
+    }
 }
