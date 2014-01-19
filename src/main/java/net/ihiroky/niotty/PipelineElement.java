@@ -1,5 +1,6 @@
 package net.ihiroky.niotty;
 
+import net.ihiroky.niotty.buffer.CodecBuffer;
 import net.ihiroky.niotty.util.Arguments;
 
 import java.nio.ByteBuffer;
@@ -404,6 +405,10 @@ public class PipelineElement {
 
         @Override
         public void load(ByteBuffer message, Object parameter) {
+        }
+
+        @Override
+        public void load(CodecBuffer message, Object parameter) {
         }
 
         @Override
