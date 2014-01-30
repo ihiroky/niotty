@@ -101,6 +101,8 @@ public class TcpTest {
         clientSocketProcessor_.start();
         serverSut_ = serverSocketProcessor_.createTransport();
         clientSut_ = clientSocketProcessor_.createTransport();
+
+        serverSut_.setOption(TransportOptions.SO_REUSEADDR, true);
     }
 
     @After
@@ -163,8 +165,8 @@ public class TcpTest {
         serverSut_.setAcceptedTransportOption(TransportOptions.DEACTIVATE_ON_END_OF_STREAM, false);
         clientSut_.setOption(TransportOptions.DEACTIVATE_ON_END_OF_STREAM, false);
 
-        serverSut_.bind(SERVER_ENDPOINT).await();
-        clientSut_.connect(SERVER_ENDPOINT).await();
+        serverSut_.bind(SERVER_ENDPOINT).join();
+        clientSut_.connect(SERVER_ENDPOINT).join();
         waitUntilConnected(serverStatusListener_);
 
         clientSut_.shutdownOutput(); // shutdown client output -> shutdown server input
@@ -174,8 +176,8 @@ public class TcpTest {
 
     @Test
     public void testShutdownInput() throws Exception {
-        serverSut_.bind(SERVER_ENDPOINT).await();
-        clientSut_.connect(SERVER_ENDPOINT).await();
+        serverSut_.bind(SERVER_ENDPOINT).join();
+        clientSut_.connect(SERVER_ENDPOINT).join();
         waitUntilConnected(serverStatusListener_);
 
         clientSut_.shutdownInput(); // shutdown client input -> close client -> server client
@@ -191,8 +193,8 @@ public class TcpTest {
             p.start();
             NioClientSocketTransport clientSut = p.createTransport();
 
-            serverSut_.bind(SERVER_ENDPOINT).await();
-            clientSut.connect(SERVER_ENDPOINT).await();
+            serverSut_.bind(SERVER_ENDPOINT).join();
+            clientSut.connect(SERVER_ENDPOINT).join();
             waitUntilConnected(serverStatusListener_);
 
             clientSut.close();

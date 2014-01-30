@@ -133,8 +133,8 @@ public abstract class NioSocketTransport<S extends SelectDispatcher> extends Abs
                             pipeline().activate();
                         }
                         key_ = dispatcher.register(channel, ops, NioSocketTransport.this);
-                    } catch (IOException ioe) {
-                        logger_.warn("[register] Failed to register a channel:" + this, ioe);
+                    } catch (Exception e) {
+                        logger_.warn("[register] Failed to register a channel:" + this, e);
                     }
                     return DONE;
                 }
@@ -142,13 +142,19 @@ public abstract class NioSocketTransport<S extends SelectDispatcher> extends Abs
         }
     }
 
-    // Called only from doCloseSelectableChannel().
-    // So there is no need to check the current thread.
-    private void unregister() {
-        if ((key_.interestOps() & SelectionKey.OP_READ) != 0) {
-            pipeline().deactivate();
+    // This method needs to be called by I/O thread.
+    void unregister() {
+        SelectionKey key = key_;
+        if (key != null) {
+            if ((key.interestOps() & SelectionKey.OP_READ) != 0) {
+                try {
+                    pipeline().deactivate();
+                } catch (RuntimeException re) {
+                    logger_.warn("[unregister] {}'s deactivation is failed.", this);
+                }
+            }
+            key.cancel();
         }
-        key_.cancel();
         eventDispatcher().reject(this);
         logger_.debug("[unregister] {} is unregistered from {}.", this, Thread.currentThread());
     }

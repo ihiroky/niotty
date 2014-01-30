@@ -21,6 +21,7 @@ import java.net.ServerSocket;
 import java.net.SocketAddress;
 import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
+import java.nio.channels.NotYetBoundException;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
@@ -286,13 +287,30 @@ public class NioServerSocketTransport extends NioSocketTransport<SelectDispatche
     @Override
     void onSelected(SelectionKey key, SelectDispatcher selectDispatcher) {
         ServerSocketChannel channel = (ServerSocketChannel) key.channel();
+        SocketChannel acceptedChannel;
         try {
-            SocketChannel acceptedChannel = channel.accept();
-            logger_.info("new channel {} is accepted.", acceptedChannel);
+            acceptedChannel = channel.accept();
+            logger_.info("[onSelected] New channel {} is accepted.", acceptedChannel);
+        } catch (NotYetBoundException nybe) {
+            logger_.error("[onSelected] failed to accept channel.", nybe);
+            unregister(); // leave from selector and wait for somebody to bind me.
+            return;
+        } catch (IOException ioe) {
+            logger_.error("[onSelected] failed to accept channel.", ioe);
+            doCloseSelectableChannel();
+            return;
+        }
+
+        try {
             acceptedChannel.configureBlocking(false);
             register(acceptedChannel);
         } catch (IOException ioe) {
-            logger_.error("[onSelected] failed to accept channel.", ioe);
+            logger_.error("[register] Failed to register channel " + channel);
+            try {
+                acceptedChannel.close();
+            } catch (IOException e) {
+                logger_.warn("[onSelected] Failed to close accepted channel.", e);
+            }
         }
     }
 
@@ -307,10 +325,19 @@ public class NioServerSocketTransport extends NioSocketTransport<SelectDispatche
             }
         }
         for (TransportOption<?> name : acceptedChannel.supportedOptions()) {
-            logger_.debug("[register] accepted socket's {} = {}", name, acceptedChannel.option(name));
+            logger_.debug("[register] Accepted socket's {} = {}", name, acceptedChannel.option(name));
         }
 
-        acceptedChannel.register(channel, SelectionKey.OP_READ);
+        try {
+            acceptedChannel.register(channel, SelectionKey.OP_READ);
+        } catch (IOException ioe) {
+            try {
+                acceptedChannel.unregister(); // Not bound yet. So not doCloseSelectableChannel() but unregister().
+            } catch (Exception e) {
+                logger_.warn("[register] Failed to close accepted channel.", e);
+            }
+            throw ioe;
+        }
     }
 
     @Override
