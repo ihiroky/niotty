@@ -9,7 +9,7 @@ import net.ihiroky.niotty.buffer.CodecBuffer;
 /**
  * @author Hiroki Itoh
  */
-public class FramingCodec implements Stage {
+public class LengthFrameCodec implements Stage {
 
     private int poolingFrameBytes_;
     private CodecBuffer buffer_;

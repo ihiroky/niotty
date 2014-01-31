@@ -2,7 +2,7 @@ package net.ihiroky.niotty.sample;
 
 import net.ihiroky.niotty.Pipeline;
 import net.ihiroky.niotty.PipelineComposer;
-import net.ihiroky.niotty.codec.FramingCodec;
+import net.ihiroky.niotty.codec.LengthFrameCodec;
 import net.ihiroky.niotty.codec.StringCodec;
 import net.ihiroky.niotty.nio.NioClientSocketProcessor;
 import net.ihiroky.niotty.nio.NioClientSocketTransport;
@@ -32,7 +32,7 @@ public class EchoMain {
             public void compose(Pipeline pipeline) {
                 pipeline.add(EchoStageKey.APPLICATION, new EchoStage())
                         .add(EchoStageKey.STRING, new StringCodec())
-                        .add(EchoStageKey.FRAMING, new FramingCodec());
+                        .add(EchoStageKey.FRAMING, new LengthFrameCodec());
             }
         });
         NioClientSocketProcessor client = new NioClientSocketProcessor();
@@ -41,7 +41,7 @@ public class EchoMain {
             public void compose(Pipeline pipeline) {
                 pipeline.add(EchoStageKey.APPLICATION, new HelloWorldStage())
                         .add(EchoStageKey.STRING, new StringCodec())
-                        .add(EchoStageKey.FRAMING, new FramingCodec());
+                        .add(EchoStageKey.FRAMING, new LengthFrameCodec());
             }
         });
 

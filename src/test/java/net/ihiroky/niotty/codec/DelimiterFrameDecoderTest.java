@@ -18,7 +18,7 @@ import static org.hamcrest.MatcherAssert.*;
 /**
  * @author Hiroki Itoh
  */
-public class DelimiterDecoderTest {
+public class DelimiterFrameDecoderTest {
 
     private static final Charset CHARSET = Charsets.UTF_8;
 
@@ -30,7 +30,7 @@ public class DelimiterDecoderTest {
 
     @Test
     public void testLoad_One() throws Exception {
-        DelimiterDecoder sut = new DelimiterDecoder(new byte[]{'\r', '\n'}, false);
+        DelimiterFrameDecoder sut = new DelimiterFrameDecoder(new byte[]{'\r', '\n'}, false);
         StageContextMock<CodecBuffer> context = new StageContextMock<CodecBuffer>();
 
         byte[] data = "input\r\n".getBytes(CHARSET);
@@ -47,7 +47,7 @@ public class DelimiterDecoderTest {
 
     @Test
     public void testLoad_Two() throws Exception {
-        DelimiterDecoder sut = new DelimiterDecoder(new byte[]{'\r', '\n'}, false);
+        DelimiterFrameDecoder sut = new DelimiterFrameDecoder(new byte[]{'\r', '\n'}, false);
         StageContextMock<CodecBuffer> context = new StageContextMock<CodecBuffer>();
 
         byte[] data = "input0\r\ninput1\r\n".getBytes(CHARSET);
@@ -65,7 +65,7 @@ public class DelimiterDecoderTest {
 
     @Test
     public void testLoad_IncompletePacket0() throws Exception {
-        DelimiterDecoder sut = new DelimiterDecoder(new byte[]{'\r', '\n'}, false);
+        DelimiterFrameDecoder sut = new DelimiterFrameDecoder(new byte[]{'\r', '\n'}, false);
         StageContextMock<CodecBuffer> context = new StageContextMock<CodecBuffer>();
 
         byte[] data = "input0\r".getBytes(CHARSET);
@@ -81,7 +81,7 @@ public class DelimiterDecoderTest {
 
     @Test
     public void testLoad_IncompletePacket1() throws Exception {
-        DelimiterDecoder sut = new DelimiterDecoder(new byte[]{'\r', '\n'}, false);
+        DelimiterFrameDecoder sut = new DelimiterFrameDecoder(new byte[]{'\r', '\n'}, false);
         StageContextMock<CodecBuffer> context = new StageContextMock<CodecBuffer>();
 
         byte[] data = "input0\r\ninput1".getBytes(CHARSET);
@@ -99,7 +99,7 @@ public class DelimiterDecoderTest {
 
     @Test
     public void testLoad_IncompletePacketSeparate() throws Exception {
-        DelimiterDecoder sut = new DelimiterDecoder(new byte[]{'\r', '\n'}, false);
+        DelimiterFrameDecoder sut = new DelimiterFrameDecoder(new byte[]{'\r', '\n'}, false);
         StageContextMock<CodecBuffer> context = new StageContextMock<CodecBuffer>();
 
         byte[] data0 = "input0\r".getBytes(CHARSET);
@@ -121,7 +121,7 @@ public class DelimiterDecoderTest {
 
     @Test
     public void testLoad_IncompletePacketSeparateTwice() throws Exception {
-        DelimiterDecoder sut = new DelimiterDecoder(new byte[]{'\r', '\n'}, false);
+        DelimiterFrameDecoder sut = new DelimiterFrameDecoder(new byte[]{'\r', '\n'}, false);
         StageContextMock<CodecBuffer> context = new StageContextMock<CodecBuffer>();
 
         byte[] data0 = "input0\r\ninput1\r".getBytes(CHARSET);
@@ -144,7 +144,7 @@ public class DelimiterDecoderTest {
 
     @Test
     public void testLoad_IncompletePacketSeparateAndComplete() throws Exception {
-        DelimiterDecoder sut = new DelimiterDecoder(new byte[]{'\r', '\n'}, false);
+        DelimiterFrameDecoder sut = new DelimiterFrameDecoder(new byte[]{'\r', '\n'}, false);
         StageContextMock<CodecBuffer> context = new StageContextMock<CodecBuffer>();
 
         byte[] data0 = "input0\r\ninput1\r".getBytes(CHARSET);
@@ -167,7 +167,7 @@ public class DelimiterDecoderTest {
 
     @Test
     public void testLoad_RemoveDelimiter() throws Exception {
-        DelimiterDecoder sut = new DelimiterDecoder(new byte[]{'\r', '\n'}, true);
+        DelimiterFrameDecoder sut = new DelimiterFrameDecoder(new byte[]{'\r', '\n'}, true);
         StageContextMock<CodecBuffer> context = new StageContextMock<CodecBuffer>();
 
         byte[] data0 = "input0\r\ninput1\r".getBytes(CHARSET);

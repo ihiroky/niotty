@@ -13,16 +13,16 @@ import static org.junit.Assert.*;
 
 /**
  */
-public class FramingCodecTest {
+public class LengthFrameCodecTest {
 
-    FramingCodec sut_;
+    LengthFrameCodec sut_;
     StageContextMock<CodecBuffer> context_;
     byte[] data_;
     int dataLength_;
 
     @Before
     public void setUp() {
-        sut_ = new FramingCodec();
+        sut_ = new LengthFrameCodec();
         context_ = new StageContextMock<CodecBuffer>();
         CodecBuffer encodeBuffer = Buffers.newCodecBuffer(32);
         encodeBuffer.writeShort((short) 12);
@@ -34,7 +34,7 @@ public class FramingCodecTest {
     }
 
     private void setUpAgainAsIntLength() {
-        sut_ = new FramingCodec();
+        sut_ = new LengthFrameCodec();
         context_ = new StageContextMock<CodecBuffer>();
         CodecBuffer encodeBuffer = Buffers.newCodecBuffer(32);
         encodeBuffer.writeInt(12 | 0x80000000); // INT_FLAG
@@ -229,7 +229,7 @@ public class FramingCodecTest {
 
     @Test
     public void testLoad_MessageLargeInput() throws Exception {
-        FramingCodec sut = new FramingCodec();
+        LengthFrameCodec sut = new LengthFrameCodec();
         CodecBuffer wholeInput = Buffers.newCodecBuffer(8192);
         for (int i = 0; i < 30; i++) {
             CodecBuffer buffer = Buffers.newCodecBuffer(1024);

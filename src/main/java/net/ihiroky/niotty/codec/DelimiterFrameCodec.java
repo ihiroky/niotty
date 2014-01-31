@@ -12,13 +12,13 @@ import java.util.Arrays;
 /**
  *
  */
-public class DelimiterCodec implements Stage {
+public class DelimiterFrameCodec implements Stage {
 
     private final byte[] delimiter_;
     private final boolean removeDelimiter_;
     private CodecBuffer buffer_;
 
-    public DelimiterCodec(byte[] delimiter, boolean removeDelimiter) {
+    public DelimiterFrameCodec(byte[] delimiter, boolean removeDelimiter) {
         Arguments.requireNonNull(delimiter, "delimiter");
         if (delimiter.length == 0) {
             throw new IllegalArgumentException("The delimiter must not be empty.");

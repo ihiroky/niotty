@@ -14,11 +14,11 @@ import static org.hamcrest.MatcherAssert.*;
 
 /**
  */
-public class DelimiterEncoderTest {
+public class DelimiterFrameEncoderTest {
 
     @Test
     public void testStore() throws Exception {
-        DelimiterEncoder sut = new DelimiterEncoder(new byte[]{'\r', '\n'});
+        DelimiterFrameEncoder sut = new DelimiterFrameEncoder(new byte[]{'\r', '\n'});
         StageContext context = new StageContextMock<Packet>();
 
         byte[] data = "input".getBytes(Charsets.UTF_8);

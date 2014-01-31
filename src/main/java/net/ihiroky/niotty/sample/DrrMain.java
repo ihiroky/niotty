@@ -6,7 +6,7 @@ import net.ihiroky.niotty.StageKey;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.CodecBuffer;
 import net.ihiroky.niotty.codec.DeficitRoundRobinEncoder;
-import net.ihiroky.niotty.codec.FramingCodec;
+import net.ihiroky.niotty.codec.LengthFrameCodec;
 import net.ihiroky.niotty.nio.NioClientSocketProcessor;
 import net.ihiroky.niotty.nio.NioClientSocketTransport;
 import net.ihiroky.niotty.nio.NioServerSocketProcessor;
@@ -41,7 +41,7 @@ public class DrrMain {
                         pipeline.add(MyStageKey.GENERATOR, new NumberGenerator())
                                 .add(MyStageKey.DEFICIT_ROUND_ROBIN,
                                         new DeficitRoundRobinEncoder(1024, 1, TimeUnit.MILLISECONDS, 0.5f))
-                                .add(MyStageKey.FRAMING, new FramingCodec());
+                                .add(MyStageKey.FRAMING, new LengthFrameCodec());
                     }
                 });
 
@@ -50,7 +50,7 @@ public class DrrMain {
             @Override
             public void compose(Pipeline pipeline) {
                 pipeline.add(MyStageKey.REPORTER, new EvenOddReporter())
-                        .add(MyStageKey.FRAMING, new FramingCodec());
+                        .add(MyStageKey.FRAMING, new LengthFrameCodec());
             }
         });
         serverProcessor.start();

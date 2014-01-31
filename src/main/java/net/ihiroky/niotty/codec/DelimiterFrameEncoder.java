@@ -12,11 +12,11 @@ import java.util.Arrays;
 /**
  *
  */
-public class DelimiterEncoder extends StoreStage {
+public class DelimiterFrameEncoder extends StoreStage {
 
     private byte[] delimiter_;
 
-    public DelimiterEncoder(byte[] delimiter) {
+    public DelimiterFrameEncoder(byte[] delimiter) {
         Arguments.requireNonNull(delimiter, "delimiter");
         if (delimiter.length == 0) {
             throw new IllegalArgumentException("The delimiter must not be empty.");

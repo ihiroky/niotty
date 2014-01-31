@@ -4,7 +4,7 @@ import net.ihiroky.niotty.Pipeline;
 import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.StageKey;
 import net.ihiroky.niotty.TransportFuture;
-import net.ihiroky.niotty.codec.FramingCodec;
+import net.ihiroky.niotty.codec.LengthFrameCodec;
 import net.ihiroky.niotty.nio.NioClientSocketProcessor;
 import net.ihiroky.niotty.nio.NioClientSocketTransport;
 import net.ihiroky.niotty.nio.NioServerSocketProcessor;
@@ -36,7 +36,7 @@ public class FileMain {
             @Override
             public void compose(Pipeline pipeline) {
                 pipeline.add(Key.LOAD_FILE, new FileLoadStage())
-                        .add(Key.FRAMING, new FramingCodec());
+                        .add(Key.FRAMING, new LengthFrameCodec());
             }
         });
         NioClientSocketProcessor clientProcessor = new NioClientSocketProcessor();
@@ -44,7 +44,7 @@ public class FileMain {
             @Override
             public void compose(Pipeline pipeline) {
                 pipeline.add(Key.DUMP_FILE, new FileDumpStage(waiter))
-                        .add(Key.FRAMING, new FramingCodec());
+                        .add(Key.FRAMING, new LengthFrameCodec());
             }
         });
         serverProcessor.start();
