@@ -55,6 +55,14 @@ public class NioDatagramSocketTransport extends NioSocketTransport<SelectDispatc
                     TransportOptions.IP_MULTICAST_IF, TransportOptions.IP_MULTICAST_LOOP,
                     TransportOptions.IP_MULTICAST_TTL, TransportOptions.IP_TOS)));
 
+    /**
+     * Constructs the instance.
+     * @param name the name of this transport
+     * @param composer the composer to initialize a pipeline for this transport
+     * @param ioSelectDispatcherGroup the pool which offers the SelectDispatcher to execute the stage
+     * @param writeQueueFactory the factory to create DatagramQueue
+     * @param family the internet protocol family
+     */
     public NioDatagramSocketTransport(String name, PipelineComposer composer,
             SelectDispatcherGroup ioSelectDispatcherGroup, WriteQueueFactory<DatagramQueue> writeQueueFactory,
             InternetProtocolFamily family) {
@@ -68,6 +76,7 @@ public class NioDatagramSocketTransport extends NioSocketTransport<SelectDispatc
                     ? DatagramChannel.open(InternetProtocolFamily.resolve(family))
                     : DatagramChannel.open();
             channel.configureBlocking(false);
+            register(channel, SelectionKey.OP_READ);
         } catch (IOException ioe) {
             if (channel != null) {
                 try {
@@ -76,18 +85,16 @@ public class NioDatagramSocketTransport extends NioSocketTransport<SelectDispatc
                     e.printStackTrace();
                 }
             }
-            throw new RuntimeException("Failed to open DatagramChannel.", ioe);
+            throw new TransportException("Failed to open DatagramChannel.", ioe);
         }
 
         channel_ = channel;
         writeQueue_ = writeQueueFactory.newWriteQueue();
         membershipKeyMap_ = Collections.synchronizedMap(new HashMap<GroupKey, MembershipKey>());
-
-        // TODO attach a thread for remote ip from a pool.
-        // TODO set read buffer size to 64k.
     }
 
-    public NioDatagramSocketTransport(String name, PipelineComposer composer,
+    // Constructor for the test.
+    NioDatagramSocketTransport(String name, PipelineComposer composer,
             SelectDispatcherGroup ioSelectDispatcherGroup, WriteQueueFactory<DatagramQueue> writeQueueFactory,
             DatagramChannel channel) {
         super(name, composer, ioSelectDispatcherGroup);
@@ -241,7 +248,6 @@ public class NioDatagramSocketTransport extends NioSocketTransport<SelectDispatc
                 if (future.executing()) {
                     try {
                         DatagramChannel channel = channel_;
-                        register(channel, SelectionKey.OP_READ);
                         if (Platform.javaVersion().ge(JavaVersion.JAVA7)) {
                             if (channel.getLocalAddress() == null) {
                                 channel.bind(local);
@@ -316,7 +322,6 @@ public class NioDatagramSocketTransport extends NioSocketTransport<SelectDispatc
             public long execute(TimeUnit timeUnit) throws Exception {
                 if (future.executing()) {
                     try {
-                        register(channel_, SelectionKey.OP_READ);
                         channel_.connect(remote);
                         future.done();
                     } catch (IOException ioe) {
