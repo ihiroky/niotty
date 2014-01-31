@@ -243,15 +243,16 @@ public class NioServerSocketTransport extends NioSocketTransport<SelectDispatche
                 if (future.executing()) {
                     try {
                         ServerSocketChannel channel = serverChannel_;
-                        register(channel, SelectionKey.OP_ACCEPT);
                         if (Platform.javaVersion().ge(JavaVersion.JAVA7)) {
                             if (channel.getLocalAddress() == null) {
                                 channel.bind(socketAddress, backlog);
+                                register(channel, SelectionKey.OP_ACCEPT);
                             }
                         } else {
                             ServerSocket socket = channel.socket();
                             if (!socket.isBound()) {
                                 socket.bind(socketAddress, backlog);
+                                register(channel, SelectionKey.OP_ACCEPT);
                             }
                         }
                         future.done();
