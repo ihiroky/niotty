@@ -1,4 +1,4 @@
-package net.ihiroky.niotty.nio.local;
+package net.ihiroky.niotty.nio.unix;
 
 import com.sun.jna.ptr.IntByReference;
 
@@ -18,7 +18,7 @@ import java.util.Set;
 /**
  *
  *
- * An instance of this class accept {@link net.ihiroky.niotty.nio.local.UnixDomainSocketAddress} only.
+ * An instance of this class accept {@link net.ihiroky.niotty.nio.unix.UnixDomainSocketAddress} only.
  * Implementations throw ClassCastException on attempts to use any operations.
  */
 public abstract class AbstractUnixDomainChannel extends AbstractSelectableChannel implements NetworkChannel {

@@ -1,4 +1,4 @@
-package net.ihiroky.niotty.nio.local;
+package net.ihiroky.niotty.nio.unix;
 
 import java.net.SocketAddress;
 
