@@ -4,6 +4,7 @@ import com.sun.jna.Pointer;
 import com.sun.jna.Structure;
 import com.sun.jna.Union;
 import com.sun.jna.ptr.IntByReference;
+import com.sun.jna.ptr.LongByReference;
 
 import java.io.File;
 import java.nio.ByteBuffer;
@@ -11,7 +12,7 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- *
+ * Provides the interface to access the native codes with JNA.
  */
 public class Native {
 
@@ -20,23 +21,32 @@ public class Native {
     }
 
 
-    static native String strerror(int errno);
-    static native void perror(String s);
-
-
-    // socket
+    /*======================================================================
+     * /usr/include/x86_64-linux-gnu/bits/socket.h
+     *======================================================================*/
 
     static final int AF_UNIX = 1;
     static final int SOCK_STREAM = 1;
     static final int SOCK_DGRAM = 2;
     static final int PROTOCOL = 0;
 
-    public static class SockAddr extends Structure {
+    static final int SHUT_RD = 0;
+    static final int SHUT_WR = 1;
+    static final int SHUT_RDWR = 2;
+
+    public static class SockAddrUn extends Structure {
         public final static int UNIX_PATH_MAX = 108;
         public final static byte[] ZERO_BYTE = new byte[] {0};
 
         public short sun_family_ = AF_UNIX;
         public byte[] sun_path_ = new byte[UNIX_PATH_MAX];
+
+        public SockAddrUn() {
+        }
+
+        public SockAddrUn(String path) {
+            setSunPath(path);
+        }
 
         public void setSunPath(String sunPath) {
             System.arraycopy(sunPath.getBytes(), 0, sun_path_, 0, sunPath.length());
@@ -50,16 +60,92 @@ public class Native {
     }
 
     static native int socket(int domain, int type, int protocol);
-    static native int bind(int sockfd, SockAddr sockaddr, int addrlen);
-    static native int connect(int sockfd, SockAddr sockaddr, int addrlen);
-    static native int listen(int sockfd, int backlog);
-    static native int accept(int sockfd, SockAddr sockaddr, IntByReference addrlen);
+    static native int socketpair(int domain, int type, int protocol, int[] sv);
+    static native int bind(int fd, SockAddrUn sockaddr, int addrlen);
+    static native int connect(int fd, SockAddrUn sockaddr, int addrlen);
+    static native int listen(int fd, int backlog);
+    static native int accept(int fd, SockAddrUn sockaddr, IntByReference addrlen);
+    static native int shutdown(int sockfd, int how);
+
+    static native int getsockname(int fd, SockAddrUn addr, IntByReference addrlen);
+    static native int getpeername(int fd, SockAddrUn addr, IntByReference addrlen);
+    static native int getsockopt(int fd, int level, int optname, ByteBuffer optval, IntByReference optlen);
+    static native int setsockopt(int fd, int level, int optname, ByteBuffer optval, int optlen);
+    static native int recvfrom(int fd, ByteBuffer buf, int len, int flags, SockAddrUn from, IntByReference fromlen);
+    static native int sendto(int fd, ByteBuffer buf, int len, int flags, SockAddrUn to, int tolen);
+
+
+    /*======================================================================
+     * /usr/include/unistd.h
+     *======================================================================*/
     static native int read(int fd, ByteBuffer buffer, int count);
     static native int write(int fd, ByteBuffer buffer, int count);
     static native int close(int fd);
+    static native int pread(int fd, ByteBuffer buffer, int count, int offset);
+    static native int pwrite(int fd, ByteBuffer buffer, int count, int offset);
 
 
-    // epoll
+    /*======================================================================
+     * /usr/include/asm-generic/socket.h
+     *======================================================================*/
+
+    static final int SOL_SOCKET = 1;
+    static final int SO_SNDBUF = 7;
+    static final int SO_RCVBUF = 8;
+    static final int SO_PASSCRED = 16;
+
+
+    /*======================================================================
+     * /usr/include/x86_64-linux-gnu/bits/uio.h
+     * /usr/include/x86_64-linux-gnu/sys/uio.h
+     *======================================================================*/
+
+    static int IOV_MAX = 1024;
+
+    //    44 struct iovec
+//            45   {
+//        46     void *iov_base;»/* Pointer to data.  */
+//        47     size_t iov_len;»/* Length of data.  */
+//        48   };↲
+
+    public static class IOVec extends Structure {
+
+        public ByteBuffer iovBase_;
+        public int iovLen_;
+
+        public IOVec() {
+        }
+
+        public IOVec(ByteBuffer iovBase, int iovLen) {
+            iovBase_ = iovBase;
+            iovLen_ = iovLen;
+        }
+
+        public IOVec(Pointer p) {
+            super(p);
+            read();
+        }
+
+        @Override
+        protected List getFieldOrder() {
+            return Arrays.asList("iovBase_", "iovLen_");
+        }
+
+        public static class ByReference extends IOVec implements Structure.ByReference {
+            public ByReference(ByteBuffer iovBase, int iovLen) {
+                super(iovBase, iovLen);
+            }
+        }
+    }
+
+    // extern ssize_t readv (int __fd, __const struct iovec *__iovec, int __count)
+    // extern ssize_t writev (int __fd, __const struct iovec *__iovec, int __count)
+    static native long readv(int fd, Pointer iovec, int count);
+    static native long writev(int fd, Pointer iovec, int count);
+
+    /*======================================================================
+     * /usr/include/x86_64-linux-gnu/sys/epoll.h
+     *======================================================================*/
 
     static final int EPOLL_CTL_ADD = 1;
     static final int EPOLL_CTL_DEL = 2;
@@ -168,7 +254,20 @@ public class Native {
     static native int epoll_wait(int epfd, Pointer events, int maxevents, int timeout);
 
 
-    // fcntl
+    /*======================================================================
+     * /usr/include/x86_64-linux-gnu/sys/eventfd.h
+     *======================================================================*/
+
+    static int EFD_NONBLOCK = 04000;
+
+    static native int eventfd(int count, int flags);
+    static native int eventfd_read(int fd, LongByReference value);
+    static native int eventfd_write(int fd, long value);
+
+
+    /*======================================================================
+     * /usr/include/asm-generic/fcntl.h
+     *======================================================================*/
 
     static final int O_NONBLOCK = 04000;
     static final int F_GETFL = 3;
@@ -176,6 +275,21 @@ public class Native {
 
     static native int fcntl(int fd, int cmd, int value);
 
+
+    /*======================================================================
+     * /usr/include/string.h
+     *======================================================================*/
+    static native String strerror(int errno);
+
+    static String getLastError() {
+        return strerror(com.sun.jna.Native.getLastError());
+    }
+
+
+    /*======================================================================
+     * /usr/include/stdio.h
+     *======================================================================*/
+    static native void perror(String s);
 
 
     public static void main(String[] args) throws Exception {
@@ -185,7 +299,7 @@ public class Native {
         }
 
         File file = new File("/tmp/unix-domain-socket");
-        SockAddr ssa = new SockAddr();
+        SockAddrUn ssa = new SockAddrUn();
         ssa.clear();
         ssa.sun_family_ = AF_UNIX;
         ssa.setSunPath(file.getAbsolutePath());
@@ -227,7 +341,7 @@ public class Native {
                 EPollEvent cev = new EPollEvent(events[i].getPointer());
                 System.out.printf("fd_:%d\n", cev.data_.fd_);
                 if (cev.data_.fd_ == sd) {
-                    SockAddr caddr = new SockAddr();
+                    SockAddrUn caddr = new SockAddrUn();
                     IntByReference caddrLength = new IntByReference();
                     int cd = accept(sd, caddr, caddrLength);
                     System.out.printf("Accept socket %d\n", cd);
