@@ -27,6 +27,22 @@ public final class Arguments {
     }
 
     /**
+     * Checks if the value is not null and not empty.
+     * @param value the value to check
+     * @param name the name of the variable
+     * @return the value
+     * @throws java.lang.IllegalArgumentException if the value is null
+     */
+    public static String requireNonNullAndNonEmpty(String value, String name) {
+        if (value == null || value.isEmpty()) {
+            throw (name != null)
+                    ? new IllegalArgumentException("The " + name + " must not be null or empty.")
+                    : new IllegalArgumentException();
+        }
+        return value;
+    }
+
+    /**
      * Checks if the int value is positive.
      * @param value the value to check
      * @param name the name of the variable
@@ -124,5 +140,21 @@ public final class Arguments {
                     : new IllegalArgumentException();
         }
         return value;
+    }
+
+    /**
+     * Checks if the object is the instance of the specified type.
+     *
+     * @param object the object to be checked
+     * @param name the field name of the object
+     * @param type the class object to represent the type
+     * @param <T> the type
+     * @return the object casted with the type
+     */
+    public static <T> T requireInstanceOf(Object object, String name, Class<T> type) {
+        if (!type.isInstance(object)) {
+            throw new IllegalArgumentException("The " + name + " must be the instance of " + type.getName());
+        }
+        return type.cast(object);
     }
 }
