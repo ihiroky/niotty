@@ -30,24 +30,31 @@ public class ServerUnixDomainChannel extends AbstractUnixDomainChannel implement
 
     public synchronized ServerUnixDomainChannel bind(SocketAddress local, int backlog) throws IOException {
         UnixDomainSocketAddress uds = (UnixDomainSocketAddress) local;
-        Native.SockAddrUn sa = uds.addr();
-        if (Native.bind(fd_, sa, sa.size()) == -1) {
-            throw new IOException(Native.getLastError());
-        }
-        if (Native.listen(fd_, backlog) == -1) {
-            throw new IOException(Native.getLastError());
+        synchronized (lock_) {
+            Native.SockAddrUn address = ADDRESS_BUFFER;
+            address.clear();
+            address.setSunPath(uds.getPath());
+            if (Native.bind(fd_, address, address.size()) == -1) {
+                throw new IOException(Native.getLastError());
+            }
+            if (Native.listen(fd_, backlog) == -1) {
+                throw new IOException(Native.getLastError());
+            }
         }
         return this;
     }
 
     public synchronized UnixDomainChannel accept() throws IOException {
-        Native.SockAddrUn caddr = new Native.SockAddrUn();
-        IntByReference caddrLength = new IntByReference();
-        int client = Native.accept(fd_, caddr, caddrLength);
-        if (client == -1) {
-            throw new IOException(Native.getLastError());
+        int client;
+        synchronized (lock_) {
+            Native.SockAddrUn clientAddress = ADDRESS_BUFFER;
+            IntByReference clientAddressSize = ADDRESS_SIZE_BUFFER;
+            clientAddress.clear();
+            client = Native.accept(fd_, clientAddress, clientAddressSize);
+            if (client == -1) {
+                throw new IOException(Native.getLastError());
+            }
         }
-
         return new UnixDomainChannel(client);
     }
 }

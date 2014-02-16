@@ -36,7 +36,6 @@ public class Native {
 
     public static class SockAddrUn extends Structure {
         public final static int UNIX_PATH_MAX = 108;
-        public final static byte[] ZERO_BYTE = new byte[] {0};
 
         public short sun_family_ = AF_UNIX;
         public byte[] sun_path_ = new byte[UNIX_PATH_MAX];
@@ -49,8 +48,23 @@ public class Native {
         }
 
         public void setSunPath(String sunPath) {
-            System.arraycopy(sunPath.getBytes(), 0, sun_path_, 0, sunPath.length());
-            System.arraycopy(ZERO_BYTE, 0, sun_path_, sunPath.length(), 1);
+            byte[] bytes = sunPath.getBytes();
+            if (bytes.length >= UNIX_PATH_MAX) {
+                String msg = "The length of sunPath must be less than " + UNIX_PATH_MAX + " as byte.";
+                throw new IllegalArgumentException(msg);
+            }
+            System.arraycopy(bytes, 0, sun_path_, 0, bytes.length);
+            sun_path_[bytes.length] = 0;
+        }
+
+        public String getSunPath() {
+            byte[] sp = sun_path_;
+            for (int i = 0; i < sp.length; i++) {
+                if (sp[i] == 0) {
+                    return new String(sp, 0, i);
+                }
+            }
+            return new String(sp);
         }
 
         @Override
@@ -243,6 +257,12 @@ public class Native {
                 events_ = events_ | EPOLLONESHOT;
                 return this;
             }
+
+            public void update(int fd, int events) {
+                events_ = events;
+                data_.fd_ = fd;
+                data_.setType(Integer.TYPE);
+            }
         }
 
         public static class ByValue extends EPollEvent implements Structure.ByValue {
@@ -260,7 +280,7 @@ public class Native {
 
     static int EFD_NONBLOCK = 04000;
 
-    static native int eventfd(int count, int flags);
+    static native int eventfd(int initval, int flags);
     static native int eventfd_read(int fd, LongByReference value);
     static native int eventfd_write(int fd, long value);
 
@@ -277,12 +297,26 @@ public class Native {
 
 
     /*======================================================================
+     * /usr/include/asm-generic/errno-base.h
+     * /usr/include/asm-generic/errno.h
+     *======================================================================*/
+
+    static final int EAGAIN = 11;
+    static final int EWOULDBLOCK = EAGAIN;
+    static final int EISCONN = 106;
+
+    static int errno() {
+        return com.sun.jna.Native.getLastError();
+    }
+
+
+    /*======================================================================
      * /usr/include/string.h
      *======================================================================*/
     static native String strerror(int errno);
 
     static String getLastError() {
-        return strerror(com.sun.jna.Native.getLastError());
+        return strerror(errno());
     }
 
 

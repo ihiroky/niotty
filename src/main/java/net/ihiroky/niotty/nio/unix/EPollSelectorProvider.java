@@ -31,7 +31,7 @@ public class EPollSelectorProvider extends SelectorProvider {
 
     @Override
     public AbstractSelector openSelector() throws IOException {
-        return null;
+        return EPollSelector.open();
     }
 
     @Override
