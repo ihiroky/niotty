@@ -43,8 +43,10 @@ public class DefaultEventDispatcher extends EventDispatcher {
     @Override
     protected void wakeUp() {
         synchronized (lock_) {
-            signaled_ = true;
-            lock_.notify();
+            if (!signaled_) {
+                signaled_ = true;
+                lock_.notify();
+            }
         }
     }
 }
