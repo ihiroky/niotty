@@ -28,12 +28,12 @@ public class EPollSelector extends AbstractSelector {
     private final int fd_;
     private final int eventFd_;
     private final Set<SelectionKey> keySet_;
-    private final Map<Integer, EPollSelectionKey> fdKeyMap_; // TODO int map
+    private final Map<Integer, EPollSelectionKey> fdKeyMap_;
     private final SelectedKeySet selectedKeySet_;
     private final Object lock_;
 
     private static Logger logger_ = LoggerFactory.getLogger(EPollSelector.class);
-    private static final int EVENT_BUFFER_SIZE = 512;
+    private static final int EVENT_BUFFER_SIZE = 1024; // TODO getrlimit RLIMIT_NOFILE
 
     private final Native.EPollEvent.ByReference tmpEvent_;
     private final Native.EPollEvent eventsHead_;
@@ -94,12 +94,7 @@ public class EPollSelector extends AbstractSelector {
 
         AbstractUnixDomainChannel channel = (AbstractUnixDomainChannel) ch;
         EPollSelectionKey key = new EPollSelectionKey(channel, this, ops);
-        Set<SelectionKey> cancelledKeySet = cancelledKeys();
-        synchronized (cancelledKeySet) {
-            if (cancelledKeySet.contains(key)) {
-                throw new CancelledKeyException();
-            }
-        }
+        key.attach(att);
 
         int events = 0;
         if ((ops & (SelectionKey.OP_ACCEPT | SelectionKey.OP_READ)) != 0) {
@@ -112,20 +107,31 @@ public class EPollSelector extends AbstractSelector {
             events |= (Native.EPOLLOUT | Native.EPOLLET);
         }
 
-        synchronized (lock_) {
+        synchronized (keySet_) {
+            Set<SelectionKey> cancelledKeySet = cancelledKeys();
+            synchronized (cancelledKeySet) {
+                if (cancelledKeySet.contains(key)) {
+                    throw new CancelledKeyException();
+                }
+            }
+
             Native.EPollEvent.ByReference ev = tmpEvent_;
             ev.clear();
             ev.update(channel.fd_, events);
             if (keySet_.contains(key)) {
                 if (events != 0) {
-                    Native.epoll_ctl(fd_, Native.EPOLL_CTL_MOD, channel.fd_, ev);
+                    if (Native.epoll_ctl(fd_, Native.EPOLL_CTL_MOD, channel.fd_, ev) == -1) {
+                        throw new RuntimeException(Native.getLastError());
+                    }
                     logger_.debug("[register] Mod the key: {}", key);
                 } else {
                     remove(key);
                 }
             } else {
                 int cfd = channel.fd_;
-                Native.epoll_ctl(fd_, Native.EPOLL_CTL_ADD, cfd, ev);
+                if (Native.epoll_ctl(fd_, Native.EPOLL_CTL_ADD, cfd, ev) == -1) {
+                    throw new RuntimeException(Native.getLastError());
+                }
                 keySet_.add(key);
                 fdKeyMap_.put(cfd, key);
                 logger_.debug("[register] Add new key: {}", key);
@@ -136,12 +142,18 @@ public class EPollSelector extends AbstractSelector {
     }
 
     private void remove(EPollSelectionKey key) {
-        // Requires syncronization by lock_
+
+        // Precondition: synchronized by keySet_
+
         int fd = key.channel().fd_;
         Native.EPollEvent.ByReference ev = tmpEvent_;
         ev.clear();
         ev.update(fd, 0);
-        Native.epoll_ctl(fd_, Native.EPOLL_CTL_DEL, fd, ev);
+        if (Native.epoll_ctl(fd_, Native.EPOLL_CTL_DEL, fd, ev) == -1) {
+            throw new RuntimeException(Native.getLastError());
+        }
+
+        deregister(key);
         fdKeyMap_.remove(fd);
         keySet_.remove(key);
         logger_.debug("[remove] Remove the key: {}", key);
@@ -149,38 +161,59 @@ public class EPollSelector extends AbstractSelector {
 
     @Override
     public Set<SelectionKey> keys() {
+        if (!isOpen()) {
+            throw new ClosedSelectorException();
+        }
+
         return Collections.unmodifiableSet(keySet_);
     }
 
-    /*
-    TODO comment about the specification of the set and its iterator.
-     */
     @Override
     public Set<SelectionKey> selectedKeys() {
+        if (!isOpen()) {
+            throw new ClosedSelectorException();
+        }
+
         return selectedKeySet_;
     }
 
-    private int select(int timeout) throws IOException {
+    private int poll(int timeout) throws IOException {
+        synchronized (lock_) {
+            if (!isOpen()) {
+                throw new ClosedSelectorException();
+            }
+            synchronized (keySet_) {
+                synchronized (selectedKeySet_) {
+                    processCancelledKeys();
 
+                    int count;
+                    try {
+                        begin();
+                        count = Native.epoll_wait(fd_, eventsHead_.getPointer(), eventBuffer_.length, timeout);
+                    } finally {
+                        end();
+                    }
+
+                    return updateSelectedKeys(count);
+                }
+            }
+        }
+    }
+
+    private void processCancelledKeys() throws IOException {
         Set<SelectionKey> cancelledKeys = cancelledKeys();
         synchronized (cancelledKeys) {
             Set<SelectionKey> keySet = keySet_;
             for (Iterator<SelectionKey> i = cancelledKeys.iterator(); i.hasNext();) {
                 SelectionKey key = i.next();
                 if (keySet.contains(key)) {
-                    synchronized (lock_) {
-                        remove((EPollSelectionKey) key);
-                    }
+                    remove((EPollSelectionKey) key);
                 }
             }
         }
+    }
 
-        if (!isOpen()) {
-            throw new ClosedSelectorException();
-        }
-
-        int count = Native.epoll_wait(fd_, eventsHead_.getPointer(), eventBuffer_.length, timeout);
-
+    private int updateSelectedKeys(int count) {
         SelectedKeySet selectedKeySet = selectedKeySet_;
         int eventFd = eventFd_;
         int selected = 0;
@@ -188,36 +221,33 @@ public class EPollSelector extends AbstractSelector {
             Native.EPollEvent event = new Native.EPollEvent(eventBuffer_[i].getPointer());
             int fd = event.data_.fd_;
             if (fd == eventFd) {
-                logger_.debug("[select] Poll event fd: {}", fd);
-                synchronized (lock_) {
-                    Native.eventfd_read(fd, eventFdBuffer_);
+                logger_.debug("[updateSelectedKeys] Poll event fd: {}", fd);
+                if (Native.eventfd_read(fd, eventFdBuffer_) == 0) {
                     continue;
                 }
+                // Assume that errno is set.
+                throw new RuntimeException(Native.getLastError());
             }
 
             EPollSelectionKey key = fdKeyMap_.get(event.data_.fd_);
-            int baseOps = selectedKeySet.add(key) ? 0 : key.readyOps();
-            updateReadyOps(key, baseOps, event.events_);
-            logger_.debug("[select] {}", key);
+            int ops = selectedKeySet.add(key) ? 0 : key.readyOps();
+            int events = event.events_;
+            if ((events & Native.EPOLLIN) != 0) {
+                ops |= key.isInterestedInRead() ? SelectionKey.OP_READ : SelectionKey.OP_ACCEPT;
+            }
+            if ((events & Native.EPOLLOUT) != 0) {
+                ops |= ((events & Native.EPOLLET) != 0) ? SelectionKey.OP_WRITE : SelectionKey.OP_CONNECT;
+            }
+            key.updateReadyOps(ops);
+            logger_.debug("[updateSelectedKeys] {}", key);
             selected++;
         }
         return selected;
     }
 
-    private void updateReadyOps(EPollSelectionKey key, int baseOps, int event) {
-        int ops = baseOps;
-        if ((event & Native.EPOLLIN) != 0) {
-            ops |= key.isInterestedInRead() ? SelectionKey.OP_READ : SelectionKey.OP_ACCEPT;
-        }
-        if ((event & Native.EPOLLOUT) != 0) {
-            ops |= ((event & Native.EPOLLET) != 0) ? SelectionKey.OP_WRITE : SelectionKey.OP_CONNECT;
-        }
-        key.updateReadyOps(ops);
-    }
-
     @Override
     public int selectNow() throws IOException {
-        return select(0);
+        return poll(0);
     }
 
     @Override
@@ -226,20 +256,21 @@ public class EPollSelector extends AbstractSelector {
             throw new IllegalArgumentException("The timeout is negative.");
         }
         int timeoutMillis = (timeout <= Integer.MAX_VALUE) ? (int) timeout : Integer.MAX_VALUE;
-        return select((timeoutMillis > 0) ? timeoutMillis : -1);
+        return poll((timeoutMillis != 0) ? timeoutMillis : -1);
     }
 
     @Override
     public int select() throws IOException {
-        return select(-1);
+        return poll(-1);
     }
 
     @Override
     public Selector wakeup() {
-        synchronized (lock_) {
-            Native.eventfd_write(eventFd_, 1L);
+        if (Native.eventfd_write(eventFd_, 1L) == 0) {
+            return this;
         }
-        return this;
+        // Assume that errno is set.
+        throw new RuntimeException(Native.getLastError());
     }
 
     private static class SelectedKeySet implements Set<SelectionKey> {
