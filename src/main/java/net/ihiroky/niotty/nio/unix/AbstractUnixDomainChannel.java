@@ -23,10 +23,10 @@ import java.util.Set;
 public abstract class AbstractUnixDomainChannel extends AbstractChannel {
 
     protected final Native.SockAddrUn ADDRESS_BUFFER = new Native.SockAddrUn();
-    protected final IntByReference ADDRESS_SIZE_BUFFER = new IntByReference();
+    protected final IntByReference SIZE_BUFFER = new IntByReference();
 
     private static final Set<SocketOption<?>> SUPPORTED_OPTIONS =
-            Collections.unmodifiableSet(new HashSet<SocketOption<?>>(Arrays.asList(
+            Collections.unmodifiableSet(new HashSet<SocketOption<?>>(Arrays.<SocketOption<?>>asList(
                     StandardSocketOptions.SO_RCVBUF, StandardSocketOptions.SO_SNDBUF, SocketOptions.SO_PASSCRED)));
 
     protected AbstractUnixDomainChannel(int fd, int validOps) throws IOException {
@@ -44,9 +44,9 @@ public abstract class AbstractUnixDomainChannel extends AbstractChannel {
     @Override
     public SocketAddress getLocalAddress() throws IOException {
         Native.SockAddrUn sa = ADDRESS_BUFFER;
-        IntByReference saLen = ADDRESS_SIZE_BUFFER;
+        IntByReference saLen = SIZE_BUFFER;
         String sunPath;
-        synchronized (lock_) {
+        synchronized (stateLock_) {
             sa.clear();
             if (Native.getsockname(fd_, sa, saLen) == -1) {
                 throw new IOException(Native.getLastError());
@@ -61,7 +61,7 @@ public abstract class AbstractUnixDomainChannel extends AbstractChannel {
     public <T> NetworkChannel setOption(SocketOption<T> name, T value) throws IOException {
         if (name.equals(StandardSocketOptions.SO_RCVBUF)) {
             ByteBuffer buffer = ByteBuffer.allocate(4).order(ByteOrder.nativeOrder());
-            synchronized (lock_) {
+            synchronized (stateLock_) {
                 if (Native.setsockopt(fd_, Native.SOL_SOCKET, Native.SO_RCVBUF, buffer, buffer.capacity()) == -1) {
                     throw new IOException(Native.getLastError());
                 }
@@ -69,7 +69,7 @@ public abstract class AbstractUnixDomainChannel extends AbstractChannel {
             return this;
         } else if (name.equals(StandardSocketOptions.SO_SNDBUF))                    {
             ByteBuffer buffer = ByteBuffer.allocate(4).order(ByteOrder.nativeOrder());
-            synchronized (lock_) {
+            synchronized (stateLock_) {
                 if (Native.setsockopt(fd_, Native.SOL_SOCKET, Native.SO_SNDBUF, buffer, buffer.capacity()) == -1) {
                     throw new IOException(Native.getLastError());
                 }
@@ -77,7 +77,7 @@ public abstract class AbstractUnixDomainChannel extends AbstractChannel {
             return this;
         } else if (name.equals(SocketOptions.SO_PASSCRED)) {
             ByteBuffer buffer = ByteBuffer.allocate(4).order(ByteOrder.nativeOrder());
-            synchronized (lock_) {
+            synchronized (stateLock_) {
                 if (Native.setsockopt(fd_, Native.SOL_SOCKET, Native.SO_PASSCRED, buffer, buffer.capacity()) == -1) {
                     throw new IOException(Native.getLastError());
                 }
@@ -91,27 +91,24 @@ public abstract class AbstractUnixDomainChannel extends AbstractChannel {
     public <T> T getOption(SocketOption<T> name) throws IOException {
         if (name.equals(StandardSocketOptions.SO_RCVBUF)) {
             ByteBuffer buffer = ByteBuffer.allocate(4).order(ByteOrder.nativeOrder());
-            IntByReference bufLen = new IntByReference();
-            synchronized (lock_) {
-                if (Native.getsockopt(fd_, Native.SOL_SOCKET, Native.SO_RCVBUF, buffer, bufLen) == -1) {
+            synchronized (stateLock_) {
+                if (Native.getsockopt(fd_, Native.SOL_SOCKET, Native.SO_RCVBUF, buffer, SIZE_BUFFER) == -1) {
                     throw new IOException(Native.getLastError());
                 }
             }
             return name.type().cast(buffer.getInt());
         } else if (name.equals(StandardSocketOptions.SO_SNDBUF))                    {
             ByteBuffer buffer = ByteBuffer.allocate(4).order(ByteOrder.nativeOrder());
-            IntByReference bufLen = new IntByReference();
-            synchronized (lock_) {
-                if (Native.getsockopt(fd_, Native.SOL_SOCKET, Native.SO_SNDBUF, buffer, bufLen) == -1) {
+            synchronized (stateLock_) {
+                if (Native.getsockopt(fd_, Native.SOL_SOCKET, Native.SO_SNDBUF, buffer, SIZE_BUFFER) == -1) {
                     throw new IOException(Native.getLastError());
                 }
             }
             return name.type().cast(buffer.getInt());
         } else if (name.equals(SocketOptions.SO_PASSCRED)) {
             ByteBuffer buffer = ByteBuffer.allocate(4).order(ByteOrder.nativeOrder());
-            IntByReference bufLen = new IntByReference();
-            synchronized (lock_) {
-                if (Native.getsockopt(fd_, Native.SOL_SOCKET, Native.SO_PASSCRED, buffer, bufLen) == -1) {
+            synchronized (stateLock_) {
+                if (Native.getsockopt(fd_, Native.SOL_SOCKET, Native.SO_PASSCRED, buffer, SIZE_BUFFER) == -1) {
                     throw new IOException(Native.getLastError());
                 }
             }

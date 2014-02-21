@@ -1,6 +1,5 @@
 package net.ihiroky.niotty.nio.unix;
 
-import com.sun.jna.ptr.IntByReference;
 import net.ihiroky.niotty.util.Arguments;
 
 import java.io.IOException;
@@ -19,6 +18,7 @@ public class UnixDomainChannel extends AbstractUnixDomainChannel
 
     private volatile State state_;
     private UnixDomainSocketAddress remote_;
+    private final Object ioLock_;
 
     private final Native.IOVec IOVEC_HEAD = new Native.IOVec();
     private final Native.IOVec[] IOVEC_ARRAY = (Native.IOVec[]) IOVEC_HEAD.toArray(Native.IOV_MAX);
@@ -36,6 +36,7 @@ public class UnixDomainChannel extends AbstractUnixDomainChannel
     private UnixDomainChannel(int fd, int validOps) throws IOException {
         super(fd, validOps);
         state_ = State.OPEN;
+        ioLock_ = new Object();
     }
 
     public static UnixDomainChannel open() throws IOException {
@@ -74,7 +75,7 @@ public class UnixDomainChannel extends AbstractUnixDomainChannel
         }
 
         Native.SockAddrUn address = ADDRESS_BUFFER;
-        synchronized (lock_) {
+        synchronized (stateLock_) {
             state_ = State.CONNECTING;
             address.clear();
             address.setSunPath(remote_.getPath());
@@ -127,23 +128,23 @@ public class UnixDomainChannel extends AbstractUnixDomainChannel
         }
 
         Native.SockAddrUn address = ADDRESS_BUFFER;
-        IntByReference size = ADDRESS_SIZE_BUFFER;
         String sunPath;
-        synchronized (lock_) {
+        synchronized (stateLock_) {
             address.clear();
-            if (Native.getpeername(fd_, address, size) == -1) {
+            if (Native.getpeername(fd_, address, SIZE_BUFFER) == -1) {
                 throw new IOException(Native.getLastError());
             }
             sunPath = address.getSunPath();
         }
-        return new UnixDomainSocketAddress(sunPath);
+        remote_ = new UnixDomainSocketAddress(sunPath);
+        return remote_;
     }
 
     @Override
     public UnixDomainChannel bind(SocketAddress local) throws IOException {
         UnixDomainSocketAddress uds = (UnixDomainSocketAddress) local;
         Native.SockAddrUn address = ADDRESS_BUFFER;
-        synchronized (lock_) {
+        synchronized (stateLock_) {
             address.clear();
             address.setSunPath(uds.getPath());
             if (Native.bind(fd_, address, address.size()) == -1) {
@@ -159,8 +160,8 @@ public class UnixDomainChannel extends AbstractUnixDomainChannel
             throw new IOException("The length must be less than " + Native.IOV_MAX);
         }
 
-        long written;
-        synchronized (lock_) {
+        long written = 0;
+        synchronized (ioLock_) {
             Native.IOVec head = IOVEC_HEAD;
             Native.IOVec[] array = IOVEC_ARRAY;
             for (int i = 0; i < length; i++) {
@@ -169,7 +170,12 @@ public class UnixDomainChannel extends AbstractUnixDomainChannel
                 ioVec.iovBase_ = src;
                 ioVec.iovLen_ = src.remaining();
             }
-            written = Native.writev(fd_, head.getPointer(), length);
+            try {
+                begin();
+                written = Native.writev(fd_, head.getPointer(), length);
+            } finally {
+                end(written > 0);
+            }
             if (written == -1) {
                 throw new IOException(Native.getLastError());
             }
@@ -198,8 +204,8 @@ public class UnixDomainChannel extends AbstractUnixDomainChannel
             throw new IOException("The length must be less than " + Native.IOV_MAX);
         }
 
-        long read;
-        synchronized (lock_) {
+        long read = 0;
+        synchronized (ioLock_) {
             Native.IOVec head = IOVEC_HEAD;
             Native.IOVec[] array = IOVEC_ARRAY;
             for (int i = 0; i < length; i++) {
@@ -208,7 +214,12 @@ public class UnixDomainChannel extends AbstractUnixDomainChannel
                 ioVec.iovBase_ = dst;
                 ioVec.iovLen_ = dst.remaining();
             }
-            read = Native.readv(fd_, head.getPointer(), length);
+            try {
+                begin();
+                read = Native.readv(fd_, head.getPointer(), length);
+            } finally {
+                end(read > 0);
+            }
             if (read == -1) {
                 throw new IOException(Native.getLastError());
             }
@@ -233,9 +244,14 @@ public class UnixDomainChannel extends AbstractUnixDomainChannel
 
     @Override
     public int read(ByteBuffer dst) throws IOException {
-        int read;
-        synchronized (lock_) {
-            read = Native.read(fd_, dst, dst.remaining());
+        int read = 0;
+        synchronized (ioLock_) {
+            try {
+                begin();
+                read = Native.read(fd_, dst, dst.remaining());
+            } finally {
+                end(read > 0);
+            }
             if (read == -1) {
                 if (Native.errno() == Native.EAGAIN) {
                     return 0;
@@ -253,7 +269,7 @@ public class UnixDomainChannel extends AbstractUnixDomainChannel
     @Override
     public int write(ByteBuffer src) throws IOException {
         int written;
-        synchronized (lock_) {
+        synchronized (stateLock_) {
             written = Native.write(fd_, src, src.remaining());
             if (written == -1) {
                 throw new IOException(Native.getLastError());
@@ -265,12 +281,17 @@ public class UnixDomainChannel extends AbstractUnixDomainChannel
 
     public int send(ByteBuffer src, SocketAddress target) throws IOException {
         UnixDomainSocketAddress sa = (UnixDomainSocketAddress) target;
-        int sent;
+        int sent = 0;
         Native.SockAddrUn address = ADDRESS_BUFFER;
-        synchronized (lock_) {
+        synchronized (stateLock_) {
             address.clear();
             address.setSunPath(sa.getPath());
-            sent = Native.sendto(fd_, src, src.remaining(), 0, address, address.size());
+            try {
+                begin();
+                sent = Native.sendto(fd_, src, src.remaining(), 0, address, address.size());
+            } finally {
+                end(sent > 0);
+            }
             if (sent == -1) {
                 throw new IOException(Native.getLastError());
             }
@@ -281,12 +302,16 @@ public class UnixDomainChannel extends AbstractUnixDomainChannel
 
     public SocketAddress receive(ByteBuffer src) throws IOException {
         Native.SockAddrUn source = ADDRESS_BUFFER;
-        IntByReference size = ADDRESS_SIZE_BUFFER;
-        int received;
+        int received = 0;
         String sunPath;
-        synchronized (lock_) {
+        synchronized (stateLock_) {
             source.clear();
-            received = Native.recvfrom(fd_, src, src.remaining(), 0, source, size);
+            try {
+                begin();
+                received = Native.recvfrom(fd_, src, src.remaining(), 0, source, SIZE_BUFFER);
+            } finally {
+                end(received > 0);
+            }
             if (received == -1) {
                 throw new IOException(Native.getLastError());
             }
@@ -297,7 +322,7 @@ public class UnixDomainChannel extends AbstractUnixDomainChannel
     }
 
     public UnixDomainChannel shutdownInput() throws IOException {
-        synchronized (lock_) {
+        synchronized (stateLock_) {
             if (Native.shutdown(fd_, Native.SHUT_RD) == -1) {
                 throw new IOException(Native.getLastError());
             }
@@ -306,7 +331,7 @@ public class UnixDomainChannel extends AbstractUnixDomainChannel
     }
 
     public UnixDomainChannel shutdownOutput() throws IOException {
-        synchronized (lock_) {
+        synchronized (stateLock_) {
             if (Native.shutdown(fd_, Native.SHUT_WR) == -1) {
                 throw new IOException(Native.getLastError());
             }

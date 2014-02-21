@@ -1,7 +1,5 @@
 package net.ihiroky.niotty.nio.unix;
 
-import com.sun.jna.ptr.IntByReference;
-
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.channels.NetworkChannel;
@@ -30,7 +28,7 @@ public class ServerUnixDomainChannel extends AbstractUnixDomainChannel implement
 
     public synchronized ServerUnixDomainChannel bind(SocketAddress local, int backlog) throws IOException {
         UnixDomainSocketAddress uds = (UnixDomainSocketAddress) local;
-        synchronized (lock_) {
+        synchronized (stateLock_) {
             Native.SockAddrUn address = ADDRESS_BUFFER;
             address.clear();
             address.setSunPath(uds.getPath());
@@ -46,11 +44,10 @@ public class ServerUnixDomainChannel extends AbstractUnixDomainChannel implement
 
     public synchronized UnixDomainChannel accept() throws IOException {
         int client;
-        synchronized (lock_) {
+        synchronized (stateLock_) {
             Native.SockAddrUn clientAddress = ADDRESS_BUFFER;
-            IntByReference clientAddressSize = ADDRESS_SIZE_BUFFER;
             clientAddress.clear();
-            client = Native.accept(fd_, clientAddress, clientAddressSize);
+            client = Native.accept(fd_, clientAddress, SIZE_BUFFER);
             if (client == -1) {
                 throw new IOException(Native.getLastError());
             }

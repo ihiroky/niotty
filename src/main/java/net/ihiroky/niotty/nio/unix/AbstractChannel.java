@@ -13,7 +13,7 @@ import java.nio.channels.spi.AbstractSelectableChannel;
 public abstract class AbstractChannel extends AbstractSelectableChannel implements NetworkChannel {
 
     protected final int fd_;
-    protected final Object lock_;
+    protected final Object stateLock_;
     private final int validOps_;
 
     protected AbstractChannel(int fd, int validOps) throws IOException {
@@ -21,12 +21,12 @@ public abstract class AbstractChannel extends AbstractSelectableChannel implemen
 
         fd_ = fd;
         validOps_ = validOps;
-        lock_ = new Object();
+        stateLock_ = new Object();
     }
 
     @Override
     protected void implCloseSelectableChannel() throws IOException {
-        synchronized (lock_) {
+        synchronized (stateLock_) {
             if (Native.shutdown(fd_, Native.SHUT_RDWR) == -1) {
                 throw new IOException(Native.getLastError());
             }
@@ -38,7 +38,7 @@ public abstract class AbstractChannel extends AbstractSelectableChannel implemen
 
     @Override
     protected void implConfigureBlocking(boolean block) throws IOException {
-        synchronized (lock_) {
+        synchronized (stateLock_) {
             int flags = Native.fcntl(fd_, Native.F_GETFL, 0);
             if (block) {
                 flags |= Native.O_NONBLOCK;
@@ -56,6 +56,6 @@ public abstract class AbstractChannel extends AbstractSelectableChannel implemen
 
     @Override
     public String toString() {
-        return "{" + fd_ + "/EPollChannel, " + (isOpen() ? "open" : "closed") + "}";
+        return "{" + fd_ + ", " + (isOpen() ? "open" : "closed") + "}";
     }
 }
