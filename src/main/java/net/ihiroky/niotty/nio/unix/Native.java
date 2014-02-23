@@ -1,5 +1,6 @@
 package net.ihiroky.niotty.nio.unix;
 
+import com.sun.jna.NativeLong;
 import com.sun.jna.Pointer;
 import com.sun.jna.Structure;
 import com.sun.jna.Union;
@@ -92,6 +93,7 @@ public class Native {
     /*======================================================================
      * /usr/include/unistd.h
      *======================================================================*/
+
     static native int read(int fd, ByteBuffer buffer, int count);
     static native int write(int fd, ByteBuffer buffer, int count);
     static native int close(int fd);
@@ -116,15 +118,9 @@ public class Native {
 
     static int IOV_MAX = 1024;
 
-    //    44 struct iovec
-//            45   {
-//        46     void *iov_base;»/* Pointer to data.  */
-//        47     size_t iov_len;»/* Length of data.  */
-//        48   };↲
-
     public static class IOVec extends Structure {
 
-        public ByteBuffer iovBase_;
+        public ByteBuffer iovBase_; // The direct buffer is required.
         public int iovLen_;
 
         public IOVec() {
@@ -145,17 +141,18 @@ public class Native {
             return Arrays.asList("iovBase_", "iovLen_");
         }
 
+        @Override
+        public String toString() {
+            return iovBase_ + ", length:" + iovLen_;
+        }
+
         public static class ByReference extends IOVec implements Structure.ByReference {
-            public ByReference(ByteBuffer iovBase, int iovLen) {
-                super(iovBase, iovLen);
-            }
         }
     }
 
-    // extern ssize_t readv (int __fd, __const struct iovec *__iovec, int __count)
-    // extern ssize_t writev (int __fd, __const struct iovec *__iovec, int __count)
-    static native long readv(int fd, Pointer iovec, int count);
-    static native long writev(int fd, Pointer iovec, int count);
+    static native NativeLong readv(int fd, IOVec.ByReference ioVec, int count);
+    static native NativeLong writev(int fd, IOVec.ByReference ioVec, int count);
+
 
     /*======================================================================
      * /usr/include/x86_64-linux-gnu/sys/epoll.h
@@ -197,17 +194,11 @@ public class Native {
             ptr_ = ptr;
             setType(Pointer.class);
         }
-
-        public static class ByReference extends EPollDataT implements Structure.ByReference {
-        }
-
-        public static class ByValue extends EPollDataT implements Structure.ByValue {
-        }
     }
 
     public static class EPollEvent extends Structure {
-        public int events_;        //Epoll events
-        public EPollDataT data_; //User data variable
+        public int events_;
+        public EPollDataT data_;
 
         protected List getFieldOrder() {
             return Arrays.asList("events_", "data_");
@@ -220,17 +211,6 @@ public class Native {
         public EPollEvent(Pointer p) {
             super(p, Structure.ALIGN_NONE);
             setAlignType(Structure.ALIGN_NONE);
-            read();
-        }
-
-        public EPollEvent(int events, EPollDataT data) {
-            super(Structure.ALIGN_NONE);
-            events_ = events;
-            data_ = data;
-        }
-
-        public void reuse(Pointer p, int offset) {
-            useMemory(p, offset);
             read();
         }
 
@@ -263,9 +243,6 @@ public class Native {
                 data_.fd_ = fd;
                 data_.setType(Integer.TYPE);
             }
-        }
-
-        public static class ByValue extends EPollEvent implements Structure.ByValue {
         }
     }
 
@@ -325,7 +302,6 @@ public class Native {
      *======================================================================*/
     static native void perror(String s);
 
-
     public static void main(String[] args) throws Exception {
         int sd = socket(AF_UNIX, SOCK_STREAM, PROTOCOL);
         if (sd < 0) {
@@ -357,7 +333,8 @@ public class Native {
         EPollEvent eventsHead = new EPollEvent();
         EPollEvent[] events = (EPollEvent[]) eventsHead.toArray(32);
 
-        ByteBuffer buffer = ByteBuffer.allocate(1024);
+        ByteBuffer buffer0 = ByteBuffer.allocateDirect(64);
+        ByteBuffer buffer1 = ByteBuffer.allocateDirect(64);
 
         int epfd = epoll_create(events.length);
         if (epfd < 0) {
@@ -394,7 +371,7 @@ public class Native {
                 } else {
                     int cd = cev.data_.fd_;
                     System.out.printf("Event for client %d\n", cd);
-                    int n = read(cd, buffer, buffer.capacity());
+                    int n = read(cd, buffer0, buffer0.capacity());
                     if (n < 0) {
                         epoll_ctl(epfd, EPOLL_CTL_DEL, cd, ev);
                         close(cd);
@@ -405,11 +382,20 @@ public class Native {
                         System.out.printf("Client %d is closed.\n", cd);
                     } else {
                         // position adn limit is not updated by jna.
-                        System.out.println(n + ", " + buffer);
-                        buffer.limit(n);
-                        write(cd, buffer, n);
+                        System.out.println(n + ", " + buffer0);
+                        buffer0.limit(n);
+                        buffer1.put("Hoge\n".getBytes()).flip();
+                        // write(cd, buffer0, n);
+                        IOVec.ByReference head = new IOVec.ByReference();
+                        IOVec [] array = (IOVec[]) head.toArray(2);
+                        array[0].iovBase_ = buffer0;
+                        array[0].iovLen_ = n;
+                        array[1].iovBase_ = buffer1;
+                        array[1].iovLen_ = buffer1.remaining();
+                        writev(cd, head, 2);
                     }
-                    buffer.clear();
+                    buffer0.clear();
+                    buffer1.clear();
                 }
             }
         }

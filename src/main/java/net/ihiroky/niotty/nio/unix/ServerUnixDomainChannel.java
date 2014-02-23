@@ -28,11 +28,11 @@ public class ServerUnixDomainChannel extends AbstractUnixDomainChannel implement
 
     public synchronized ServerUnixDomainChannel bind(SocketAddress local, int backlog) throws IOException {
         UnixDomainSocketAddress uds = (UnixDomainSocketAddress) local;
-        synchronized (stateLock_) {
-            Native.SockAddrUn address = ADDRESS_BUFFER;
-            address.clear();
-            address.setSunPath(uds.getPath());
-            if (Native.bind(fd_, address, address.size()) == -1) {
+        synchronized (addressBuffer_) {
+            Native.SockAddrUn sun = addressBuffer_.address_;
+            sun.clear();
+            sun.setSunPath(uds.getPath());
+            if (Native.bind(fd_, sun, sun.size()) == -1) {
                 throw new IOException(Native.getLastError());
             }
             if (Native.listen(fd_, backlog) == -1) {
@@ -43,11 +43,16 @@ public class ServerUnixDomainChannel extends AbstractUnixDomainChannel implement
     }
 
     public synchronized UnixDomainChannel accept() throws IOException {
-        int client;
-        synchronized (stateLock_) {
-            Native.SockAddrUn clientAddress = ADDRESS_BUFFER;
-            clientAddress.clear();
-            client = Native.accept(fd_, clientAddress, SIZE_BUFFER);
+        int client = -1;
+        synchronized (addressBuffer_) {
+            Native.SockAddrUn sun = addressBuffer_.address_;
+            sun.clear();
+            try {
+                begin();
+                client = Native.accept(fd_, sun, addressBuffer_.size_);
+            } finally {
+                end(client != -1);
+            }
             if (client == -1) {
                 throw new IOException(Native.getLastError());
             }

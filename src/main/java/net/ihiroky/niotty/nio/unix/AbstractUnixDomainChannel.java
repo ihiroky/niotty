@@ -22,8 +22,12 @@ import java.util.Set;
  */
 public abstract class AbstractUnixDomainChannel extends AbstractChannel {
 
-    protected final Native.SockAddrUn ADDRESS_BUFFER = new Native.SockAddrUn();
-    protected final IntByReference SIZE_BUFFER = new IntByReference();
+    protected final AddressBuffer addressBuffer_;
+
+    protected static class AddressBuffer {
+        final Native.SockAddrUn address_ = new Native.SockAddrUn();
+        final IntByReference size_ = new IntByReference();
+    }
 
     private static final Set<SocketOption<?>> SUPPORTED_OPTIONS =
             Collections.unmodifiableSet(new HashSet<SocketOption<?>>(Arrays.<SocketOption<?>>asList(
@@ -31,6 +35,7 @@ public abstract class AbstractUnixDomainChannel extends AbstractChannel {
 
     protected AbstractUnixDomainChannel(int fd, int validOps) throws IOException {
         super(fd, validOps);
+        addressBuffer_ = new AddressBuffer();
     }
 
     protected static int open(int type) throws IOException {
@@ -43,15 +48,15 @@ public abstract class AbstractUnixDomainChannel extends AbstractChannel {
 
     @Override
     public SocketAddress getLocalAddress() throws IOException {
-        Native.SockAddrUn sa = ADDRESS_BUFFER;
-        IntByReference saLen = SIZE_BUFFER;
         String sunPath;
-        synchronized (stateLock_) {
-            sa.clear();
-            if (Native.getsockname(fd_, sa, saLen) == -1) {
+        synchronized (addressBuffer_) {
+            AddressBuffer buffer = addressBuffer_;
+            Native.SockAddrUn sun = buffer.address_;
+            IntByReference sunSize = buffer.size_;
+            if (Native.getsockname(fd_, sun, sunSize) == -1) {
                 throw new IOException(Native.getLastError());
             }
-            sunPath = sa.getSunPath();
+            sunPath = sun.getSunPath();
         }
         return new UnixDomainSocketAddress(sunPath);
     }
@@ -91,24 +96,24 @@ public abstract class AbstractUnixDomainChannel extends AbstractChannel {
     public <T> T getOption(SocketOption<T> name) throws IOException {
         if (name.equals(StandardSocketOptions.SO_RCVBUF)) {
             ByteBuffer buffer = ByteBuffer.allocate(4).order(ByteOrder.nativeOrder());
-            synchronized (stateLock_) {
-                if (Native.getsockopt(fd_, Native.SOL_SOCKET, Native.SO_RCVBUF, buffer, SIZE_BUFFER) == -1) {
+            synchronized (addressBuffer_) {
+                if (Native.getsockopt(fd_, Native.SOL_SOCKET, Native.SO_RCVBUF, buffer, addressBuffer_.size_) == -1) {
                     throw new IOException(Native.getLastError());
                 }
             }
             return name.type().cast(buffer.getInt());
         } else if (name.equals(StandardSocketOptions.SO_SNDBUF))                    {
             ByteBuffer buffer = ByteBuffer.allocate(4).order(ByteOrder.nativeOrder());
-            synchronized (stateLock_) {
-                if (Native.getsockopt(fd_, Native.SOL_SOCKET, Native.SO_SNDBUF, buffer, SIZE_BUFFER) == -1) {
+            synchronized (addressBuffer_) {
+                if (Native.getsockopt(fd_, Native.SOL_SOCKET, Native.SO_SNDBUF, buffer, addressBuffer_.size_) == -1) {
                     throw new IOException(Native.getLastError());
                 }
             }
             return name.type().cast(buffer.getInt());
         } else if (name.equals(SocketOptions.SO_PASSCRED)) {
             ByteBuffer buffer = ByteBuffer.allocate(4).order(ByteOrder.nativeOrder());
-            synchronized (stateLock_) {
-                if (Native.getsockopt(fd_, Native.SOL_SOCKET, Native.SO_PASSCRED, buffer, SIZE_BUFFER) == -1) {
+            synchronized (addressBuffer_) {
+                if (Native.getsockopt(fd_, Native.SOL_SOCKET, Native.SO_PASSCRED, buffer, addressBuffer_.size_) == -1) {
                     throw new IOException(Native.getLastError());
                 }
             }

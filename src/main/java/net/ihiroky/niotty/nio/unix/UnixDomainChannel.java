@@ -20,7 +20,7 @@ public class UnixDomainChannel extends AbstractUnixDomainChannel
     private UnixDomainSocketAddress remote_;
     private final Object ioLock_;
 
-    private final Native.IOVec IOVEC_HEAD = new Native.IOVec();
+    private final Native.IOVec.ByReference IOVEC_HEAD = new Native.IOVec.ByReference();
     private final Native.IOVec[] IOVEC_ARRAY = (Native.IOVec[]) IOVEC_HEAD.toArray(Native.IOV_MAX);
 
     private enum State {
@@ -74,12 +74,11 @@ public class UnixDomainChannel extends AbstractUnixDomainChannel
             return true;
         }
 
-        Native.SockAddrUn address = ADDRESS_BUFFER;
-        synchronized (stateLock_) {
+        synchronized (addressBuffer_) {
             state_ = State.CONNECTING;
-            address.clear();
-            address.setSunPath(remote_.getPath());
-            if (Native.connect(fd_, address, address.size()) == -1) {
+            Native.SockAddrUn sun = addressBuffer_.address_;
+            sun.setSunPath(remote_.getPath());
+            if (Native.connect(fd_, sun, sun.size()) == -1) {
                 switch (Native.errno()) {
                     case Native.EISCONN:
                         state_ = State.CONNECTED;
@@ -127,14 +126,13 @@ public class UnixDomainChannel extends AbstractUnixDomainChannel
             return remote_;
         }
 
-        Native.SockAddrUn address = ADDRESS_BUFFER;
         String sunPath;
-        synchronized (stateLock_) {
-            address.clear();
-            if (Native.getpeername(fd_, address, SIZE_BUFFER) == -1) {
+        synchronized (addressBuffer_) {
+            Native.SockAddrUn sun = addressBuffer_.address_;
+            if (Native.getpeername(fd_, sun, addressBuffer_.size_) == -1) {
                 throw new IOException(Native.getLastError());
             }
-            sunPath = address.getSunPath();
+            sunPath = sun.getSunPath();
         }
         remote_ = new UnixDomainSocketAddress(sunPath);
         return remote_;
@@ -143,11 +141,11 @@ public class UnixDomainChannel extends AbstractUnixDomainChannel
     @Override
     public UnixDomainChannel bind(SocketAddress local) throws IOException {
         UnixDomainSocketAddress uds = (UnixDomainSocketAddress) local;
-        Native.SockAddrUn address = ADDRESS_BUFFER;
-        synchronized (stateLock_) {
-            address.clear();
-            address.setSunPath(uds.getPath());
-            if (Native.bind(fd_, address, address.size()) == -1) {
+        synchronized (addressBuffer_) {
+            Native.SockAddrUn sun = addressBuffer_.address_;
+            sun.clear();
+            sun.setSunPath(uds.getPath());
+            if (Native.bind(fd_, sun, sun.size()) == -1) {
                 throw new IOException(Native.getLastError());
             }
         }
@@ -162,17 +160,17 @@ public class UnixDomainChannel extends AbstractUnixDomainChannel
 
         long written = 0;
         synchronized (ioLock_) {
-            Native.IOVec head = IOVEC_HEAD;
             Native.IOVec[] array = IOVEC_ARRAY;
+            Native.IOVec ioVec;
             for (int i = 0; i < length; i++) {
                 ByteBuffer src = srcs[i + offset];
-                Native.IOVec ioVec = new Native.IOVec(array[i].getPointer());
+                ioVec = array[i];
                 ioVec.iovBase_ = src;
                 ioVec.iovLen_ = src.remaining();
             }
             try {
                 begin();
-                written = Native.writev(fd_, head.getPointer(), length);
+                written = Native.writev(fd_, IOVEC_HEAD, length).longValue();
             } finally {
                 end(written > 0);
             }
@@ -206,17 +204,17 @@ public class UnixDomainChannel extends AbstractUnixDomainChannel
 
         long read = 0;
         synchronized (ioLock_) {
-            Native.IOVec head = IOVEC_HEAD;
             Native.IOVec[] array = IOVEC_ARRAY;
+            Native.IOVec ioVec;
             for (int i = 0; i < length; i++) {
                 ByteBuffer dst = dsts[i + offset];
-                Native.IOVec ioVec = new Native.IOVec(array[i].getPointer());
+                ioVec = array[i];
                 ioVec.iovBase_ = dst;
                 ioVec.iovLen_ = dst.remaining();
             }
             try {
                 begin();
-                read = Native.readv(fd_, head.getPointer(), length);
+                read = Native.readv(fd_, IOVEC_HEAD, length).longValue();
             } finally {
                 end(read > 0);
             }
@@ -269,7 +267,7 @@ public class UnixDomainChannel extends AbstractUnixDomainChannel
     @Override
     public int write(ByteBuffer src) throws IOException {
         int written;
-        synchronized (stateLock_) {
+        synchronized (ioLock_) {
             written = Native.write(fd_, src, src.remaining());
             if (written == -1) {
                 throw new IOException(Native.getLastError());
@@ -282,13 +280,13 @@ public class UnixDomainChannel extends AbstractUnixDomainChannel
     public int send(ByteBuffer src, SocketAddress target) throws IOException {
         UnixDomainSocketAddress sa = (UnixDomainSocketAddress) target;
         int sent = 0;
-        Native.SockAddrUn address = ADDRESS_BUFFER;
-        synchronized (stateLock_) {
-            address.clear();
-            address.setSunPath(sa.getPath());
+        synchronized (addressBuffer_) {
+            Native.SockAddrUn sun = addressBuffer_.address_;
+            sun.clear();
+            sun.setSunPath(sa.getPath());
             try {
                 begin();
-                sent = Native.sendto(fd_, src, src.remaining(), 0, address, address.size());
+                sent = Native.sendto(fd_, src, src.remaining(), 0, sun, sun.size());
             } finally {
                 end(sent > 0);
             }
@@ -301,21 +299,20 @@ public class UnixDomainChannel extends AbstractUnixDomainChannel
     }
 
     public SocketAddress receive(ByteBuffer src) throws IOException {
-        Native.SockAddrUn source = ADDRESS_BUFFER;
         int received = 0;
         String sunPath;
-        synchronized (stateLock_) {
-            source.clear();
+        synchronized (addressBuffer_) {
+            Native.SockAddrUn sun = addressBuffer_.address_;
             try {
                 begin();
-                received = Native.recvfrom(fd_, src, src.remaining(), 0, source, SIZE_BUFFER);
+                received = Native.recvfrom(fd_, src, src.remaining(), 0, sun, addressBuffer_.size_);
             } finally {
                 end(received > 0);
             }
             if (received == -1) {
                 throw new IOException(Native.getLastError());
             }
-            sunPath = source.getSunPath();
+            sunPath = sun.getSunPath();
         }
         src.position(src.position() + received);
         return received >= 0 ? new UnixDomainSocketAddress(sunPath) : null;
