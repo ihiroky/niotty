@@ -3,6 +3,7 @@ package net.ihiroky.niotty.nio.unix;
 import java.io.IOException;
 import java.nio.channels.NetworkChannel;
 import java.nio.channels.spi.AbstractSelectableChannel;
+import java.nio.channels.spi.SelectorProvider;
 
 /**
  *
@@ -16,8 +17,10 @@ public abstract class AbstractChannel extends AbstractSelectableChannel implemen
     protected final Object stateLock_;
     private final int validOps_;
 
+    private static final SelectorProvider SELECTOR_PROVIDER = new EPollSelectorProvider();
+
     protected AbstractChannel(int fd, int validOps) throws IOException {
-        super(null);
+        super(SELECTOR_PROVIDER);
 
         fd_ = fd;
         validOps_ = validOps;
