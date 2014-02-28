@@ -10,10 +10,13 @@ import java.nio.channels.SelectionKey;
  */
 public class ServerUnixDomainChannel extends AbstractUnixDomainChannel implements NetworkChannel {
 
+    private final Object acceptLock_;
+
     private static final int DEFAULT_BACKLOG = 64;
 
     protected ServerUnixDomainChannel(int fd) throws IOException {
         super(fd, SelectionKey.OP_ACCEPT);
+        acceptLock_ = new Object();
     }
 
     public static ServerUnixDomainChannel open() throws IOException {
@@ -28,8 +31,8 @@ public class ServerUnixDomainChannel extends AbstractUnixDomainChannel implement
 
     public synchronized ServerUnixDomainChannel bind(SocketAddress local, int backlog) throws IOException {
         UnixDomainSocketAddress uds = (UnixDomainSocketAddress) local;
-        synchronized (addressBuffer_) {
-            Native.SockAddrUn sun = addressBuffer_.address_;
+        synchronized (stateLock_) {
+            Native.SockAddrUn sun = AddressBuffer.getInstance().getAddress();
             sun.clear();
             sun.setSunPath(uds.getPath());
             if (Native.bind(fd_, sun, sun.size()) == -1) {
@@ -44,12 +47,13 @@ public class ServerUnixDomainChannel extends AbstractUnixDomainChannel implement
 
     public synchronized UnixDomainChannel accept() throws IOException {
         int client = -1;
-        synchronized (addressBuffer_) {
-            Native.SockAddrUn sun = addressBuffer_.address_;
+        synchronized (acceptLock_) {
+            AddressBuffer buffer = AddressBuffer.getInstance();
+            Native.SockAddrUn sun = buffer.getAddress();
             sun.clear();
             try {
                 begin();
-                client = Native.accept(fd_, sun, addressBuffer_.size_);
+                client = Native.accept(fd_, sun, buffer.getSize());
             } finally {
                 end(client != -1);
             }
@@ -57,6 +61,12 @@ public class ServerUnixDomainChannel extends AbstractUnixDomainChannel implement
                 throw new IOException(Native.getLastError());
             }
         }
+
+        UnixDomainChannel channel = new UnixDomainChannel(client);
+
+        // call get*Address() to cache the addresses.
+        channel.getLocalAddress();
+        channel.getRemoteAddress();
         return new UnixDomainChannel(client);
     }
 }

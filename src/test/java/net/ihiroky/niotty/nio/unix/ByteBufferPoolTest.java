@@ -1,9 +1,7 @@
 package net.ihiroky.niotty.nio.unix;
 
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.nio.ByteBuffer;
@@ -14,27 +12,17 @@ import static org.junit.Assert.*;
 /**
  *
  */
-public class BufferCacheTest {
+public class ByteBufferPoolTest {
 
-    private BufferCache sut_;
-
-    @BeforeClass
-    public static void setUpClass() throws Exception {
-        BufferCache.newInstance();
-    }
+    private ByteBufferPool sut_;
 
     @Before
     public void setUp() throws Exception {
-        sut_ = BufferCache.getInstance();
+        sut_ = new ByteBufferPool();
     }
     @After
     public void tearDown() throws Exception {
         sut_.clear();
-    }
-
-    @AfterClass
-    public static void tearDownClass() throws Exception {
-        BufferCache.getInstance().dispose();
     }
 
     @Test

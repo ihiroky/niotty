@@ -74,9 +74,9 @@ public class UnixDomainChannel extends AbstractUnixDomainChannel
             return true;
         }
 
-        synchronized (addressBuffer_) {
+        synchronized (ioLock_) {
             state_ = State.CONNECTING;
-            Native.SockAddrUn sun = addressBuffer_.address_;
+            Native.SockAddrUn sun = AddressBuffer.getInstance().getAddress();
             sun.setSunPath(remote_.getPath());
             if (Native.connect(fd_, sun, sun.size()) == -1) {
                 switch (Native.errno()) {
@@ -122,32 +122,30 @@ public class UnixDomainChannel extends AbstractUnixDomainChannel
     }
 
     public SocketAddress getRemoteAddress() throws IOException {
-        if (remote_ != null) {
-            return remote_;
-        }
-
-        String sunPath;
-        synchronized (addressBuffer_) {
-            Native.SockAddrUn sun = addressBuffer_.address_;
-            if (Native.getpeername(fd_, sun, addressBuffer_.size_) == -1) {
-                throw new IOException(Native.getLastError());
+        synchronized (stateLock_) {
+            if (remote_ == null) {
+                AddressBuffer buffer = AddressBuffer.getInstance();
+                Native.SockAddrUn sun = buffer.getAddress();
+                if (Native.getpeername(fd_, sun, buffer.getSize()) == -1) {
+                    throw new IOException(Native.getLastError());
+                }
+                remote_ = new UnixDomainSocketAddress(sun.getSunPath());
             }
-            sunPath = sun.getSunPath();
         }
-        remote_ = new UnixDomainSocketAddress(sunPath);
         return remote_;
     }
 
     @Override
     public UnixDomainChannel bind(SocketAddress local) throws IOException {
         UnixDomainSocketAddress uds = (UnixDomainSocketAddress) local;
-        synchronized (addressBuffer_) {
-            Native.SockAddrUn sun = addressBuffer_.address_;
+        synchronized (stateLock_) {
+            Native.SockAddrUn sun = AddressBuffer.getInstance().getAddress();
             sun.clear();
             sun.setSunPath(uds.getPath());
             if (Native.bind(fd_, sun, sun.size()) == -1) {
                 throw new IOException(Native.getLastError());
             }
+            localAddress_ = uds;
         }
         return this;
     }
@@ -158,37 +156,45 @@ public class UnixDomainChannel extends AbstractUnixDomainChannel
             throw new IOException("The length must be less than " + Native.IOV_MAX);
         }
 
-        long written = 0;
-        synchronized (ioLock_) {
-            Native.IOVec[] array = IOVEC_ARRAY;
-            Native.IOVec ioVec;
-            for (int i = 0; i < length; i++) {
-                ByteBuffer src = srcs[i + offset];
-                ioVec = array[i];
-                ioVec.iovBase_ = src;
-                ioVec.iovLen_ = src.remaining();
-            }
-            try {
-                begin();
-                written = Native.writev(fd_, IOVEC_HEAD, length).longValue();
-            } finally {
-                end(written > 0);
-            }
-            if (written == -1) {
-                throw new IOException(Native.getLastError());
-            }
-        }
 
-        long left = written;
-        for (int i = 0; i < length && left > 0; i++) {
-            ByteBuffer src = srcs[i];
-            int position = src.position();
-            int remaining = src.remaining();
-            int n = (left > remaining) ? remaining : (int) left;
-            src.position(position + n);
-            left -= n;
+        long written = 0;
+        boolean fail = true;
+        IOVecBuffer vec = IOVecBuffer.getInstance();
+        try {
+            for (int i = 0; i < length; i++) {
+                vec.set(i, srcs[i + offset]);
+            }
+
+            begin();
+
+            synchronized (ioLock_) {
+                written = Native.writev(fd_, vec.headReference(), length).longValue();
+                if (written == -1) {
+                    throw new IOException(Native.getLastError());
+                }
+            }
+
+            long left = written;
+            for (int i = 0; i < length && left > 0; i++) {
+                ByteBuffer src = srcs[i + offset];
+                vec.clear(i, src);
+                int position = src.position();
+                int remaining = src.remaining();
+                int n = (left > remaining) ? remaining : (int) left;
+                src.position(position + n);
+                left -= n;
+            }
+
+            fail = false;
+            return written;
+        } finally {
+            end(written > 0);
+            if (fail) {
+                for (int i = 0; i < length; i++) {
+                    vec.clear(i, srcs[i + offset]);
+                }
+            }
         }
-        return written;
     }
 
     @Override
@@ -202,37 +208,41 @@ public class UnixDomainChannel extends AbstractUnixDomainChannel
             throw new IOException("The length must be less than " + Native.IOV_MAX);
         }
 
+        boolean fail = true;
         long read = 0;
-        synchronized (ioLock_) {
-            Native.IOVec[] array = IOVEC_ARRAY;
-            Native.IOVec ioVec;
+        IOVecBuffer vec = IOVecBuffer.getInstance();
+        try {
             for (int i = 0; i < length; i++) {
-                ByteBuffer dst = dsts[i + offset];
-                ioVec = array[i];
-                ioVec.iovBase_ = dst;
-                ioVec.iovLen_ = dst.remaining();
+                vec.set(i, dsts[i + offset]);
             }
-            try {
-                begin();
-                read = Native.readv(fd_, IOVEC_HEAD, length).longValue();
-            } finally {
-                end(read > 0);
-            }
-            if (read == -1) {
-                throw new IOException(Native.getLastError());
-            }
-        }
 
-        long left = read;
-        for (int i = 0; i < length && left > 0; i++) {
-            ByteBuffer dst = dsts[i];
-            int position = dst.position();
-            int remaining = dst.remaining();
-            int n = (left > remaining) ? remaining : (int) left;
-            dst.position(position + n);
-            left -= n;
+            begin();
+
+            synchronized (ioLock_) {
+                read = Native.readv(fd_, vec.headReference(), length).longValue();
+                if (read == -1) {
+                    throw new IOException(Native.getLastError());
+                }
+            }
+
+            long left = read;
+            for (int i = 0; i < length && left > 0; i++) {
+                ByteBuffer dst = dsts[i];
+                int position = dst.position();
+                int remaining = dst.remaining();
+                int n = (left > remaining) ? remaining : (int) left;
+                dst.position(position + n);
+                left -= n;
+            }
+            return read;
+        } finally {
+            end(read > 0);
+            if (fail) {
+                for (int i = 0; i < length; i++) {
+                    vec.clear(i, dsts[i + offset]);
+                }
+            }
         }
-        return read;
     }
 
     @Override
@@ -243,19 +253,19 @@ public class UnixDomainChannel extends AbstractUnixDomainChannel
     @Override
     public int read(ByteBuffer dst) throws IOException {
         int read = 0;
-        synchronized (ioLock_) {
-            try {
-                begin();
+        try {
+            begin();
+            synchronized (ioLock_) {
                 read = Native.read(fd_, dst, dst.remaining());
-            } finally {
-                end(read > 0);
-            }
-            if (read == -1) {
-                if (Native.errno() == Native.EAGAIN) {
-                    return 0;
+                if (read == -1) {
+                    if (Native.errno() == Native.EAGAIN) {
+                        return 0;
+                    }
+                    throw new IOException(Native.getLastError());
                 }
-                throw new IOException(Native.getLastError());
             }
+        } finally {
+            end(read > 0);
         }
         if (read == 0) { // EOF according to 'man 2 read'
             return -1;
@@ -266,13 +276,19 @@ public class UnixDomainChannel extends AbstractUnixDomainChannel
 
     @Override
     public int write(ByteBuffer src) throws IOException {
-        int written;
-        synchronized (ioLock_) {
-            written = Native.write(fd_, src, src.remaining());
-            if (written == -1) {
-                throw new IOException(Native.getLastError());
+        int written = 0;
+        try {
+            begin();
+            synchronized (ioLock_) {
+                written = Native.write(fd_, src, src.remaining());
+                if (written == -1) {
+                    throw new IOException(Native.getLastError());
+                }
             }
+        } finally {
+            end(written > 0);
         }
+
         src.position(src.position() + written);
         return written;
     }
@@ -280,19 +296,17 @@ public class UnixDomainChannel extends AbstractUnixDomainChannel
     public int send(ByteBuffer src, SocketAddress target) throws IOException {
         UnixDomainSocketAddress sa = (UnixDomainSocketAddress) target;
         int sent = 0;
-        synchronized (addressBuffer_) {
-            Native.SockAddrUn sun = addressBuffer_.address_;
-            sun.clear();
-            sun.setSunPath(sa.getPath());
-            try {
-                begin();
-                sent = Native.sendto(fd_, src, src.remaining(), 0, sun, sun.size());
-            } finally {
-                end(sent > 0);
-            }
-            if (sent == -1) {
-                throw new IOException(Native.getLastError());
-            }
+        Native.SockAddrUn sun = AddressBuffer.getInstance().getAddress();
+        sun.clear();
+        sun.setSunPath(sa.getPath());
+        try {
+            begin();
+            sent = Native.sendto(fd_, src, src.remaining(), 0, sun, sun.size());
+        } finally {
+            end(sent > 0);
+        }
+        if (sent == -1) {
+            throw new IOException(Native.getLastError());
         }
         src.position(src.position() + sent);
         return sent;
@@ -301,19 +315,18 @@ public class UnixDomainChannel extends AbstractUnixDomainChannel
     public SocketAddress receive(ByteBuffer src) throws IOException {
         int received = 0;
         String sunPath;
-        synchronized (addressBuffer_) {
-            Native.SockAddrUn sun = addressBuffer_.address_;
-            try {
-                begin();
-                received = Native.recvfrom(fd_, src, src.remaining(), 0, sun, addressBuffer_.size_);
-            } finally {
-                end(received > 0);
-            }
-            if (received == -1) {
-                throw new IOException(Native.getLastError());
-            }
-            sunPath = sun.getSunPath();
+        AddressBuffer addressBuffer = AddressBuffer.getInstance();
+        Native.SockAddrUn sun = addressBuffer.getAddress();
+        try {
+            begin();
+            received = Native.recvfrom(fd_, src, src.remaining(), 0, sun, addressBuffer.getSize());
+        } finally {
+            end(received > 0);
         }
+        if (received == -1) {
+            throw new IOException(Native.getLastError());
+        }
+        sunPath = sun.getSunPath();
         src.position(src.position() + received);
         return received >= 0 ? new UnixDomainSocketAddress(sunPath) : null;
     }

@@ -5,35 +5,15 @@ import net.ihiroky.niotty.util.Platform;
 import java.nio.ByteBuffer;
 
 /**
- * TODO test
+ *
  */
-class BufferCache {
+class ByteBufferPool {
 
     private ByteBuffer[] buffers_;
     private int head_;
     private int count_;
 
-    private static final ThreadLocal<BufferCache> instanceHolder_ = new ThreadLocal<BufferCache>() {
-        @Override
-        protected BufferCache initialValue() {
-            return new BufferCache();
-        }
-    };
-
-    static BufferCache getInstance() {
-        return instanceHolder_.get();
-    }
-
-    static synchronized BufferCache newInstance() {
-        BufferCache instance = instanceHolder_.get();
-        if (instance == null) {
-            instance = new BufferCache();
-            instanceHolder_.set(instance);
-        }
-        return instance;
-    }
-
-    private BufferCache() {
+    ByteBufferPool() {
         int size = 1;
         while (size < Native.IOV_MAX) {
             size <<= 1;
@@ -126,10 +106,5 @@ class BufferCache {
         }
         head_ = 0;
         count_ = 0;
-    }
-
-    void dispose() {
-        clear();
-        instanceHolder_.remove();
     }
 }
