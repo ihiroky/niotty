@@ -61,20 +61,6 @@ public class IOVecBuffer {
         vec.iovLen_ = remaining;
     }
 
-    void clear(ByteBuffer buffer) {
-        Native.IOVec vec = ioVecArray_[0];
-        if (buffer.isDirect()) {
-            vec.iovBase_ = null;
-            return;
-        }
-
-        ByteBuffer directBuffer = vec.iovBase_;
-        if (directBuffer != null) {
-            vec.iovBase_ = null;
-            bufferPool_.offerFirst(directBuffer);
-        }
-    }
-
     void clear(int i, ByteBuffer buffer) {
         Native.IOVec vec = ioVecArray_[i];
         if (buffer.isDirect()) {
@@ -87,5 +73,13 @@ public class IOVecBuffer {
             vec.iovBase_ = null;
             bufferPool_.offerLast(directBuffer);
         }
+    }
+
+    Native.IOVec get(int i) {
+        return ioVecArray_[i];
+    }
+
+    int getPooledBuffers() {
+        return bufferPool_.count();
     }
 }
