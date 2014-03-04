@@ -1,7 +1,11 @@
 package net.ihiroky.niotty.nio.unix;
 
+import net.ihiroky.niotty.util.Arguments;
+
 import java.io.IOException;
 import java.net.SocketAddress;
+import java.nio.channels.AlreadyBoundException;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.NetworkChannel;
 import java.nio.channels.SelectionKey;
 
@@ -11,6 +15,7 @@ import java.nio.channels.SelectionKey;
 public class ServerUnixDomainChannel extends AbstractUnixDomainChannel implements NetworkChannel {
 
     private final Object acceptLock_;
+    private UnixDomainSocketAddress localAddress_;
 
     private static final int DEFAULT_BACKLOG = 64;
 
@@ -30,8 +35,14 @@ public class ServerUnixDomainChannel extends AbstractUnixDomainChannel implement
     }
 
     public synchronized ServerUnixDomainChannel bind(SocketAddress local, int backlog) throws IOException {
-        UnixDomainSocketAddress uds = (UnixDomainSocketAddress) local;
+        UnixDomainSocketAddress uds = (UnixDomainSocketAddress) Arguments.requireNonNull(local, "local");
         synchronized (stateLock_) {
+            if (!isOpen()) {
+                throw new ClosedChannelException();
+            }
+            if (localAddress_ != null) {
+                throw new AlreadyBoundException();
+            }
             Native.SockAddrUn sun = AddressBuffer.getInstance().getAddress();
             sun.clear();
             sun.setSunPath(uds.getPath());
@@ -41,11 +52,12 @@ public class ServerUnixDomainChannel extends AbstractUnixDomainChannel implement
             if (Native.listen(fd_, backlog) == -1) {
                 throw new IOException(Native.getLastError());
             }
+            localAddress_ = uds;
         }
         return this;
     }
 
-    public synchronized UnixDomainChannel accept() throws IOException {
+    public synchronized ClientUnixDomainChannel accept() throws IOException {
         int client = -1;
         synchronized (acceptLock_) {
             AddressBuffer buffer = AddressBuffer.getInstance();
@@ -62,11 +74,11 @@ public class ServerUnixDomainChannel extends AbstractUnixDomainChannel implement
             }
         }
 
-        UnixDomainChannel channel = new UnixDomainChannel(client);
+        ClientUnixDomainChannel channel = new ClientUnixDomainChannel(client, true);
 
         // call get*Address() to cache the addresses.
         channel.getLocalAddress();
         channel.getRemoteAddress();
-        return new UnixDomainChannel(client);
+        return channel;
     }
 }

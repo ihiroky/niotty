@@ -26,6 +26,7 @@ public class Native {
      * /usr/include/x86_64-linux-gnu/bits/socket.h
      *======================================================================*/
 
+    static final int AF_UNSPEC = 0;
     static final int AF_UNIX = 1;
     static final int SOCK_STREAM = 1;
     static final int SOCK_DGRAM = 2;
@@ -281,6 +282,7 @@ public class Native {
     static final int EAGAIN = 11;
     static final int EWOULDBLOCK = EAGAIN;
     static final int EISCONN = 106;
+    static final int EALREADY = 114;
 
     static int errno() {
         return com.sun.jna.Native.getLastError();
