@@ -19,12 +19,16 @@ public class PipelineElement {
     final StoreContext storeContext_;
     final LoadContext loadContext_;
     final StateContext stateContext_;
+    final int stageType_;
 
     private static final Pipeline NULL_PIPELINE = new NullPipeline();
     private static final StageKey NULL_STAGE_KEY = StageKeys.of("NullStage");
     private static final Stage NULL_STAGE = new NullStage();
     private static final EventDispatcherGroup<EventDispatcher> NULL_EVENT_DISPATCHER_GROUP = new NullPipelineElementExecutorPool();
     private static final PipelineElement TERMINAL = newNullObject();
+    private static final int STAGE_TYPE_BOTH = 0;
+    private static final int STAGE_TYPE_STORE = 1;
+    private static final int STAGE_TYPE_LOAD = 2;
 
     protected PipelineElement(Pipeline pipeline, StageKey key, Stage stage,
             EventDispatcherGroup<? extends EventDispatcher> pool) {
@@ -37,6 +41,14 @@ public class PipelineElement {
         stateContext_ = new StateContext(this);
         next_ = TERMINAL;
         prev_ = TERMINAL;
+        if (stage instanceof StoreStage) {
+            stageType_ = STAGE_TYPE_STORE;
+        } else if (stage instanceof LoadStage) {
+            stageType_ = STAGE_TYPE_LOAD;
+        } else {
+            stageType_ = STAGE_TYPE_BOTH;
+        }
+
     }
 
     static PipelineElement newNullObject() {
@@ -94,6 +106,12 @@ public class PipelineElement {
 
 
     void callStore(final Object message, final Object parameter) {
+        // Reduce to switch the threads if the stages side by side use the different threads.
+        if (stageType_ == STAGE_TYPE_LOAD) {
+            storeContext_.proceed(message, parameter);
+            return;
+        }
+
         if (eventDispatcher_.isInDispatcherThread()) {
             stage_.stored(storeContext_, message, parameter);
         } else {
@@ -109,6 +127,12 @@ public class PipelineElement {
 
     // expand to context class
     void callLoad(final Object message, final Object parameter) {
+        // Reduce to switch the threads if the stages side by side use the different threads.
+        if (stageType_ == STAGE_TYPE_STORE) {
+            loadContext_.proceed(message, parameter);
+            return;
+        }
+
         if (eventDispatcher_.isInDispatcherThread()) {
             stage_.loaded(loadContext_, message, parameter);
         } else {

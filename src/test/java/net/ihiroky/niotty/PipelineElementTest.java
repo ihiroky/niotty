@@ -15,20 +15,22 @@ import static org.mockito.Mockito.*;
 public class PipelineElementTest {
 
     private PipelineElement sut_;
+    private EventDispatcherGroup<? extends EventDispatcher> eventDispatcherGroup_;
+    private Pipeline pipeline_;
     private EventDispatcher eventDispatcher_;
     private Stage stage_;
     private PipelineElement next_;
     private PipelineElement prev_;
 
     @Before
+    @SuppressWarnings("unchecked")
     public void setUp() throws Exception {
         eventDispatcher_ = mock(EventDispatcher.class);
-        @SuppressWarnings("unchecked")
-        EventDispatcherGroup<? extends EventDispatcher> eventDispatcherGroup = mock(EventDispatcherGroup.class);
-        Pipeline pipeline = mock(Pipeline.class);
+        eventDispatcherGroup_ = mock(EventDispatcherGroup.class);
+        pipeline_ = mock(Pipeline.class);
         stage_ = mock(Stage.class);
-        when(eventDispatcherGroup.assign(Mockito.<EventDispatcherSelection>any())).thenReturn(eventDispatcher_);
-        sut_ = new PipelineElement(pipeline, StageKeys.of("Test"), stage_, eventDispatcherGroup);
+        when(eventDispatcherGroup_.assign(Mockito.<EventDispatcherSelection>any())).thenReturn(eventDispatcher_);
+        sut_ = new PipelineElement(pipeline_, StageKeys.of("Test"), stage_, eventDispatcherGroup_);
         next_ = mock(PipelineElement.class);
         prev_ = mock(PipelineElement.class);
         sut_.setNext(next_);
@@ -84,6 +86,20 @@ public class PipelineElementTest {
     }
 
     @Test
+    public void testCallStore_ProceedsIfStageIsLoadStage() throws Exception {
+        stage_ = mock(LoadStage.class);
+        sut_ = new PipelineElement(pipeline_, StageKeys.of("Test"), stage_, eventDispatcherGroup_);
+        sut_.setNext(next_);
+        sut_.setPrev(prev_);
+        Object message = new Object();
+        Object parameter = new Object();
+
+        sut_.callStore(message, parameter);
+
+        verify(sut_.next()).callStore(message, parameter);
+    }
+
+    @Test
     public void testCallLoad_DirectlyIfInDispatcherThread() throws Exception {
         when(eventDispatcher_.isInDispatcherThread()).thenReturn(true);
         Object message = new Object();
@@ -109,6 +125,20 @@ public class PipelineElementTest {
         verify(eventDispatcher_).offer(eventCaptor.capture());
         eventCaptor.getValue().execute(TimeUnit.MILLISECONDS);
         verify(stage_).loaded(sut_.loadContext_, message, parameter);
+    }
+
+    @Test
+    public void testCallLoad_ProceedsIfStageIsStoreStage() throws Exception {
+        stage_ = mock(StoreStage.class);
+        sut_ = new PipelineElement(pipeline_, StageKeys.of("Test"), stage_, eventDispatcherGroup_);
+        sut_.setNext(next_);
+        sut_.setPrev(prev_);
+        Object message = new Object();
+        Object parameter = new Object();
+
+        sut_.callLoad(message, parameter);
+
+        verify(sut_.prev()).callLoad(message, parameter);
     }
 
     @Test
