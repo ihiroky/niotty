@@ -8,8 +8,8 @@ import java.util.concurrent.ThreadFactory;
  *
  * <p>This class use threads to execute the {@code DefaultEventDispatcher}. </p>
  */
-public final class DefaultEventDispatcherGroup
-        extends EventDispatcherGroup<DefaultEventDispatcher> {
+public final class SynchronizedEventDispatcherGroup
+        extends EventDispatcherGroup<SynchronizedEventDispatcher> {
 
     /**
      * Constructs a instance.
@@ -19,7 +19,7 @@ public final class DefaultEventDispatcherGroup
      *
      * @param workers the number of the threads to be managed by the instance
      */
-    public DefaultEventDispatcherGroup(int workers) {
+    public SynchronizedEventDispatcherGroup(int workers) {
         this(workers, Executors.defaultThreadFactory());
     }
 
@@ -29,12 +29,12 @@ public final class DefaultEventDispatcherGroup
      * @param workers the number of the threads to be managed by the instance
      * @param threadFactory a factory to create thread which runs a event dispatcher
      */
-    public DefaultEventDispatcherGroup(int workers, ThreadFactory threadFactory) {
+    public SynchronizedEventDispatcherGroup(int workers, ThreadFactory threadFactory) {
         super(threadFactory, workers);
     }
 
     @Override
-    protected DefaultEventDispatcher newEventDispatcher() {
-        return new DefaultEventDispatcher();
+    protected SynchronizedEventDispatcher newEventDispatcher() {
+        return new SynchronizedEventDispatcher();
     }
 }

@@ -65,6 +65,10 @@ public abstract class EventDispatcher implements Runnable, Comparable<EventDispa
         }
     }
 
+    protected Thread thread() {
+        return thread_;
+    }
+
     /**
      * Inserts a specified event to the event queue.
      * @param event the event to be inserted to the event queue
