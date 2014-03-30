@@ -63,8 +63,10 @@ public abstract class AbstractTransport<T extends EventDispatcher> implements Tr
     }
 
     /**
-     * Gets the instance of {@link EventDispatcher}.
-     * @return <T> the EventDispatcher.
+     * Gets the instance of the {@link net.ihiroky.niotty.EventDispatcher},
+     * which handles the I/O requests.
+     *
+     * @return the EventDispatcher.
      */
     public T eventDispatcher() {
         return dispatcher_;

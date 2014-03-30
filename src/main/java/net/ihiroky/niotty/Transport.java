@@ -7,8 +7,10 @@ import java.util.Set;
  * <p>A nexus for network I/O operations.</p>
  *
  * <p>This class has a pipeline, an attachment reference and an event listener.
- * The pipelines handles I/O request associated with this transport. The load pipeline handles user request
- * for a transport implementation. The store pipeline handles events which come up in an I/O thread.</p>
+ * The pipeline handles I/O request associated with this transport. The I/O
+ * request is process in an I/O thread, which is represented by
+ * {@link net.ihiroky.niotty.EventDispatcher}.
+ * </p>
  */
 public interface Transport extends EventDispatcherSelection {
 
@@ -119,6 +121,14 @@ public interface Transport extends EventDispatcherSelection {
      * @return the pipeline
      */
     Pipeline pipeline();
+
+    /**
+     * Gets the instance of the {@link net.ihiroky.niotty.EventDispatcher},
+     * which handles the I/O requests.
+     *
+     * @return the EventDispatcher.
+     */
+    EventDispatcher eventDispatcher();
 
     /**
      * Returns the number of write buffers to be flushed.
