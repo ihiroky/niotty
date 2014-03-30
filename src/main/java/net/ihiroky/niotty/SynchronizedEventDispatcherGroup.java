@@ -4,9 +4,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
 /**
- * <p>An implementation of {@link net.ihiroky.niotty.EventDispatcherGroup} that manages {@link net.ihiroky.niotty.DefaultEventDispatcher}.</p>
+ * <p>An implementation of {@link net.ihiroky.niotty.EventDispatcherGroup} that manages
+ * {@link net.ihiroky.niotty.SynchronizedEventDispatcher}.</p>
  *
- * <p>This class use threads to execute the {@code DefaultEventDispatcher}. </p>
+ * <p>This class use threads to execute the {@link net.ihiroky.niotty.SynchronizedEventDispatcher}. </p>
  */
 public final class SynchronizedEventDispatcherGroup
         extends EventDispatcherGroup<SynchronizedEventDispatcher> {
