@@ -415,22 +415,22 @@ public class SlicedCodecBuffer extends AbstractCodecBuffer {
 
     @Override
     public int indexOf(int b, int fromIndex) {
-        return base_.indexOf(b, fromIndex + offset_);
+        return base_.indexOf(b, fromIndex);
     }
 
     @Override
     public int indexOf(byte[] b, int fromIndex) {
-        return base_.indexOf(b, fromIndex + offset_);
+        return base_.indexOf(b, fromIndex);
     }
 
     @Override
     public int lastIndexOf(int b, int fromIndex) {
-        return base_.lastIndexOf(b, fromIndex + offset_);
+        return base_.lastIndexOf(b, fromIndex);
     }
 
     @Override
     public int lastIndexOf(byte[] b, int fromIndex) {
-        return base_.lastIndexOf(b, fromIndex + offset_);
+        return base_.lastIndexOf(b, fromIndex);
     }
 
     /**

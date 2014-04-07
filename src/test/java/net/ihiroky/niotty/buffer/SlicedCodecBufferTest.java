@@ -59,6 +59,55 @@ public class SlicedCodecBufferTest {
             assertThat(expected[10], is((byte) 14));
             assertThat(expected[11], is((byte) 15));
         }
+
+        @Test
+        public void testIndexOfByteWithOffset() throws Exception {
+            byte[] data = "0123456789".getBytes();
+            CodecBuffer base = new ArrayCodecBuffer(data, 0, data.length);
+            base.readByte();
+            CodecBuffer sut = new SlicedCodecBuffer(base);
+
+            int actual = sut.indexOf('1', 0);
+
+            assertThat(actual, is(0));
+        }
+
+        @Test
+        public void testIndexOfBytesWithOffset() throws Exception {
+            byte[] data = "0123456789".getBytes();
+            CodecBuffer base = new ArrayCodecBuffer(data, 0, data.length);
+            base.readByte();
+            CodecBuffer sut = new SlicedCodecBuffer(base);
+
+            int actual = sut.indexOf(new byte[]{'1', '2'}, 0);
+
+            assertThat(actual, is(0));
+        }
+
+        @Test
+        public void testLastIndexOfByteWithOffset() throws Exception {
+            byte[] data = "0123456789".getBytes();
+            CodecBuffer base = new ArrayCodecBuffer(data, 0, data.length);
+            base.readByte();
+            CodecBuffer sut = new SlicedCodecBuffer(base);
+
+            int actual = sut.lastIndexOf('2', 0);
+
+            assertThat(actual, is(-1));
+        }
+
+        @Test
+        public void testLastIndexOfBytesWithOffset() throws Exception {
+            byte[] data = "0123456789".getBytes();
+            CodecBuffer base = new ArrayCodecBuffer(data, 0, data.length);
+            base.readByte();
+            CodecBuffer sut = new SlicedCodecBuffer(base);
+
+            int actual = sut.lastIndexOf(new byte[]{'2'}, 0);
+
+            assertThat(actual, is(-1));
+        }
+
     }
 
     public static class UnsignedTests extends CodecBufferTestAbstract.AbstractUnsignedTest {
