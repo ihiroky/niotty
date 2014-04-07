@@ -44,7 +44,7 @@ public class DefaultEventDispatcher extends EventDispatcher {
                 throw new InterruptedException();
             }
             long now = System.nanoTime();
-            timeoutNanos -= timeUnit.convert(now - start, TimeUnit.NANOSECONDS);
+            timeoutNanos -= now - start;
             start = now;
         }
         signaled_ = FALSE;
