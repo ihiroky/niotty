@@ -71,7 +71,7 @@ public class PipelineElement {
         return eventDispatcher_.schedule(event, timeout, timeUnit);
     }
 
-    Stage stage() {
+    public Stage stage() {
         return stage_;
     }
 
@@ -201,6 +201,7 @@ public class PipelineElement {
             });
         }
     }
+
     static class StoreContext implements StageContext {
 
         private PipelineElement base_;
