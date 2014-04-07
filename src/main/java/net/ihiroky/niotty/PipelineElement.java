@@ -229,6 +229,11 @@ public class PipelineElement {
         public EventFuture schedule(Event event, long timeout, TimeUnit timeUnit) {
             return base_.eventDispatcher_.schedule(event, timeout, timeUnit);
         }
+
+        @Override
+        public boolean changesDispatcherOnProceed() {
+            return base_.next_.eventDispatcher_.isInDispatcherThread();
+        }
     }
 
     static class LoadContext implements StageContext {
@@ -258,24 +263,29 @@ public class PipelineElement {
         public EventFuture schedule(Event event, long timeout, TimeUnit timeUnit) {
             return base_.eventDispatcher_.schedule(event, timeout, timeUnit);
         }
+
+        @Override
+        public boolean changesDispatcherOnProceed() {
+            return base_.prev_.eventDispatcher_.isInDispatcherThread();
+        }
     }
 
     static class StateContext implements StageContext {
 
-        private final PipelineElement context_;
+        private final PipelineElement base_;
 
         StateContext(PipelineElement context) {
-            context_ = context;
+            base_ = context;
         }
 
         @Override
         public StageKey key() {
-            return context_.key_;
+            return base_.key_;
         }
 
         @Override
         public Transport transport() {
-            return context_.pipeline_.transport();
+            return base_.pipeline_.transport();
         }
 
         @Override
@@ -284,7 +294,13 @@ public class PipelineElement {
 
         @Override
         public EventFuture schedule(Event event, long timeout, TimeUnit timeUnit) {
-            return context_.eventDispatcher_.schedule(event, timeout, timeUnit);
+            return base_.eventDispatcher_.schedule(event, timeout, timeUnit);
+        }
+
+        @Override
+        public boolean changesDispatcherOnProceed() {
+            throw new UnsupportedOperationException(
+                    "The changesDispatcherOnProceed is supported only on load()/store().");
         }
     }
 

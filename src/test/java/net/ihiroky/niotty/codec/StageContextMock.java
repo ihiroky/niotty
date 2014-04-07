@@ -14,25 +14,24 @@ import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 
 /**
- * @author Hiroki Itoh
+ *
  */
 public class StageContextMock<O> implements StageContext {
 
     Transport transport_;
-    Object parameter_;
     Queue<O> proceededMessageEventQueue_;
     List<Object> proceededParameterList_;
+    boolean changesDispatcherOnProceed_;
 
     public StageContextMock() {
-        this(null, new Object());
+        this(null, true);
     }
 
-    public StageContextMock(Transport transport, Object parameter) {
+    public StageContextMock(Transport transport, boolean changesDispatcherOnProceed) {
         transport_ = transport;
-        parameter_ = parameter;
         proceededMessageEventQueue_ = new ArrayDeque<O>();
         proceededParameterList_ = new ArrayList<Object>();
-
+        changesDispatcherOnProceed_ = changesDispatcherOnProceed;
     }
 
     @Override
@@ -56,6 +55,11 @@ public class StageContextMock<O> implements StageContext {
     @Override
     public EventFuture schedule(Event event, long timeout, TimeUnit timeUnit) {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean changesDispatcherOnProceed() {
+        return changesDispatcherOnProceed_;
     }
 
     public O pollEvent() {
