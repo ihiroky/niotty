@@ -59,6 +59,7 @@ public class LengthFrameCodecTest {
         assertThat(sut_.getPooling(), is(nullValue()));
         assertThat(sut_.getPoolingFrameBytes(), is(0));
         assertThat(input, hasReferenceCount(1));
+        assertThat(output.array(), is(sameInstance(input.array())));
     }
 
     @Test
@@ -313,5 +314,18 @@ public class LengthFrameCodecTest {
 
         Packet actual = context_.pollEvent();
         assertThat(actual.remaining(), is((Short.MAX_VALUE + 1) + 4));
+    }
+
+    @Test
+    public void testLoad_CreatesNewBufferIfChangesDispatcher() throws Exception {
+        context_ = new StageContextMock<CodecBuffer>(null, true);
+        CodecBuffer input = Buffers.wrap(data_, 0, dataLength_);
+
+        sut_.loaded(context_, input, null);
+
+        CodecBuffer output = context_.pollEvent();
+        assertThat(output.remaining(), is(dataLength_ - 2)); // 2: header of packet
+        assertThat(output.array(), is(not(sameInstance(input.array()))));
+        assertThat(input, hasReferenceCount(0));
     }
 }

@@ -4,7 +4,7 @@ import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.CodecBuffer;
 
 /**
- * @author Hiroki Itoh
+ *
  */
 public class InputSupport {
 
@@ -37,21 +37,31 @@ public class InputSupport {
 
         int remainingBytes = input.remaining();
         if (remainingBytes >= requiredLength) {
-            return noCopyIfEnough ? input : copy(input, requiredLength);
+            return noCopyIfEnough ? input : drain(input, requiredLength);
         }
         if (remainingBytes == 0) {
             return null;
         }
-        buffer_ = copy(input, requiredLength);
+        buffer_ = drain(input, requiredLength);
         return null;
     }
 
-    private static CodecBuffer copy(CodecBuffer input, int bytes) {
+    /**
+     * Creates a new buffer and drains the content in {@code input}.
+     * @param input the input
+     * @param bytes the length to drain
+     * @return the new buffer
+     */
+    static CodecBuffer drain(CodecBuffer input, int bytes) {
         CodecBuffer b = Buffers.wrap(new byte[bytes], 0, 0);
         b.drainFrom(input, bytes);
         return b;
     }
 
+    /**
+     * Retruns the buffer.
+     * @return the buffer
+     */
     CodecBuffer getPooling() {
         return buffer_;
     }

@@ -24,7 +24,7 @@ public class StageContextMock<O> implements StageContext {
     boolean changesDispatcherOnProceed_;
 
     public StageContextMock() {
-        this(null, true);
+        this(null, false);
     }
 
     public StageContextMock(Transport transport, boolean changesDispatcherOnProceed) {

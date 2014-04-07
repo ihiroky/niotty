@@ -78,7 +78,9 @@ public class LengthFrameCodec implements Stage {
                 break;
             }
             if (output == input) {
-                output = input.slice(frameBytes);
+                output = context.changesDispatcherOnProceed()
+                        ? InputSupport.drain(input, frameBytes)
+                        : input.slice(frameBytes);
             }
 
             poolingFrameBytes_ = 0;
