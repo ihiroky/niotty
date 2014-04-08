@@ -338,4 +338,19 @@ public class EventDispatcherTest {
         assertThat(e1.isCancelled(), is(true));
     }
 
+    @Test
+    public void testIsAssignedReturnsTrueForAssignedThread() throws Exception {
+        executor_.execute(sut_);
+        sut_.waitUntilStarted();
+
+        assertThat(sut_.isAssigned(sut_.thread()), is(true));
+    }
+
+    @Test
+    public void testIsAssignedReturnsFalseForNonAssignedThread() throws Exception {
+        executor_.execute(sut_);
+        sut_.waitUntilStarted();
+
+        assertThat(sut_.isAssigned(Thread.currentThread()), is(false));
+    }
 }
