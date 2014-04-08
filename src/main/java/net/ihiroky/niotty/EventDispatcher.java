@@ -272,6 +272,15 @@ public abstract class EventDispatcher implements Runnable, Comparable<EventDispa
     }
 
     /**
+     * Returns true if the given thread is this dispatcher thread.
+     * @param thread the thread
+     * @return true if the given thread is this dispatcher thread
+     */
+    public boolean isDispatcherThread(Thread thread) {
+        return thread == thread_;
+    }
+
+    /**
      * Returns true if the thread which executes this dispatcher is alive.
      * @return true if the thread which executes this dispatcher is alive
      */
