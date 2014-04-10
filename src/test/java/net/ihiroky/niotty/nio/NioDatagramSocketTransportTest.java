@@ -144,11 +144,13 @@ public class NioDatagramSocketTransportTest {
 
         private SelectDispatcherGroup selectDispatcherGroup_;
         private WriteQueueFactory<DatagramQueue> writeQueueFactory_;
+        private DatagramQueue writeQueue_;
 
         @Before
-        @SuppressWarnings("unchecked")
         public void setUp() throws Exception {
-            writeQueueFactory_ = new SimpleDatagramQueueFactory();
+            writeQueue_ = mock(DatagramQueue.class);
+            writeQueueFactory_ = mock(SimpleDatagramQueueFactory.class);
+            when(writeQueueFactory_.newWriteQueue()).thenReturn(writeQueue_);
         }
 
         @After
@@ -251,9 +253,9 @@ public class NioDatagramSocketTransportTest {
         @Test
         public void testWriteBuffer() throws Exception {
             selectDispatcherGroup_ = new SelectDispatcherGroup(Executors.defaultThreadFactory(), 1);
-            NioDatagramSocketTransport sut = spy(new NioDatagramSocketTransport("TEST", PipelineComposer.empty(),
-                    selectDispatcherGroup_, writeQueueFactory_, (InternetProtocolFamily) null));
-            doNothing().when(sut).flush(Mockito.any(ByteBuffer.class)); // super class method
+            when(writeQueue_.flush(Mockito.isA(DatagramChannel.class), Mockito.isA(ByteBuffer.class))).thenReturn(FlushStatus.FLUSHED);
+            NioDatagramSocketTransport sut = new NioDatagramSocketTransport("TEST", PipelineComposer.empty(),
+                    selectDispatcherGroup_, writeQueueFactory_, (InternetProtocolFamily) null);
 
             DatagramChannel channel = mock(DatagramChannel.class);
             SelectionKey key = spy(new SelectionKeyMock());
@@ -264,7 +266,7 @@ public class NioDatagramSocketTransportTest {
 
             sut.onSelected(key, sut.eventDispatcher());
 
-            verify(sut).flush(Mockito.any(ByteBuffer.class));
+            verify(writeQueue_).flush(Mockito.isA(DatagramChannel.class), Mockito.isA(ByteBuffer.class));
         }
 
         private static class SelectionKeyMock extends AbstractSelectionKey {

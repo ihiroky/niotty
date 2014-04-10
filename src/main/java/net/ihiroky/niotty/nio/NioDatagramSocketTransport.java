@@ -430,7 +430,7 @@ public class NioDatagramSocketTransport extends NioSocketTransport<SelectDispatc
                 }
                 readBuffer.clear();
             } else if (key.isWritable()) {
-                flush(selectDispatcher.writeBuffer_);
+                flushForcibly(selectDispatcher.writeBuffer_);
             }
         } catch (ClosedByInterruptException ie) {
             if (logger_.isDebugEnabled()) {
@@ -448,6 +448,11 @@ public class NioDatagramSocketTransport extends NioSocketTransport<SelectDispatc
         if (flushStatus_ == FlushStatus.FLUSHING) {
             return;
         }
+
+        flushForcibly(writeBuffer);
+    }
+
+    private void flushForcibly(ByteBuffer writeBuffer) throws IOException {
         FlushStatus status = writeQueue_.flush(channel_, writeBuffer);
         flushStatus_ = status;
         handleFlushStatus(status);

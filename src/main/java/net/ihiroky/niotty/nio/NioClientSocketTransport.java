@@ -427,7 +427,7 @@ public class NioClientSocketTransport extends NioSocketTransport<SelectDispatche
                     pipeline().eventTriggered(ShutdownEvent.INPUT);
                 }
             } else if (key.isWritable()) {
-                flush(selectDispatcher.writeBuffer_);
+                flushForcibly(selectDispatcher.writeBuffer_);
             }
         } catch (ClosedByInterruptException ie) {
             if (logger_.isDebugEnabled()) {
@@ -446,6 +446,11 @@ public class NioClientSocketTransport extends NioSocketTransport<SelectDispatche
             return;
         }
 
+        flushForcibly(writeBuffer);
+    }
+
+
+    private void flushForcibly(ByteBuffer writeBuffer) throws IOException {
         FlushStatus status = writeQueue_.flush(channel_);
         flushStatus_ = status;
         handleFlushStatus(status);

@@ -49,11 +49,14 @@ public class NioClientSocketTransportTest {
 
         private SelectDispatcherGroup selectDispatcherGroup_;
         private WriteQueueFactory<PacketQueue> writeQueueFactory_;
+        private PacketQueue writeQueue_;
 
         @Before
         @SuppressWarnings("unchecked")
         public void setUp() throws Exception {
+            writeQueue_ = mock(PacketQueue.class);
             writeQueueFactory_ = mock(WriteQueueFactory.class);
+            when(writeQueueFactory_.newWriteQueue()).thenReturn(writeQueue_);
         }
 
         @Test
@@ -88,9 +91,9 @@ public class NioClientSocketTransportTest {
         @Test
         public void testWriteBuffer() throws Exception {
             selectDispatcherGroup_ = new SelectDispatcherGroup(Executors.defaultThreadFactory(), 1);
-            NioClientSocketTransport sut = spy(new NioClientSocketTransport(
-                    "TEST", PipelineComposer.empty(), selectDispatcherGroup_, writeQueueFactory_));
-            doNothing().when(sut).flush(Mockito.any(ByteBuffer.class)); // super class method
+            when(writeQueue_.flush(Mockito.isA(GatheringByteChannel.class))).thenReturn(FlushStatus.FLUSHED);
+            NioClientSocketTransport sut = new NioClientSocketTransport(
+                    "TEST", PipelineComposer.empty(), selectDispatcherGroup_, writeQueueFactory_);
 
             SocketChannel channel = mock(SocketChannel.class);
             when(channel.isConnected()).thenReturn(true);
@@ -102,7 +105,7 @@ public class NioClientSocketTransportTest {
 
             sut.onSelected(key, sut.eventDispatcher());
 
-            verify(sut).flush(Mockito.any(ByteBuffer.class));
+            verify(writeQueue_).flush(Mockito.isA(GatheringByteChannel.class));
         }
 
         static class SelectionKeyMock extends AbstractSelectionKey {
