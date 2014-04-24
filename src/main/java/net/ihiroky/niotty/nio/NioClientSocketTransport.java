@@ -10,6 +10,7 @@ import net.ihiroky.niotty.TransportException;
 import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.TransportOption;
 import net.ihiroky.niotty.TransportOptions;
+import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.Packet;
 import net.ihiroky.niotty.util.Arguments;
 import net.ihiroky.niotty.util.JavaVersion;
@@ -49,7 +50,6 @@ public class NioClientSocketTransport extends NioSocketTransport<SelectDispatche
     }
 
     private static Logger logger_ = LoggerFactory.getLogger(NioClientSocketTransport.class);
-
     private static final Set<TransportOption<?>> SUPPORTED_OPTIONS = Collections.unmodifiableSet(
             new HashSet<TransportOption<?>>(Arrays.<TransportOption<?>>asList(
                     TransportOptions.SO_RCVBUF, TransportOptions.SO_SNDBUF, TransportOptions.SO_REUSEADDR,
@@ -417,7 +417,7 @@ public class NioClientSocketTransport extends NioSocketTransport<SelectDispatche
                 int read = channel.read(readBuffer);
                 if (read >= 0) {
                     readBuffer.flip();
-                    pipeline().load(readBuffer);
+                    pipeline().load(Buffers.wrap(readBuffer), null);
                     return;
                 }
                 logger_.debug("[onSelected] transport reaches the end of its stream: {}", this);

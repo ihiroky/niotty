@@ -1,10 +1,8 @@
 package net.ihiroky.niotty;
 
-import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.CodecBuffer;
 import net.ihiroky.niotty.util.Arguments;
 
-import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
@@ -291,25 +289,6 @@ public class DefaultPipeline<L extends EventDispatcher> implements Pipeline {
     @Override
     public void store(Object message, Object parameter) {
         head_.next().callStore(message, parameter);
-    }
-
-    @Override
-    public void load(ByteBuffer buffer) {
-        CodecBuffer message =  (tail_.eventDispatcher_.isInDispatcherThread()) ? copy(buffer) : Buffers.wrap(buffer);
-        tail_.callLoad(message, null);
-    }
-
-    @Override
-    public void load(ByteBuffer buffer, Object parameter) {
-        CodecBuffer message =  (tail_.eventDispatcher_.isInDispatcherThread()) ? copy(buffer) : Buffers.wrap(buffer);
-        tail_.callLoad(message, parameter);
-    }
-
-    private static CodecBuffer copy(ByteBuffer bb) {
-        int length = bb.limit();
-        byte[] data = new byte[length];
-        bb.get(data, 0, length);
-        return Buffers.wrap(data, 0, length);
     }
 
     @Override

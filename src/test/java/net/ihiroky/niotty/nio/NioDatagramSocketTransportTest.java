@@ -7,6 +7,7 @@ import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.Stage;
 import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.TransportOptions;
+import net.ihiroky.niotty.buffer.CodecBuffer;
 import net.ihiroky.niotty.util.JavaVersion;
 import net.ihiroky.niotty.util.Platform;
 import org.junit.After;
@@ -191,7 +192,7 @@ public class NioDatagramSocketTransportTest {
 
             sut.onSelected(key, sut.eventDispatcher());
 
-            verify(sut.pipeline()).load(Mockito.any(ByteBuffer.class));
+            verify(sut.pipeline()).load(Mockito.any(CodecBuffer.class), Mockito.isNull());
         }
 
         @Test
@@ -222,6 +223,7 @@ public class NioDatagramSocketTransportTest {
             selectDispatcherGroup_ = new SelectDispatcherGroup(Executors.defaultThreadFactory(), 1);
             NioDatagramSocketTransport sut = spy(new NioDatagramSocketTransport("TEST", PipelineComposer.empty(),
                     selectDispatcherGroup_, writeQueueFactory_, (InternetProtocolFamily) null));
+            final InetSocketAddress source = new InetSocketAddress(12345);
 
             DatagramChannel channel = mock(DatagramChannel.class);
             when(channel.isConnected()).thenReturn(false);
@@ -234,7 +236,7 @@ public class NioDatagramSocketTransportTest {
                         return null;
                     }
                     bb.position(10);
-                    return new InetSocketAddress(12345);
+                    return source;
                 }
             });
             Pipeline pipeline = mock(Pipeline.class);
@@ -247,7 +249,7 @@ public class NioDatagramSocketTransportTest {
 
             sut.onSelected(key, sut.eventDispatcher());
 
-            verify(pipeline).load(Mockito.any(ByteBuffer.class), Mockito.any(SocketAddress.class));
+            verify(pipeline).load(Mockito.any(CodecBuffer.class), eq(source));
         }
 
         @Test

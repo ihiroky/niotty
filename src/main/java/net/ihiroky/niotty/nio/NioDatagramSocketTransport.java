@@ -9,6 +9,7 @@ import net.ihiroky.niotty.TransportException;
 import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.TransportOption;
 import net.ihiroky.niotty.TransportOptions;
+import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.Packet;
 import net.ihiroky.niotty.util.Arguments;
 import net.ihiroky.niotty.util.JavaVersion;
@@ -415,7 +416,7 @@ public class NioDatagramSocketTransport extends NioSocketTransport<SelectDispatc
                         return;
                     }
                     readBuffer.flip();
-                    pipeline().load(readBuffer);
+                    pipeline().load(Buffers.wrap(readBuffer), null);
                     readBuffer.clear();
                 } else {
                     for (;;) {
@@ -424,7 +425,7 @@ public class NioDatagramSocketTransport extends NioSocketTransport<SelectDispatc
                             break;
                         }
                         readBuffer.flip();
-                        pipeline().load(readBuffer, source);
+                        pipeline().load(Buffers.wrap(readBuffer), source);
                         readBuffer.clear();
                     }
                 }

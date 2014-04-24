@@ -7,6 +7,7 @@ import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.Stage;
 import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.TransportOptions;
+import net.ihiroky.niotty.buffer.CodecBuffer;
 import net.ihiroky.niotty.util.JavaVersion;
 import net.ihiroky.niotty.util.Platform;
 import org.junit.Before;
@@ -85,7 +86,7 @@ public class NioClientSocketTransportTest {
 
             sut.onSelected(key, sut.eventDispatcher());
 
-            verify(sut.pipeline()).load(Mockito.any(ByteBuffer.class));
+            verify(sut.pipeline()).load(Mockito.any(CodecBuffer.class), Mockito.isNull());
         }
 
         @Test
@@ -121,14 +122,13 @@ public class NioClientSocketTransportTest {
             when(key.channel()).thenReturn(channel);
             when(key.readyOps()).thenReturn(SelectionKey.OP_READ);
             when(sut.pipeline()).thenReturn(pipeline);
-            doThrow(new RuntimeException()).when(pipeline).load(Mockito.any(ByteBuffer.class));
+            doThrow(new RuntimeException()).when(pipeline).load(Mockito.any(CodecBuffer.class), Mockito.any());
             key.attach(sut);
             sut.setSelectionKey(key);
 
             sut.onSelected(key, sut.eventDispatcher());
 
-            ByteBuffer readBuffer = sut.eventDispatcher().readBuffer_;
-            verify(sut.pipeline()).load(readBuffer);
+            verify(sut.pipeline()).load(Mockito.any(CodecBuffer.class), Mockito.isNull());
         }
 
         static class SelectionKeyMock extends AbstractSelectionKey {

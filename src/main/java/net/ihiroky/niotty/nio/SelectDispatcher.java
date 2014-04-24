@@ -1,9 +1,10 @@
 package net.ihiroky.niotty.nio;
 
+import net.ihiroky.niotty.EventDispatcher;
 import net.ihiroky.niotty.Stage;
 import net.ihiroky.niotty.StageContext;
-import net.ihiroky.niotty.StoreStage;
-import net.ihiroky.niotty.EventDispatcher;
+import net.ihiroky.niotty.buffer.Buffers;
+import net.ihiroky.niotty.buffer.CodecBuffer;
 import net.ihiroky.niotty.buffer.Packet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -135,12 +136,24 @@ public class SelectDispatcher extends EventDispatcher {
         return (selector_ != null) && selector_.isOpen();
     }
 
-    private static class IOStage extends StoreStage {
+    private static class IOStage implements Stage {
 
         private final ByteBuffer writeBuffer_;
 
         IOStage(ByteBuffer writeBuffer) {
             writeBuffer_ = writeBuffer;
+        }
+
+        @Override
+        public void loaded(StageContext context, Object message, Object parameter) {
+            CodecBuffer buffer = (CodecBuffer) message;
+            if (context.changesDispatcherOnProceed()) {
+                CodecBuffer copy = Buffers.newCodecBuffer(buffer.remaining());
+                copy.drainFrom(buffer);
+                buffer.dispose();
+                buffer = copy;
+            }
+            context.proceed(buffer, parameter);
         }
 
         @Override
