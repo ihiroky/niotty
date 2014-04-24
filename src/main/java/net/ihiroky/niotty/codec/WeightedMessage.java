@@ -46,4 +46,9 @@ public class WeightedMessage {
     public int hashCode() {
         return message_.hashCode() + weightIndex_;
     }
+
+    @Override
+    public String toString() {
+        return "message:" + message_ + ", weightIndex:" + weightIndex_;
+    }
 }
