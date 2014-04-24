@@ -9,13 +9,17 @@ import net.ihiroky.niotty.Transport;
 import net.ihiroky.niotty.TransportOptions;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.net.InetSocketAddress;
 
 /**
- * @author Hiroki Itoh
+ * Tests connect and shutdown operation.
+ *
+ * This test is unstable because it uses tcp port (12345)
  */
+@Ignore
 public class TcpTest {
 
     private NioServerSocketTransport serverSut_;
