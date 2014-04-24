@@ -155,7 +155,7 @@ public class DeficitRoundRobinEncoder extends StoreStage {
             int deficitCounter = deficitCounter_[i] + (int) (baseQuantum * weights_[i]);
             if (!q.isEmpty()) {
                 int remaining = q.peek().message_.remaining();
-                while (deficitCounter >= remaining) { // always true if remaining == 0
+                while (deficitCounter >= remaining && !q.isEmpty()) { // always true if remaining == 0
                     Pair<Packet> e = q.poll();
                     context.proceed(e.message_, e.parameter_);
                     deficitCounter -= remaining;
