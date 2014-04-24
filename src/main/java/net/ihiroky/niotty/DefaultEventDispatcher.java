@@ -1,6 +1,5 @@
 package net.ihiroky.niotty;
 
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.locks.LockSupport;
 
@@ -35,9 +34,8 @@ public class DefaultEventDispatcher extends EventDispatcher {
     }
 
     @Override
-    protected void poll(long timeout, TimeUnit timeUnit) throws InterruptedException {
+    protected void poll(long timeoutNanos) throws InterruptedException {
         long start = System.nanoTime();
-        long timeoutNanos = timeUnit.convert(timeout, TimeUnit.NANOSECONDS);
         while (signaled_ == FALSE && timeoutNanos > 0L) {
             LockSupport.parkNanos(this, timeoutNanos);
             if (Thread.interrupted()) {

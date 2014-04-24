@@ -73,10 +73,10 @@ public class SelectDispatcher extends EventDispatcher {
     }
 
     @Override
-    protected void poll(long timeout, TimeUnit timeUnit) throws Exception {
-        int selected = (timeout == 0)
+    protected void poll(long timeoutNanos) throws Exception {
+        int selected = (timeoutNanos == 0)
                 ? selector_.selectNow()
-                : selector_.select(Math.max(timeUnit.toMillis(timeout), 1));
+                : selector_.select(Math.max(TimeUnit.NANOSECONDS.toMillis(timeoutNanos), 1));
         wakenUp_.set(false);
         if (selected > 0) {
             for (Iterator<SelectionKey> iterator = selector_.selectedKeys().iterator(); iterator.hasNext();) {

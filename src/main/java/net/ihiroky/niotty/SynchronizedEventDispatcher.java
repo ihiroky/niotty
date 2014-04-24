@@ -28,13 +28,14 @@ public class SynchronizedEventDispatcher extends EventDispatcher {
     }
 
     @Override
-    protected void poll(long timeout, TimeUnit timeUnit) throws InterruptedException {
+    protected void poll(long timeoutNanos) throws InterruptedException {
         long start = System.nanoTime();
+        TimeUnit timeUnit = TimeUnit.NANOSECONDS;
         synchronized (lock_) {
-            while (!signaled_ && timeout > 0) {
-                timeUnit.timedWait(lock_, timeout);
+            while (!signaled_ && timeoutNanos > 0) {
+                timeUnit.timedWait(lock_, timeoutNanos);
                 long now = System.nanoTime();
-                timeout -= timeUnit.convert(now - start, TimeUnit.NANOSECONDS);
+                timeoutNanos -= now - start;
                 start = now;
             }
             signaled_ = false;

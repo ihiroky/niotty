@@ -56,7 +56,7 @@ public abstract class NioSocketTransport<S extends SelectDispatcher> extends Abs
         }
         selector.offer(new Event() {
             @Override
-            public long execute(TimeUnit timeUnit) {
+            public long execute() {
                 NioSocketTransport.this.doCloseSelectableChannel();
                 return DONE;
             }
@@ -127,7 +127,7 @@ public abstract class NioSocketTransport<S extends SelectDispatcher> extends Abs
             // case: ConnectorSelector <-> TcpIOSelector
             dispatcher.offer(new Event() {
                 @Override
-                public long execute(TimeUnit timeUnit) {
+                public long execute() {
                     try {
                         if (ops == SelectionKey.OP_READ) {
                             pipeline().activate();
@@ -168,7 +168,7 @@ public abstract class NioSocketTransport<S extends SelectDispatcher> extends Abs
                 clearInterestOp(SelectionKey.OP_WRITE);
                 eventDispatcher().schedule(new Event() {
                     @Override
-                    public long execute(TimeUnit timeUnit) throws Exception {
+                    public long execute() throws Exception {
                         setInterestOp(SelectionKey.OP_WRITE);
                         return DONE;
                     }

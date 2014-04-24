@@ -1,7 +1,7 @@
 package net.ihiroky.niotty.nio;
 
-import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.Event;
+import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.TransportOptions;
 import net.ihiroky.niotty.util.JavaVersion;
@@ -23,7 +23,6 @@ import java.net.StandardSocketOptions;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 import static net.ihiroky.niotty.util.JavaVersionMatchers.*;
 import static org.hamcrest.CoreMatchers.*;
@@ -135,7 +134,7 @@ public class NioServerSocketTransportTest {
                 @Override
                 public Void answer(InvocationOnMock invocation) throws Throwable {
                     Event event = (Event) invocation.getArguments()[0];
-                    event.execute(TimeUnit.NANOSECONDS);
+                    event.execute();
                     return null;
                 }
             }).when(selectDispatcher).execute(Mockito.<Event>any());
@@ -163,7 +162,7 @@ public class NioServerSocketTransportTest {
             verify(selector).execute(eventCaptor.capture());
             when(channel_.getLocalAddress()).thenReturn(endpoint);
 
-            eventCaptor.getValue().execute(TimeUnit.NANOSECONDS);
+            eventCaptor.getValue().execute();
 
             assertThat(future.isSuccessful(), is(true));
         }
@@ -293,7 +292,7 @@ public class NioServerSocketTransportTest {
                 @Override
                 public Void answer(InvocationOnMock invocation) throws Throwable {
                     Event event = (Event) invocation.getArguments()[0];
-                    event.execute(TimeUnit.NANOSECONDS);
+                    event.execute();
                     return null;
                 }
             }).when(selectDispatcher).execute(Mockito.<Event>any());
@@ -321,7 +320,7 @@ public class NioServerSocketTransportTest {
             verify(selector).execute(eventCaptor.capture());
             when(socket_.isBound()).thenReturn(true);
 
-            eventCaptor.getValue().execute(TimeUnit.NANOSECONDS);
+            eventCaptor.getValue().execute();
 
             assertThat(future.isSuccessful(), is(true));
         }

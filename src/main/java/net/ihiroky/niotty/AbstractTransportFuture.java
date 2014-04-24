@@ -3,7 +3,6 @@ package net.ihiroky.niotty;
 import net.ihiroky.niotty.util.Arguments;
 
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.TimeUnit;
 
 /**
  *
@@ -59,7 +58,7 @@ public abstract class AbstractTransportFuture implements TransportFuture {
             @SuppressWarnings("unchecked")
             Event event = new Event() {
                 @Override
-                public long execute(TimeUnit timeUnit) throws Exception {
+                public long execute() throws Exception {
                     listener.onComplete(AbstractTransportFuture.this);
                     return DONE;
                 }
@@ -100,7 +99,7 @@ public abstract class AbstractTransportFuture implements TransportFuture {
         } else {
             eventDispatcher.offer(new Event() {
                 @Override
-                public long execute(TimeUnit timeUnit) throws Exception {
+                public long execute() throws Exception {
                     listener_.onComplete(AbstractTransportFuture.this);
                     return DONE;
                 }

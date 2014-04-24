@@ -35,7 +35,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 /**
  * An implementation of {@link net.ihiroky.niotty.Transport} for NIO {@code DatagramChannel}.
@@ -245,7 +244,7 @@ public class NioDatagramSocketTransport extends NioSocketTransport<SelectDispatc
         final DefaultTransportFuture future = new DefaultTransportFuture(this);
         eventDispatcher().execute(new Event() {;
             @Override
-            public long execute(TimeUnit timeUnit) throws Exception {
+            public long execute() throws Exception {
                 if (future.executing()) {
                     try {
                         DatagramChannel channel = channel_;
@@ -320,7 +319,7 @@ public class NioDatagramSocketTransport extends NioSocketTransport<SelectDispatc
         final DefaultTransportFuture future = new DefaultTransportFuture(this);
         eventDispatcher().execute(new Event() {
             @Override
-            public long execute(TimeUnit timeUnit) throws Exception {
+            public long execute() throws Exception {
                 if (future.executing()) {
                     try {
                         channel_.connect(remote);
@@ -355,7 +354,7 @@ public class NioDatagramSocketTransport extends NioSocketTransport<SelectDispatc
         final DefaultTransportFuture future = new DefaultTransportFuture(this);
         eventDispatcher().execute(new Event() {
             @Override
-            public long execute(TimeUnit timeUnit) {
+            public long execute() {
                 if (future.executing()) {
                     try {
                         channel_.disconnect();

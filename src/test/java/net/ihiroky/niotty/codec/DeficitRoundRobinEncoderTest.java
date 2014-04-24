@@ -126,7 +126,7 @@ public class DeficitRoundRobinEncoderTest {
         CodecBuffer b0 = Buffers.wrap(new byte[64]);
 
         sut.stored(context_, new WeightedMessage(b0, 0), null);
-        long delay0 = timer_.execute(TimeUnit.NANOSECONDS);
+        long delay0 = timer_.execute();
 
         assertThat(delay0, is(TimeUnit.MILLISECONDS.toNanos(1L)));
         assertThat(sut.deficitCounter(0), is(64 / 2));
@@ -140,8 +140,8 @@ public class DeficitRoundRobinEncoderTest {
         CodecBuffer b0 = Buffers.wrap(new byte[64]);
 
         sut.stored(context_, new WeightedMessage(b0, 0), null);
-        long delay0 = timer_.execute(TimeUnit.NANOSECONDS);
-        long delay1 = timer_.execute(TimeUnit.NANOSECONDS);
+        long delay0 = timer_.execute();
+        long delay1 = timer_.execute();
 
         assertThat(delay0, is(TimeUnit.MILLISECONDS.toNanos(1L)));
         assertThat(delay1, is(Event.DONE));
@@ -161,7 +161,7 @@ public class DeficitRoundRobinEncoderTest {
         int smoothedBaseQuantum = sut.smoothedBaseQuantum();
         sut.stored(context_, new WeightedMessage(b0, 0), null);
         sut.stored(context_, new WeightedMessage(b1, 1), null);
-        long delay0 = timer_.execute(TimeUnit.NANOSECONDS);
+        long delay0 = timer_.execute();
 
         assertThat(smoothedBaseQuantum, is(0));
         assertThat(delay0, is(TimeUnit.MILLISECONDS.toNanos(1L)));

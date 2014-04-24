@@ -32,7 +32,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 /**
  * An implementation of {@link net.ihiroky.niotty.Transport} for NIO {@code SocketChannel}.
@@ -231,7 +230,7 @@ public class NioClientSocketTransport extends NioSocketTransport<SelectDispatche
         final DefaultTransportFuture future = new DefaultTransportFuture(this);
         eventDispatcher().execute(new Event() {
             @Override
-            public long execute(TimeUnit timeUnit) throws Exception {
+            public long execute() throws Exception {
                 if (future.executing()) {
                     try {
                         SocketChannel channel = channel_;
@@ -338,7 +337,7 @@ public class NioClientSocketTransport extends NioSocketTransport<SelectDispatche
         final DefaultTransportFuture future = new DefaultTransportFuture(this);
         eventDispatcher().execute(new Event() {
             @Override
-            public long execute(TimeUnit timeUnit) {
+            public long execute() {
                 SelectionKey key = key();
                 if (key != null && key.isValid()) {
                     SocketChannel channel = (SocketChannel) key.channel();
@@ -370,7 +369,7 @@ public class NioClientSocketTransport extends NioSocketTransport<SelectDispatche
         final DefaultTransportFuture future = new DefaultTransportFuture(this);
         eventDispatcher().execute(new Event() {
             @Override
-            public long execute(TimeUnit timeUnit) {
+            public long execute() {
                 SelectionKey key = key();
                 if (key != null && key.isValid()) {
                     SocketChannel channel = (SocketChannel) key.channel();

@@ -36,7 +36,7 @@ public class StoreShutterTest {
         ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
         verify(context).schedule(eventCaptor.capture(), anyLong(), Mockito.any(TimeUnit.class));
         Event event = eventCaptor.getValue();
-        return event.execute(TimeUnit.NANOSECONDS);
+        return event.execute();
     }
 
     @Test

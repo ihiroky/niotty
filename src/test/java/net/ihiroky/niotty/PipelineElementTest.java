@@ -5,8 +5,6 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
-import java.util.concurrent.TimeUnit;
-
 import static org.mockito.Mockito.*;
 
 /**
@@ -81,7 +79,7 @@ public class PipelineElementTest {
 
         ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
         verify(eventDispatcher_).offer(eventCaptor.capture());
-        eventCaptor.getValue().execute(TimeUnit.MILLISECONDS);
+        eventCaptor.getValue().execute();
         verify(stage_).stored(sut_.storeContext_, message, parameter);
     }
 
@@ -123,7 +121,7 @@ public class PipelineElementTest {
 
         ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
         verify(eventDispatcher_).offer(eventCaptor.capture());
-        eventCaptor.getValue().execute(TimeUnit.MILLISECONDS);
+        eventCaptor.getValue().execute();
         verify(stage_).loaded(sut_.loadContext_, message, parameter);
     }
 
@@ -161,7 +159,7 @@ public class PipelineElementTest {
 
         ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
         verify(eventDispatcher_).offer(eventCaptor.capture());
-        eventCaptor.getValue().execute(TimeUnit.MILLISECONDS);
+        eventCaptor.getValue().execute();
         verify(stage_).activated(sut_.stateContext_);
     }
 
@@ -185,7 +183,7 @@ public class PipelineElementTest {
 
         ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
         verify(eventDispatcher_).offer(eventCaptor.capture());
-        eventCaptor.getValue().execute(TimeUnit.MILLISECONDS);
+        eventCaptor.getValue().execute();
         verify(stage_).deactivated(sut_.stateContext_);
     }
 
@@ -211,7 +209,7 @@ public class PipelineElementTest {
 
         ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
         verify(eventDispatcher_).offer(eventCaptor.capture());
-        eventCaptor.getValue().execute(TimeUnit.MILLISECONDS);
+        eventCaptor.getValue().execute();
         verify(stage_).exceptionCaught(sut_.stateContext_, e);
     }
 }

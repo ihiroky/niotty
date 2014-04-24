@@ -69,7 +69,7 @@ public class EventDispatcherTest {
                 executed[0] = true;
                 return Event.RETRY_IMMEDIATELY;
             }
-        }).when(t).execute(TimeUnit.NANOSECONDS);
+        }).when(t).execute();
 
         sut_.offer(t);
 
@@ -91,7 +91,7 @@ public class EventDispatcherTest {
                 counter.getAndIncrement();
                 return 10L;
             }
-        }).when(t).execute(TimeUnit.NANOSECONDS);
+        }).when(t).execute();
 
         sut_.offer(t);
 
@@ -113,7 +113,7 @@ public class EventDispatcherTest {
                 isInDispatcherThread[0] = sut_.isInDispatcherThread();
                 return Event.RETRY_IMMEDIATELY;
             }
-        }).when(t).execute(TimeUnit.NANOSECONDS);
+        }).when(t).execute();
 
         sut_.offer(t);
 
@@ -216,7 +216,7 @@ public class EventDispatcherTest {
         executor_.execute(sut_);
         final boolean[] done = new boolean[2];
         Event event0 = mock(Event.class);
-        when(event0.execute(TimeUnit.NANOSECONDS)).thenAnswer(new Answer<Long>() {
+        when(event0.execute()).thenAnswer(new Answer<Long>() {
             @Override
             public Long answer(InvocationOnMock invocation) throws Throwable {
                 done[0] = true;
@@ -224,7 +224,7 @@ public class EventDispatcherTest {
             }
         });
         Event event1 = mock(Event.class);
-        when(event1.execute(TimeUnit.NANOSECONDS)).thenAnswer(new Answer<Long>() {
+        when(event1.execute()).thenAnswer(new Answer<Long>() {
             @Override
             public Long answer(InvocationOnMock invocation) throws Throwable {
                 done[1] = true;
@@ -238,10 +238,10 @@ public class EventDispatcherTest {
         while (!done[0] || !done[1]) {
             Thread.sleep(10);
         }
-        verify(event0, timeout(120)).execute(TimeUnit.NANOSECONDS);
+        verify(event0, timeout(120)).execute();
         assertThat(e0.isDispatched(), is(true));
         assertThat(e0.isCancelled(), is(false));
-        verify(event1, timeout(120)).execute(TimeUnit.NANOSECONDS);
+        verify(event1, timeout(120)).execute();
         assertThat(e1.isDispatched(), is(true));
         assertThat(e1.isCancelled(), is(false));
     }
@@ -251,7 +251,7 @@ public class EventDispatcherTest {
         executor_.execute(sut_);
         final Queue<Integer> order = new ArrayBlockingQueue<Integer>(10);
         Event event0 = mock(Event.class);
-        when(event0.execute(TimeUnit.NANOSECONDS)).thenAnswer(new Answer<Long>() {
+        when(event0.execute()).thenAnswer(new Answer<Long>() {
             @Override
             public Long answer(InvocationOnMock invocation) throws Throwable {
                 order.offer(0);
@@ -260,7 +260,7 @@ public class EventDispatcherTest {
         });
         when(event0.toString()).thenReturn("event0");
         Event event1 = mock(Event.class);
-        when(event1.execute(TimeUnit.NANOSECONDS)).thenAnswer(new Answer<Long>() {
+        when(event1.execute()).thenAnswer(new Answer<Long>() {
             @Override
             public Long answer(InvocationOnMock invocation) throws Throwable {
                 order.offer(1);
@@ -277,10 +277,10 @@ public class EventDispatcherTest {
         }
         assertThat(order.poll(), is(1));
         assertThat(order.poll(), is(0));
-        verify(event0, timeout(220)).execute(TimeUnit.NANOSECONDS);
+        verify(event0, timeout(220)).execute();
         assertThat(e0.isDispatched(), is(true));
         assertThat(e0.isCancelled(), is(false));
-        verify(event1, timeout(120)).execute(TimeUnit.NANOSECONDS);
+        verify(event1, timeout(120)).execute();
         assertThat(e1.isDispatched(), is(true));
         assertThat(e1.isCancelled(), is(false));
     }
@@ -289,7 +289,7 @@ public class EventDispatcherTest {
     public void testEventFutureCancel_RemoveHeadEntryInDelayQueue() throws Exception {
         executor_.execute(sut_);
         Event event0 = mock(Event.class);
-        when(event0.execute(TimeUnit.NANOSECONDS)).thenAnswer(new Answer<Long>() {
+        when(event0.execute()).thenAnswer(new Answer<Long>() {
             @Override
             public Long answer(InvocationOnMock invocation) throws Throwable {
                 return Event.DONE;
@@ -309,7 +309,7 @@ public class EventDispatcherTest {
     public void testEventFutureCancel_RemoveHeadEntryInDelayQueueAfterExecute() throws Exception {
         executor_.execute(sut_);
         Event event0 = mock(Event.class);
-        when(event0.execute(TimeUnit.NANOSECONDS)).thenAnswer(new Answer<Long>() {
+        when(event0.execute()).thenAnswer(new Answer<Long>() {
             @Override
             public Long answer(InvocationOnMock invocation) throws Throwable {
                 // System.out.println("event0");
@@ -317,7 +317,7 @@ public class EventDispatcherTest {
             }
         });
         Event event1 = mock(Event.class);
-        when(event1.execute(TimeUnit.NANOSECONDS)).thenAnswer(new Answer<Long>() {
+        when(event1.execute()).thenAnswer(new Answer<Long>() {
             @Override
             public Long answer(InvocationOnMock invocation) throws Throwable {
                 // System.out.println("event1");

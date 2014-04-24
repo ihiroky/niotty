@@ -116,7 +116,7 @@ public class PipelineElement {
         } else {
             eventDispatcher_.offer(new Event() {
                 @Override
-                public long execute(TimeUnit timeUnit) throws Exception {
+                public long execute() throws Exception {
                     stage_.stored(storeContext_, message, parameter);
                     return DONE;
                 }
@@ -137,7 +137,7 @@ public class PipelineElement {
         } else {
             eventDispatcher_.offer(new Event() {
                 @Override
-                public long execute(TimeUnit timeUnit) throws Exception {
+                public long execute() throws Exception {
                     stage_.loaded(loadContext_, message, parameter);
                     return DONE;
                 }
@@ -151,7 +151,7 @@ public class PipelineElement {
         } else {
             eventDispatcher_.offer(new Event() {
             @Override
-            public long execute(TimeUnit timeUnit) throws Exception {
+            public long execute() throws Exception {
                 stage_.activated(stateContext_);
                 return DONE;
             }
@@ -165,7 +165,7 @@ public class PipelineElement {
         } else {
             eventDispatcher_.offer(new Event() {
             @Override
-            public long execute(TimeUnit timeUnit) throws Exception {
+            public long execute() throws Exception {
                 stage_.deactivated(stateContext_);
                 return DONE;
             }
@@ -179,7 +179,7 @@ public class PipelineElement {
         } else {
             eventDispatcher_.offer(new Event() {
             @Override
-            public long execute(TimeUnit timeUnit) throws Exception {
+            public long execute() throws Exception {
                 stage_.exceptionCaught(stateContext_, exception);
                 return DONE;
             }
@@ -193,7 +193,7 @@ public class PipelineElement {
         } else {
             eventDispatcher_.offer(new Event() {
                 @Override
-                public long execute(TimeUnit timeUnit) throws Exception {
+                public long execute() throws Exception {
                     stage_.eventTriggered(stateContext_, event);
                     return DONE;
                 }
@@ -333,7 +333,7 @@ public class PipelineElement {
 
         static final EventFuture NULL_FUTURE = new EventFuture(-1L, new Event() {
             @Override
-            public long execute(TimeUnit timeUnit) throws Exception {
+            public long execute() throws Exception {
                 return DONE;
             }
         });
@@ -345,7 +345,7 @@ public class PipelineElement {
             protected void onClose() {
             }
             @Override
-            protected void poll(long timeout, TimeUnit timeUnit) throws Exception {
+            protected void poll(long timeoutNanos) throws Exception {
             }
             @Override
             protected void wakeUp() {

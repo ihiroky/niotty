@@ -1,10 +1,10 @@
 package net.ihiroky.niotty.nio;
 
+import net.ihiroky.niotty.Event;
+import net.ihiroky.niotty.EventDispatcherGroup;
 import net.ihiroky.niotty.EventDispatcherSelection;
 import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.Stage;
-import net.ihiroky.niotty.Event;
-import net.ihiroky.niotty.EventDispatcherGroup;
 import net.ihiroky.niotty.Transport;
 import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.TransportOption;
@@ -20,7 +20,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 import static org.mockito.Mockito.*;
 
@@ -63,7 +62,7 @@ public class NioSocketTransportTest {
 
         ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
         verify(selector_).offer(eventCaptor.capture());
-        eventCaptor.getValue().execute(TimeUnit.MILLISECONDS);
+        eventCaptor.getValue().execute();
 
         verify(selector_).register(channel, SelectionKey.OP_ACCEPT, sut_);
     }

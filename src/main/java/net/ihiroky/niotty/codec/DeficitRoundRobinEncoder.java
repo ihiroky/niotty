@@ -176,15 +176,14 @@ public class DeficitRoundRobinEncoder extends StoreStage {
             }
             timerFuture_ = context.schedule(new Event() {
                 @Override
-                public long execute(TimeUnit timeUnit) throws Exception {
+                public long execute() throws Exception {
                     int baseQuantum = smoothedBaseQuantum_;
                     if (baseQuantum == 0) {
                         Deque<Pair<Packet>> q = weightedQueueList_.get(firstIndex_);
                         baseQuantum = (int) (q.peek().message_.remaining() / weights_[firstIndex_]);
                     }
                     flush(context, baseQuantum);
-                    return (firstIndex_ == INVALID_QUEUE_INDEX)
-                            ? DONE : timeUnit.convert(timerIntervalNanos_, TimeUnit.NANOSECONDS);
+                    return (firstIndex_ == INVALID_QUEUE_INDEX) ? DONE : timerIntervalNanos_;
                 }
             }, timerIntervalNanos_, TimeUnit.NANOSECONDS);
         } else {

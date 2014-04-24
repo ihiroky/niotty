@@ -1,6 +1,5 @@
 package net.ihiroky.niotty;
 
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -27,8 +26,7 @@ class EventDispatcherMock extends EventDispatcher {
     }
 
     @Override
-    protected void poll(long timeout, TimeUnit timeUnit) throws Exception {
-        long timeoutNanos = timeUnit.toNanos(timeout);
+    protected void poll(long timeoutNanos) throws Exception {
         lock_.lock();
         try {
             while (!signaled_ && timeoutNanos > 0) {

@@ -24,7 +24,7 @@ public class StoreShutter extends StoreStage {
 
     private final int alert_;
     private final int limit_;
-    private final int checkIntervalSeconds_;
+    private final long checkIntervalNanos_;
     private State state_;
 
     private static Logger logger_ = LoggerFactory.getLogger(StoreShutter.class);
@@ -42,7 +42,8 @@ public class StoreShutter extends StoreStage {
     public StoreShutter(int alert, int limit, int checkIntervalSeconds) {
         alert_ = Arguments.requirePositive(alert, "alert");
         limit_ = Arguments.requirePositive(limit, "limit");
-        checkIntervalSeconds_ = Arguments.requirePositive(checkIntervalSeconds, "checkIntervalSeconds");
+        checkIntervalNanos_ = TimeUnit.SECONDS.toNanos(
+                Arguments.requirePositive(checkIntervalSeconds, "checkIntervalSeconds"));
     }
 
     @Override
@@ -61,7 +62,7 @@ public class StoreShutter extends StoreStage {
         state_ = State.UNDER_ALERT;
         context.schedule(new Event() {
             @Override
-            public long execute(TimeUnit timeUnit) throws Exception {
+            public long execute() throws Exception {
                 Transport transport = context.transport();
                 int pendingWriteBuffers = transport.pendingWriteBuffers();
                 State state = state_;
@@ -86,9 +87,9 @@ public class StoreShutter extends StoreStage {
                             pendingWriteBuffers, transport.remoteAddress(), transport.attachment(), alert_);
                     state_ = State.UNDER_ALERT;
                 }
-                return timeUnit.convert(checkIntervalSeconds_, TimeUnit.SECONDS);
+                return checkIntervalNanos_;
             }
-        }, checkIntervalSeconds_, TimeUnit.SECONDS);
+        }, checkIntervalNanos_, TimeUnit.NANOSECONDS);
     }
 
     @Override

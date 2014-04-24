@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit;
  * The event, which implements {@link Event}, is queued by
  * {@link #offer(Event)}. It is processed by a dedicated
  * thread in queued (FIFO) order. A queue blocking strategy is determined by
- * {@link #poll(long, TimeUnit)} and {@link #wakeUp()} of this sub class, this class provides
+ * {@link #poll(long)} and {@link #wakeUp()} of this sub class, this class provides
  * the queue only.
  * </p>
  * <p>
@@ -44,7 +44,6 @@ public abstract class EventDispatcher implements Runnable, Comparable<EventDispa
 
     private Logger logger_ = LoggerFactory.getLogger(EventDispatcher.class);
 
-    private static final TimeUnit TIME_UNIT = TimeUnit.NANOSECONDS;
     private static final int INITIAL_EVENT_BUFFER_SIZE = 1024;
     private static final int INITIAL_DELAY_QUEUE_SIZE = 1024;
 
@@ -102,7 +101,7 @@ public abstract class EventDispatcher implements Runnable, Comparable<EventDispa
 
         eventQueue_.offer(new Event() {
             @Override
-            public long execute(TimeUnit timeUnit) throws Exception {
+            public long execute() throws Exception {
                 delayQueue_.offer(future);
                 return DONE;
             }
@@ -120,7 +119,7 @@ public abstract class EventDispatcher implements Runnable, Comparable<EventDispa
     public void execute(Event event) {
         if (isInDispatcherThread()) {
             try {
-                long waitTimeNanos = event.execute(TIME_UNIT);
+                long waitTimeNanos = event.execute();
                 if (waitTimeNanos == Event.DONE) {
                     return;
                 }
@@ -170,7 +169,7 @@ public abstract class EventDispatcher implements Runnable, Comparable<EventDispa
             long delayNanos = Long.MAX_VALUE;
             while (thread_ != null) {
                 try {
-                    poll(eventQueue.isEmpty() ? delayNanos : Event.RETRY_IMMEDIATELY, TIME_UNIT);
+                    poll(eventQueue.isEmpty() ? delayNanos : Event.RETRY_IMMEDIATELY);
                     processEvents(eventQueue, eventBuffer, delayQueue);
                     delayNanos = processDelayedEvent(eventQueue, delayQueue);
                 } catch (InterruptedException ie) {
@@ -203,7 +202,7 @@ public abstract class EventDispatcher implements Runnable, Comparable<EventDispa
             if (event == null) {
                 break;
             }
-            long retryDelay = event.execute(TIME_UNIT);
+            long retryDelay = event.execute();
             if (retryDelay == Event.DONE) {
                 continue;
             }
@@ -235,7 +234,7 @@ public abstract class EventDispatcher implements Runnable, Comparable<EventDispa
 
             try {
                 delayQueue.poll();
-                long waitTimeNanos = f.event_.execute(TIME_UNIT);
+                long waitTimeNanos = f.event_.execute();
                 if (waitTimeNanos == Event.DONE) {
                     f.dispatched();
                     continue;
@@ -387,18 +386,17 @@ public abstract class EventDispatcher implements Runnable, Comparable<EventDispa
      * This method returns when the procedure was executed, the method {@link #wakeUp()} is invoked,
      * the current thread is interrupted, or the given timeout period expires, whichever comes first.
      *
-     * @param timeout a time to block for up to timeout, more or less,
-     *                while waiting for a channel to become ready; if zero, block indefinitely;
-     *                if negative, returns immediately
-     * @param timeUnit the unit of the timeout
+     * @param timeoutNanos a time to block for up to timeout by nanoseconds, more or less,
+     *                     while waiting for a channel to become ready; if zero, block indefinitely;
+     *                     if negative, returns immediately
      * @throws Exception if some error occurs
      */
-    protected abstract void poll(long timeout, TimeUnit timeUnit) throws Exception;
+    protected abstract void poll(long timeoutNanos) throws Exception;
 
     /**
      * This method is called when a new event is inserted to the event queue.
      * The implementation is required to wake up the thread executing
-     * {@link #poll(long, java.util.concurrent.TimeUnit)} on waiting timeout.
+     * {@link #poll(long)} on waiting timeout.
      */
     protected abstract void wakeUp();
 

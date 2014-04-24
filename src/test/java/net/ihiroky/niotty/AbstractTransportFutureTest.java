@@ -6,8 +6,6 @@ import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import java.util.concurrent.TimeUnit;
-
 import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.MatcherAssert.*;
 import static org.mockito.Mockito.*;
@@ -144,7 +142,7 @@ public class AbstractTransportFutureTest {
             @Override
             public Void answer(InvocationOnMock invocation) throws Throwable {
                 Event event = (Event) invocation.getArguments()[0];
-                eventResult[0] = event.execute(TimeUnit.MILLISECONDS);
+                eventResult[0] = event.execute();
                 return null;
             }
         }).when(eventDispatcher_).offer(Mockito.any(Event.class));

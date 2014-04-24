@@ -213,7 +213,7 @@ public class NioClientSocketTransportTest {
             ArgumentCaptor<Event> eventCaptor = ArgumentCaptor.forClass(Event.class);
             verify(sut_.eventDispatcher()).schedule(eventCaptor.capture(), anyLong(), Mockito.any(TimeUnit.class));
             Event event = eventCaptor.getValue();
-            event.execute(TimeUnit.NANOSECONDS);
+            event.execute();
 
             ArgumentCaptor<Integer> opsCaptor = ArgumentCaptor.forClass(Integer.class);
             verify(sut_.key(), times(2)).interestOps(opsCaptor.capture());
@@ -405,7 +405,7 @@ public class NioClientSocketTransportTest {
                 @Override
                 public Void answer(InvocationOnMock invocation) throws Throwable {
                     Event event = (Event) invocation.getArguments()[0];
-                    event.execute(TimeUnit.NANOSECONDS);
+                    event.execute();
                     return null;
                 }
             }).when(selector).execute(Mockito.<Event>any());
@@ -431,7 +431,7 @@ public class NioClientSocketTransportTest {
             verify(selector).execute(eventCaptor.capture());
             when(channel_.getLocalAddress()).thenReturn(endpoint);
 
-            eventCaptor.getValue().execute(TimeUnit.NANOSECONDS);
+            eventCaptor.getValue().execute();
 
             assertThat(future.isSuccessful(), is(true));
         }
@@ -634,7 +634,7 @@ public class NioClientSocketTransportTest {
                 @Override
                 public Void answer(InvocationOnMock invocation) throws Throwable {
                     Event event = (Event) invocation.getArguments()[0];
-                    event.execute(TimeUnit.NANOSECONDS);
+                    event.execute();
                     return null;
                 }
             }).when(selector).execute(Mockito.<Event>any());
@@ -660,7 +660,7 @@ public class NioClientSocketTransportTest {
             verify(selector).execute(eventCaptor.capture());
             when(socket_.isBound()).thenReturn(true);
 
-            eventCaptor.getValue().execute(TimeUnit.NANOSECONDS);
+            eventCaptor.getValue().execute();
 
             assertThat(future.isSuccessful(), is(true));
         }
