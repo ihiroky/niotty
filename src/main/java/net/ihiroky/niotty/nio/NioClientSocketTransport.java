@@ -413,11 +413,11 @@ public class NioClientSocketTransport extends NioSocketTransport<SelectDispatche
         try {
             if (key.isReadable()) {
                 ByteBuffer readBuffer = selectDispatcher.readBuffer_;
+                readBuffer.clear();
                 int read = channel.read(readBuffer);
                 if (read >= 0) {
                     readBuffer.flip();
                     pipeline().load(readBuffer);
-                    readBuffer.clear();
                     return;
                 }
                 logger_.debug("[onSelected] transport reaches the end of its stream: {}", this);
@@ -431,12 +431,14 @@ public class NioClientSocketTransport extends NioSocketTransport<SelectDispatche
             }
         } catch (ClosedByInterruptException ie) {
             if (logger_.isDebugEnabled()) {
-                logger_.debug("failed to read from transport by interruption:" + this, ie);
+                logger_.debug("[onSelected] Failed to read from transport by interruption:" + this, ie);
             }
             doCloseSelectableChannel();
         } catch (IOException ioe) {
-            logger_.error("failed to read from transport:" + this, ioe);
+            logger_.error("[onSelected] Failed to read from transport:" + this, ioe);
             doCloseSelectableChannel();
+        } catch (RuntimeException re) {
+            logger_.warn("[onSelected] Unexpected runtime exception.", re);
         }
     }
 

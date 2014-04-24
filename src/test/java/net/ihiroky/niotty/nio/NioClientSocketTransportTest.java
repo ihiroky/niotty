@@ -108,6 +108,29 @@ public class NioClientSocketTransportTest {
             verify(writeQueue_).flush(Mockito.isA(GatheringByteChannel.class));
         }
 
+        @Test
+        public void testReadCatchesRuntimeException() throws Exception {
+            selectDispatcherGroup_ = new SelectDispatcherGroup(Executors.defaultThreadFactory(), 1);
+            NioClientSocketTransport sut = spy(new NioClientSocketTransport(
+                    "TEST", PipelineComposer.empty(), selectDispatcherGroup_, writeQueueFactory_));
+
+            SocketChannel channel = mock(SocketChannel.class);
+            when(channel.isConnected()).thenReturn(true);
+            Pipeline pipeline = mock(Pipeline.class);
+            SelectionKey key = spy(new SelectionKeyMock());
+            when(key.channel()).thenReturn(channel);
+            when(key.readyOps()).thenReturn(SelectionKey.OP_READ);
+            when(sut.pipeline()).thenReturn(pipeline);
+            doThrow(new RuntimeException()).when(pipeline).load(Mockito.any(ByteBuffer.class));
+            key.attach(sut);
+            sut.setSelectionKey(key);
+
+            sut.onSelected(key, sut.eventDispatcher());
+
+            ByteBuffer readBuffer = sut.eventDispatcher().readBuffer_;
+            verify(sut.pipeline()).load(readBuffer);
+        }
+
         static class SelectionKeyMock extends AbstractSelectionKey {
             @Override
             public SelectableChannel channel() {
