@@ -1,7 +1,10 @@
 package net.ihiroky.niotty.buffer;
 
+import net.ihiroky.niotty.util.Charsets;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.util.Arrays;
 
@@ -18,6 +21,9 @@ public class AbstractCodecBufferTest {
     static AbstractCodecBuffer newInstance(byte[] data, int offset, int length) {
         return new ArrayCodecBuffer(data, offset, length);
     }
+
+    @Rule
+    public ExpectedException thrownRule_ = ExpectedException.none();
 
     @Before
     public void setUp() {
@@ -299,5 +305,179 @@ public class AbstractCodecBufferTest {
         AbstractCodecBuffer sut = newInstance(data, 0, data.length);
         int actual = sut.readVariableByteInteger();
         assertThat(actual, is(Integer.MIN_VALUE));
+    }
+
+    @Test
+    public void testWriteLongAsAsciiMinValue() throws Exception {
+        String expected = Long.toString(Long.MIN_VALUE);
+        AbstractCodecBuffer sut = newInstance(new byte[expected.length()], 0, 0);
+
+        sut.writeLongAsAscii(Long.MIN_VALUE);
+
+        String actual = sut.readString(Charsets.US_ASCII.newDecoder(), expected.length());
+        assertThat(actual, is(expected));
+        assertThat(sut.remaining(), is(0));
+    }
+
+    @Test
+    public void testWriteLongAsAsciiMoreThanIntMax() throws Exception {
+        String expected = Long.toString(Integer.MAX_VALUE + 1L);
+        AbstractCodecBuffer sut = newInstance(new byte[expected.length()], 0, 0);
+
+        sut.writeLongAsAscii(Integer.MAX_VALUE + 1L);
+
+        String actual = sut.readString(Charsets.US_ASCII.newDecoder(), expected.length());
+        assertThat(actual, is(expected));
+        assertThat(sut.remaining(), is(0));
+    }
+
+    @Test
+    public void testWriteLongAsAsciiMoreThan65535() throws Exception {
+        String expected = Long.toString(65536);
+        AbstractCodecBuffer sut = newInstance(new byte[expected.length()], 0, 0);
+
+        sut.writeLongAsAscii(65536);
+
+        String actual = sut.readString(Charsets.US_ASCII.newDecoder(), expected.length());
+        assertThat(actual, is(expected));
+        assertThat(sut.remaining(), is(0));
+    }
+
+    @Test
+    public void testWriteLongAsAsciiLessThan65536() throws Exception {
+        String expected = Long.toString(65535);
+        AbstractCodecBuffer sut = newInstance(new byte[expected.length()], 0, 0);
+
+        sut.writeLongAsAscii(65535);
+
+        String actual = sut.readString(Charsets.US_ASCII.newDecoder(), expected.length());
+        assertThat(actual, is(expected));
+        assertThat(sut.remaining(), is(0));
+    }
+
+    @Test
+    public void testWriteLongAsAsciiNegative() throws Exception {
+        String expected = Long.toString(Integer.MIN_VALUE - 1L);
+        AbstractCodecBuffer sut = newInstance(new byte[expected.length()], 0, 0);
+
+        sut.writeLongAsAscii(Integer.MIN_VALUE - 1L);
+
+        String actual = sut.readString(Charsets.US_ASCII.newDecoder(), expected.length());
+        assertThat(actual, is(expected));
+        assertThat(sut.remaining(), is(0));
+    }
+
+    @Test
+    public void testReadLongAsAsciiPositive() throws Exception {
+        long expected = Integer.MAX_VALUE + 1L;
+        String expectedString = Long.toString(expected);
+        AbstractCodecBuffer sut = newInstance(new byte[expectedString.length()], 0, 0);
+        sut.writeLongAsAscii(expected);
+
+        long actual = sut.readLongAsAscii(expectedString.length());
+
+        assertThat(actual, is(expected));
+    }
+
+    @Test
+    public void testReadLongAsAsciiNegative() throws Exception {
+        long expected = Integer.MIN_VALUE - 1L;
+        String expectedString = Long.toString(expected);
+        AbstractCodecBuffer sut = newInstance(new byte[expectedString.length()], 0, 0);
+        sut.writeLongAsAscii(expected);
+
+        long actual = sut.readLongAsAscii(expectedString.length());
+
+        assertThat(actual, is(expected));
+    }
+
+    @Test
+    public void testReadLongAsAsciiLongMinValue() throws Exception {
+        long expected = Long.MIN_VALUE;
+        String expectedString = Long.toString(expected);
+        AbstractCodecBuffer sut = newInstance(new byte[expectedString.length()], 0, 0);
+        sut.writeLongAsAscii(expected);
+
+        long actual = sut.readLongAsAscii(expectedString.length());
+
+        assertThat(actual, is(expected));
+    }
+
+    @Test
+    public void testReadLongAsAsciiOverLongMaxValue() throws Exception {
+        String overLongMaxValue = Long.toString(Long.MIN_VALUE).substring(1);
+        AbstractCodecBuffer sut = newInstance(new byte[overLongMaxValue.length()], 0, 0);
+        sut.writeString(overLongMaxValue, Charsets.US_ASCII.newEncoder());
+
+        thrownRule_.expect(NumberFormatException.class);
+        thrownRule_.expectMessage(overLongMaxValue);
+
+        sut.readLongAsAscii(overLongMaxValue.length());
+    }
+
+    @Test
+    public void testReadLongAsAsciiOverLongMaxValueTwentyDigits() throws Exception {
+        String overLongMaxValue = "99999999999999999999";
+        AbstractCodecBuffer sut = newInstance(new byte[overLongMaxValue.length()], 0, 0);
+        sut.writeString(overLongMaxValue, Charsets.US_ASCII.newEncoder());
+
+        thrownRule_.expect(NumberFormatException.class);
+        thrownRule_.expectMessage(overLongMaxValue);
+
+        sut.readLongAsAscii(overLongMaxValue.length());
+    }
+
+    @Test
+    public void testReadLongAsAsciiUnderLongMinValue() throws Exception {
+        String underLongMinValue = "-9223372036854775809";
+        AbstractCodecBuffer sut = newInstance(new byte[underLongMinValue.length()], 0, 0);
+        sut.writeString(underLongMinValue, Charsets.US_ASCII.newEncoder());
+
+        thrownRule_.expect(NumberFormatException.class);
+        thrownRule_.expectMessage(underLongMinValue);
+
+        sut.readLongAsAscii(underLongMinValue.length());
+    }
+
+    @Test
+    public void testReadLongAsAsciiUnderLongMaxValueNineteenDigits() throws Exception {
+        String overLongMaxValue = "-9999999999999999999";
+        AbstractCodecBuffer sut = newInstance(new byte[overLongMaxValue.length()], 0, 0);
+        sut.writeString(overLongMaxValue, Charsets.US_ASCII.newEncoder());
+
+        thrownRule_.expect(NumberFormatException.class);
+        thrownRule_.expectMessage(overLongMaxValue);
+
+        sut.readLongAsAscii(overLongMaxValue.length());
+    }
+
+    @Test
+    public void testReadLongAsAsciiTheContentIsShort() throws Exception {
+        AbstractCodecBuffer sut = newInstance(new byte[0], 0, 0);
+
+        thrownRule_.expect(IllegalArgumentException.class);
+        thrownRule_.expectMessage("Invalid length: 1, remaining: 0");
+
+        sut.readLongAsAscii(1);
+    }
+
+    @Test
+    public void testReadLongAsAsciiMoreThanTwentyDigits() throws Exception {
+        AbstractCodecBuffer sut = newInstance(new byte[21], 0, 0);
+
+        thrownRule_.expect(IllegalArgumentException.class);
+        thrownRule_.expectMessage("The length must be less than or equal 20");
+
+        sut.readLongAsAscii(21);
+    }
+
+    @Test
+    public void testReadLongAsAsciiZeroLength() throws Exception {
+        AbstractCodecBuffer sut = newInstance(new byte[0], 0, 0);
+
+        thrownRule_.expect(IllegalArgumentException.class);
+        thrownRule_.expectMessage("Invalid length: 0, remaining: 0");
+
+        sut.readLongAsAscii(0);
     }
 }
