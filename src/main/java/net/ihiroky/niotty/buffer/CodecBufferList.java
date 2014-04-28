@@ -475,17 +475,17 @@ public class CodecBufferList extends AbstractCodecBuffer {
     }
 
     @Override
-    public String readString(CharsetDecoder decoder, int bytes) {
-        String cached = StringCache.getCachedValue(this, decoder, bytes);
+    public String readString(CharsetDecoder decoder, int length) {
+        String cached = StringCache.getCachedValue(this, decoder, length);
         if (cached != null) {
             return cached;
         }
 
         CodecBuffer buffer = nextReadBuffer();
         ByteBuffer input = buffer.byteBuffer();
-        CharBuffer output = CharBuffer.allocate(Buffers.outputCharBufferSize(decoder, bytes));
+        CharBuffer output = CharBuffer.allocate(Buffers.outputCharBufferSize(decoder, length));
         int currentRemaining = input.remaining();
-        boolean endOfInput = currentRemaining >= bytes;
+        boolean endOfInput = currentRemaining >= length;
         int previousRemaining = 0;
         for (;;) {
             CoderResult cr = decoder.decode(input, output, endOfInput);
@@ -510,9 +510,9 @@ public class CodecBufferList extends AbstractCodecBuffer {
                         newInput.put(input).put(buffer.byteBuffer()).flip();
                         input = newInput;
                     }
-                    bytes -= currentRemaining - remaining;
+                    length -= currentRemaining - remaining;
                     currentRemaining = input.remaining();
-                    endOfInput = currentRemaining >= bytes;
+                    endOfInput = currentRemaining >= length;
                     continue;
                 }
             }

@@ -175,6 +175,13 @@ public interface CodecBuffer extends Packet {
     CodecBuffer writeString(String s, CharsetEncoder encoder);
 
     /**
+     * Writes a specified long value as an ascii string (byte array of ascii code) from the end index.
+     * @param value the long value
+     * @return this object
+     */
+    CodecBuffer writeLongAsAscii(long value);
+
+    /**
      * Reads a byte from the start index.
      *
      * @return the byte
@@ -314,16 +321,28 @@ public interface CodecBuffer extends Packet {
     int readVariableByteInteger();
 
     /**
-     * Reads a string from the start index using a specified {@code decoder} to convert bytes into the string.
-     * The string length of encoded byte format is given as {@code bytes}. If some
+     * Reads a string from the start index using a specified {@code decoder} to convert the content into the string.
+     * The string length of encoded byte format is given as {@code length}. If some
      * {@code java.nio.charset.CharacterCodingException} happens, this method throws
      * {@code java.lang.RuntimeException} which has {@code CharacterCodingException} as its cause.
      *
-     * @param decoder decoder to convert the buffer to a string.
-     * @param bytes length of byte data to be decoded by {@code decoder}
-     * @return string value read from the buffer
+     * @param decoder the decoder to convert the buffer to a string.
+     * @param length the length of byte data to be decoded by {@code decoder}
+     * @return the string value read from the buffer
      */
-    String readString(CharsetDecoder decoder, int bytes);
+    String readString(CharsetDecoder decoder, int length);
+
+    /**
+     * Reads a long value from the start index, assumes that the content is
+     * the number expression of an ascii string. The string length of the content
+     * is given as {@code length}.
+     * {@code java.nio.charset.CharacterCodingException} happens, this method throws
+     * {@code java.lang.RuntimeException} which has {@code CharacterCodingException} as its cause.
+     *
+     * @param length the length of the content
+     * @return the long value
+     */
+    long readLongAsAscii(int length);
 
     /**
      * Add {@code n} to the start index.

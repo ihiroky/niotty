@@ -349,17 +349,17 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer {
     }
 
     @Override
-    public String readString(CharsetDecoder decoder, int bytes) {
+    public String readString(CharsetDecoder decoder, int length) {
         changeModeToRead();
-        String cached = StringCache.getCachedValue(this, decoder, bytes);
+        String cached = StringCache.getCachedValue(this, decoder, length);
         if (cached != null) {
             return cached;
         }
 
         ByteBuffer input = buffer_;
-        CharBuffer output = CharBuffer.allocate(Buffers.outputCharBufferSize(decoder, bytes));
+        CharBuffer output = CharBuffer.allocate(Buffers.outputCharBufferSize(decoder, length));
         int limit = input.limit();
-        input.limit(input.position() + bytes);
+        input.limit(input.position() + length);
         for (;;) {
             CoderResult cr = decoder.decode(input, output, true);
             if (cr.isUnderflow()) {

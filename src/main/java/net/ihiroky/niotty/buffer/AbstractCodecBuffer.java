@@ -1,5 +1,7 @@
 package net.ihiroky.niotty.buffer;
 
+import net.ihiroky.niotty.util.Charsets;
+
 /**
  * A skeletal implementation of {@link CodecBuffer}.
  * @author Hiroki Itoh
@@ -273,5 +275,195 @@ public abstract class AbstractCodecBuffer extends AbstractPacket implements Code
     @Override
     public double readDouble() {
         return Double.longBitsToDouble(readLong());
+    }
+
+
+    private static final byte[] MIN_LONG_ASCII = new byte[] {
+            '-', '9', '2', '2', '3', '3', '7', '2', '0', '3', '6', '8', '5', '4', '7', '7', '5', '8', '0', '8'
+    };
+
+    @Override
+    public CodecBuffer writeLongAsAscii(long value) {
+        if (value == Long.MIN_VALUE) {
+            writeBytes(MIN_LONG_ASCII, 0, MIN_LONG_ASCII.length);
+            return this;
+        }
+
+        int size = (value < 0) ? stringSize(-value) + 1 : stringSize(value);
+        writeLongAsAscii10(value, size);
+        return this;
+    }
+
+    @Override
+    public long readLongAsAscii(int length) {
+        if (length <= 0 || length > MIN_LONG_ASCII.length || remaining() < length) {
+            throw (length <= MIN_LONG_ASCII.length)
+                    ? new IllegalArgumentException("Invalid length: " + length + ", remaining: " + remaining())
+                    : new IllegalArgumentException("The length must be less than or equal " + MIN_LONG_ASCII.length);
+        }
+
+        boolean negative = false;
+        int head = readByte();
+        int i = 1;
+        if (head < '0') { // Possible leading "+" or "-"
+            if (head == '-') {
+                negative = true;
+            } else if (head != '+') {
+                String restString = readString(Charsets.US_ASCII.newDecoder(), length - 1);
+                throw new NumberFormatException(((char) head) + restString);
+            }
+
+            // Cannot have lone "+" or "-"
+            if (length == 1) {
+                throw new NumberFormatException(Character.toString((char) head));
+            }
+            head = readByte();
+            i++;
+        }
+
+        long result = 0;
+        int digit = head - '0';
+        long mulMin;
+        mulMin = Long.MAX_VALUE / 10;
+        for (;;) {
+            if (digit < 0 || digit > 9) {
+                throw newNumberFormatException(i, length);
+            }
+            if (result > mulMin) {
+                throw newNumberFormatException(i, length);
+            }
+            result = (result << 3) + (result << 1);
+            result += digit;
+
+            if (i == length) {
+                break;
+            }
+            digit = readByte() - '0';
+            i++;
+        }
+
+        if (result < 0) {
+            if (!negative) { // Over Long.MAX_VALUE
+                throw newNumberFormatException(i, length);
+            }
+            if (result != Long.MIN_VALUE) { // Under long.MIN_VALUE
+                throw newNumberFormatException(i, length);
+            }
+        }
+
+        // The result gets Long.MIN_VALUE if input is MIN_LONG_ASCII by overflow,
+        // but -Long.MIN_VALUE == Long.MIN_VALUE.
+        return negative ? -result : result;
+    }
+
+    private NumberFormatException newNumberFormatException(int skip, int bytes) {
+        skipStartIndex(-skip);
+        String string = readString(Charsets.US_ASCII.newDecoder(), bytes);
+        throw new NumberFormatException(string);
+    }
+
+    // Requires positive x
+    private static int stringSize(long x) {
+        long p = 10;
+        for (int i = 1; i < 19; i++) {
+            if (x < p) {
+                return i;
+            }
+            // p = p * 10;
+            p = (p << 3) + (p << 1);
+        }
+        return 19;
+    }
+
+    private final static byte[] DigitTens = {
+            '0', '0', '0', '0', '0', '0', '0', '0', '0', '0',
+            '1', '1', '1', '1', '1', '1', '1', '1', '1', '1',
+            '2', '2', '2', '2', '2', '2', '2', '2', '2', '2',
+            '3', '3', '3', '3', '3', '3', '3', '3', '3', '3',
+            '4', '4', '4', '4', '4', '4', '4', '4', '4', '4',
+            '5', '5', '5', '5', '5', '5', '5', '5', '5', '5',
+            '6', '6', '6', '6', '6', '6', '6', '6', '6', '6',
+            '7', '7', '7', '7', '7', '7', '7', '7', '7', '7',
+            '8', '8', '8', '8', '8', '8', '8', '8', '8', '8',
+            '9', '9', '9', '9', '9', '9', '9', '9', '9', '9',
+    } ;
+
+    private final static byte[] DigitOnes = {
+            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+    } ;
+
+    private final static byte[] digits = {
+            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'
+    };
+
+    /*
+     * Places characters representing the integer i into the
+     * character array buf. The characters are placed into
+     * the buffer backwards starting with the least significant
+     * digit at the specified index (exclusive), and working
+     * backwards from there.
+     *
+     * Will fail if i == Long.MIN_VALUE
+     */
+    private void writeLongAsAscii10(long i, int size) {
+        long q;
+        int r;
+        byte sign = 0;
+        int charPos = size;
+        byte[] buf = new byte[size];
+
+        if (i < 0) {
+            sign = '-';
+            i = -i;
+        }
+
+        // Get 2 digits/iteration using longs until quotient fits into an int
+        while (i > Integer.MAX_VALUE) {
+            q = i / 100;
+            // really: r = i - (q * 100);
+            r = (int)(i - ((q << 6) + (q << 5) + (q << 2)));
+            i = q;
+            buf[--charPos] = DigitOnes[r];
+            buf[--charPos] = DigitTens[r];
+        }
+
+        // Get 2 digits/iteration using ints
+        int q2;
+        int i2 = (int)i;
+        while (i2 >= 65536) {
+            q2 = i2 / 100;
+            // really: r = i2 - (q * 100);
+            r = i2 - ((q2 << 6) + (q2 << 5) + (q2 << 2));
+            i2 = q2;
+            buf[--charPos] = DigitOnes[r];
+            buf[--charPos] = DigitTens[r];
+        }
+
+        // Fall thru to fast mode for smaller numbers
+        // assert(i2 <= 65536, i2);
+        for (;;) {
+            q2 = (i2 * 52429) >>> (16 + 3); // q2 = i2 / 10 if (i2 <= 81919)
+            r = i2 - ((q2 << 3) + (q2 << 1));  // r = i2-(q2*10) ...
+            buf[--charPos] = digits[r];
+            i2 = q2;
+            if (i2 == 0) {
+                break;
+            }
+        }
+
+        if (sign != 0) {
+            buf[--charPos] = sign;
+        }
+
+        writeBytes(buf, 0, buf.length);
     }
 }

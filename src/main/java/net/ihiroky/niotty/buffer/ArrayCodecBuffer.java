@@ -362,14 +362,14 @@ public class ArrayCodecBuffer extends AbstractCodecBuffer {
     }
 
     @Override
-    public String readString(CharsetDecoder decoder, int bytes) {
-        String cached = StringCache.getCachedValue(this, decoder, bytes);
+    public String readString(CharsetDecoder decoder, int length) {
+        String cached = StringCache.getCachedValue(this, decoder, length);
         if (cached != null) {
             return cached;
         }
 
-        ByteBuffer input = ByteBuffer.wrap(buffer_, start_, bytes);
-        CharBuffer output = CharBuffer.allocate(Buffers.outputCharBufferSize(decoder, bytes));
+        ByteBuffer input = ByteBuffer.wrap(buffer_, start_, length);
+        CharBuffer output = CharBuffer.allocate(Buffers.outputCharBufferSize(decoder, length));
         for (;;) {
             CoderResult cr = decoder.decode(input, output, true);
             if (cr.isUnderflow()) {

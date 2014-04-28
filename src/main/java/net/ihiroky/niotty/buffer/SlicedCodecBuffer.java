@@ -224,8 +224,8 @@ public class SlicedCodecBuffer extends AbstractCodecBuffer {
     }
 
     @Override
-    public String readString(CharsetDecoder decoder, int bytes) {
-        return base_.readString(decoder, bytes);
+    public String readString(CharsetDecoder decoder, int length) {
+        return base_.readString(decoder, length);
     }
 
     @Override
