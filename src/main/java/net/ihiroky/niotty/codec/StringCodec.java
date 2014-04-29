@@ -1,6 +1,6 @@
 package net.ihiroky.niotty.codec;
 
-import net.ihiroky.niotty.LoadStage;
+import net.ihiroky.niotty.Stage;
 import net.ihiroky.niotty.StageContext;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.CodecBuffer;
@@ -15,7 +15,7 @@ import java.nio.charset.CharsetEncoder;
  * Created on 13/01/18, 14:12
  *
  */
-public class StringCodec extends LoadStage {
+public class StringCodec implements Stage {
 
     private final CharsetEncoder encoder_;
     private final CharsetDecoder decoder_;

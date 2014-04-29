@@ -106,12 +106,7 @@ public class PipelineElement {
 
     void callStore(final Object message, final Object parameter) {
         // Reduce to switch the threads if the stages side by side use the different threads.
-        if (stageType_ == STAGE_TYPE_LOAD) {
-            storeContext_.proceed(message, parameter);
-            return;
-        }
-
-        if (eventDispatcher_.isInDispatcherThread()) {
+        if (stageType_ == STAGE_TYPE_LOAD || eventDispatcher_.isInDispatcherThread()) {
             stage_.stored(storeContext_, message, parameter);
         } else {
             eventDispatcher_.offer(new Event() {
@@ -126,13 +121,7 @@ public class PipelineElement {
 
     // expand to context class
     void callLoad(final Object message, final Object parameter) {
-        // Reduce to switch the threads if the stages side by side use the different threads.
-        if (stageType_ == STAGE_TYPE_STORE) {
-            loadContext_.proceed(message, parameter);
-            return;
-        }
-
-        if (eventDispatcher_.isInDispatcherThread()) {
+        if (stageType_ == STAGE_TYPE_STORE || eventDispatcher_.isInDispatcherThread()) {
             stage_.loaded(loadContext_, message, parameter);
         } else {
             eventDispatcher_.offer(new Event() {
