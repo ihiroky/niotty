@@ -8,7 +8,7 @@ import java.util.concurrent.TimeUnit;
  */
 abstract class CompletedTransportFuture extends AbstractTransportFuture {
 
-    protected CompletedTransportFuture(AbstractTransport<?> transport) {
+    protected CompletedTransportFuture(Transport transport) {
         super(transport);
     }
 

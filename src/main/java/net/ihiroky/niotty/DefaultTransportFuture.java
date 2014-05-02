@@ -14,7 +14,7 @@ public class DefaultTransportFuture extends AbstractTransportFuture {
     private static final Object DONE = new Object();
     private static final Object CANCELLED = new Object();
 
-    public DefaultTransportFuture(AbstractTransport<?> transport) {
+    public DefaultTransportFuture(Transport transport) {
         super(transport);
     }
 

@@ -6,7 +6,7 @@ package net.ihiroky.niotty;
 public class CancelledTransportFuture extends CompletedTransportFuture {
 
 
-    public CancelledTransportFuture(AbstractTransport<?> transport) {
+    public CancelledTransportFuture(Transport transport) {
         super(transport);
     }
 

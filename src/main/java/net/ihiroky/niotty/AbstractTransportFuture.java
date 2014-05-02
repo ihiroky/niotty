@@ -10,7 +10,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public abstract class AbstractTransportFuture implements TransportFuture {
 
     private volatile CompletionListener listener_ = NULL_LISTENER;
-    private final AbstractTransport<?> transport_;
+    private final Transport transport_;
 
     private static final CompletionListener NULL_LISTENER = new NullListener();
 
@@ -18,7 +18,7 @@ public abstract class AbstractTransportFuture implements TransportFuture {
      * Create a new instance.
      * @param transport a transport associated with this future
      */
-    protected AbstractTransportFuture(AbstractTransport<?> transport) {
+    protected AbstractTransportFuture(Transport transport) {
         transport_ = transport;
     }
 
