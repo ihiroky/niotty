@@ -1,6 +1,7 @@
 package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.AbstractProcessor;
+import net.ihiroky.niotty.EventDispatcherGroup;
 import net.ihiroky.niotty.NameCountThreadFactory;
 import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.util.Arguments;
@@ -10,7 +11,7 @@ import net.ihiroky.niotty.util.Arguments;
  */
 public class NioDatagramSocketProcessor extends AbstractProcessor<NioDatagramSocketTransport> {
 
-    private SelectDispatcherGroup ioSelectDispatcherGroup_;
+    private EventDispatcherGroup<SelectDispatcher> ioSelectDispatcherGroup_;
     private int numberOfMessageIOThread_;
     private WriteQueueFactory<DatagramQueue> writeQueueFactory_;
 
@@ -26,19 +27,20 @@ public class NioDatagramSocketProcessor extends AbstractProcessor<NioDatagramSoc
         numberOfMessageIOThread_ = DEFAULT_NUMBER_OF_MESSAGE_IO_THREAD;
         writeQueueFactory_ = new SimpleDatagramQueueFactory();
 
-        readBufferSize_ = SelectDispatcherGroup.DEFAULT_READ_BUFFER_SIZE;
-        writeBufferSize_ = SelectDispatcherGroup.DEFAULT_WRITE_BUFFER_SIZE;
-        useDirectBuffer_ = SelectDispatcherGroup.DEFAULT_USE_DIRECT_BUFFER;
+        readBufferSize_ = SelectDispatcherFactory.DEFAULT_READ_BUFFER_SIZE;
+        writeBufferSize_ = SelectDispatcherFactory.DEFAULT_WRITE_BUFFER_SIZE;
+        useDirectBuffer_ = SelectDispatcherFactory.DEFAULT_USE_DIRECT_BUFFER;
         setName(DEFAULT_NAME);
     }
 
     @Override
     protected void onStart() {
-        ioSelectDispatcherGroup_ = new SelectDispatcherGroup(
-                new NameCountThreadFactory(name().concat("-IO")), numberOfMessageIOThread_)
+        SelectDispatcherFactory ioDispatcherFactory = new SelectDispatcherFactory()
                 .setReadBufferSize(readBufferSize_)
                 .setWriteBufferSize(writeBufferSize_)
                 .setUseDirectBuffer(useDirectBuffer_);
+        ioSelectDispatcherGroup_ = new EventDispatcherGroup<SelectDispatcher>(
+                numberOfMessageIOThread_, new NameCountThreadFactory(name().concat("-IO")), ioDispatcherFactory);
     }
 
     @Override

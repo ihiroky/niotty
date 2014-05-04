@@ -12,16 +12,31 @@ import java.util.concurrent.ThreadFactory;
 public final class SynchronizedEventDispatcherGroup
         extends EventDispatcherGroup<SynchronizedEventDispatcher> {
 
+    private static class SynchronizedEventDispatcherFactory
+            implements EventDispatcherFactory<SynchronizedEventDispatcher> {
+
+        private int eventQueueSize_;
+
+        SynchronizedEventDispatcherFactory(int eventQueueSize) {
+            eventQueueSize_ = eventQueueSize;
+        }
+
+        @Override
+        public SynchronizedEventDispatcher newEventDispatcher() {
+            return new SynchronizedEventDispatcher(eventQueueSize_);
+        }
+    };
+
     /**
      * Constructs a instance.
      *
      * An invocation of this constructor behaves in exactly the same way as the invocation
-     * <code>DefaultEventDispatcherGroup(numberOfThread, Executors.defaultThreadFactory())</code>.
+     * {@code SynchronizedEventDispatcherGroup(numberOfThread, Executors.defaultThreadFactory(), 0)}.
      *
      * @param workers the number of the threads to be managed by the instance
      */
     public SynchronizedEventDispatcherGroup(int workers) {
-        this(workers, Executors.defaultThreadFactory());
+        this(workers, Executors.defaultThreadFactory(), 0);
     }
 
     /**
@@ -30,12 +45,7 @@ public final class SynchronizedEventDispatcherGroup
      * @param workers the number of the threads to be managed by the instance
      * @param threadFactory a factory to create thread which runs a event dispatcher
      */
-    public SynchronizedEventDispatcherGroup(int workers, ThreadFactory threadFactory) {
-        super(threadFactory, workers);
-    }
-
-    @Override
-    protected SynchronizedEventDispatcher newEventDispatcher() {
-        return new SynchronizedEventDispatcher();
+    public SynchronizedEventDispatcherGroup(int workers, ThreadFactory threadFactory, int eventQueueSize) {
+        super(workers, threadFactory, new SynchronizedEventDispatcherFactory(eventQueueSize));
     }
 }

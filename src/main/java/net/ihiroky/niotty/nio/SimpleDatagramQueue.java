@@ -1,6 +1,7 @@
 package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.buffer.Packet;
+import net.ihiroky.niotty.util.MPSCArrayQueue;
 
 import java.io.IOException;
 import java.net.SocketAddress;
@@ -43,8 +44,14 @@ public class SimpleDatagramQueue implements DatagramQueue {
         }
     }
 
-    public SimpleDatagramQueue() {
-        queue_ = new ConcurrentLinkedQueue<AttachedMessage<Packet>>();
+    /**
+     * Creates a new instance.
+     * @param queueCapacity the capacity of the queue, negative or 0 if use unbounded queue
+     */
+    public SimpleDatagramQueue(int queueCapacity) {
+        queue_ = (queueCapacity <= 0)
+                ? new ConcurrentLinkedQueue<AttachedMessage<Packet>>()
+                : new MPSCArrayQueue<AttachedMessage<Packet>>(queueCapacity);
     }
 
     @Override

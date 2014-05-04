@@ -123,12 +123,12 @@ public class EventDispatcherGroupTest {
          * @param workers       the number of threads held in the thread pool
          */
         protected EventDispatcherGroupMock(ThreadFactory threadFactory, int workers) {
-            super(threadFactory, workers);
-        }
-
-        @Override
-        protected EventDispatcherMock newEventDispatcher() {
-            return new EventDispatcherMock();
+            super(workers, threadFactory, new EventDispatcherFactory<EventDispatcherMock>() {
+                @Override
+                public EventDispatcherMock newEventDispatcher() {
+                    return new EventDispatcherMock();
+                }
+            });
         }
     }
 }

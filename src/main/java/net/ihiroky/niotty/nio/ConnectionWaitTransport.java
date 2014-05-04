@@ -1,6 +1,7 @@
 package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.DefaultTransportFuture;
+import net.ihiroky.niotty.EventDispatcherGroup;
 import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.Transport;
 import net.ihiroky.niotty.TransportFuture;
@@ -27,7 +28,8 @@ public class ConnectionWaitTransport extends NioSocketTransport<SelectDispatcher
 
     private static Logger logger_ = LoggerFactory.getLogger(ConnectionWaitTransport.class);
 
-    ConnectionWaitTransport(SelectDispatcherGroup group, NioClientSocketTransport transport, DefaultTransportFuture future) {
+    ConnectionWaitTransport(EventDispatcherGroup<SelectDispatcher> group,
+            NioClientSocketTransport transport, DefaultTransportFuture future) {
         super("ConnectionPending", PipelineComposer.empty(), group);
         transport_ = transport;
         future_ = future;

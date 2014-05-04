@@ -1,6 +1,7 @@
 package net.ihiroky.niotty;
 
 import net.ihiroky.niotty.util.Arguments;
+import net.ihiroky.niotty.util.MPSCArrayQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,11 +50,25 @@ public abstract class EventDispatcher implements Runnable, Comparable<EventDispa
 
     /**
      * Creates a new instance.
+     * An invocation of this constructor behaves in exactly the same way as the invocation
+     * {@code EventDispatcher(0)}.
+     *
+     * @param eventQueueCapacity a size of the event queue to buffer events;
+     *                           less than or equal 0 to use unbounded queue
      */
-    protected EventDispatcher() {
-        eventQueue_ = new ConcurrentLinkedQueue<Event>();
+    protected EventDispatcher(int eventQueueCapacity) {
+        eventQueue_ =  (eventQueueCapacity <= 0)
+                ? new ConcurrentLinkedQueue<Event>()
+                : new MPSCArrayQueue<Event>(eventQueueCapacity);
         delayQueue_ = new PriorityQueue<EventFuture>(INITIAL_DELAY_QUEUE_SIZE);
         selectionCountMap_ = new HashMap<EventDispatcherSelection, Integer>();
+    }
+
+    /**
+     * Creates a new instance with unbounded event queue.
+     */
+    protected EventDispatcher() {
+        this(0);
     }
 
     void close() {

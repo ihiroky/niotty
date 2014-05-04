@@ -20,7 +20,7 @@ public class SimplePacketQueueTest {
 
     @Before
     public void setUp() throws Exception {
-        sut_ = new SimplePacketQueue();
+        sut_ = new SimplePacketQueue(0);
     }
 
     @Test

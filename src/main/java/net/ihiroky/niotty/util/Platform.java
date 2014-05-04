@@ -2,8 +2,10 @@ package net.ihiroky.niotty.util;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import sun.misc.Unsafe;
 import sun.nio.ch.DirectBuffer;
 
+import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 
 /**
@@ -14,9 +16,21 @@ public final class Platform {
     private static Logger logger_ = LoggerFactory.getLogger(Platform.class);
 
     private static final JavaVersion JAVA_VERSION;
+    public static final Unsafe UNSAFE;
 
     static {
+
         JAVA_VERSION = resolveJavaVersion();
+
+        try {
+            // Hotspot, J9 and Dalvik have sun.misc.Unsafe
+            Field theUnsafe = Unsafe.class.getDeclaredField("theUnsafe");
+            theUnsafe.setAccessible(true);
+            Unsafe unsafe = (Unsafe) theUnsafe.get(null);
+            UNSAFE = unsafe;
+        } catch (Throwable t) {
+            throw new ExceptionInInitializerError(t);
+        }
     }
 
     public static JavaVersion javaVersion() {

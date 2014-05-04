@@ -2,6 +2,8 @@ package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.DefaultTransportFuture;
 import net.ihiroky.niotty.Event;
+import net.ihiroky.niotty.EventDispatcher;
+import net.ihiroky.niotty.EventDispatcherGroup;
 import net.ihiroky.niotty.FailedTransportFuture;
 import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.SuccessfulTransportFuture;
@@ -40,7 +42,7 @@ public class NioServerSocketTransport extends NioSocketTransport<SelectDispatche
 
     private ServerSocketChannel serverChannel_;
     private final String name_;
-    private final SelectDispatcherGroup ioSelectDispatcherGroup_;
+    private final EventDispatcherGroup<SelectDispatcher> ioSelectDispatcherGroup_;
     private final PipelineComposer childPipelineComposer_;
     private final WriteQueueFactory<PacketQueue> writeQueueFactory_;
     private final Map<TransportOption<Object>, Object> acceptedSocketOptionMap_;
@@ -51,7 +53,8 @@ public class NioServerSocketTransport extends NioSocketTransport<SelectDispatche
                     TransportOptions.SO_RCVBUF, TransportOptions.SO_REUSEADDR)));
 
     public NioServerSocketTransport(String name, PipelineComposer childPipelineComposer,
-            SelectDispatcherGroup acceptSelectDispatcherGroup, SelectDispatcherGroup ioSelectDispatcherGroup,
+            EventDispatcherGroup<SelectDispatcher> acceptSelectDispatcherGroup,
+            EventDispatcherGroup<SelectDispatcher> ioSelectDispatcherGroup,
             WriteQueueFactory<PacketQueue> writeQueueFactory) {
         super(name, PipelineComposer.empty(), acceptSelectDispatcherGroup);
 
@@ -79,7 +82,8 @@ public class NioServerSocketTransport extends NioSocketTransport<SelectDispatche
     }
 
     public NioServerSocketTransport(String name, PipelineComposer childPipelineComposer,
-            SelectDispatcherGroup acceptSelectDispatcherGroup, SelectDispatcherGroup ioSelectDispatcherGroup,
+            EventDispatcherGroup<SelectDispatcher> acceptSelectDispatcherGroup,
+            EventDispatcherGroup<SelectDispatcher> ioSelectDispatcherGroup,
             WriteQueueFactory<PacketQueue> writeQueueFactory, ServerSocketChannel channel) {
         super(name, PipelineComposer.empty(), acceptSelectDispatcherGroup);
 

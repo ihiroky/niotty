@@ -13,8 +13,11 @@ public class SynchronizedEventDispatcher extends EventDispatcher {
 
     /**
      * Create a new instance.
+     *
+     * @param eventQueueCapacity the capacity of the event queue
      */
-    public SynchronizedEventDispatcher() {
+    protected SynchronizedEventDispatcher(int eventQueueCapacity) {
+        super(eventQueueCapacity);
         signaled_ = false;
         lock_ = new Object();
     }

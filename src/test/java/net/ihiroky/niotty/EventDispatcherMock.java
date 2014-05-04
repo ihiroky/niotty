@@ -14,6 +14,7 @@ class EventDispatcherMock extends EventDispatcher {
     private volatile boolean signaled_;
 
     EventDispatcherMock() {
+        super(0);
         lock_ = new ReentrantLock();
         condition_ = lock_.newCondition();
     }

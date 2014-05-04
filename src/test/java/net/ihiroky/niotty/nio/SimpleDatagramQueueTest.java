@@ -22,7 +22,7 @@ public class SimpleDatagramQueueTest {
 
     @Before
     public void setUp() throws Exception {
-        sut_ = new SimpleDatagramQueue();
+        sut_ = new SimpleDatagramQueue(0);
     }
 
     @Test

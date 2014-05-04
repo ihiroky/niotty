@@ -24,7 +24,7 @@ public class SelectDispatcherTest {
     @SuppressWarnings({"unchecked", "rawtypes"})
     public void testStore() throws Exception {
         NioSocketTransport<?> transport = mock(NioSocketTransport.class);
-        SelectDispatcher selectDispatcher = spy(new SelectDispatcher(256, 256, false));
+        SelectDispatcher selectDispatcher = spy(new SelectDispatcher(0, 256, 256, false));
         Stage sut = selectDispatcher.ioStage();
         StageContext context = mock(StageContext.class);
         when(context.transport()).thenReturn(transport);
@@ -41,7 +41,7 @@ public class SelectDispatcherTest {
     @Test
     public void testLoadDoNotCopyBuffer() throws Exception {
         NioSocketTransport<?> transport = mock(NioSocketTransport.class);
-        SelectDispatcher selectDispatcher = new SelectDispatcher(256, 256, false);
+        SelectDispatcher selectDispatcher = new SelectDispatcher(0, 256, 256, false);
         Stage sut = selectDispatcher.ioStage();
         StageContext context = mock(StageContext.class);
         when(context.transport()).thenReturn(transport);
@@ -59,7 +59,7 @@ public class SelectDispatcherTest {
     @Test
     public void testLoadCopyBuffer() throws Exception {
         NioSocketTransport<?> transport = mock(NioSocketTransport.class);
-        SelectDispatcher selectDispatcher = new SelectDispatcher(256, 256, false);
+        SelectDispatcher selectDispatcher = new SelectDispatcher(0, 256, 256, false);
         Stage sut = selectDispatcher.ioStage();
         StageContext context = mock(StageContext.class);
         when(context.transport()).thenReturn(transport);

@@ -1,6 +1,7 @@
 package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.AbstractProcessor;
+import net.ihiroky.niotty.EventDispatcherGroup;
 import net.ihiroky.niotty.NameCountThreadFactory;
 import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.util.Arguments;
@@ -10,8 +11,8 @@ import net.ihiroky.niotty.util.Arguments;
  */
 public class NioClientSocketProcessor extends AbstractProcessor<NioClientSocketTransport> {
 
-    private SelectDispatcherGroup connectSelectorPool_;
-    private SelectDispatcherGroup ioSelectorPool_;
+    private EventDispatcherGroup<SelectDispatcher> connectSelectorPool_;
+    private EventDispatcherGroup<SelectDispatcher> ioSelectorPool_;
     private int numberOfMessageIOThread_;
     private WriteQueueFactory<PacketQueue> writeQueueFactory_;
     private boolean useNonBlockingConnection_;
@@ -27,8 +28,8 @@ public class NioClientSocketProcessor extends AbstractProcessor<NioClientSocketT
     public NioClientSocketProcessor() {
         writeQueueFactory_ = new SimplePacketQueueFactory();
         numberOfMessageIOThread_ = DEFAULT_NUMBER_OF_MESSAGE_IO_THREAD;
-        readBufferSize_ = SelectDispatcherGroup.DEFAULT_READ_BUFFER_SIZE;
-        useDirectBuffer_ = SelectDispatcherGroup.DEFAULT_USE_DIRECT_BUFFER;
+        readBufferSize_ = SelectDispatcherFactory.DEFAULT_READ_BUFFER_SIZE;
+        useDirectBuffer_ = SelectDispatcherFactory.DEFAULT_USE_DIRECT_BUFFER;
 
         setName(DEFAULT_NAME);
     }
@@ -41,14 +42,18 @@ public class NioClientSocketProcessor extends AbstractProcessor<NioClientSocketT
 
     @Override
     protected void onStart() {
-        ioSelectorPool_ = new SelectDispatcherGroup(
-                new NameCountThreadFactory(name().concat("-IO")), numberOfMessageIOThread_)
+        SelectDispatcherFactory ioDispatcherFactory = new SelectDispatcherFactory()
                 .setReadBufferSize(readBufferSize_)
                 .setWriteBufferSize(0)
                 .setUseDirectBuffer(useDirectBuffer_);
 
+        ioSelectorPool_ = new EventDispatcherGroup<SelectDispatcher>(
+                numberOfMessageIOThread_, new NameCountThreadFactory(name().concat("-IO")), ioDispatcherFactory);
+
         if (useNonBlockingConnection_) {
-            connectSelectorPool_ = SelectDispatcherGroup.newNonIoInstance(name().concat("-Connect"));
+            SelectDispatcherFactory connectionDispatcherFactory = SelectDispatcherFactory.newInstanceForNonIO();
+            connectSelectorPool_ = new EventDispatcherGroup<SelectDispatcher>(
+                    1, new NameCountThreadFactory(name().concat("-Connect")), connectionDispatcherFactory);
         }
     }
 

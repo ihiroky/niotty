@@ -1,6 +1,7 @@
 package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.Event;
+import net.ihiroky.niotty.EventDispatcherGroup;
 import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.TransportOptions;
@@ -39,15 +40,17 @@ public class NioServerSocketTransportTest {
 
         private NioServerSocketTransport sut_;
         private ServerSocketChannel channel_;
-        private SelectDispatcherGroup acceptGroup_;
-        private SelectDispatcherGroup ioGroup_;
+        private EventDispatcherGroup<SelectDispatcher> acceptGroup_;
+        private EventDispatcherGroup<SelectDispatcher> ioGroup_;
 
         @Before
         public void setUp() {
             assumeThat(Platform.javaVersion(), is(greaterOrEqual(JavaVersion.JAVA7)));
             channel_ = mock(ServerSocketChannel.class);
-            acceptGroup_ = new SelectDispatcherGroup(Executors.defaultThreadFactory(), 1);
-            ioGroup_ = new SelectDispatcherGroup(Executors.defaultThreadFactory(), 1);
+            acceptGroup_ = new EventDispatcherGroup<SelectDispatcher>(
+                    1, Executors.defaultThreadFactory(), new SelectDispatcherFactory());
+            ioGroup_ = new EventDispatcherGroup(
+                    1, Executors.defaultThreadFactory(), new SelectDispatcherFactory());
             @SuppressWarnings("unchecked")
             WriteQueueFactory<PacketQueue> writeQueueFactory = mock(WriteQueueFactory.class);
             sut_ = new NioServerSocketTransport("TEST", PipelineComposer.empty(),
@@ -192,8 +195,8 @@ public class NioServerSocketTransportTest {
 
         private NioServerSocketTransport sut_;
         private ServerSocket socket_;
-        private SelectDispatcherGroup acceptGroup_;
-        private SelectDispatcherGroup ioGroup_;
+        private EventDispatcherGroup<SelectDispatcher> acceptGroup_;
+        private EventDispatcherGroup<SelectDispatcher> ioGroup_;
 
         @Before
         public void setUp() {
@@ -202,8 +205,10 @@ public class NioServerSocketTransportTest {
             socket_ = mock(ServerSocket.class);
             ServerSocketChannel channel = mock(ServerSocketChannel.class);
             when(channel.socket()).thenReturn(socket_);
-            acceptGroup_ = new SelectDispatcherGroup(Executors.defaultThreadFactory(), 1);
-            ioGroup_ = new SelectDispatcherGroup(Executors.defaultThreadFactory(), 1);
+            acceptGroup_ = new EventDispatcherGroup<SelectDispatcher>(
+                    1, Executors.defaultThreadFactory(), new SelectDispatcherFactory());
+            ioGroup_ = new EventDispatcherGroup<SelectDispatcher>(
+                    1, Executors.defaultThreadFactory(), new SelectDispatcherFactory());
             @SuppressWarnings("unchecked")
             WriteQueueFactory<PacketQueue> writeQueueFactory = mock(WriteQueueFactory.class);
             sut_ = new NioServerSocketTransport("TEST", PipelineComposer.empty(), acceptGroup_, ioGroup_,

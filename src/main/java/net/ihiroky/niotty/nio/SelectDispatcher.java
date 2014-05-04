@@ -35,16 +35,30 @@ public class SelectDispatcher extends EventDispatcher {
     private static final ByteBuffer EMPTY_BUFFER = ByteBuffer.allocate(0).asReadOnlyBuffer();
 
     /**
-     * Creates a new instance.
+     * Creates a new instance with unbounded event queue.
+     *
+     * An invocation of this constructor behaves in exactly the same way as the invocation
+     * {@code SelectDispatcher(0, 0, 0, false)}.
      */
     protected SelectDispatcher() {
+        super(0);
         wakenUp_ = new AtomicBoolean();
         readBuffer_ = EMPTY_BUFFER;
         writeBuffer_ = EMPTY_BUFFER;
         ioStage_ = new IOStage(EMPTY_BUFFER);
     }
 
-    protected SelectDispatcher(int readBufferSize, int writeBufferSize, boolean direct) {
+    /**
+     * Creates a new instance.
+     *
+     * @param eventQueueCapacity the size of the event queue to buffer events;
+     *                           less than or equal 0 to use unbounded queue
+     * @param readBufferSize the size of read buffer
+     * @param writeBufferSize the size of write buffer
+     * @param direct true if the direct buffer is used
+     */
+    protected SelectDispatcher(int eventQueueCapacity, int readBufferSize, int writeBufferSize, boolean direct) {
+        super(eventQueueCapacity);
         wakenUp_ = new AtomicBoolean();
         readBuffer_ = direct ? ByteBuffer.allocateDirect(readBufferSize) : ByteBuffer.allocate(readBufferSize);
         writeBuffer_ = direct ? ByteBuffer.allocateDirect(writeBufferSize) : ByteBuffer.allocate(writeBufferSize);

@@ -3,6 +3,7 @@ package net.ihiroky.niotty.nio;
 import net.ihiroky.niotty.CancelledTransportFuture;
 import net.ihiroky.niotty.DefaultTransportFuture;
 import net.ihiroky.niotty.Event;
+import net.ihiroky.niotty.EventDispatcherGroup;
 import net.ihiroky.niotty.FailedTransportFuture;
 import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.SuccessfulTransportFuture;
@@ -39,7 +40,7 @@ import java.util.Set;
 public class NioClientSocketTransport extends NioSocketTransport<SelectDispatcher> {
 
     private final SocketChannel channel_;
-    private final SelectDispatcherGroup connectSelectGroup_;
+    private final EventDispatcherGroup<SelectDispatcher> connectSelectGroup_;
     private final PacketQueue writeQueue_;
     private FlushStatus flushStatus_;
     private boolean deactivateOnEndOfStream_;
@@ -55,12 +56,13 @@ public class NioClientSocketTransport extends NioSocketTransport<SelectDispatche
                     TransportOptions.SO_KEEPALIVE, TransportOptions.SO_LINGER, TransportOptions.TCP_NODELAY)));
 
     public NioClientSocketTransport(String name, PipelineComposer composer,
-            SelectDispatcherGroup ioSelectPool, WriteQueueFactory<PacketQueue> writeQueueFactory) {
+            EventDispatcherGroup<SelectDispatcher> ioSelectPool, WriteQueueFactory<PacketQueue> writeQueueFactory) {
         this(name, composer, null, ioSelectPool, writeQueueFactory);
     }
 
     public NioClientSocketTransport(String name, PipelineComposer composer,
-            SelectDispatcherGroup connectSelectGroup, SelectDispatcherGroup ioSelectPool,
+            EventDispatcherGroup<SelectDispatcher> connectSelectGroup,
+            EventDispatcherGroup<SelectDispatcher> ioSelectPool,
             WriteQueueFactory<PacketQueue> writeQueueFactory) {
         super(name, composer, ioSelectPool);
 
@@ -81,7 +83,7 @@ public class NioClientSocketTransport extends NioSocketTransport<SelectDispatche
     }
 
     public NioClientSocketTransport(String name, PipelineComposer composer,
-            SelectDispatcherGroup ioSelectGroup, WriteQueueFactory<PacketQueue> writeQueueFactory,
+           EventDispatcherGroup<SelectDispatcher> ioSelectGroup, WriteQueueFactory<PacketQueue> writeQueueFactory,
             SocketChannel child) {
         super(name, composer, ioSelectGroup);
 

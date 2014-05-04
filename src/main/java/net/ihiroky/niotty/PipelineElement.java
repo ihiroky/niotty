@@ -356,16 +356,16 @@ public class PipelineElement {
         };
 
         protected NullPipelineElementExecutorPool() {
-            super(new NameCountThreadFactory("UNUSED0"), 1);
+            super(1, new NameCountThreadFactory("UNUSED0"), new EventDispatcherFactory<EventDispatcher>() {
+                @Override
+                public EventDispatcher newEventDispatcher() {
+                    return NULL_EVENT_DISPATCHER;
+                }
+            });
         }
 
         @Override
         public EventDispatcher assign(EventDispatcherSelection context) {
-            return NULL_EVENT_DISPATCHER;
-        }
-
-        @Override
-        protected EventDispatcher newEventDispatcher() {
             return NULL_EVENT_DISPATCHER;
         }
 

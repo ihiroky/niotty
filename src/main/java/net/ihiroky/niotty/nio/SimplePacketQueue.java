@@ -1,6 +1,7 @@
 package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.buffer.Packet;
+import net.ihiroky.niotty.util.MPSCArrayQueue;
 
 import java.io.IOException;
 import java.nio.channels.GatheringByteChannel;
@@ -41,8 +42,14 @@ public class SimplePacketQueue implements PacketQueue {
         }
     }
 
-    public SimplePacketQueue() {
-        queue_ = new ConcurrentLinkedQueue<Packet>();
+    /**
+     * Creates a new instance.
+     * @param queueCapacity the capacity of the queue, negative or 0 if use unbounded queue
+     */
+    public SimplePacketQueue(int queueCapacity) {
+        queue_ = (queueCapacity <= 0)
+                ? new ConcurrentLinkedQueue<Packet>()
+                : new MPSCArrayQueue<Packet>(queueCapacity);
     }
 
     @Override

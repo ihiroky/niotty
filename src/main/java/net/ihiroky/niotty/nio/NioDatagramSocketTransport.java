@@ -2,6 +2,7 @@ package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.DefaultTransportFuture;
 import net.ihiroky.niotty.Event;
+import net.ihiroky.niotty.EventDispatcherGroup;
 import net.ihiroky.niotty.FailedTransportFuture;
 import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.SuccessfulTransportFuture;
@@ -64,7 +65,8 @@ public class NioDatagramSocketTransport extends NioSocketTransport<SelectDispatc
      * @param family the internet protocol family
      */
     public NioDatagramSocketTransport(String name, PipelineComposer composer,
-            SelectDispatcherGroup ioSelectDispatcherGroup, WriteQueueFactory<DatagramQueue> writeQueueFactory,
+            EventDispatcherGroup<SelectDispatcher> ioSelectDispatcherGroup,
+            WriteQueueFactory<DatagramQueue> writeQueueFactory,
             InternetProtocolFamily family) {
         super(name, composer, ioSelectDispatcherGroup);
 
@@ -95,7 +97,8 @@ public class NioDatagramSocketTransport extends NioSocketTransport<SelectDispatc
 
     // Constructor for the test.
     NioDatagramSocketTransport(String name, PipelineComposer composer,
-            SelectDispatcherGroup ioSelectDispatcherGroup, WriteQueueFactory<DatagramQueue> writeQueueFactory,
+            EventDispatcherGroup<SelectDispatcher> ioSelectDispatcherGroup,
+            WriteQueueFactory<DatagramQueue> writeQueueFactory,
             DatagramChannel channel) {
         super(name, composer, ioSelectDispatcherGroup);
 

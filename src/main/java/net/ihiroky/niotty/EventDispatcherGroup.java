@@ -15,26 +15,29 @@ import java.util.concurrent.ThreadFactory;
 /**
  * Provides a thread pool to execute {@link EventDispatcher} and manages the event dispatcher lifecycle.
  *
- * @param <L> the actual type of the EventDispatcher
- * @author Hiroki Itoh
+ * @param <E> the actual type of the EventDispatcher
  */
-public abstract class EventDispatcherGroup<L extends EventDispatcher> implements Closable {
+public class EventDispatcherGroup<E extends EventDispatcher> implements Closable {
 
-    private final Collection<L> eventDispatchers_;
+    private final Collection<E> eventDispatchers_;
     private final ThreadFactory threadFactory_;
+    private final EventDispatcherFactory<E> eventDispatcherFactory_;
     private final int workers_;
     private Logger logger_ = LoggerFactory.getLogger(EventDispatcherGroup.class);
 
     /**
      * Constructs a new instance.
      *
-     * @param threadFactory a factory to create thread which runs a event dispatcher
      * @param workers the number of threads held in the thread pool
+     * @param threadFactory a factory to create thread which runs a event dispatcher
+     * @param eventDispatcherFactory a factory to create the instance of {@link net.ihiroky.niotty.EventDispatcher}
      */
-    protected EventDispatcherGroup(ThreadFactory threadFactory, int workers) {
-        eventDispatchers_ = new HashSet<L>();
+    public EventDispatcherGroup(int workers, ThreadFactory threadFactory,
+            EventDispatcherFactory<E> eventDispatcherFactory) {
+        eventDispatchers_ = new HashSet<E>();
         threadFactory_ = Arguments.requireNonNull(threadFactory, "threadFactory");
         workers_ = Arguments.requirePositive(workers, "workers");
+        eventDispatcherFactory_ = Arguments.requireNonNull(eventDispatcherFactory, "eventDispatcherFactory");
     }
 
     /**
@@ -42,10 +45,10 @@ public abstract class EventDispatcherGroup<L extends EventDispatcher> implements
      * This method may as well bing called ahead.
      */
     public final void open() {
-        List<L> newEventDispatcherList;
+        List<E> newEventDispatcherList;
         synchronized (eventDispatchers_) {
-            for (Iterator<L> iterator = eventDispatchers_.iterator(); iterator.hasNext();) {
-                L eventDispatcher = iterator.next();
+            for (Iterator<E> iterator = eventDispatchers_.iterator(); iterator.hasNext();) {
+                E eventDispatcher = iterator.next();
                 if (!eventDispatcher.isAlive()) {
                     logger_.debug("[open0] Dead event dispatcher {} is found. Remove it and assign a new one.", eventDispatcher);
                     iterator.remove();
@@ -56,9 +59,9 @@ public abstract class EventDispatcherGroup<L extends EventDispatcher> implements
             if (n == 0) {
                 return;
             }
-            newEventDispatcherList = new ArrayList<L>(n);
+            newEventDispatcherList = new ArrayList<E>(n);
             for (int i = 0; i < n; i++) {
-                L newEventDispatcher = newEventDispatcher();
+                E newEventDispatcher = eventDispatcherFactory_.newEventDispatcher();
                 Thread thread = threadFactory_.newThread(newEventDispatcher);
                 thread.start();
                 eventDispatchers_.add(newEventDispatcher);
@@ -71,7 +74,7 @@ public abstract class EventDispatcherGroup<L extends EventDispatcher> implements
         // Ensure that dispatcher.onOpen() is called now.
         // And doesn't wait in the synchronized block.
         try {
-            for (L newEventDispatcher : newEventDispatcherList) {
+            for (E newEventDispatcher : newEventDispatcherList) {
                 newEventDispatcher.waitUntilStarted();
             }
         } catch (InterruptedException ie) {
@@ -85,7 +88,7 @@ public abstract class EventDispatcherGroup<L extends EventDispatcher> implements
      */
     public void close() {
         synchronized (eventDispatchers_) {
-            for (L eventDispatcher : eventDispatchers_) {
+            for (E eventDispatcher : eventDispatchers_) {
                 eventDispatcher.close();
             }
             eventDispatchers_.clear();
@@ -108,7 +111,7 @@ public abstract class EventDispatcherGroup<L extends EventDispatcher> implements
      */
     public void offerEvent(Event event) {
         synchronized (eventDispatchers_) {
-            for (L dispatcher : eventDispatchers_) {
+            for (E dispatcher : eventDispatchers_) {
                 dispatcher.offer(event);
             }
         }
@@ -120,14 +123,14 @@ public abstract class EventDispatcherGroup<L extends EventDispatcher> implements
      * @param selection the selection added to a selected event dispatcher
      * @return the event dispatcher
      */
-    public L assign(EventDispatcherSelection selection) {
+    public E assign(EventDispatcherSelection selection) {
         Arguments.requireNonNull(selection, "selection");
 
         int minCount = Integer.MAX_VALUE;
-        L minCountDispatcher = null;
+        E minCountDispatcher = null;
         open();
         synchronized (eventDispatchers_) {
-            for (L dispatcher : eventDispatchers_) {
+            for (E dispatcher : eventDispatchers_) {
                 if (dispatcher.countUpDuplication(selection)) {
                     logger_.debug("[assign] [{}] is already assigned to [{}]", selection, dispatcher);
                     return dispatcher;
@@ -146,11 +149,4 @@ public abstract class EventDispatcherGroup<L extends EventDispatcher> implements
         logger_.debug("[assign] {} is assigned to {}", selection, minCountDispatcher);
         return minCountDispatcher;
     }
-
-    /**
-     * Creates a new event dispatcher.
-     *
-     * @return the event dispatcher
-     */
-    protected abstract L newEventDispatcher();
 }

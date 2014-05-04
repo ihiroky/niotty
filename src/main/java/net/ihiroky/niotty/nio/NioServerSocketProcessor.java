@@ -1,6 +1,7 @@
 package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.AbstractProcessor;
+import net.ihiroky.niotty.EventDispatcherGroup;
 import net.ihiroky.niotty.NameCountThreadFactory;
 import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.util.Arguments;
@@ -10,8 +11,8 @@ import net.ihiroky.niotty.util.Arguments;
  */
 public class NioServerSocketProcessor extends AbstractProcessor<NioServerSocketTransport> {
 
-    private SelectDispatcherGroup acceptSelectDispatcherGroup_;
-    private SelectDispatcherGroup ioSelectDispatcherGroup_;
+    private EventDispatcherGroup<SelectDispatcher> acceptSelectDispatcherGroup_;
+    private EventDispatcherGroup<SelectDispatcher> ioSelectDispatcherGroup_;
     private WriteQueueFactory<PacketQueue> writeQueueFactory_;
 
     private int numberOfIoThread_;
@@ -28,20 +29,24 @@ public class NioServerSocketProcessor extends AbstractProcessor<NioServerSocketT
         writeQueueFactory_ = new SimplePacketQueueFactory();
 
         numberOfIoThread_ = DEFAULT_NUMBER_OF_IO_THREAD;
-        readBufferSize_ = SelectDispatcherGroup.DEFAULT_READ_BUFFER_SIZE;
-        useDirectBuffer_ = SelectDispatcherGroup.DEFAULT_USE_DIRECT_BUFFER;
+        readBufferSize_ = SelectDispatcherFactory.DEFAULT_READ_BUFFER_SIZE;
+        useDirectBuffer_ = SelectDispatcherFactory.DEFAULT_USE_DIRECT_BUFFER;
 
         setName(DEFAULT_NAME);
     }
 
     @Override
     protected void onStart() {
-        ioSelectDispatcherGroup_ = new SelectDispatcherGroup(
-                new NameCountThreadFactory(name().concat("-IO")), numberOfIoThread_)
+        SelectDispatcherFactory ioDispatcherFactory = new SelectDispatcherFactory()
                 .setReadBufferSize(readBufferSize_)
                 .setWriteBufferSize(0)
                 .setUseDirectBuffer(useDirectBuffer_);
-        acceptSelectDispatcherGroup_ = SelectDispatcherGroup.newNonIoInstance(name().concat("-Accept"));
+        ioSelectDispatcherGroup_ = new EventDispatcherGroup<SelectDispatcher>(
+                numberOfIoThread_, new NameCountThreadFactory(name().concat("-IO")), ioDispatcherFactory);
+
+        SelectDispatcherFactory acceptDispatcherFactory = SelectDispatcherFactory.newInstanceForNonIO();
+        acceptSelectDispatcherGroup_ = new EventDispatcherGroup<SelectDispatcher>(
+                1, new NameCountThreadFactory(name().concat("-Accept")), acceptDispatcherFactory);
     }
 
     @Override
@@ -94,7 +99,7 @@ public class NioServerSocketProcessor extends AbstractProcessor<NioServerSocketT
         return this;
     }
 
-    SelectDispatcherGroup ioSelectLoopGroup_() {
+    EventDispatcherGroup<SelectDispatcher> ioDispatcherGroup() {
         return ioSelectDispatcherGroup_;
     }
 

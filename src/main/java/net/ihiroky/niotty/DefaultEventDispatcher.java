@@ -19,9 +19,13 @@ public class DefaultEventDispatcher extends EventDispatcher {
     private static final int TRUE = 1;
 
     /**
-     * Create a new instance.
+     * Creates a new instance.
+     *
+     * @param eventQueueCapacity the capacity of the event queue to buffer events;
+     *                           less than or equal 0 to use unbounded queue
      */
-    public DefaultEventDispatcher() {
+    public DefaultEventDispatcher(int eventQueueCapacity) {
+        super(eventQueueCapacity);
         signaled_ = FALSE;
     }
 

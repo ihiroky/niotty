@@ -1,6 +1,7 @@
 package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.Event;
+import net.ihiroky.niotty.EventDispatcherGroup;
 import net.ihiroky.niotty.EventDispatcherSelection;
 import net.ihiroky.niotty.Pipeline;
 import net.ihiroky.niotty.PipelineComposer;
@@ -48,7 +49,7 @@ public class NioClientSocketTransportTest {
 
     public static class OnSelectedTest {
 
-        private SelectDispatcherGroup selectDispatcherGroup_;
+        private EventDispatcherGroup<SelectDispatcher> selectDispatcherGroup_;
         private WriteQueueFactory<PacketQueue> writeQueueFactory_;
         private PacketQueue writeQueue_;
 
@@ -62,7 +63,8 @@ public class NioClientSocketTransportTest {
 
         @Test
         public void testReadBuffer() throws Exception {
-            selectDispatcherGroup_ = new SelectDispatcherGroup(Executors.defaultThreadFactory(), 1);
+            selectDispatcherGroup_ = new EventDispatcherGroup<SelectDispatcher>(
+                    1, Executors.defaultThreadFactory(), new SelectDispatcherFactory());
             NioClientSocketTransport sut = spy(new NioClientSocketTransport(
                     "TEST", PipelineComposer.empty(), selectDispatcherGroup_, writeQueueFactory_));
 
@@ -91,7 +93,8 @@ public class NioClientSocketTransportTest {
 
         @Test
         public void testWriteBuffer() throws Exception {
-            selectDispatcherGroup_ = new SelectDispatcherGroup(Executors.defaultThreadFactory(), 1);
+            selectDispatcherGroup_ = new EventDispatcherGroup<SelectDispatcher>(
+                    1, Executors.defaultThreadFactory(), new SelectDispatcherFactory());
             when(writeQueue_.flush(Mockito.isA(GatheringByteChannel.class))).thenReturn(FlushStatus.FLUSHED);
             NioClientSocketTransport sut = new NioClientSocketTransport(
                     "TEST", PipelineComposer.empty(), selectDispatcherGroup_, writeQueueFactory_);
@@ -111,7 +114,8 @@ public class NioClientSocketTransportTest {
 
         @Test
         public void testReadCatchesRuntimeException() throws Exception {
-            selectDispatcherGroup_ = new SelectDispatcherGroup(Executors.defaultThreadFactory(), 1);
+            selectDispatcherGroup_ = new EventDispatcherGroup<SelectDispatcher>(
+                    1, Executors.defaultThreadFactory(), new SelectDispatcherFactory());
             NioClientSocketTransport sut = spy(new NioClientSocketTransport(
                     "TEST", PipelineComposer.empty(), selectDispatcherGroup_, writeQueueFactory_));
 
@@ -169,7 +173,8 @@ public class NioClientSocketTransportTest {
             Stage stage = mock(Stage.class);
             SelectDispatcher selector = mock(SelectDispatcher.class);
             when(selector.ioStage()).thenReturn(stage);
-            SelectDispatcherGroup ioPool = mock(SelectDispatcherGroup.class);
+            @SuppressWarnings("unchecked")
+            EventDispatcherGroup<SelectDispatcher> ioPool = mock(EventDispatcherGroup.class);
             when(ioPool.assign(Mockito.<EventDispatcherSelection>any())).thenReturn(selector);
             Socket socket = mock(Socket.class);
             channel_ = mock(SocketChannel.class);
@@ -260,7 +265,8 @@ public class NioClientSocketTransportTest {
             Stage ioStage = mock(Stage.class);
             SelectDispatcher selector = mock(SelectDispatcher.class);
             when(selector.ioStage()).thenReturn(ioStage);
-            SelectDispatcherGroup ioPool = mock(SelectDispatcherGroup.class);
+            @SuppressWarnings("unchecked")
+            EventDispatcherGroup<SelectDispatcher> ioPool = mock(EventDispatcherGroup.class);
             when(ioPool.assign(Mockito.<EventDispatcherSelection>any())).thenReturn(selector);
             Socket socket = mock(Socket.class);
             channel_ = mock(SocketChannel.class);
@@ -480,7 +486,8 @@ public class NioClientSocketTransportTest {
             Stage ioStage = mock(Stage.class);
             SelectDispatcher selector = mock(SelectDispatcher.class);
             when(selector.ioStage()).thenReturn(ioStage);
-            SelectDispatcherGroup ioPool = mock(SelectDispatcherGroup.class);
+            @SuppressWarnings("unchecked")
+            EventDispatcherGroup<SelectDispatcher> ioPool = mock(EventDispatcherGroup.class);
             when(ioPool.assign(Mockito.<EventDispatcherSelection>any())).thenReturn(selector);
             socket_ = mock(Socket.class);
             SocketChannel channel = mock(SocketChannel.class);
