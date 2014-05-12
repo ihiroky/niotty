@@ -5,7 +5,7 @@ import net.ihiroky.niotty.buffer.Packet;
 /**
  * Provides the interface to write {@link net.ihiroky.niotty.buffer.Packet} into some device.
  */
-interface PacketWriter {
+public interface PacketWriter {
 
     /**
      * Writes the packet into some device.

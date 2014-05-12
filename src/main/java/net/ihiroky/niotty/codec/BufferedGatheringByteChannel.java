@@ -8,7 +8,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.GatheringByteChannel;
 import java.nio.channels.IllegalBlockingModeException;
 import java.nio.channels.SelectableChannel;
-import java.nio.channels.WritableByteChannel;
 
 /**
  * The class implements a buffered gathering byte channel.
@@ -18,7 +17,8 @@ import java.nio.channels.WritableByteChannel;
  * to the underlying system for each byte written. The underlying
  * channel must not be non-blocking channel.
  *
- * The methods in this class is not synchronized.
+ * This implementation is not synchronized. So the synchronization
+ * is required if multiple threads access this instance.
  */
 public class BufferedGatheringByteChannel implements GatheringByteChannel {
 
@@ -31,12 +31,14 @@ public class BufferedGatheringByteChannel implements GatheringByteChannel {
     /**
      * Constructs a new instance.
      *
-     * The underlying channel must be set later by calling {@link #setUnderlyingChannel(java.nio.channels.GatheringByteChannel)}.
+     * The underlying channel must be set by
+     * {@link #setUnderlyingChannel(java.nio.channels.GatheringByteChannel)}
+     * after the instantiation.
      *
      * @param size
      * @param directBuffer
      */
-    protected BufferedGatheringByteChannel(int size, boolean directBuffer) {
+    public BufferedGatheringByteChannel(int size, boolean directBuffer) {
         this(size, directBuffer, DefaultChannel.INSTANCE);
     }
 
@@ -71,11 +73,9 @@ public class BufferedGatheringByteChannel implements GatheringByteChannel {
      * Closes the underlying channel without flushing the buffer.
      * @throws java.io.IOException if an I/O error occurs
      */
-    protected void closeUnderlyingChannel() throws IOException {
-        WritableByteChannel channel = channel_;
-        if (channel != null) {
-            channel.close();
-        }
+    public void closeUnderlyingChannel() throws IOException {
+        channel_.close();
+        channel_ = DefaultChannel.INSTANCE;
     }
 
     /**
@@ -89,7 +89,7 @@ public class BufferedGatheringByteChannel implements GatheringByteChannel {
      * @throws java.lang.NullPointerException if the underlyingChannel is null
      * @throws java.nio.channels.IllegalBlockingModeException if the underlying channel is non-blocking channel
      */
-    protected void setUnderlyingChannel(GatheringByteChannel underlyingChannel) throws IOException {
+    public void setUnderlyingChannel(GatheringByteChannel underlyingChannel) throws IOException {
         Arguments.requireNonNull(underlyingChannel, "channel");
         checkNonBlocking(underlyingChannel);
 

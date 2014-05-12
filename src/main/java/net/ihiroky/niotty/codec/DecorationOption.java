@@ -7,6 +7,9 @@ import java.util.Calendar;
 
 /**
  * Provides options to specify decorations for {@link net.ihiroky.niotty.buffer.Packet}.
+ *
+ * This implementation is not synchronized. So the synchronization
+ * is required if multiple threads access this instance.
  */
 public class DecorationOption {
 
@@ -52,11 +55,22 @@ public class DecorationOption {
         calendar_ = Calendar.getInstance();
     }
 
-    int size() {
+    /**
+     * Returns the size to be added by this decoration.
+     * @return the size
+     */
+    public int size() {
         return size_;
     }
 
-    void prepend(GatheringByteChannel channel, int size, long now) throws IOException {
+    /**
+     * Prepends the timestamp and size if required.
+     * @param channel the channel to be written into
+     * @param size the size
+     * @param now the time in milliseconds
+     * @throws IOException
+     */
+    public void prepend(GatheringByteChannel channel, int size, long now) throws IOException {
         ByteBuffer timestampBuffer = timestampBuffer_;
         if (timestampBuffer != null) {
             Calendar c = calendar_;
@@ -85,7 +99,15 @@ public class DecorationOption {
         }
     }
 
-    void append(GatheringByteChannel channel, int size, long now) throws IOException {
+    /**
+     * Appends the separator.
+     *
+     * @param channel the channel to be written into
+     * @param size the size
+     * @param now the time in milliseconds
+     * @throws IOException
+     */
+    public void append(GatheringByteChannel channel, int size, long now) throws IOException {
         ByteBuffer buffer = separatorBuffer_;
         channel.write(buffer);
         buffer.clear();

@@ -126,7 +126,6 @@ public class FilePacketWriter implements PacketWriter, EventDispatcherSelection 
         });
     }
 
-    // TODO timed rollover before writing.
     void writeDirect(final Packet packet) throws IOException {
         DecorationOption decorationOption = decorationOption_;
         int addSize = packet.remaining() + decorationOption.size();

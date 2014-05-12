@@ -93,11 +93,33 @@ public class RolloverOption {
         return rolloverTimeList_;
     }
 
+    /**
+     * Returns the next rollover time.
+     * @return the next rollover time
+     */
     public long nexRolloverTime() {
         return nextRolloverTime_;
     }
 
-    boolean requiresRollover(int packetSize, long now) {
+    /**
+     * Returns the total number of the packet size passed into {@link #requiresRollover(int, long)}.
+     *
+     * This is reset if the size limitation is exceeded.
+     *
+     * @return the total number of the packet size
+     */
+    public long size() {
+        return size_;
+    }
+
+    /**
+     * Checks if the rollover is required.
+     *
+     * @param packetSize a packet size, total size of the each invocation is recorded in this instance.
+     * @param now the current time in milliseconds
+     * @return
+     */
+    public boolean requiresRollover(int packetSize, long now) {
         boolean requiresRollover = false;
         size_ += packetSize;
         if (size_ > rolloverSize_) {
@@ -109,10 +131,6 @@ public class RolloverOption {
             requiresRollover = true;
         }
         return requiresRollover;
-    }
-
-    long size() {
-        return size_;
     }
 
     /**
