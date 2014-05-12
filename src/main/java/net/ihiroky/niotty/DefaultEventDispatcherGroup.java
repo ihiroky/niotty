@@ -30,7 +30,7 @@ public final class DefaultEventDispatcherGroup
      * Constructs a instance.
      *
      * An invocation of this constructor behaves in exactly the same way as the invocation
-     * <code>DefaultEventDispatcherGroup(numberOfThread, Executors.defaultThreadFactory(), 0)</code>.
+     * <code>DefaultEventDispatcherGroup(workers, Executors.defaultThreadFactory(), 0)</code>.
      *
      * @param workers the number of the threads to be managed by the instance
      */
@@ -41,9 +41,22 @@ public final class DefaultEventDispatcherGroup
     /**
      * Constructs a instance.
      *
+     * An invocation of this constructor behaves in exactly the same way as the invocation
+     * <code>DefaultEventDispatcherGroup(workers, threadFactory, 0)</code>.
      * @param workers the number of the threads to be managed by the instance
      * @param threadFactory a factory to create thread which runs a event dispatcher
-     * @param eventQueueCapacity the capacity of the event queue used by {@code DefaultEventDispatcher}
+     */
+    public DefaultEventDispatcherGroup(int workers, ThreadFactory threadFactory) {
+        this(workers, threadFactory, 0);
+    }
+
+    /**
+     * Constructs a instance.
+     *
+     * @param workers the number of the threads to be managed by the instance
+     * @param threadFactory a factory to create thread which runs a event dispatcher
+     * @param eventQueueCapacity the capacity of the event queue used by {@code DefaultEventDispatcher},
+     *                           zero or negative if the queue has no limit
      */
     public DefaultEventDispatcherGroup(int workers, ThreadFactory threadFactory, int eventQueueCapacity) {
         super(workers, threadFactory, new DefaultEventDispatcherFactory(eventQueueCapacity));
