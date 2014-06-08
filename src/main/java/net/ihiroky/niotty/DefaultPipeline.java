@@ -298,30 +298,22 @@ public class DefaultPipeline<L extends EventDispatcher> implements Pipeline {
 
     @Override
     public void activate() {
-        for (PipelineElement e = tail_; e.isValid(); e = e.prev()) {
-            e.callActivate();
-        }
+        tail_.callActivate();
     }
 
     @Override
     public void deactivate() {
-        for (PipelineElement e = tail_; e.isValid(); e = e.prev()) {
-            e.callDeactivate();
-        }
+        tail_.callDeactivate();
     }
 
     @Override
     public void catchException(Exception exception) {
-        for (PipelineElement e = tail_; e.isValid(); e = e.prev()) {
-            e.callCatchException(exception);
-        }
+        tail_.callCatchException(exception);
     }
 
     @Override
     public void eventTriggered(Object event) {
-        for (PipelineElement e = tail_; e.isValid(); e = e.prev()) {
-            e.callEventTriggered(event);
-        }
+        tail_.callEventTriggered(event);
     }
 
     public AbstractTransport<L> transport() {

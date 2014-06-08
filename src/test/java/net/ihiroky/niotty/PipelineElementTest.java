@@ -146,6 +146,7 @@ public class PipelineElementTest {
         sut_.callActivate();
 
         verify(stage_).activated(sut_.stateContext_);
+        verify(prev_).callActivate();
         verify(eventDispatcher_, never()).offer(Mockito.<Event>any());
     }
 
@@ -161,6 +162,7 @@ public class PipelineElementTest {
         verify(eventDispatcher_).offer(eventCaptor.capture());
         eventCaptor.getValue().execute();
         verify(stage_).activated(sut_.stateContext_);
+        verify(prev_).callActivate();
     }
 
     @Test
@@ -170,6 +172,7 @@ public class PipelineElementTest {
         sut_.callDeactivate();
 
         verify(stage_).deactivated(sut_.stateContext_);
+        verify(prev_).callDeactivate();
         verify(eventDispatcher_, never()).offer(Mockito.<Event>any());
     }
 
@@ -185,6 +188,7 @@ public class PipelineElementTest {
         verify(eventDispatcher_).offer(eventCaptor.capture());
         eventCaptor.getValue().execute();
         verify(stage_).deactivated(sut_.stateContext_);
+        verify(prev_).callDeactivate();
     }
 
     @Test
@@ -195,6 +199,7 @@ public class PipelineElementTest {
         sut_.callCatchException(e);
 
         verify(stage_).exceptionCaught(sut_.stateContext_, e);
+        verify(prev_).callCatchException(e);
         verify(eventDispatcher_, never()).offer(Mockito.<Event>any());
     }
 
@@ -211,5 +216,6 @@ public class PipelineElementTest {
         verify(eventDispatcher_).offer(eventCaptor.capture());
         eventCaptor.getValue().execute();
         verify(stage_).exceptionCaught(sut_.stateContext_, e);
+        verify(prev_).callCatchException(e);
     }
 }

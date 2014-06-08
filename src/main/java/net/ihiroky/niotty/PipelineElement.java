@@ -137,11 +137,19 @@ public class PipelineElement {
     void callActivate() {
         if (eventDispatcher_.isInDispatcherThread()) {
             stage_.activated(stateContext_);
+            PipelineElement prev = prev_;
+            if (prev != TERMINAL) {
+                prev.callActivate();
+            }
         } else {
             eventDispatcher_.offer(new Event() {
             @Override
             public long execute() throws Exception {
                 stage_.activated(stateContext_);
+                PipelineElement prev = prev_;
+                if (prev != TERMINAL) {
+                    prev.callActivate();
+                }
                 return DONE;
             }
             });
@@ -151,11 +159,19 @@ public class PipelineElement {
     void callDeactivate() {
         if (eventDispatcher_.isInDispatcherThread()) {
             stage_.deactivated(stateContext_);
+            PipelineElement prev = prev_;
+            if (prev != TERMINAL) {
+                prev.callDeactivate();
+            }
         } else {
             eventDispatcher_.offer(new Event() {
             @Override
             public long execute() throws Exception {
                 stage_.deactivated(stateContext_);
+                PipelineElement prev = prev_;
+                if (prev != TERMINAL) {
+                    prev.callDeactivate();
+                }
                 return DONE;
             }
             });
@@ -165,11 +181,19 @@ public class PipelineElement {
     void callCatchException(final Exception exception) {
         if (eventDispatcher_.isInDispatcherThread()) {
             stage_.exceptionCaught(stateContext_, exception);
+            PipelineElement prev = prev_;
+            if (prev != TERMINAL) {
+                prev.callCatchException(exception);
+            }
         } else {
             eventDispatcher_.offer(new Event() {
             @Override
             public long execute() throws Exception {
                 stage_.exceptionCaught(stateContext_, exception);
+                PipelineElement prev = prev_;
+                if (prev != TERMINAL) {
+                    prev.callCatchException(exception);
+                }
                 return DONE;
             }
             });
@@ -179,11 +203,19 @@ public class PipelineElement {
     void callEventTriggered(final Object event) {
         if (eventDispatcher_.isInDispatcherThread()) {
             stage_.eventTriggered(stateContext_, event);
+            PipelineElement prev = prev_;
+            if (prev != TERMINAL) {
+                prev.callEventTriggered(event);
+            }
         } else {
             eventDispatcher_.offer(new Event() {
                 @Override
                 public long execute() throws Exception {
                     stage_.eventTriggered(stateContext_, event);
+                    PipelineElement prev = prev_;
+                    if (prev != TERMINAL) {
+                        prev.callEventTriggered(event);
+                    }
                     return DONE;
                 }
             });
@@ -192,7 +224,7 @@ public class PipelineElement {
 
     static class StoreContext implements StageContext {
 
-        private PipelineElement base_;
+        private final PipelineElement base_;
 
         StoreContext(PipelineElement base) {
             base_ = base;
@@ -226,7 +258,7 @@ public class PipelineElement {
 
     static class LoadContext implements StageContext {
 
-        private PipelineElement base_;
+        private final PipelineElement base_;
 
         LoadContext(PipelineElement base) {
             base_ = base;
