@@ -134,68 +134,68 @@ public class PipelineElement {
         }
     }
 
-    void callActivate() {
+    void callActivated() {
         if (eventDispatcher_.isInDispatcherThread()) {
             stage_.activated(stateContext_);
             PipelineElement prev = prev_;
             if (prev != TERMINAL) {
-                prev.callActivate();
+                prev.callActivated();
             }
         } else {
             eventDispatcher_.offer(new Event() {
-            @Override
-            public long execute() throws Exception {
-                stage_.activated(stateContext_);
-                PipelineElement prev = prev_;
-                if (prev != TERMINAL) {
-                    prev.callActivate();
+                @Override
+                public long execute() throws Exception {
+                    stage_.activated(stateContext_);
+                    PipelineElement prev = prev_;
+                    if (prev != TERMINAL) {
+                        prev.callActivated();
+                    }
+                    return DONE;
                 }
-                return DONE;
-            }
             });
         }
     }
 
-    void callDeactivate() {
+    void callDeactivated() {
         if (eventDispatcher_.isInDispatcherThread()) {
             stage_.deactivated(stateContext_);
             PipelineElement prev = prev_;
             if (prev != TERMINAL) {
-                prev.callDeactivate();
+                prev.callDeactivated();
             }
         } else {
             eventDispatcher_.offer(new Event() {
-            @Override
-            public long execute() throws Exception {
-                stage_.deactivated(stateContext_);
-                PipelineElement prev = prev_;
-                if (prev != TERMINAL) {
-                    prev.callDeactivate();
+                @Override
+                public long execute() throws Exception {
+                    stage_.deactivated(stateContext_);
+                    PipelineElement prev = prev_;
+                    if (prev != TERMINAL) {
+                        prev.callDeactivated();
+                    }
+                    return DONE;
                 }
-                return DONE;
-            }
             });
         }
     }
 
-    void callCatchException(final Exception exception) {
+    void callExceptionCaught(final Exception exception) {
         if (eventDispatcher_.isInDispatcherThread()) {
             stage_.exceptionCaught(stateContext_, exception);
             PipelineElement prev = prev_;
             if (prev != TERMINAL) {
-                prev.callCatchException(exception);
+                prev.callExceptionCaught(exception);
             }
         } else {
             eventDispatcher_.offer(new Event() {
-            @Override
-            public long execute() throws Exception {
-                stage_.exceptionCaught(stateContext_, exception);
-                PipelineElement prev = prev_;
-                if (prev != TERMINAL) {
-                    prev.callCatchException(exception);
+                @Override
+                public long execute() throws Exception {
+                    stage_.exceptionCaught(stateContext_, exception);
+                    PipelineElement prev = prev_;
+                    if (prev != TERMINAL) {
+                        prev.callExceptionCaught(exception);
+                    }
+                    return DONE;
                 }
-                return DONE;
-            }
             });
         }
     }

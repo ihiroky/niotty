@@ -298,17 +298,17 @@ public class DefaultPipeline<L extends EventDispatcher> implements Pipeline {
 
     @Override
     public void activate() {
-        tail_.callActivate();
+        tail_.callActivated();
     }
 
     @Override
     public void deactivate() {
-        tail_.callDeactivate();
+        tail_.callDeactivated();
     }
 
     @Override
     public void catchException(Exception exception) {
-        tail_.callCatchException(exception);
+        tail_.callExceptionCaught(exception);
     }
 
     @Override
