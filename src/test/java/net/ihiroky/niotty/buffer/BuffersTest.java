@@ -54,11 +54,4 @@ public class BuffersTest {
             assertThat(re.getCause(), is(instanceOf(MalformedInputException.class)));
         }
     }
-
-    @Test(expected = IndexOutOfBoundsException.class)
-    public void testEmpty_ThrowsExceptionWhenWriteValue() throws Exception {
-        CodecBuffer sut = Buffers.emptyBuffer();
-
-        sut.writeByte(Byte.MAX_VALUE);
-    }
 }

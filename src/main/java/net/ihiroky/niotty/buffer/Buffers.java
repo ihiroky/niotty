@@ -27,7 +27,7 @@ public final class Buffers {
     }
 
     static final int DEFAULT_CAPACITY = 512;
-    static final CodecBuffer EMPTY = new SlicedCodecBuffer(new ArrayCodecBuffer(new byte[0], 0, 0));
+    static final byte[] EMPTY_BYTES = new byte[0];
 
     static int outputByteBufferSize(CharsetEncoder encoder, int chars) {
         return (int) Math.max(encoder.averageBytesPerChar() * chars, encoder.maxBytesPerChar()) + 1;
@@ -61,7 +61,7 @@ public final class Buffers {
      * The new {@code CodecBuffer} has no content to read.
      *
      * An invocation of this method behaves in exactly the same way as the invocation
-     * {@code newCodecBuffer(512, DefaultTransportParameter.NO_PARAMETER)}.
+     * {@code newCodecBuffer(512)}.
      *
      * @return the new {@code CodecBuffer}.
      */
@@ -106,13 +106,13 @@ public final class Buffers {
      * The new {@code CodecBuffer}'s startIndex is {@code offset} and endIndex is {@code offset + length}.
      *
      * An invocation of this method behaves in exactly the same way as the invocation
-     * {@code wrap(buffer, startIndex, length, DefaultTransportParameter.NO_PARAMETER)}.
+     * {@code wrap(buffer, offset, length)}.
      *
      * @param buffer the backed byte array
      * @param offset the offset of content in {@code buffer}
      * @param length the length of content in {@code buffer} from {@code offset}
      * @throws NullPointerException if {@code buffer} is null.
-     * @throws IllegalArgumentException if {@code startIndex} or {@code length} is invalid.
+     * @throws IllegalArgumentException if {@code offset} or {@code length} is invalid.
      * @return the new {@code DecodeBuffer}
      */
     public static CodecBuffer wrap(byte[] buffer, int offset, int length) {
@@ -280,10 +280,11 @@ public final class Buffers {
 
     /**
      * Returns a buffer which contains no content.
-     *
+     * An invocation of this method behaves in exactly the same way as the invocation
+     * {@code newCodecBuffer(0)}.
      * @return the buffer
      */
     public static CodecBuffer emptyBuffer() {
-        return EMPTY;
+        return new ArrayCodecBuffer(EMPTY_BYTES, 0, 0);
     }
 }
