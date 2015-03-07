@@ -40,9 +40,13 @@ public final class Platform {
     private static JavaVersion resolveJavaVersion() {
         String version = System.getProperty("java.version");
         String vendor = System.getProperty("java.vendor");
-        if (version.startsWith("1.7")) {
+        if (version.startsWith("1.9.")) {
+            return JavaVersion.JAVA9;
+        } else if (version.startsWith("1.8.")) {
+            return JavaVersion.JAVA8;
+        } else if (version.startsWith("1.7.")) {
             return JavaVersion.JAVA7;
-        } else if (version.startsWith("1.6")) {
+        } else if (version.startsWith("1.6.")) {
             return JavaVersion.JAVA6;
         }
 

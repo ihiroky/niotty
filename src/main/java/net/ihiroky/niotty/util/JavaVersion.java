@@ -7,6 +7,7 @@ public enum JavaVersion {
     JAVA6(6),
     JAVA7(7),
     JAVA8(8),
+    JAVA9(9),
     ;
 
     private final int version_;
