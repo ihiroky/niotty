@@ -172,6 +172,32 @@ public class CodecBufferListTest {
         }
 
         @Test
+        public void testReadString_SizeLimitedFirstBuffer() throws Exception {
+            String s = "01234567";
+            byte[] data = s.getBytes("UTF-8");
+
+            CodecBufferList sut = new CodecBufferList(
+                    Buffers.wrap(data, 0, 4),
+                    Buffers.wrap(data, 4, 4));
+            String actual = sut.readString(CHARSET.newDecoder(), 3);
+
+            assertThat(actual, is("012"));
+        }
+
+        @Test
+        public void testReadString_SizeLimitedTrailerBuffer() throws Exception {
+            String s = "01234567";
+            byte[] data = s.getBytes("UTF-8");
+
+            CodecBufferList sut = new CodecBufferList(
+                    Buffers.wrap(data, 0, 4),
+                    Buffers.wrap(data, 4, 4));
+            String actual = sut.readString(CHARSET.newDecoder(), 6);
+
+            assertThat(actual, is("012345"));
+        }
+
+        @Test
         public void testSlice_BetweenBuffers() throws Exception {
             byte[] data0 = new byte[3];
             Arrays.fill(data0, (byte) 1);

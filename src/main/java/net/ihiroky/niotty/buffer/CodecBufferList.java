@@ -486,6 +486,9 @@ public class CodecBufferList extends AbstractCodecBuffer {
         CharBuffer output = CharBuffer.allocate(Buffers.outputCharBufferSize(decoder, length));
         int currentRemaining = input.remaining();
         boolean endOfInput = currentRemaining >= length;
+        if (endOfInput) {
+            input.limit(input.position() + length);
+        }
         int previousRemaining = 0;
         for (;;) {
             CoderResult cr = decoder.decode(input, output, endOfInput);
@@ -513,6 +516,9 @@ public class CodecBufferList extends AbstractCodecBuffer {
                     length -= currentRemaining - remaining;
                     currentRemaining = input.remaining();
                     endOfInput = currentRemaining >= length;
+                    if (endOfInput) {
+                        input.limit(input.position() + length);
+                    }
                     continue;
                 }
             }
