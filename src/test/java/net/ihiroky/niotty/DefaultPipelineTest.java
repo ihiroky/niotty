@@ -59,6 +59,18 @@ public class DefaultPipelineTest {
     }
 
     @Test
+    public void testAdd_CallsActivatedIfPipelineIsAlreadyActivated() throws Exception {
+        StageKey key = StageKeys.of(0);
+        Stage stage = mock(Stage.class);
+        when(eventDispatcher_.isInDispatcherThread()).thenReturn(true);
+
+        sut_.activate();
+        sut_.add(key, stage);
+
+        verify(stage).activated(Mockito.any(StageContext.class));
+    }
+
+    @Test
     public void testAdd_NullEventDispatcherGroupReplacesToDefault() throws Exception {
         StageKey key0 = StageKeys.of(0);
         Stage stage0 = PipelineElement.newNullStage();
@@ -179,6 +191,21 @@ public class DefaultPipelineTest {
     }
 
     @Test
+    public void testAddBefore_CallsActivatedIfPipelineIsAlreadyActivated() throws Exception {
+        StageKey baseKey = StageKeys.of(0);
+        Stage baseStage = mock(Stage.class);
+        StageKey key = StageKeys.of(1);
+        Stage stage = mock(Stage.class);
+        when(eventDispatcher_.isInDispatcherThread()).thenReturn(true);
+
+        sut_.add(baseKey, baseStage);
+        sut_.activate();
+        sut_.addBefore(baseKey, key, stage);
+
+        verify(stage).activated(Mockito.any(StageContext.class));
+    }
+
+    @Test
     public void testAddAfter() throws Exception {
         StageKey key0 = StageKeys.of(0);
         Stage stage0 = PipelineElement.newNullStage();
@@ -274,6 +301,21 @@ public class DefaultPipelineTest {
         exceptionRule_.expectMessage("StringStageKey:IO_STAGE_KEY must be the tail of this pipeline.");
 
         sut_.addAfter(StageKeys.of("IO_STAGE_KEY"), key, PipelineElement.newNullStage());
+    }
+
+    @Test
+    public void testAddAfter_CallsActivatedIfPipelineIsAlreadyActivated() throws Exception {
+        StageKey baseKey = StageKeys.of(0);
+        Stage baseStage = mock(Stage.class);
+        StageKey key = StageKeys.of(1);
+        Stage stage = mock(Stage.class);
+        when(eventDispatcher_.isInDispatcherThread()).thenReturn(true);
+
+        sut_.add(baseKey, baseStage);
+        sut_.activate();
+        sut_.addAfter(baseKey, key, stage);
+
+        verify(stage).activated(Mockito.any(StageContext.class));
     }
 
     @Test
@@ -382,6 +424,19 @@ public class DefaultPipelineTest {
         sut_.add(key0, stage0);
         sut_.add(key1, stage1);
         sut_.remove(key2);
+    }
+
+    @Test
+    public void testRemove_CallsDeactivatedIfPipelineIsAlreadyActivated() throws Exception {
+        StageKey key = StageKeys.of(1);
+        Stage stage = mock(Stage.class);
+        when(eventDispatcher_.isInDispatcherThread()).thenReturn(true);
+
+        sut_.add(key, stage);
+        sut_.activate();
+        sut_.remove(key);
+
+        verify(stage).deactivated(Mockito.any(StageContext.class));
     }
 
     @Test
@@ -542,6 +597,22 @@ public class DefaultPipelineTest {
         exceptionRule_.expectMessage("StringStageKey:IO_STAGE_KEY must not be removed.");
 
         sut_.replace(StageKeys.of("IO_STAGE_KEY"), key, PipelineElement.newNullStage());
+    }
+
+    @Test
+    public void testReplace_CallsActivatedAndDeactivatedIfPipelineIsAlreadyActivated() throws Exception {
+        StageKey baseKey = StageKeys.of(0);
+        Stage baseStage = mock(Stage.class);
+        StageKey key = StageKeys.of(1);
+        Stage stage = mock(Stage.class);
+        when(eventDispatcher_.isInDispatcherThread()).thenReturn(true);
+
+        sut_.add(baseKey, baseStage);
+        sut_.activate();
+        sut_.replace(baseKey, key, stage);
+
+        verify(baseStage).deactivated(Mockito.any(StageContext.class));
+        verify(stage).activated(Mockito.any(StageContext.class));
     }
 
     @Test

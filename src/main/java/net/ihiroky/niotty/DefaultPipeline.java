@@ -19,6 +19,8 @@ public class DefaultPipeline<L extends EventDispatcher> implements Pipeline {
     private final PipelineElement tail_;
     private final EventDispatcherGroup<L> eventDispatcherGroup_;
 
+    private volatile boolean activated_;
+
     /**
      * Creates a new instance.
      *
@@ -89,9 +91,10 @@ public class DefaultPipeline<L extends EventDispatcher> implements Pipeline {
         if (pool == null) {
             pool = eventDispatcherGroup_;
         }
+        PipelineElement newContext;
         synchronized (head_) {
             if (head_.next() == tail_) {
-                PipelineElement newContext = createContext(key, stage, pool);
+                newContext = createContext(key, stage, pool);
                 addLink(head_, tail_, newContext);
             } else {
                 for (PipelineElement e = head_.next(); e.isValid(); e = e.next()) {
@@ -99,9 +102,12 @@ public class DefaultPipeline<L extends EventDispatcher> implements Pipeline {
                         throw new IllegalArgumentException("key " + key + " already exists.");
                     }
                 }
-                PipelineElement newContext = createContext(key, stage, pool);
+                newContext = createContext(key, stage, pool);
                 addLink(tail_.prev(), tail_, newContext);
             }
+        }
+        if (activated_) {
+            newContext.callActivated();
         }
         return this;
     }
@@ -123,8 +129,10 @@ public class DefaultPipeline<L extends EventDispatcher> implements Pipeline {
         if (pool == null) {
             pool = eventDispatcherGroup_;
         }
+
+        boolean added = false;
+        PipelineElement target = null;
         synchronized (head_) {
-            PipelineElement target = null;
             for (PipelineElement e = tail_; e.isValid(); e = e.prev()) {
                 StageKey ikey = e.key();
                 if (ikey.equals(key)) {
@@ -137,10 +145,16 @@ public class DefaultPipeline<L extends EventDispatcher> implements Pipeline {
             if (target != null) {
                 PipelineElement newContext = createContext(key, stage, pool);
                 addLink(target.prev(), target, newContext);
-                return this;
+                added = true;
             }
         }
-        throw new NoSuchElementException("baseKey " + baseKey + " is not found.");
+        if (!added) {
+            throw new NoSuchElementException("baseKey " + baseKey + " is not found.");
+        }
+        if (activated_) {
+            target.callActivated();
+        }
+        return this;
     }
 
     @Override
@@ -163,6 +177,9 @@ public class DefaultPipeline<L extends EventDispatcher> implements Pipeline {
         if (pool == null) {
             pool = eventDispatcherGroup_;
         }
+
+        boolean added = false;
+        PipelineElement newContext = null;
         synchronized (head_) {
             PipelineElement target = null;
             for (PipelineElement e = head_.next(); e.isValid(); e = e.next()) {
@@ -175,12 +192,18 @@ public class DefaultPipeline<L extends EventDispatcher> implements Pipeline {
                 }
             }
             if (target != null) {
-                PipelineElement newContext = createContext(key, stage, pool);
+                newContext = createContext(key, stage, pool);
                 addLink(target, target.next(), newContext);
-                return this;
+                added = true;
             }
         }
-        throw new NoSuchElementException("baseKey " + baseKey + " is not found.");
+        if (!added) {
+            throw new NoSuchElementException("baseKey " + baseKey + " is not found.");
+        }
+        if (activated_) {
+            newContext.callActivated();
+        }
+        return this;
     }
 
     @Override
@@ -190,16 +213,24 @@ public class DefaultPipeline<L extends EventDispatcher> implements Pipeline {
             throw new IllegalArgumentException(IO_STAGE_KEY + " must not be removed.");
         }
 
+        PipelineElement removed = null;
         synchronized (head_) {
             for (PipelineElement e = head_.next(); e.isValid(); e = e.next()) {
                 if (e.key().equals(key)) {
                     removeLink(e);
-                    e.close();
-                    return this;
+                    removed = e;
+                    break;
                 }
             }
         }
-        throw new NoSuchElementException("key " + key + " is not found.");
+        if (removed == null) {
+            throw new NoSuchElementException("key " + key + " is not found.");
+        }
+        if (activated_) {
+            removed.callDeactivated();
+        }
+        removed.close();
+        return this;
     }
 
     @Override
@@ -222,8 +253,10 @@ public class DefaultPipeline<L extends EventDispatcher> implements Pipeline {
         if (pool == null) {
             pool = eventDispatcherGroup_;
         }
+        boolean replaced = false;
+        PipelineElement target = null;
+        PipelineElement newContext = null;
         synchronized (head_) {
-            PipelineElement target = null;
             for (PipelineElement e = head_.next(); e.isValid(); e = e.next()) {
                 StageKey ikey = e.key();
                 if (ikey.equals(newKey)) {
@@ -234,13 +267,21 @@ public class DefaultPipeline<L extends EventDispatcher> implements Pipeline {
                 }
             }
             if (target != null) {
-                PipelineElement newContext = createContext(newKey, newStage, pool);
+                newContext = createContext(newKey, newStage, pool);
                 replaceLink(target, newContext);
-                target.close();
-                return this;
+                replaced = true;
             }
         }
-        throw new NoSuchElementException("oldKey " + oldKey + " is not found.");
+        if (!replaced) {
+            throw new NoSuchElementException("oldKey " + oldKey + " is not found.");
+        }
+        if (activated_) {
+            target.callDeactivated();
+            newContext.callActivated();
+        }
+        target.close();
+        return this;
+
     }
 
     @Override
@@ -299,10 +340,12 @@ public class DefaultPipeline<L extends EventDispatcher> implements Pipeline {
     @Override
     public void activate() {
         tail_.callActivated();
+        activated_ = true;
     }
 
     @Override
     public void deactivate() {
+        activated_ = false;
         tail_.callDeactivated();
     }
 
