@@ -2,6 +2,9 @@ package net.ihiroky.niotty.buffer;
 
 import net.ihiroky.niotty.util.Charsets;
 
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CharsetEncoder;
+
 /**
  * A skeletal implementation of {@link CodecBuffer}.
  * @author Hiroki Itoh
@@ -309,7 +312,7 @@ public abstract class AbstractCodecBuffer extends AbstractPacket implements Code
             if (head == '-') {
                 negative = true;
             } else if (head != '+') {
-                String restString = readString(Charsets.US_ASCII.newDecoder(), length - 1);
+                String restString = readStringContent(Charsets.US_ASCII.newDecoder(), length - 1);
                 throw new NumberFormatException(((char) head) + restString);
             }
 
@@ -358,7 +361,7 @@ public abstract class AbstractCodecBuffer extends AbstractPacket implements Code
 
     private NumberFormatException newNumberFormatException(int skip, int bytes) {
         skipStartIndex(-skip);
-        String string = readString(Charsets.US_ASCII.newDecoder(), bytes);
+        String string = readStringContent(Charsets.US_ASCII.newDecoder(), bytes);
         throw new NumberFormatException(string);
     }
 
@@ -465,5 +468,57 @@ public abstract class AbstractCodecBuffer extends AbstractPacket implements Code
         }
 
         writeBytes(buf, 0, buf.length);
+    }
+
+    @Override
+    public CodecBuffer writeString(String s, CharsetEncoder encoder) {
+        int length = s.length();
+        if (length == 0) {
+            writeVariableByteInteger(0);
+            return this;
+        }
+
+        // Assume that encoder.maxBytesPerChar() (at most 6) bytes per character.
+        int expectedLengthBytes = CodecUtil.variableByteLength((int) (length * encoder.maxBytesPerChar()));
+        int e = skipEndIndex(expectedLengthBytes);
+        if (e < expectedLengthBytes) {
+            writeVBIntMinValue(); // Write 5 bytes to ensure capacity.
+            skipEndIndex(expectedLengthBytes - 5 - e);
+        }
+        int e0 = endIndex();
+        writeStringContent(s, encoder);
+        int e1 = endIndex();
+        endIndex(e0 - expectedLengthBytes);
+        int actualLength = e1 - e0;
+        int actualLengthBytes = CodecUtil.variableByteLength(actualLength);
+        if (expectedLengthBytes == actualLengthBytes) {
+            writeVariableByteInteger(actualLength);
+        } else {
+            writePaddedVariableBytePositive(actualLength);
+        }
+        endIndex(e1);
+        return this;
+    }
+
+    private void writePaddedVariableBytePositive(int value) {
+        if (value <= CodecUtil.VB_MASK_BIT6) {
+            writeByte(value);
+            writeByte(CodecUtil.VB_END_BIT);
+            return;
+        }
+
+        writeByte(value & CodecUtil.VB_MASK_BIT6);
+        value >>>= CodecUtil.VB_BIT_IN_FIRST_BYTE;
+        for (; value > CodecUtil.VB_MASK_BIT7; value >>>= CodecUtil.VB_BIT_IN_BYTE) {
+            writeByte(value & CodecUtil.VB_MASK_BIT7);
+        }
+        writeByte(value);
+        writeByte(CodecUtil.VB_END_BIT);
+    }
+
+    @Override
+    public String readString(CharsetDecoder decoder) {
+        int length = readVariableByteInteger();
+        return readStringContent(decoder, length);
     }
 }

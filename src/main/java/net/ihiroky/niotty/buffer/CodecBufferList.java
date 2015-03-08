@@ -306,7 +306,7 @@ public class CodecBufferList extends AbstractCodecBuffer {
     }
 
     @Override
-    public CodecBufferList writeString(String s, CharsetEncoder encoder) {
+    public CodecBufferList writeStringContent(String s, CharsetEncoder encoder) {
         Arguments.requireNonNull(s, "s");
         Arguments.requireNonNull(encoder, "encoder");
 
@@ -475,7 +475,7 @@ public class CodecBufferList extends AbstractCodecBuffer {
     }
 
     @Override
-    public String readString(CharsetDecoder decoder, int length) {
+    public String readStringContent(CharsetDecoder decoder, int length) {
         String cached = StringCache.getCachedValue(this, decoder, length);
         if (cached != null) {
             return cached;

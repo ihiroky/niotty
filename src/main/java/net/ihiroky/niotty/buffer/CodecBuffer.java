@@ -166,13 +166,23 @@ public interface CodecBuffer extends Packet {
     CodecBuffer writeVariableByteLong(Long value);
 
     /**
-     * Writes a specified string as bytes with a specified {@code encoder} from the end index.
+     * Writes a specified string as bytes and its length with a specified {@code encoder} from the end index.
      *
      * @param s string to be written
      * @param encoder encoder to convert the string {@code s} to bytes written into this buffer
      * @return this object
      */
     CodecBuffer writeString(String s, CharsetEncoder encoder);
+
+    /**
+     * Writes a specified string as bytes with a specified {@code encoder} from the end index.
+     *
+     * @param s string to be written
+     * @param encoder encoder to convert the string {@code s} to bytes written into this buffer
+     * @return this object
+     */
+
+    CodecBuffer writeStringContent(String s, CharsetEncoder encoder);
 
     /**
      * Writes a specified long value as an ascii string (byte array of ascii code) from the end index.
@@ -287,7 +297,7 @@ public interface CodecBuffer extends Packet {
     /**
      * Reads float value from the start index.
      *
-     * @return float value read from the buffer
+     * @return the float value read from the buffer
      * @throws java.lang.RuntimeException if the remaining data in the buffer is less than the size of float
      */
     float readFloat();
@@ -295,33 +305,42 @@ public interface CodecBuffer extends Packet {
     /**
      * Reads double value from the start index.
      *
-     * @return double value read from the buffer
+     * @return the double value read from the buffer
      * @throws java.lang.RuntimeException if the remaining data in the buffer is less than the size of double
      */
     double readDouble();
 
     /**
      * Reads {@code Integer or Long} value in signed VBC form from the start index. The result may be null.
-     * @return {@code Integer or Long} value read from the buffer
+     * @return the {@code Integer or Long} value read from the buffer
      */
     Number readVariableByteNumber();
 
     /**
      * Reads {@code long} value in signed VBC form from the start index.
      * The null value is returned as (negative) zero.
-     * @return {@code long} value read from the buffer
+     * @return the {@code long} value read from the buffer
      */
     long readVariableByteLong();
 
     /**
      * Reads {@code int} value in signed VBC form from the start index.
      * The null value is returned as (negative) zero.
-     * @return {@code int} value read from the buffer
+     * @return the {@code int} value read from the buffer
      */
     int readVariableByteInteger();
 
     /**
-     * Reads a string from the start index using a specified {@code decoder} to convert the content into the string.
+     * Reads {@code String} value written by {@link #writeString(String, java.nio.charset.CharsetEncoder)}.
+     *
+     * @param decoder the decoder of the charset which creates encoder of
+     *                {@link #writeString(String, java.nio.charset.CharsetEncoder)}
+     * @return the {@code String} value read from the buffer
+     */
+    String readString(CharsetDecoder decoder);
+
+    /**
+     * Reads bytes as string from the start index using a specified {@code decoder}.
      * The string length of encoded byte format is given as {@code length}. If some
      * {@code java.nio.charset.CharacterCodingException} happens, this method throws
      * {@code java.lang.RuntimeException} which has {@code CharacterCodingException} as its cause.
@@ -330,7 +349,7 @@ public interface CodecBuffer extends Packet {
      * @param length the length of byte data to be decoded by {@code decoder}
      * @return the string value read from the buffer
      */
-    String readString(CharsetDecoder decoder, int length);
+    String readStringContent(CharsetDecoder decoder, int length);
 
     /**
      * Reads a long value from the start index, assumes that the content is

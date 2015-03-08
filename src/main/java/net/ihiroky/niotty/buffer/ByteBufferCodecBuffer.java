@@ -219,7 +219,7 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer {
     /**
      * {@inheritDoc}
      */
-    public ByteBufferCodecBuffer writeString(String s, CharsetEncoder encoder) {
+    public ByteBufferCodecBuffer writeStringContent(String s, CharsetEncoder encoder) {
         Arguments.requireNonNull(s, "s");
         Arguments.requireNonNull(encoder, "encoder");
 
@@ -349,7 +349,7 @@ public class ByteBufferCodecBuffer extends AbstractCodecBuffer {
     }
 
     @Override
-    public String readString(CharsetDecoder decoder, int length) {
+    public String readStringContent(CharsetDecoder decoder, int length) {
         changeModeToRead();
         String cached = StringCache.getCachedValue(this, decoder, length);
         if (cached != null) {

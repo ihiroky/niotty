@@ -135,7 +135,7 @@ public class SlicedCodecBuffer extends AbstractCodecBuffer {
     }
 
     @Override
-    public SlicedCodecBuffer writeString(String s, CharsetEncoder encoder) {
+    public SlicedCodecBuffer writeStringContent(String s, CharsetEncoder encoder) {
         Arguments.requireNonNull(s, "s");
         Arguments.requireNonNull(encoder, "encoder");
 
@@ -224,8 +224,8 @@ public class SlicedCodecBuffer extends AbstractCodecBuffer {
     }
 
     @Override
-    public String readString(CharsetDecoder decoder, int length) {
-        return base_.readString(decoder, length);
+    public String readStringContent(CharsetDecoder decoder, int length) {
+        return base_.readStringContent(decoder, length);
     }
 
     @Override

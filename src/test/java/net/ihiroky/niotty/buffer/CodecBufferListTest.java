@@ -154,7 +154,7 @@ public class CodecBufferListTest {
         }
 
         @Test
-        public void testReadString_BetweenBuffers() throws Exception {
+        public void testReadStringContent_BetweenBuffers() throws Exception {
             String s = "あい0123";
             byte[] data = s.getBytes("UTF-8");
             CodecBufferList sut = new CodecBufferList(
@@ -162,7 +162,7 @@ public class CodecBufferListTest {
                     Buffers.wrap(data, 4, 4),
                     Buffers.wrap(data, 8, 2));
 
-            String actual = sut.readString(CHARSET.newDecoder(), data.length);
+            String actual = sut.readStringContent(CHARSET.newDecoder(), data.length);
 
             assertThat(actual, is(s));
             assertThat(sut.remaining(), is(0));
@@ -172,27 +172,27 @@ public class CodecBufferListTest {
         }
 
         @Test
-        public void testReadString_SizeLimitedFirstBuffer() throws Exception {
+        public void testReadStringContent_SizeLimitedFirstBuffer() throws Exception {
             String s = "01234567";
             byte[] data = s.getBytes("UTF-8");
 
             CodecBufferList sut = new CodecBufferList(
                     Buffers.wrap(data, 0, 4),
                     Buffers.wrap(data, 4, 4));
-            String actual = sut.readString(CHARSET.newDecoder(), 3);
+            String actual = sut.readStringContent(CHARSET.newDecoder(), 3);
 
             assertThat(actual, is("012"));
         }
 
         @Test
-        public void testReadString_SizeLimitedTrailerBuffer() throws Exception {
+        public void testReadStringContent_SizeLimitedTrailerBuffer() throws Exception {
             String s = "01234567";
             byte[] data = s.getBytes("UTF-8");
 
             CodecBufferList sut = new CodecBufferList(
                     Buffers.wrap(data, 0, 4),
                     Buffers.wrap(data, 4, 4));
-            String actual = sut.readString(CHARSET.newDecoder(), 6);
+            String actual = sut.readStringContent(CHARSET.newDecoder(), 6);
 
             assertThat(actual, is("012345"));
         }
@@ -603,12 +603,12 @@ public class CodecBufferListTest {
         }
 
         @Test
-        public void testWriteString_BetweenCodecBuffer() throws Exception {
+        public void testWriteStringContent_BetweenCodecBuffer() throws Exception {
             CodecBufferList sut = new CodecBufferList(
                     Buffers.newCodecBuffer(0));
             String s = "0123456789";
 
-            sut.writeString(s, CHARSET.newEncoder());
+            sut.writeStringContent(s, CHARSET.newEncoder());
 
             assertThat(sut.remaining(), is(10));
             assertThat(sut.startBufferIndex(), is(0));

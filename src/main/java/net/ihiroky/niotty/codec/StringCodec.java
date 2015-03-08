@@ -45,7 +45,7 @@ public class StringCodec implements Stage {
         float bytesPerChar = encoder_.averageBytesPerChar();
         int trailerLength = trailer_.length;
         CodecBuffer buffer = Buffers.newCodecBuffer(Math.round(bytesPerChar * input.length()) + trailerLength);
-        buffer.writeString(input, encoder_);
+        buffer.writeStringContent(input, encoder_);
         buffer.writeBytes(trailer_, 0, trailerLength);
         context.proceed(buffer, parameter);
     }
@@ -54,7 +54,7 @@ public class StringCodec implements Stage {
     public void loaded(StageContext context, Object message, Object parameter) {
         CodecBuffer input = (CodecBuffer) message;
         decoder_.reset();
-        String s = input.readString(decoder_, input.remaining());
+        String s = input.readStringContent(decoder_, input.remaining());
         input.dispose();
         context.proceed(s, parameter);
     }

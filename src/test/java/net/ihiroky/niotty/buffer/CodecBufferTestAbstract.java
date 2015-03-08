@@ -368,13 +368,13 @@ public class CodecBufferTestAbstract {
         }
 
         @Test
-        public void testReadString() throws Exception {
+        public void testReadBytesString() throws Exception {
             String string = "0０1１2２3３";
             byte[] data = string.getBytes(CHARSET);
             sut_.clear();
             sut_.writeBytes(data, 0, data.length);
 
-            String result = sut_.readString(CHARSET.newDecoder(), sut_.remaining());
+            String result = sut_.readStringContent(CHARSET.newDecoder(), sut_.remaining());
 
             assertThat(result, is(string));
         }

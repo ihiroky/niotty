@@ -314,7 +314,7 @@ public class AbstractCodecBufferTest {
 
         sut.writeLongAsAscii(Long.MIN_VALUE);
 
-        String actual = sut.readString(Charsets.US_ASCII.newDecoder(), expected.length());
+        String actual = sut.readStringContent(Charsets.US_ASCII.newDecoder(), expected.length());
         assertThat(actual, is(expected));
         assertThat(sut.remaining(), is(0));
     }
@@ -326,7 +326,7 @@ public class AbstractCodecBufferTest {
 
         sut.writeLongAsAscii(Integer.MAX_VALUE + 1L);
 
-        String actual = sut.readString(Charsets.US_ASCII.newDecoder(), expected.length());
+        String actual = sut.readStringContent(Charsets.US_ASCII.newDecoder(), expected.length());
         assertThat(actual, is(expected));
         assertThat(sut.remaining(), is(0));
     }
@@ -338,7 +338,7 @@ public class AbstractCodecBufferTest {
 
         sut.writeLongAsAscii(65536);
 
-        String actual = sut.readString(Charsets.US_ASCII.newDecoder(), expected.length());
+        String actual = sut.readStringContent(Charsets.US_ASCII.newDecoder(), expected.length());
         assertThat(actual, is(expected));
         assertThat(sut.remaining(), is(0));
     }
@@ -350,7 +350,7 @@ public class AbstractCodecBufferTest {
 
         sut.writeLongAsAscii(65535);
 
-        String actual = sut.readString(Charsets.US_ASCII.newDecoder(), expected.length());
+        String actual = sut.readStringContent(Charsets.US_ASCII.newDecoder(), expected.length());
         assertThat(actual, is(expected));
         assertThat(sut.remaining(), is(0));
     }
@@ -362,7 +362,7 @@ public class AbstractCodecBufferTest {
 
         sut.writeLongAsAscii(Integer.MIN_VALUE - 1L);
 
-        String actual = sut.readString(Charsets.US_ASCII.newDecoder(), expected.length());
+        String actual = sut.readStringContent(Charsets.US_ASCII.newDecoder(), expected.length());
         assertThat(actual, is(expected));
         assertThat(sut.remaining(), is(0));
     }
@@ -407,7 +407,7 @@ public class AbstractCodecBufferTest {
     public void testReadLongAsAsciiOverLongMaxValue() throws Exception {
         String overLongMaxValue = Long.toString(Long.MIN_VALUE).substring(1);
         AbstractCodecBuffer sut = newInstance(new byte[overLongMaxValue.length()], 0, 0);
-        sut.writeString(overLongMaxValue, Charsets.US_ASCII.newEncoder());
+        sut.writeStringContent(overLongMaxValue, Charsets.US_ASCII.newEncoder());
 
         thrownRule_.expect(NumberFormatException.class);
         thrownRule_.expectMessage(overLongMaxValue);
@@ -419,7 +419,7 @@ public class AbstractCodecBufferTest {
     public void testReadLongAsAsciiOverLongMaxValueTwentyDigits() throws Exception {
         String overLongMaxValue = "99999999999999999999";
         AbstractCodecBuffer sut = newInstance(new byte[overLongMaxValue.length()], 0, 0);
-        sut.writeString(overLongMaxValue, Charsets.US_ASCII.newEncoder());
+        sut.writeStringContent(overLongMaxValue, Charsets.US_ASCII.newEncoder());
 
         thrownRule_.expect(NumberFormatException.class);
         thrownRule_.expectMessage(overLongMaxValue);
@@ -431,7 +431,7 @@ public class AbstractCodecBufferTest {
     public void testReadLongAsAsciiUnderLongMinValue() throws Exception {
         String underLongMinValue = "-9223372036854775809";
         AbstractCodecBuffer sut = newInstance(new byte[underLongMinValue.length()], 0, 0);
-        sut.writeString(underLongMinValue, Charsets.US_ASCII.newEncoder());
+        sut.writeStringContent(underLongMinValue, Charsets.US_ASCII.newEncoder());
 
         thrownRule_.expect(NumberFormatException.class);
         thrownRule_.expectMessage(underLongMinValue);
@@ -443,7 +443,7 @@ public class AbstractCodecBufferTest {
     public void testReadLongAsAsciiUnderLongMaxValueNineteenDigits() throws Exception {
         String overLongMaxValue = "-9999999999999999999";
         AbstractCodecBuffer sut = newInstance(new byte[overLongMaxValue.length()], 0, 0);
-        sut.writeString(overLongMaxValue, Charsets.US_ASCII.newEncoder());
+        sut.writeStringContent(overLongMaxValue, Charsets.US_ASCII.newEncoder());
 
         thrownRule_.expect(NumberFormatException.class);
         thrownRule_.expectMessage(overLongMaxValue);
