@@ -11,13 +11,27 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
  * {@link #isDispatched()} returns true. If cancelled or dispatched, then
  * {@link #isDone()} returns true.
  */
-public class EventFuture implements Comparable<EventFuture> {
+public class EventFuture implements Event, Comparable<EventFuture> {
     private long expire_;
     final Event event_;
     private volatile State state_;
 
     private static final AtomicReferenceFieldUpdater<EventFuture, State> STATE_UPDATER =
             AtomicReferenceFieldUpdater.newUpdater(EventFuture.class, State.class, "state_");
+
+    /**
+     * {@inheritDoc}
+     *
+     * It is assumed that this method is called by the normal event queue, not delayed queue.
+     */
+    @Override
+    public long execute() throws Exception {
+        long retryDelay = event_.execute();
+        if (retryDelay == DONE) {
+            dispatched();
+        }
+        return retryDelay;
+    }
 
     private enum State {
         WAITING,
@@ -31,15 +45,17 @@ public class EventFuture implements Comparable<EventFuture> {
         expire_ = expire;
         event_ = event;
         state_ = State.WAITING;
+
     }
 
     long expire() {
         return expire_;
     }
 
-    void setExpire(long expire) {
+    EventFuture setExpire(long expire) {
         expire_ = expire;
         state_ = State.WAITING;
+        return this;
     }
 
     boolean readyToDispatch() {

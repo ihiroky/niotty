@@ -94,6 +94,17 @@ public abstract class EventDispatcher implements Runnable, Comparable<EventDispa
     }
 
     /**
+     * If a caller is executed in the dispatcher thread, run the event immediately.
+     * Otherwise, inserts the event to the event queue.
+     * @param event the event
+     * @return a future representing pending completion of the event, not cancellable.
+     * @throws NullPointerException if the event is null
+     */
+    public EventFuture schedule(final Event event) {
+        return schedule(event, 0, TimeUnit.NANOSECONDS);
+    }
+
+    /**
      * Registers a specified event to the timer with specified delay time.
      * @param event the event to be registered to the timer
      * @param delay the delay of event execution
@@ -104,6 +115,12 @@ public abstract class EventDispatcher implements Runnable, Comparable<EventDispa
     public EventFuture schedule(final Event event, long delay, TimeUnit timeUnit) {
         Arguments.requireNonNull(event, "event");
         Arguments.requireNonNull(timeUnit, "timeUnit");
+
+        if (delay == 0) {
+            EventFuture future = new EventFuture(System.nanoTime(), event);
+            execute(future);
+            return future;
+        }
 
         long expire = System.nanoTime() + timeUnit.toNanos(delay);
         final EventFuture future = new EventFuture(expire, event);
@@ -144,7 +161,7 @@ public abstract class EventDispatcher implements Runnable, Comparable<EventDispa
                         logger_.warn("[execute] The expire for {} is overflowed. Skip to schedule.", event);
                         return;
                     }
-                    delayQueue_.offer(new EventFuture(expire, event));
+                    delayQueue_.offer(eventFuture(event, expire));
                     wakeUp();
                 } else {
                     eventQueue_.offer(event);
@@ -157,6 +174,12 @@ public abstract class EventDispatcher implements Runnable, Comparable<EventDispa
             eventQueue_.offer(event);
             wakeUp();
         }
+    }
+
+    private static EventFuture eventFuture(Event event, long expire) {
+        return (event instanceof EventFuture)
+                ? ((EventFuture) event).setExpire(expire)
+                : new EventFuture(expire, event);
     }
 
     void waitUntilStarted() throws InterruptedException {
@@ -227,7 +250,7 @@ public abstract class EventDispatcher implements Runnable, Comparable<EventDispa
                     logger_.warn("[processEvent] The expire for {} is overflowed. Skip to schedule.", event);
                     continue;
                 }
-                delayQueue.offer(new EventFuture(expire, event));
+                delayQueue.offer(eventFuture(event, expire));
             } else {
                 buffer.offerLast(event);
             }

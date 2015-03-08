@@ -78,7 +78,7 @@ public class EventDispatcherTest {
         }
     }
 
-    @Test//(timeout = 1000)
+    @Test(timeout = 1000)
     public void testProcessEvent_ExecuteAgainLater() throws Exception {
         executor_.execute(sut_);
         final AtomicInteger counter = new AtomicInteger();
@@ -336,6 +336,32 @@ public class EventDispatcherTest {
         assertThat(e0.isCancelled(), is(false));
         assertThat(e1.isDispatched(), is(false));
         assertThat(e1.isCancelled(), is(true));
+    }
+
+    @Test(timeout = 1000)
+    public void testScheduleWithNoDelay() throws Exception {
+        executor_.execute(sut_);
+        Event event = mock(Event.class);
+        when(event.execute()).thenReturn(Event.DONE);
+
+        EventFuture future = sut_.schedule(event);
+        while (!future.isDone()) {
+            Thread.sleep(10);
+        }
+    }
+
+    @Test(timeout = 1000)
+    public void testScheduleNoArgument() throws Exception {
+        EventDispatcher sut = spy(sut_);
+        executor_.execute(sut);
+        Event event = mock(Event.class);
+        when(event.execute()).thenReturn(Event.DONE);
+
+        EventFuture future = sut.schedule(event);
+        while (!future.isDone()) {
+            Thread.sleep(10);
+        }
+        verify(sut).schedule(event, 0L, TimeUnit.NANOSECONDS);
     }
 
     @Test
