@@ -30,9 +30,9 @@ public class DefaultEventDispatcherGroupTest {
         EventDispatcherSelection ts0 = mock(EventDispatcherSelection.class);
         EventDispatcherSelection ts1 = mock(EventDispatcherSelection.class);
 
-        DefaultEventDispatcher t0 = sut_.assign(ts0);
-        DefaultEventDispatcher t1 = sut_.assign(ts0);
-        DefaultEventDispatcher t2 = sut_.assign(ts1);
+        EventDispatcher t0 = sut_.assign(ts0);
+        EventDispatcher t1 = sut_.assign(ts0);
+        EventDispatcher t2 = sut_.assign(ts1);
 
         assertThat(t0, is(sameInstance(t1)));
         assertThat(t0.selectionCount(), is(1));
@@ -46,9 +46,9 @@ public class DefaultEventDispatcherGroupTest {
         EventDispatcherSelection ts0 = mock(EventDispatcherSelection.class);
         EventDispatcherSelection ts1 = mock(EventDispatcherSelection.class);
 
-        DefaultEventDispatcher t0 = sut_.assign(ts0);
-        DefaultEventDispatcher t1 = sut_.assign(ts0);
-        DefaultEventDispatcher t2 = sut_.assign(ts1);
+        EventDispatcher t0 = sut_.assign(ts0);
+        EventDispatcher t1 = sut_.assign(ts0);
+        EventDispatcher t2 = sut_.assign(ts1);
         t0.reject(ts0);
         int dupCount0 = t0.duplicationCountFor(ts0);
         t1.reject(ts0);

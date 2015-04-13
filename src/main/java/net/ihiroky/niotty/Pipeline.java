@@ -53,7 +53,7 @@ public interface Pipeline {
      * @throws IllegalArgumentException the key is {@link #IO_STAGE_KEY} or already exist in this pipeline
      * @throws NullPointerException if the key or stage is null
      */
-    Pipeline add(StageKey key, Stage stage, EventDispatcherGroup<? extends EventDispatcher> pool);
+    Pipeline add(StageKey key, Stage stage, EventDispatcherGroup pool);
 
     /**
      * Adds the specified key and stage before the stage specified with the base stage key.
@@ -80,7 +80,7 @@ public interface Pipeline {
      * @throws NullPointerException if the baseKey, key or stage is null
      * @throws java.util.NoSuchElementException if the base stage key is not found in this pipeline
      */
-    Pipeline addBefore(StageKey baseKey, StageKey key, Stage stage, EventDispatcherGroup<? extends EventDispatcher> pool);
+    Pipeline addBefore(StageKey baseKey, StageKey key, Stage stage, EventDispatcherGroup pool);
 
     /**
      * Adds the specified key and stage after the stage specified with the base stage key.
@@ -107,7 +107,7 @@ public interface Pipeline {
      * @throws NullPointerException if the baseKey, key or stage is null
      * @throws java.util.NoSuchElementException if the base stage key is not found in this pipeline
      */
-    Pipeline addAfter(StageKey baseKey, StageKey key, Stage stage, EventDispatcherGroup<? extends EventDispatcher> pool);
+    Pipeline addAfter(StageKey baseKey, StageKey key, Stage stage, EventDispatcherGroup pool);
 
     /**
      * Removes a stage specified with the stage key.
@@ -147,7 +147,7 @@ public interface Pipeline {
      * @throws java.util.NoSuchElementException if the stage associated with the old key key is not found
      *         in this pipeline
      */
-    Pipeline replace(StageKey oldKey, StageKey newKey, Stage newStage, EventDispatcherGroup<? extends EventDispatcher> pool);
+    Pipeline replace(StageKey oldKey, StageKey newKey, Stage newStage, EventDispatcherGroup pool);
 
     /**
      * Calls a message store chain in this pipeline.

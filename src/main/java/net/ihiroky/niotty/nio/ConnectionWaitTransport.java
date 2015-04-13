@@ -1,11 +1,6 @@
 package net.ihiroky.niotty.nio;
 
-import net.ihiroky.niotty.DefaultTransportFuture;
-import net.ihiroky.niotty.EventDispatcherGroup;
-import net.ihiroky.niotty.PipelineComposer;
-import net.ihiroky.niotty.Transport;
-import net.ihiroky.niotty.TransportFuture;
-import net.ihiroky.niotty.TransportOption;
+import net.ihiroky.niotty.*;
 import net.ihiroky.niotty.buffer.Packet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,17 +16,21 @@ import java.util.Set;
 /**
  * @author Hiroki Itoh
  */
-public class ConnectionWaitTransport extends NioSocketTransport<SelectDispatcher> {
+public class ConnectionWaitTransport extends NioSocketTransport {
 
     private final NioClientSocketTransport transport_;
+    private final DefaultPipeline pipeline_;
     private final DefaultTransportFuture future_;
 
     private static Logger logger_ = LoggerFactory.getLogger(ConnectionWaitTransport.class);
+    private static final String NAME = "ConnectionPending";
 
-    ConnectionWaitTransport(EventDispatcherGroup<SelectDispatcher> group,
+    ConnectionWaitTransport(NioEventDispatcherGroup group,
             NioClientSocketTransport transport, DefaultTransportFuture future) {
-        super("ConnectionPending", PipelineComposer.empty(), group);
+        super(NAME, PipelineComposer.empty(), group);
         transport_ = transport;
+        Stage ioStage = ((NioEventDispatcher) eventDispatcher()).ioStage();
+        pipeline_ = new DefaultPipeline(NAME, this, group, Pipeline.IO_STAGE_KEY, ioStage);
         future_ = future;
     }
 
@@ -86,6 +85,11 @@ public class ConnectionWaitTransport extends NioSocketTransport<SelectDispatcher
     }
 
     @Override
+    public Pipeline pipeline() {
+        return pipeline_;
+    }
+
+    @Override
     public int pendingWriteBuffers() {
         return 0;
     }
@@ -96,7 +100,7 @@ public class ConnectionWaitTransport extends NioSocketTransport<SelectDispatcher
     }
 
     @Override
-    void onSelected(SelectionKey key, SelectDispatcher selectDispatcher) {
+    void onSelected(SelectionKey key, NioEventDispatcher selectDispatcher) {
         if (!future_.executing()) {
             return;
         }

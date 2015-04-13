@@ -12,12 +12,11 @@ import java.util.concurrent.atomic.AtomicReference;
  *
  * @param <T> The type of {@link EventDispatcher}
  */
-public abstract class AbstractTransport<T extends EventDispatcher> implements Transport {
+public abstract class AbstractTransport implements Transport {
 
-    private final DefaultPipeline<T> pipeline_;
     private final AtomicReference<Object> attachmentReference_;
     private final DefaultTransportFuture closeFuture_;
-    private final T dispatcher_;
+    private final EventDispatcher dispatcher_;
 
     /**
      * Creates a new instance.
@@ -27,39 +26,13 @@ public abstract class AbstractTransport<T extends EventDispatcher> implements Tr
      * @param eventDispatcherGroup the pool which offers the EventDispatcher to execute the stage
      */
     protected AbstractTransport(
-            String name, PipelineComposer pipelineComposer, EventDispatcherGroup<T> eventDispatcherGroup) {
+            String name, PipelineComposer pipelineComposer, EventDispatcherGroup eventDispatcherGroup) {
         Arguments.requireNonNull(name, "name");
         Arguments.requireNonNull(pipelineComposer, "pipelineComposer");
 
         attachmentReference_ = new AtomicReference<Object>();
         closeFuture_ = new DefaultTransportFuture(this);
         dispatcher_ = eventDispatcherGroup.assign(this);
-
-        DefaultPipeline<T> pipeline =
-                new DefaultPipeline<T>(name, this, eventDispatcherGroup, Pipeline.IO_STAGE_KEY, ioStage());
-        pipelineComposer.compose(pipeline);
-        pipeline_ = pipeline;
-    }
-
-    /**
-     * Creates a stage which handle I/O operation.
-     * This method is called in the constructor, so the implementation class should define
-     * this method as final and safe.
-     *
-     * @return the stage
-     */
-    protected abstract Stage ioStage();
-
-    @Override
-    public Pipeline pipeline() {
-        return pipeline_;
-    }
-
-    /**
-     * Closes pipelines.
-     */
-    public void closePipeline() {
-        pipeline_.close();
     }
 
     /**
@@ -68,7 +41,7 @@ public abstract class AbstractTransport<T extends EventDispatcher> implements Tr
      *
      * @return the EventDispatcher.
      */
-    public T eventDispatcher() {
+    public EventDispatcher eventDispatcher() {
         return dispatcher_;
     }
 
@@ -79,12 +52,12 @@ public abstract class AbstractTransport<T extends EventDispatcher> implements Tr
 
     @Override
     public void write(Object message) {
-        pipeline_.store(message);
+        pipeline().store(message);
     }
 
     @Override
     public void write(Object message, Object parameter) {
-        pipeline_.store(message, parameter);
+        pipeline().store(message, parameter);
     }
 
     @Override

@@ -1,13 +1,6 @@
 package net.ihiroky.niotty.nio;
 
-import net.ihiroky.niotty.AbstractTransport;
-import net.ihiroky.niotty.DefaultTransportFuture;
-import net.ihiroky.niotty.Event;
-import net.ihiroky.niotty.EventDispatcherGroup;
-import net.ihiroky.niotty.PipelineComposer;
-import net.ihiroky.niotty.Stage;
-import net.ihiroky.niotty.SuccessfulTransportFuture;
-import net.ihiroky.niotty.TransportFuture;
+import net.ihiroky.niotty.*;
 import net.ihiroky.niotty.buffer.Packet;
 import net.ihiroky.niotty.util.Arguments;
 import org.slf4j.Logger;
@@ -23,19 +16,17 @@ import java.util.concurrent.TimeUnit;
  * A skeletal implementation of {@link net.ihiroky.niotty.Transport} for NIO.
  * @param <S> a type of selector
  */
-public abstract class NioSocketTransport<S extends SelectDispatcher> extends AbstractTransport<S> {
+public abstract class NioSocketTransport extends AbstractTransport {
 
+    private final DefaultPipeline pipeline_;
     private SelectionKey key_;
     private static Logger logger_ = LoggerFactory.getLogger(NioSocketTransport.class);
 
-    NioSocketTransport(
-            String name, PipelineComposer pipelineComposer, EventDispatcherGroup<S> eventDispatcherGroup) {
+    NioSocketTransport(String name, PipelineComposer pipelineComposer, NioEventDispatcherGroup eventDispatcherGroup) {
         super(name, pipelineComposer, eventDispatcherGroup);
-    }
 
-    @Override
-    protected Stage ioStage() {
-        return eventDispatcher().ioStage();
+        Stage ioStage = ((NioEventDispatcher) eventDispatcher()).ioStage();
+        pipeline_ = new DefaultPipeline(name, this, eventDispatcherGroup, Pipeline.IO_STAGE_KEY, ioStage);
     }
 
     @Override
@@ -49,12 +40,12 @@ public abstract class NioSocketTransport<S extends SelectDispatcher> extends Abs
     }
 
     final TransportFuture closeSelectableChannel() {
-        S selector = eventDispatcher();
-        if (selector == null) {
-            closePipeline();
+        NioEventDispatcher dispatcher = (NioEventDispatcher) eventDispatcher();
+        if (dispatcher == null) {
+            pipeline_.close();
             return new SuccessfulTransportFuture(this);
         }
-        selector.offer(new Event() {
+        dispatcher.offer(new Event() {
             @Override
             public long execute() {
                 NioSocketTransport.this.doCloseSelectableChannel();
@@ -70,7 +61,7 @@ public abstract class NioSocketTransport<S extends SelectDispatcher> extends Abs
      * The key is cancelled and the channel is closed if the key is non null and valid.
      * The load pipeline and onStore pipeline (optional) is called
      * after the channel is closed. This method calls {@code #onCloseSelectableChannel} and
-     * {@link #closePipeline()} after the channel close operation.
+     * closes its pipeline after the channel close operation.
      * @return close future
      */
     final TransportFuture doCloseSelectableChannel() {
@@ -86,7 +77,7 @@ public abstract class NioSocketTransport<S extends SelectDispatcher> extends Abs
             }
 
             onCloseSelectableChannel();
-            closePipeline();
+            pipeline_.close();
         }
         return closeFuture;
     }
@@ -117,7 +108,7 @@ public abstract class NioSocketTransport<S extends SelectDispatcher> extends Abs
             return;
         }
 
-        final S dispatcher = eventDispatcher();
+        final NioEventDispatcher dispatcher = (NioEventDispatcher)  eventDispatcher();
         if (dispatcher.isInDispatcherThread()) {
             if (ops == SelectionKey.OP_READ) {
                 pipeline().activate();
@@ -182,7 +173,7 @@ public abstract class NioSocketTransport<S extends SelectDispatcher> extends Abs
         }
     }
 
-    abstract void onSelected(SelectionKey key, SelectDispatcher selectDispatcher);
+    abstract void onSelected(SelectionKey key, NioEventDispatcher selectDispatcher);
     abstract void readyToWrite(Packet message, Object parameter);
     abstract void flush(ByteBuffer writeBuffer) throws IOException;
 }

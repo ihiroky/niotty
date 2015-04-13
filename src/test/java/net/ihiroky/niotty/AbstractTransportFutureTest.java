@@ -16,13 +16,13 @@ import static org.mockito.Mockito.*;
 public class AbstractTransportFutureTest {
 
     private DefaultTransportFuture sut_;
-    private AbstractTransport<?> transport_;
+    private AbstractTransport transport_;
     private EventDispatcher eventDispatcher_;
 
     @Before
     public void setUp() {
         @SuppressWarnings("unchecked")
-        AbstractTransport<EventDispatcher> transport = mock(AbstractTransport.class);
+        AbstractTransport transport = mock(AbstractTransport.class);
         EventDispatcher eventDispatcher = mock(EventDispatcher.class);
         when(transport.eventDispatcher()).thenReturn(eventDispatcher);
 

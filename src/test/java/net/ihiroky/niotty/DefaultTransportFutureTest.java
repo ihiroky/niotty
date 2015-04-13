@@ -40,7 +40,7 @@ public class DefaultTransportFutureTest {
     @Before
     public void setUp() {
         @SuppressWarnings("unchecked")
-        AbstractTransport<EventDispatcher> transport = mock(AbstractTransport.class);
+        AbstractTransport transport = mock(AbstractTransport.class);
         EventDispatcher eventDispatcher = mock(EventDispatcher.class);
         when(eventDispatcher.isInDispatcherThread()).thenReturn(true);
         when(transport.eventDispatcher()).thenReturn(eventDispatcher);

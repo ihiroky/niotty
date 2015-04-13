@@ -1,16 +1,6 @@
 package net.ihiroky.niotty.nio;
 
-import net.ihiroky.niotty.CancelledTransportFuture;
-import net.ihiroky.niotty.DefaultTransportFuture;
-import net.ihiroky.niotty.Event;
-import net.ihiroky.niotty.EventDispatcherGroup;
-import net.ihiroky.niotty.FailedTransportFuture;
-import net.ihiroky.niotty.PipelineComposer;
-import net.ihiroky.niotty.SuccessfulTransportFuture;
-import net.ihiroky.niotty.TransportException;
-import net.ihiroky.niotty.TransportFuture;
-import net.ihiroky.niotty.TransportOption;
-import net.ihiroky.niotty.TransportOptions;
+import net.ihiroky.niotty.*;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.Packet;
 import net.ihiroky.niotty.util.Arguments;
@@ -37,10 +27,11 @@ import java.util.Set;
 /**
  * An implementation of {@link net.ihiroky.niotty.Transport} for NIO {@code SocketChannel}.
  */
-public class NioClientSocketTransport extends NioSocketTransport<SelectDispatcher> {
+public class NioClientSocketTransport extends NioSocketTransport {
 
     private final SocketChannel channel_;
-    private final EventDispatcherGroup<SelectDispatcher> connectSelectGroup_;
+    private final DefaultPipeline pipeline_;
+    private final NioEventDispatcherGroup connectSelectGroup_;
     private final PacketQueue writeQueue_;
     private FlushStatus flushStatus_;
     private boolean deactivateOnEndOfStream_;
@@ -56,13 +47,13 @@ public class NioClientSocketTransport extends NioSocketTransport<SelectDispatche
                     TransportOptions.SO_KEEPALIVE, TransportOptions.SO_LINGER, TransportOptions.TCP_NODELAY)));
 
     public NioClientSocketTransport(String name, PipelineComposer composer,
-            EventDispatcherGroup<SelectDispatcher> ioSelectPool, WriteQueueFactory<PacketQueue> writeQueueFactory) {
-        this(name, composer, null, ioSelectPool, writeQueueFactory);
+            NioEventDispatcherGroup nioEventDispatcherGroup, WriteQueueFactory<PacketQueue> writeQueueFactory) {
+        this(name, composer, null, nioEventDispatcherGroup, writeQueueFactory);
     }
 
     public NioClientSocketTransport(String name, PipelineComposer composer,
-            EventDispatcherGroup<SelectDispatcher> connectSelectGroup,
-            EventDispatcherGroup<SelectDispatcher> ioSelectPool,
+            NioEventDispatcherGroup connectSelectGroup,
+            NioEventDispatcherGroup ioSelectPool,
             WriteQueueFactory<PacketQueue> writeQueueFactory) {
         super(name, composer, ioSelectPool);
 
@@ -77,15 +68,17 @@ public class NioClientSocketTransport extends NioSocketTransport<SelectDispatche
             connectSelectGroup_ = connectSelectGroup;
             writeQueue_ = writeQueueFactory.newWriteQueue();
             deactivateOnEndOfStream_ = true;
+            Stage ioStage = ((NioEventDispatcher) eventDispatcher()).ioStage();
+            pipeline_ = new DefaultPipeline(name, this, ioSelectPool, Pipeline.IO_STAGE_KEY, ioStage);
         } catch (Exception e) {
             throw new RuntimeException("failed to open client socket channel.", e);
         }
     }
 
     public NioClientSocketTransport(String name, PipelineComposer composer,
-           EventDispatcherGroup<SelectDispatcher> ioSelectGroup, WriteQueueFactory<PacketQueue> writeQueueFactory,
+           NioEventDispatcherGroup nioEventDispatcherGroup, WriteQueueFactory<PacketQueue> writeQueueFactory,
             SocketChannel child) {
-        super(name, composer, ioSelectGroup);
+        super(name, composer, nioEventDispatcherGroup);
 
         Arguments.requireNonNull(writeQueueFactory, "writeQueueFactory");
         Arguments.requireNonNull(child, "child");
@@ -94,6 +87,8 @@ public class NioClientSocketTransport extends NioSocketTransport<SelectDispatche
         connectSelectGroup_ = null;
         writeQueue_ = writeQueueFactory.newWriteQueue();
         deactivateOnEndOfStream_ = true;
+        Stage ioStage = ((NioEventDispatcher) eventDispatcher()).ioStage();
+        pipeline_ = new DefaultPipeline(name, this, nioEventDispatcherGroup, Pipeline.IO_STAGE_KEY, ioStage);
     }
 
     /**
@@ -218,6 +213,11 @@ public class NioClientSocketTransport extends NioSocketTransport<SelectDispatche
     }
 
     @Override
+    public Pipeline pipeline() {
+        return pipeline_;
+    }
+
+    @Override
     public TransportFuture bind(final SocketAddress local) {
         try {
             boolean bound = Platform.javaVersion().ge(JavaVersion.JAVA7)
@@ -327,13 +327,17 @@ public class NioClientSocketTransport extends NioSocketTransport<SelectDispatche
         }
     }
 
+    /**
+     * Returns true if this transport is connected to a {@link NioServerSocketTransport}.
+     * @return true if this transport is connected to a {@code NioServerSocketTransport}
+     */
     public boolean isConnected() {
         return channel_.isConnected();
     }
 
     public TransportFuture shutdownOutput() {
-        SelectDispatcher select = eventDispatcher();
-        if (select == null) {
+        EventDispatcher dispatcher = eventDispatcher();
+        if (dispatcher == null) {
             return new SuccessfulTransportFuture(this);
         }
         final DefaultTransportFuture future = new DefaultTransportFuture(this);
@@ -364,8 +368,8 @@ public class NioClientSocketTransport extends NioSocketTransport<SelectDispatche
     }
 
     public TransportFuture shutdownInput() {
-        SelectDispatcher select = eventDispatcher();
-        if (select == null) {
+        EventDispatcher eventDispatcher = eventDispatcher();
+        if (eventDispatcher == null) {
             return new SuccessfulTransportFuture(this);
         }
         final DefaultTransportFuture future = new DefaultTransportFuture(this);
@@ -407,7 +411,7 @@ public class NioClientSocketTransport extends NioSocketTransport<SelectDispatche
     }
 
     @Override
-    void onSelected(SelectionKey key, SelectDispatcher selectDispatcher) {
+    void onSelected(SelectionKey key, NioEventDispatcher selectDispatcher) {
         assert key == key();
 
         ReadableByteChannel channel = (ReadableByteChannel) key.channel();

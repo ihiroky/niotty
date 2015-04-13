@@ -1,13 +1,6 @@
 package net.ihiroky.niotty.nio;
 
-import net.ihiroky.niotty.Event;
-import net.ihiroky.niotty.EventDispatcherGroup;
-import net.ihiroky.niotty.EventDispatcherSelection;
-import net.ihiroky.niotty.PipelineComposer;
-import net.ihiroky.niotty.Stage;
-import net.ihiroky.niotty.Transport;
-import net.ihiroky.niotty.TransportFuture;
-import net.ihiroky.niotty.TransportOption;
+import net.ihiroky.niotty.*;
 import net.ihiroky.niotty.buffer.Packet;
 import org.junit.Before;
 import org.junit.Test;
@@ -28,15 +21,15 @@ import static org.mockito.Mockito.*;
  */
 public class NioSocketTransportTest {
 
-    private NioSocketTransport<SelectDispatcher> sut_;
-    private SelectDispatcher selector_;
+    private NioSocketTransport sut_;
+    private NioEventDispatcher selector_;
 
     @Before
     public void setUp() throws Exception {
-        selector_ = mock(SelectDispatcher.class);
+        selector_ = mock(NioEventDispatcher.class);
         when(selector_.ioStage()).thenReturn(mock(Stage.class));
         @SuppressWarnings("unchecked")
-        EventDispatcherGroup<SelectDispatcher> eventDispatcherGroup = mock(EventDispatcherGroup.class);
+        NioEventDispatcherGroup eventDispatcherGroup = mock(NioEventDispatcherGroup.class);
         when(eventDispatcherGroup.assign(Mockito.<EventDispatcherSelection>any())).thenReturn(selector_);
         sut_ = new Impl("NioSocketTransportTest", PipelineComposer.empty(), eventDispatcherGroup);
     }
@@ -67,14 +60,14 @@ public class NioSocketTransportTest {
         verify(selector_).register(channel, SelectionKey.OP_ACCEPT, sut_);
     }
 
-    private static class Impl extends NioSocketTransport<SelectDispatcher> {
+    private static class Impl extends NioSocketTransport {
 
-        Impl(String name, PipelineComposer pipelineComposer, EventDispatcherGroup<SelectDispatcher> eventDispatcherGroup) {
+        Impl(String name, PipelineComposer pipelineComposer, NioEventDispatcherGroup eventDispatcherGroup) {
             super(name, pipelineComposer, eventDispatcherGroup);
         }
 
         @Override
-        void onSelected(SelectionKey key, SelectDispatcher selectDispatcher) {
+        void onSelected(SelectionKey key, NioEventDispatcher selectDispatcher) {
         }
 
         @Override
@@ -127,6 +120,11 @@ public class NioSocketTransportTest {
 
         @Override
         public Set<TransportOption<?>> supportedOptions() {
+            return null;
+        }
+
+        @Override
+        public Pipeline pipeline() {
             return null;
         }
 

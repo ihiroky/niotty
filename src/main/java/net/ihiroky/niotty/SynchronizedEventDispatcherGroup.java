@@ -10,7 +10,7 @@ import java.util.concurrent.ThreadFactory;
  * <p>This class use threads to execute the {@link net.ihiroky.niotty.SynchronizedEventDispatcher}. </p>
  */
 public final class SynchronizedEventDispatcherGroup
-        extends EventDispatcherGroup<SynchronizedEventDispatcher> {
+        extends EventDispatcherGroup {
 
     private static class SynchronizedEventDispatcherFactory
             implements EventDispatcherFactory<SynchronizedEventDispatcher> {

@@ -1,7 +1,6 @@
 package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.Event;
-import net.ihiroky.niotty.EventDispatcherGroup;
 import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.TransportFuture;
 import net.ihiroky.niotty.TransportOptions;
@@ -25,10 +24,11 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.Executors;
 
-import static net.ihiroky.niotty.util.JavaVersionMatchers.*;
-import static org.hamcrest.CoreMatchers.*;
-import static org.hamcrest.MatcherAssert.*;
-import static org.junit.Assume.*;
+import static net.ihiroky.niotty.util.JavaVersionMatchers.equal;
+import static net.ihiroky.niotty.util.JavaVersionMatchers.greaterOrEqual;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assume.assumeThat;
 import static org.mockito.Mockito.*;
 
 /**
@@ -40,16 +40,16 @@ public class NioServerSocketTransportTest {
 
         private NioServerSocketTransport sut_;
         private ServerSocketChannel channel_;
-        private EventDispatcherGroup<SelectDispatcher> acceptGroup_;
-        private EventDispatcherGroup<SelectDispatcher> ioGroup_;
+        private NioEventDispatcherGroup acceptGroup_;
+        private NioEventDispatcherGroup ioGroup_;
 
         @Before
         public void setUp() {
             assumeThat(Platform.javaVersion(), is(greaterOrEqual(JavaVersion.JAVA7)));
             channel_ = mock(ServerSocketChannel.class);
-            acceptGroup_ = new EventDispatcherGroup<SelectDispatcher>(
+            acceptGroup_ = new NioEventDispatcherGroup(
                     1, Executors.defaultThreadFactory(), new SelectDispatcherFactory());
-            ioGroup_ = new EventDispatcherGroup(
+            ioGroup_ = new NioEventDispatcherGroup(
                     1, Executors.defaultThreadFactory(), new SelectDispatcherFactory());
             @SuppressWarnings("unchecked")
             WriteQueueFactory<PacketQueue> writeQueueFactory = mock(WriteQueueFactory.class);
@@ -131,7 +131,7 @@ public class NioServerSocketTransportTest {
         @Test
         public void testBind() throws Exception {
             InetSocketAddress address = new InetSocketAddress("127.0.0.1", 12345);
-            SelectDispatcher selectDispatcher = mock(SelectDispatcher.class);
+            NioEventDispatcher selectDispatcher = mock(NioEventDispatcher.class);
             when(selectDispatcher.isInDispatcherThread()).thenReturn(true);
             doAnswer(new Answer<Void>() {
                 @Override
@@ -156,7 +156,7 @@ public class NioServerSocketTransportTest {
         @Test
         public void testBindThoughBoundThenSuccessful() throws Exception {
             InetSocketAddress endpoint = new InetSocketAddress("127.0.0.1", 12345);
-            SelectDispatcher selector = mock(SelectDispatcher.class);
+            NioEventDispatcher selector = mock(NioEventDispatcher.class);
             when(selector.isInDispatcherThread()).thenReturn(true);
             NioServerSocketTransport sut = spy(sut_);
             when(sut.eventDispatcher()).thenReturn(selector);
@@ -195,8 +195,8 @@ public class NioServerSocketTransportTest {
 
         private NioServerSocketTransport sut_;
         private ServerSocket socket_;
-        private EventDispatcherGroup<SelectDispatcher> acceptGroup_;
-        private EventDispatcherGroup<SelectDispatcher> ioGroup_;
+        private NioEventDispatcherGroup acceptGroup_;
+        private NioEventDispatcherGroup ioGroup_;
 
         @Before
         public void setUp() {
@@ -205,9 +205,9 @@ public class NioServerSocketTransportTest {
             socket_ = mock(ServerSocket.class);
             ServerSocketChannel channel = mock(ServerSocketChannel.class);
             when(channel.socket()).thenReturn(socket_);
-            acceptGroup_ = new EventDispatcherGroup<SelectDispatcher>(
+            acceptGroup_ = new NioEventDispatcherGroup(
                     1, Executors.defaultThreadFactory(), new SelectDispatcherFactory());
-            ioGroup_ = new EventDispatcherGroup<SelectDispatcher>(
+            ioGroup_ = new NioEventDispatcherGroup(
                     1, Executors.defaultThreadFactory(), new SelectDispatcherFactory());
             @SuppressWarnings("unchecked")
             WriteQueueFactory<PacketQueue> writeQueueFactory = mock(WriteQueueFactory.class);
@@ -291,7 +291,7 @@ public class NioServerSocketTransportTest {
         @Test
         public void testBind() throws Exception {
             InetSocketAddress address = new InetSocketAddress("127.0.0.1", 12345);
-            SelectDispatcher selectDispatcher = mock(SelectDispatcher.class);
+            NioEventDispatcher selectDispatcher = mock(NioEventDispatcher.class);
             when(selectDispatcher.isInDispatcherThread()).thenReturn(true);
             doAnswer(new Answer<Void>() {
                 @Override
@@ -316,7 +316,7 @@ public class NioServerSocketTransportTest {
         @Test
         public void testBindThoughBoundThenSuccessful() throws Exception {
             InetSocketAddress endpoint = new InetSocketAddress("127.0.0.1", 12345);
-            SelectDispatcher selector = mock(SelectDispatcher.class);
+            NioEventDispatcher selector = mock(NioEventDispatcher.class);
             when(selector.isInDispatcherThread()).thenReturn(true);
             NioServerSocketTransport sut = spy(sut_);
             when(sut.eventDispatcher()).thenReturn(selector);

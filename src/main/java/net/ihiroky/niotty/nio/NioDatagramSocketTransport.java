@@ -1,15 +1,6 @@
 package net.ihiroky.niotty.nio;
 
-import net.ihiroky.niotty.DefaultTransportFuture;
-import net.ihiroky.niotty.Event;
-import net.ihiroky.niotty.EventDispatcherGroup;
-import net.ihiroky.niotty.FailedTransportFuture;
-import net.ihiroky.niotty.PipelineComposer;
-import net.ihiroky.niotty.SuccessfulTransportFuture;
-import net.ihiroky.niotty.TransportException;
-import net.ihiroky.niotty.TransportFuture;
-import net.ihiroky.niotty.TransportOption;
-import net.ihiroky.niotty.TransportOptions;
+import net.ihiroky.niotty.*;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.Packet;
 import net.ihiroky.niotty.util.Arguments;
@@ -40,9 +31,10 @@ import java.util.Set;
 /**
  * An implementation of {@link net.ihiroky.niotty.Transport} for NIO {@code DatagramChannel}.
  */
-public class NioDatagramSocketTransport extends NioSocketTransport<SelectDispatcher> {
+public class NioDatagramSocketTransport extends NioSocketTransport {
 
     private final DatagramChannel channel_;
+    private final DefaultPipeline pipeline_;
     private final DatagramQueue writeQueue_;
     private FlushStatus flushStatus_;
     private final Map<GroupKey, MembershipKey> membershipKeyMap_;
@@ -60,15 +52,15 @@ public class NioDatagramSocketTransport extends NioSocketTransport<SelectDispatc
      * Constructs the instance.
      * @param name the name of this transport
      * @param composer the composer to initialize a pipeline for this transport
-     * @param ioSelectDispatcherGroup the pool which offers the SelectDispatcher to execute the stage
+     * @param nioEventDispatcherGroup the pool which offers the NioEventDispatcher to execute the stages
      * @param writeQueueFactory the factory to create DatagramQueue
      * @param family the internet protocol family
      */
     public NioDatagramSocketTransport(String name, PipelineComposer composer,
-            EventDispatcherGroup<SelectDispatcher> ioSelectDispatcherGroup,
+            NioEventDispatcherGroup nioEventDispatcherGroup,
             WriteQueueFactory<DatagramQueue> writeQueueFactory,
             InternetProtocolFamily family) {
-        super(name, composer, ioSelectDispatcherGroup);
+        super(name, composer, nioEventDispatcherGroup);
 
         Arguments.requireNonNull(writeQueueFactory, "writeQueueFactory");
 
@@ -91,20 +83,24 @@ public class NioDatagramSocketTransport extends NioSocketTransport<SelectDispatc
         }
 
         channel_ = channel;
+        Stage ioStage = ((NioEventDispatcher) eventDispatcher()).ioStage();
+        pipeline_ = new DefaultPipeline(name, this, nioEventDispatcherGroup, Pipeline.IO_STAGE_KEY, ioStage);
         writeQueue_ = writeQueueFactory.newWriteQueue();
         membershipKeyMap_ = Collections.synchronizedMap(new HashMap<GroupKey, MembershipKey>());
     }
 
     // Constructor for the test.
     NioDatagramSocketTransport(String name, PipelineComposer composer,
-            EventDispatcherGroup<SelectDispatcher> ioSelectDispatcherGroup,
+            NioEventDispatcherGroup nioEventDispatcherGroup,
             WriteQueueFactory<DatagramQueue> writeQueueFactory,
             DatagramChannel channel) {
-        super(name, composer, ioSelectDispatcherGroup);
+        super(name, composer, nioEventDispatcherGroup);
 
         Arguments.requireNonNull(writeQueueFactory, "writeQueueFactory");
 
         channel_ = channel;
+        Stage ioStage = ((NioEventDispatcher) eventDispatcher()).ioStage();
+        pipeline_ = new DefaultPipeline(name, this, nioEventDispatcherGroup, Pipeline.IO_STAGE_KEY, ioStage);
         writeQueue_ = writeQueueFactory.newWriteQueue();
         membershipKeyMap_ = Collections.synchronizedMap(new HashMap<GroupKey, MembershipKey>());
     }
@@ -219,6 +215,11 @@ public class NioDatagramSocketTransport extends NioSocketTransport<SelectDispatc
     @Override
     public Set<TransportOption<?>> supportedOptions() {
         return SUPPORTED_OPTIONS;
+    }
+
+    @Override
+    public Pipeline pipeline() {
+        return pipeline_;
     }
 
     @Override
@@ -403,7 +404,7 @@ public class NioDatagramSocketTransport extends NioSocketTransport<SelectDispatc
     }
 
     @Override
-    void onSelected(SelectionKey key, SelectDispatcher selectDispatcher) {
+    void onSelected(SelectionKey key, NioEventDispatcher selectDispatcher) {
         assert key == key();
 
         DatagramChannel channel = (DatagramChannel) key.channel();

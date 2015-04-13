@@ -6,7 +6,7 @@ import net.ihiroky.niotty.util.Arguments;
 /**
  *
  */
-public class SelectDispatcherFactory implements EventDispatcherFactory<SelectDispatcher> {
+public class SelectDispatcherFactory implements EventDispatcherFactory<NioEventDispatcher> {
 
     private int eventQueueCapacity_;
     private int readBufferSize_;
@@ -64,7 +64,7 @@ public class SelectDispatcherFactory implements EventDispatcherFactory<SelectDis
     }
 
     @Override
-    public SelectDispatcher newEventDispatcher() {
-        return new SelectDispatcher(eventQueueCapacity_, readBufferSize_, writeBufferSize_, useDirectBuffer_);
+    public NioEventDispatcher newEventDispatcher() {
+        return new NioEventDispatcher(eventQueueCapacity_, readBufferSize_, writeBufferSize_, useDirectBuffer_);
     }
 }

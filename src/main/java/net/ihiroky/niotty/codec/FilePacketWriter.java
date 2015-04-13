@@ -1,12 +1,6 @@
 package net.ihiroky.niotty.codec;
 
-import net.ihiroky.niotty.DefaultEventDispatcher;
-import net.ihiroky.niotty.DefaultEventDispatcherGroup;
-import net.ihiroky.niotty.Event;
-import net.ihiroky.niotty.EventDispatcher;
-import net.ihiroky.niotty.EventDispatcherGroup;
-import net.ihiroky.niotty.EventDispatcherSelection;
-import net.ihiroky.niotty.NameCountThreadFactory;
+import net.ihiroky.niotty.*;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.Packet;
 import net.ihiroky.niotty.util.Arguments;
@@ -57,7 +51,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class FilePacketWriter implements PacketWriter, EventDispatcherSelection {
 
-    private final EventDispatcherGroup<DefaultEventDispatcher> dispatcherGroup_;
+    private final EventDispatcherGroup dispatcherGroup_;
     private final EventDispatcher dispatcher_;
     private final String path_;
     private final FileChannel channel_;

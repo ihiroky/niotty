@@ -13,7 +13,7 @@ import static org.mockito.Mockito.*;
 public class PipelineElementTest {
 
     private PipelineElement sut_;
-    private EventDispatcherGroup<? extends EventDispatcher> eventDispatcherGroup_;
+    private EventDispatcherGroup eventDispatcherGroup_;
     private Pipeline pipeline_;
     private EventDispatcher eventDispatcher_;
     private Stage stage_;

@@ -18,9 +18,9 @@ import static org.mockito.Mockito.*;
  */
 public class DefaultPipelineTest {
 
-    private DefaultPipeline<EventDispatcher> sut_;
-    private AbstractTransport<EventDispatcher> transport_;
-    private EventDispatcherGroup<EventDispatcher> eventDispatcherGroup_;
+    private DefaultPipeline sut_;
+    private AbstractTransport transport_;
+    private EventDispatcherGroup eventDispatcherGroup_;
     private EventDispatcher eventDispatcher_;
 
     @Before
@@ -694,19 +694,19 @@ public class DefaultPipelineTest {
                 + ")]"));
     }
 
-    private static class PipelineImpl extends DefaultPipeline<EventDispatcher> {
+    private static class PipelineImpl extends DefaultPipeline {
 
         static final StageKey LAST = StageKeys.of("LAST");
         static final Stage LAST_STAGE = PipelineElement.newNullStage();
 
         @SuppressWarnings("unchecked")
-        protected PipelineImpl(AbstractTransport<EventDispatcher> transport, EventDispatcherGroup<EventDispatcher> eventDispatcherGroup) {
+        protected PipelineImpl(AbstractTransport transport, EventDispatcherGroup eventDispatcherGroup) {
             super("test", transport, eventDispatcherGroup, LAST, LAST_STAGE);
         }
 
         @Override
         PipelineElement createContext(
-                StageKey key, final Stage stage, EventDispatcherGroup<? extends EventDispatcher> pool) {
+                StageKey key, final Stage stage, EventDispatcherGroup pool) {
             // return spy(new PipelineElement(this, key, stage, pool));
             return new PipelineElement(this, key, stage, pool);
         }

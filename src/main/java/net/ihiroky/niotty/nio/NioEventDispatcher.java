@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * An implementation of {@link net.ihiroky.niotty.EventDispatcher} to handle {@link java.nio.channels.SelectableChannel}.
  */
-public class SelectDispatcher extends EventDispatcher {
+public class NioEventDispatcher extends EventDispatcher {
 
     private Selector selector_;
     private final AtomicBoolean wakenUp_;
@@ -30,7 +30,7 @@ public class SelectDispatcher extends EventDispatcher {
     final ByteBuffer writeBuffer_;
     private final Stage ioStage_;
 
-    private static Logger logger_ = LoggerFactory.getLogger(SelectDispatcher.class);
+    private static Logger logger_ = LoggerFactory.getLogger(NioEventDispatcher.class);
 
     private static final ByteBuffer EMPTY_BUFFER = ByteBuffer.allocate(0).asReadOnlyBuffer();
 
@@ -40,7 +40,7 @@ public class SelectDispatcher extends EventDispatcher {
      * An invocation of this constructor behaves in exactly the same way as the invocation
      * {@code SelectDispatcher(0, 0, 0, false)}.
      */
-    protected SelectDispatcher() {
+    protected NioEventDispatcher() {
         super(0);
         wakenUp_ = new AtomicBoolean();
         readBuffer_ = EMPTY_BUFFER;
@@ -57,7 +57,7 @@ public class SelectDispatcher extends EventDispatcher {
      * @param writeBufferSize the size of write buffer
      * @param direct true if the direct buffer is used
      */
-    protected SelectDispatcher(int eventQueueCapacity, int readBufferSize, int writeBufferSize, boolean direct) {
+    protected NioEventDispatcher(int eventQueueCapacity, int readBufferSize, int writeBufferSize, boolean direct) {
         super(eventQueueCapacity);
         wakenUp_ = new AtomicBoolean();
         readBuffer_ = direct ? ByteBuffer.allocateDirect(readBufferSize) : ByteBuffer.allocate(readBufferSize);
@@ -97,7 +97,7 @@ public class SelectDispatcher extends EventDispatcher {
                 SelectionKey key = iterator.next();
                 iterator.remove();
 
-                NioSocketTransport<?> transport = (NioSocketTransport<?>) key.attachment();
+                NioSocketTransport transport = (NioSocketTransport) key.attachment();
                 transport.onSelected(key, this);
             }
         }
@@ -132,7 +132,7 @@ public class SelectDispatcher extends EventDispatcher {
     }
 
 
-    SelectionKey register(SelectableChannel channel, int ops, NioSocketTransport<?> transport) throws IOException {
+    SelectionKey register(SelectableChannel channel, int ops, NioSocketTransport transport) throws IOException {
         try {
             logger_.debug("[register] channel {} is registered to {}.", transport, Thread.currentThread());
             return channel.register(selector_, ops, transport);
@@ -172,7 +172,7 @@ public class SelectDispatcher extends EventDispatcher {
 
         @Override
         public void stored(StageContext context, Object message, Object parameter) {
-            final NioSocketTransport<?> transport = (NioSocketTransport<?>) context.transport();
+            final NioSocketTransport transport = (NioSocketTransport) context.transport();
             transport.readyToWrite((Packet) message, parameter);
             try {
                 transport.flush(writeBuffer_);

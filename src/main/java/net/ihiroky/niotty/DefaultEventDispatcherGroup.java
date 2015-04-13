@@ -9,8 +9,7 @@ import java.util.concurrent.ThreadFactory;
  *
  * <p>This class use threads to execute the {@code DefaultEventDispatcher}. </p>
  */
-public final class DefaultEventDispatcherGroup
-        extends EventDispatcherGroup<DefaultEventDispatcher> {
+public final class DefaultEventDispatcherGroup extends EventDispatcherGroup {
 
     private static class DefaultEventDispatcherFactory implements EventDispatcherFactory<DefaultEventDispatcher> {
 

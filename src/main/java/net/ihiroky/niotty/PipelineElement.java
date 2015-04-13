@@ -23,14 +23,14 @@ public class PipelineElement {
     private static final Pipeline NULL_PIPELINE = new NullPipeline();
     private static final StageKey NULL_STAGE_KEY = StageKeys.of("NullStage");
     private static final Stage NULL_STAGE = new NullStage();
-    private static final EventDispatcherGroup<EventDispatcher> NULL_EVENT_DISPATCHER_GROUP = new NullPipelineElementExecutorPool();
+    private static final EventDispatcherGroup NULL_EVENT_DISPATCHER_GROUP = new NullPipelineElementExecutorPool();
     private static final PipelineElement TERMINAL = newNullObject();
     private static final int STAGE_TYPE_BOTH = 0;
     private static final int STAGE_TYPE_STORE = 1;
     private static final int STAGE_TYPE_LOAD = 2;
 
     protected PipelineElement(Pipeline pipeline, StageKey key, Stage stage,
-            EventDispatcherGroup<? extends EventDispatcher> pool) {
+            EventDispatcherGroup pool) {
         pipeline_ = Arguments.requireNonNull(pipeline, "pipeline");
         key_ = Arguments.requireNonNull(key, "key");
         stage_ = Arguments.requireNonNull(stage, "stage");
@@ -350,7 +350,7 @@ public class PipelineElement {
         }
     }
 
-    private static class NullPipelineElementExecutorPool extends EventDispatcherGroup<EventDispatcher> {
+    private static class NullPipelineElementExecutorPool extends EventDispatcherGroup {
 
         static final EventFuture NULL_FUTURE = new EventFuture(-1L, new Event() {
             @Override
@@ -413,7 +413,7 @@ public class PipelineElement {
         }
 
         @Override
-        public Pipeline add(StageKey key, Stage stage, EventDispatcherGroup<? extends EventDispatcher> pool) {
+        public Pipeline add(StageKey key, Stage stage, EventDispatcherGroup pool) {
             return this;
         }
 
@@ -423,7 +423,7 @@ public class PipelineElement {
         }
 
         @Override
-        public Pipeline addBefore(StageKey baseKey, StageKey key, Stage stage, EventDispatcherGroup<? extends EventDispatcher> pool) {
+        public Pipeline addBefore(StageKey baseKey, StageKey key, Stage stage, EventDispatcherGroup pool) {
             return this;
         }
 
@@ -433,7 +433,7 @@ public class PipelineElement {
         }
 
         @Override
-        public Pipeline addAfter(StageKey baseKey, StageKey key, Stage stage, EventDispatcherGroup<? extends EventDispatcher> pool) {
+        public Pipeline addAfter(StageKey baseKey, StageKey key, Stage stage, EventDispatcherGroup pool) {
             return this;
         }
 
@@ -448,7 +448,7 @@ public class PipelineElement {
         }
 
         @Override
-        public Pipeline replace(StageKey oldKey, StageKey newKey, Stage newStage, EventDispatcherGroup<? extends EventDispatcher> pool) {
+        public Pipeline replace(StageKey oldKey, StageKey newKey, Stage newStage, EventDispatcherGroup pool) {
             return this;
         }
 

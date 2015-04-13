@@ -62,10 +62,10 @@ public class EventDispatcherGroupTest {
         EventDispatcherSelection ts3 = mock(EventDispatcherSelection.class);
         EventDispatcherSelection ts = mock(EventDispatcherSelection.class);
 
-        EventDispatcherMock t1 = sut_.assign(ts1);
-        EventDispatcherMock t2 = sut_.assign(ts2);
-        EventDispatcherMock t3 = sut_.assign(ts3);
-        EventDispatcherMock t = sut_.assign(ts);
+        EventDispatcher t1 = sut_.assign(ts1);
+        EventDispatcher t2 = sut_.assign(ts2);
+        EventDispatcher t3 = sut_.assign(ts3);
+        EventDispatcher t = sut_.assign(ts);
 
         assertThat(t1.selectionCount(), is(2)); // 1 + 3
         assertThat(t2.selectionCount(), is(1));
@@ -88,14 +88,14 @@ public class EventDispatcherGroupTest {
         EventDispatcherSelection ts2 = mock(EventDispatcherSelection.class);
         EventDispatcherSelection ts3 = mock(EventDispatcherSelection.class);
 
-        EventDispatcherMock t1 = sut_.assign(ts1);
-        EventDispatcherMock t2 = sut_.assign(ts2);
-        EventDispatcherMock t3 = sut_.assign(ts3);
+        EventDispatcher t1 = sut_.assign(ts1);
+        EventDispatcher t2 = sut_.assign(ts2);
+        EventDispatcher t3 = sut_.assign(ts3);
         t2.close();
         while (t2.selectionCount() > 0) {
             Thread.sleep(10);
         }
-        EventDispatcherMock t = sut_.assign(ts2);
+        EventDispatcher t = sut_.assign(ts2);
 
         assertThat(t, is(not(sameInstance(t1))));
         assertThat(t, is(not(sameInstance(t2))));
@@ -107,14 +107,14 @@ public class EventDispatcherGroupTest {
         sut_ = new EventDispatcherGroupMock(threadFactory_, 3);
         EventDispatcherSelection ts1 = mock(EventDispatcherSelection.class);
 
-        EventDispatcherMock t0 = sut_.assign(ts1);
-        EventDispatcherMock t1 = sut_.assign(ts1);
+        EventDispatcher t0 = sut_.assign(ts1);
+        EventDispatcher t1 = sut_.assign(ts1);
 
         assertThat(t0, is(sameInstance(t1)));
         assertThat(t0.selectionCount(), is(1));
     }
 
-    private static class EventDispatcherGroupMock extends EventDispatcherGroup<EventDispatcherMock> {
+    private static class EventDispatcherGroupMock extends EventDispatcherGroup {
 
         /**
          * Constructs a new instance.

@@ -9,15 +9,14 @@ import java.util.NoSuchElementException;
 /**
  * A skeletal implementation of {@link Pipeline}.
  *
- * @param <L> the type of the EventDispatcher which executes the stages by default
  */
-public class DefaultPipeline<L extends EventDispatcher> implements Pipeline {
+public class DefaultPipeline implements Pipeline {
 
     private final String name_;
-    private final AbstractTransport<L> transport_;
+    private final AbstractTransport transport_;
     private final PipelineElement head_;
     private final PipelineElement tail_;
-    private final EventDispatcherGroup<L> eventDispatcherGroup_;
+    private final EventDispatcherGroup eventDispatcherGroup_;
 
     private volatile boolean activated_;
 
@@ -30,8 +29,8 @@ public class DefaultPipeline<L extends EventDispatcher> implements Pipeline {
      * @param tailStageKey a key to be associated with the tailStage
      * @param tailStage a stage that is executed at last in this pipeline
      */
-    protected DefaultPipeline(
-            String name, AbstractTransport<L> transport, EventDispatcherGroup<L> eventDispatcherGroup,
+    public DefaultPipeline(
+            String name, AbstractTransport transport, EventDispatcherGroup eventDispatcherGroup,
             StageKey tailStageKey, Stage tailStage) {
         Arguments.requireNonNull(name, "name");
         Arguments.requireNonNull(transport, "transport");
@@ -81,7 +80,7 @@ public class DefaultPipeline<L extends EventDispatcher> implements Pipeline {
     }
 
     @Override
-    public Pipeline add(StageKey key, Stage stage, EventDispatcherGroup<? extends EventDispatcher> pool) {
+    public Pipeline add(StageKey key, Stage stage, EventDispatcherGroup pool) {
         Arguments.requireNonNull(key, "key");
         Arguments.requireNonNull(stage, "stage");
         if (key.equals(IO_STAGE_KEY)) {
@@ -118,7 +117,7 @@ public class DefaultPipeline<L extends EventDispatcher> implements Pipeline {
     }
 
     @Override
-    public Pipeline addBefore(StageKey baseKey, StageKey key, Stage stage, EventDispatcherGroup<? extends EventDispatcher> pool) {
+    public Pipeline addBefore(StageKey baseKey, StageKey key, Stage stage, EventDispatcherGroup pool) {
         Arguments.requireNonNull(baseKey, "baseKey");
         Arguments.requireNonNull(key, "key");
         Arguments.requireNonNull(stage, "stage");
@@ -163,7 +162,7 @@ public class DefaultPipeline<L extends EventDispatcher> implements Pipeline {
     }
 
     @Override
-    public Pipeline addAfter(StageKey baseKey, StageKey key, Stage stage, EventDispatcherGroup<? extends EventDispatcher> pool) {
+    public Pipeline addAfter(StageKey baseKey, StageKey key, Stage stage, EventDispatcherGroup pool) {
         Arguments.requireNonNull(baseKey, "baseKey");
         Arguments.requireNonNull(key, "key");
         Arguments.requireNonNull(stage, "stage");
@@ -239,7 +238,7 @@ public class DefaultPipeline<L extends EventDispatcher> implements Pipeline {
     }
 
     @Override
-    public Pipeline replace(StageKey oldKey, StageKey newKey, Stage newStage, EventDispatcherGroup<? extends EventDispatcher> pool) {
+    public Pipeline replace(StageKey oldKey, StageKey newKey, Stage newStage, EventDispatcherGroup pool) {
         Arguments.requireNonNull(oldKey, "oldKey");
         Arguments.requireNonNull(newKey, "newKey");
         Arguments.requireNonNull(newStage, "newStage");
@@ -312,7 +311,7 @@ public class DefaultPipeline<L extends EventDispatcher> implements Pipeline {
      * @return the context
      */
     PipelineElement createContext(
-            StageKey key, Stage stage, EventDispatcherGroup<? extends EventDispatcher> group) {
+            StageKey key, Stage stage, EventDispatcherGroup group) {
         return new PipelineElement(this, key, stage, group);
     }
 
@@ -359,7 +358,7 @@ public class DefaultPipeline<L extends EventDispatcher> implements Pipeline {
         tail_.callEventTriggered(event);
     }
 
-    public AbstractTransport<L> transport() {
+    public AbstractTransport transport() {
         return transport_;
     }
 

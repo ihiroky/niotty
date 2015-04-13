@@ -1,7 +1,6 @@
 package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.AbstractProcessor;
-import net.ihiroky.niotty.EventDispatcherGroup;
 import net.ihiroky.niotty.NameCountThreadFactory;
 import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.util.Arguments;
@@ -11,8 +10,8 @@ import net.ihiroky.niotty.util.Arguments;
  */
 public class NioServerSocketProcessor extends AbstractProcessor<NioServerSocketTransport> {
 
-    private EventDispatcherGroup<SelectDispatcher> acceptSelectDispatcherGroup_;
-    private EventDispatcherGroup<SelectDispatcher> ioSelectDispatcherGroup_;
+    private NioEventDispatcherGroup acceptSelectDispatcherGroup_;
+    private NioEventDispatcherGroup ioSelectDispatcherGroup_;
     private WriteQueueFactory<PacketQueue> writeQueueFactory_;
 
     private int numberOfIoThread_;
@@ -37,16 +36,18 @@ public class NioServerSocketProcessor extends AbstractProcessor<NioServerSocketT
 
     @Override
     protected void onStart() {
-        SelectDispatcherFactory ioDispatcherFactory = new SelectDispatcherFactory()
+        ioSelectDispatcherGroup_ = NioEventDispatcherGroup.newBuilder()
+                .setWorkers(numberOfIoThread_)
+                .setThreadFactory(new NameCountThreadFactory(name().concat("-IO")))
                 .setReadBufferSize(readBufferSize_)
                 .setWriteBufferSize(0)
-                .setUseDirectBuffer(useDirectBuffer_);
-        ioSelectDispatcherGroup_ = new EventDispatcherGroup<SelectDispatcher>(
-                numberOfIoThread_, new NameCountThreadFactory(name().concat("-IO")), ioDispatcherFactory);
-
-        SelectDispatcherFactory acceptDispatcherFactory = SelectDispatcherFactory.newInstanceForNonIO();
-        acceptSelectDispatcherGroup_ = new EventDispatcherGroup<SelectDispatcher>(
-                1, new NameCountThreadFactory(name().concat("-Accept")), acceptDispatcherFactory);
+                .setUseDirectBuffer(useDirectBuffer_)
+                .build();
+        acceptSelectDispatcherGroup_ = NioEventDispatcherGroup.newBuilder()
+                .setWorkers(1)
+                .setThreadFactory(new NameCountThreadFactory(name().concat("-Accept")))
+                .setBufferSizeNonIo()
+                .build();
     }
 
     @Override
@@ -99,7 +100,7 @@ public class NioServerSocketProcessor extends AbstractProcessor<NioServerSocketT
         return this;
     }
 
-    EventDispatcherGroup<SelectDispatcher> ioDispatcherGroup() {
+    NioEventDispatcherGroup ioEventDispatcherGroup() {
         return ioSelectDispatcherGroup_;
     }
 

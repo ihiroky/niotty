@@ -14,12 +14,12 @@ import static org.mockito.Mockito.*;
  */
 public class FailedTransportFutureTest {
 
-    private AbstractTransport<?> transport_;
+    private AbstractTransport transport_;
 
     @Before
     public void setUp() {
         @SuppressWarnings("unchecked")
-        AbstractTransport<?> transport = mock(AbstractTransport.class);
+        AbstractTransport transport = mock(AbstractTransport.class);
         transport_ = transport;
     }
 

@@ -1,7 +1,6 @@
 package net.ihiroky.niotty.nio;
 
 import net.ihiroky.niotty.AbstractProcessor;
-import net.ihiroky.niotty.EventDispatcherGroup;
 import net.ihiroky.niotty.NameCountThreadFactory;
 import net.ihiroky.niotty.PipelineComposer;
 import net.ihiroky.niotty.util.Arguments;
@@ -11,8 +10,8 @@ import net.ihiroky.niotty.util.Arguments;
  */
 public class NioClientSocketProcessor extends AbstractProcessor<NioClientSocketTransport> {
 
-    private EventDispatcherGroup<SelectDispatcher> connectSelectorPool_;
-    private EventDispatcherGroup<SelectDispatcher> ioSelectorPool_;
+    private NioEventDispatcherGroup connectSelectorPool_;
+    private NioEventDispatcherGroup ioSelectorPool_;
     private int numberOfMessageIOThread_;
     private WriteQueueFactory<PacketQueue> writeQueueFactory_;
     private boolean useNonBlockingConnection_;
@@ -42,18 +41,20 @@ public class NioClientSocketProcessor extends AbstractProcessor<NioClientSocketT
 
     @Override
     protected void onStart() {
-        SelectDispatcherFactory ioDispatcherFactory = new SelectDispatcherFactory()
+        ioSelectorPool_ = NioEventDispatcherGroup.newBuilder()
+                .setWorkers(numberOfMessageIOThread_)
+                .setThreadFactory(new NameCountThreadFactory(name().concat("-IO")))
                 .setReadBufferSize(readBufferSize_)
                 .setWriteBufferSize(0)
-                .setUseDirectBuffer(useDirectBuffer_);
-
-        ioSelectorPool_ = new EventDispatcherGroup<SelectDispatcher>(
-                numberOfMessageIOThread_, new NameCountThreadFactory(name().concat("-IO")), ioDispatcherFactory);
+                .setUseDirectBuffer(useDirectBuffer_)
+                .build();
 
         if (useNonBlockingConnection_) {
-            SelectDispatcherFactory connectionDispatcherFactory = SelectDispatcherFactory.newInstanceForNonIO();
-            connectSelectorPool_ = new EventDispatcherGroup<SelectDispatcher>(
-                    1, new NameCountThreadFactory(name().concat("-Connect")), connectionDispatcherFactory);
+            connectSelectorPool_ = NioEventDispatcherGroup.newBuilder()
+                    .setWorkers(1)
+                    .setThreadFactory(new NameCountThreadFactory(name().concat("-Connect")))
+                    .setBufferSizeNonIo()
+                    .build();
         }
     }
 
