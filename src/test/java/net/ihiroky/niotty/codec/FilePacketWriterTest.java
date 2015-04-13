@@ -3,18 +3,17 @@ package net.ihiroky.niotty.codec;
 import net.ihiroky.niotty.buffer.Buffers;
 import net.ihiroky.niotty.buffer.Packet;
 import net.ihiroky.niotty.util.Charsets;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-import static org.hamcrest.CoreMatchers.*;
-import static org.junit.Assert.*;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assume.assumeThat;
 
 public class FilePacketWriterTest {
 
@@ -24,6 +23,12 @@ public class FilePacketWriterTest {
 
     @Rule
     public TemporaryFolder temporaryFolder_ = new TemporaryFolder();
+
+    @BeforeClass
+    public static void setUpClass() throws Exception {
+        // Skip file tests on Travis.
+        assumeThat(System.getenv("CI"), is(not("true")));
+    }
 
     @Before
     public void setUp() throws Exception {
