@@ -372,7 +372,7 @@ public abstract class EventDispatcher implements Runnable, Comparable<EventDispa
      * @return the number of the selections associated with this object
      * @throws NullPointerException if selection is null
      */
-    public int accept(EventDispatcherSelection selection) {
+    protected int accept(EventDispatcherSelection selection) {
         Arguments.requireNonNull(selection, "selection");
         int size;
         synchronized (selectionCountMap_) {
